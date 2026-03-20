@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDF Scholarship Management System</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Open Sans', 'Sarabun', 'sans-serif'],
+                    },
+                    colors: {
+                        rdfBlue: '#1e3a8a',
+                        rdfGold: '#fbbf24'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Icons & SweetAlert -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        .hidden { display: none !important; }
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #1e3a8a;
+            border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col font-sans">
+
+    <!-- Global Loader -->
+    <div id="loader" class="hidden">
+        <div class="spinner"></div>
+        <p class="mt-4 text-rdfBlue font-semibold text-lg" data-i18n="loading">Loading / กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="bg-rdfBlue text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF Logo" class="h-12 w-12 bg-white rounded-full p-1 shadow">
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold leading-tight" data-i18n="foundationNameEn">Dr. Robert Dyckerhoff Foundation</h1>
+                    <p class="text-xs md:text-sm text-gray-200" data-i18n="foundationNameTh">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleLanguage()" class="bg-white text-rdfBlue px-3 py-1 rounded-md text-sm font-bold border border-rdfBlue hover:bg-gray-100 transition shadow-sm">
+                    <span id="langBtn">TH / EN</span>
+                </button>
+                <button id="btnLogout" onclick="logout()" class="hidden text-red-200 hover:text-white flex items-center transition">
+                    <i data-lucide="log-out" class="w-5 h-5 mr-1"></i> <span data-i18n="logout" class="hidden md:inline">Logout</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow container mx-auto px-4 py-8 relative">
+
+        <!-- ================= LOGIN SECTION ================= -->
+        <section id="loginSection" class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 mt-10 border border-gray-100">
+            <div class="text-center mb-6">
+                <div class="inline-block bg-blue-100 p-3 rounded-full mb-3">
+                    <i data-lucide="lock" class="w-8 h-8 text-rdfBlue"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-rdfBlue" data-i18n="loginTitle">System Login</h2>
+                <p class="text-gray-500 text-sm mt-1" data-i18n="loginSubtitle">เข้าสู่ระบบจัดการข้อมูลทุนการศึกษา</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginId">ID Card / Username</label>
+                <div class="relative">
+                    <i data-lucide="user" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                    <input type="text" id="loginId" class="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition" placeholder="...">
+                </div>
+            </div>
+            
+            <div class="mb-5">
+                <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginPass">Password</label>
+                <div class="relative">
+                    <i data-lucide="key" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                    <input type="password" id="loginPass" class="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition" placeholder="...">
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginRole">Login As</label>
+                <select id="loginRole" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition appearance-none">
+                    <option value="admin" data-i18n="roleAdmin">Administrator (ผู้ดูแลระบบ)</option>
+                    <option value="student" data-i18n="roleStudent">Student (นักเรียนทุน)</option>
+                </select>
+            </div>
+            
+            <button onclick="handleLogin()" class="w-full bg-rdfBlue text-white font-bold py-3.5 rounded-lg hover:bg-blue-800 shadow-md hover:shadow-lg transition duration-200 flex justify-center items-center">
+                <span data-i18n="btnLogin">Login to System</span>
+                <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+            </button>
+            
+            <!-- Hint for testing -->
+            <div class="mt-6 text-center text-xs text-gray-400 bg-gray-50 p-2 rounded border border-dashed border-gray-200">
+                <p><strong>ทดสอบระบบแอดมิน:</strong> User: <code class="text-blue-600">admin</code> | Pass: <code class="text-blue-600">1234</code></p>
+            </div>
+        </section>
+
+        <!-- ================= DASHBOARD SECTION ================= -->
+        <section id="dashboardSection" class="hidden fade-in">
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800" data-i18n="dashboardTitle">Dashboard Overview</h2>
+                    <p class="text-gray-500 mt-1">ยินดีต้อนรับเข้าสู่ระบบจัดการข้อมูลมูลนิธิฯ</p>
+                </div>
+                <div class="text-right hidden md:block">
+                    <div class="text-sm text-gray-500">เข้าสู่ระบบโดย</div>
+                    <div class="font-bold text-rdfBlue text-lg flex items-center justify-end">
+                        <i data-lucide="shield-check" class="w-5 h-5 mr-1 text-green-600"></i>
+                        <span id="userNameDisplay">User</span>
+                        <span id="userRoleDisplay" class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Role</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Menu Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Menu 1 -->
+                <button onclick="alert('ระบบกำลังพัฒนาในส่วนถัดไปครับ (Phase 4)')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border border-gray-100 flex flex-col items-center text-center group">
+                    <div class="bg-blue-50 p-4 rounded-full text-rdfBlue group-hover:bg-rdfBlue group-hover:text-white transition duration-200 mb-4">
+                        <i data-lucide="users" class="w-10 h-10"></i>
+                    </div>
+                    <h4 class="font-bold text-lg text-gray-800" data-i18n="menuStudentData">จัดการประวัตินักเรียนทุน</h4>
+                    <p class="text-sm text-gray-500 mt-2">เพิ่ม แก้ไข ลบ และพิมพ์ประวัตินักเรียนทุน (PDF)</p>
+                </button>
+                
+                <!-- Menu 2 -->
+                <button onclick="alert('ระบบกำลังพัฒนาในส่วนถัดไปครับ')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border border-gray-100 flex flex-col items-center text-center group">
+                    <div class="bg-green-50 p-4 rounded-full text-green-600 group-hover:bg-green-600 group-hover:text-white transition duration-200 mb-4">
+                        <i data-lucide="graduation-cap" class="w-10 h-10"></i>
+                    </div>
+                    <h4 class="font-bold text-lg text-gray-800" data-i18n="menuAcademic">จัดการผลการเรียน</h4>
+                    <p class="text-sm text-gray-500 mt-2">บันทึกเกรด ดูสรุปผลการเรียนแต่ละภาคเรียน</p>
+                </button>
+
+                <!-- Menu 3 -->
+                <button onclick="alert('ระบบกำลังพัฒนาในส่วนถัดไปครับ')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border border-gray-100 flex flex-col items-center text-center group">
+                    <div class="bg-amber-50 p-4 rounded-full text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition duration-200 mb-4">
+                        <i data-lucide="settings" class="w-10 h-10"></i>
+                    </div>
+                    <h4 class="font-bold text-lg text-gray-800" data-i18n="menuSettings">ตั้งค่าระบบ & แอดมิน</h4>
+                    <p class="text-sm text-gray-500 mt-2">จัดการผู้ดูแลระบบและตั้งค่าข้อมูลพื้นฐาน</p>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-300 py-6 mt-auto">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-sm">&copy; <span id="currentYear"></span> Dr. Robert Dyckerhoff Foundation Thailand.</p>
+            <p class="text-xs mt-2 text-gray-500">System Developed for Maesariang Boripat Suksa School & Vocational College</p>
+        </div>
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // --- URL ของ Google Apps Script ที่เพิ่ง Deploy มา ---
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzklnfm26cbthyN0jQgZaDPZDucfAcQKdIZIv3BXiyQ5NWSDY-6swY5_N9Gm-rgKMz5/exec";
+
+        // --- BILINGUAL SYSTEM (DICTIONARY) ---
+        const i18n = {
+            en: {
+                foundationNameEn: "Dr. Robert Dyckerhoff Foundation",
+                foundationNameTh: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
+                loading: "Loading data...",
+                loginTitle: "System Login",
+                loginSubtitle: "Scholarship Management System",
+                loginId: "ID Card / Username",
+                loginPass: "Password",
+                loginRole: "Login As",
+                roleStudent: "Student",
+                roleAdmin: "Administrator",
+                btnLogin: "Login to System",
+                logout: "Logout",
+                dashboardTitle: "Dashboard Overview",
+                menuStudentData: "Student Profiles",
+                menuAcademic: "Academic Records",
+                menuSettings: "System Settings",
+                error: "Error",
+                success: "Success",
+                loginFailed: "Invalid ID or Password"
+            },
+            th: {
+                foundationNameEn: "Dr. Robert Dyckerhoff Foundation",
+                foundationNameTh: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
+                loading: "กำลังเชื่อมต่อฐานข้อมูล...",
+                loginTitle: "เข้าสู่ระบบ",
+                loginSubtitle: "ระบบจัดการข้อมูลทุนการศึกษา",
+                loginId: "ชื่อผู้ใช้ (Username) / เลขบัตรประชาชน",
+                loginPass: "รหัสผ่าน (Password)",
+                loginRole: "เข้าสู่ระบบในฐานะ",
+                roleStudent: "นักเรียนทุน",
+                roleAdmin: "ผู้ดูแลระบบ",
+                btnLogin: "เข้าสู่ระบบ",
+                logout: "ออกจากระบบ",
+                dashboardTitle: "หน้าหลัก (Dashboard)",
+                menuStudentData: "จัดการประวัตินักเรียนทุน",
+                menuAcademic: "จัดการผลการเรียน",
+                menuSettings: "ตั้งค่าระบบ & แอดมิน",
+                error: "เกิดข้อผิดพลาด",
+                success: "สำเร็จ",
+                loginFailed: "ข้อมูลเข้าสู่ระบบไม่ถูกต้อง"
+            }
+        };
+
+        let currentLang = 'th'; // ค่าเริ่มต้นเป็นภาษาไทย
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'th' : 'en';
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(i18n[currentLang][key]) {
+                    if (el.tagName === 'INPUT' && el.type !== 'button') {
+                        el.placeholder = i18n[currentLang][key];
+                    } else {
+                        el.textContent = i18n[currentLang][key];
+                    }
+                }
+            });
+        }
+        
+        applyLanguage();
+
+        // --- SYSTEM NAVIGATION & LOGIC ---
+        function showLoader(show) {
+            document.getElementById('loader').classList.toggle('hidden', !show);
+        }
+
+        function showSection(sectionName) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+
+            if(sectionName === 'login') {
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('btnLogout').classList.add('hidden');
+            } else if (sectionName === 'dashboard') {
+                document.getElementById('dashboardSection').classList.remove('hidden');
+                document.getElementById('btnLogout').classList.remove('hidden');
+            }
+        }
+
+        // --- ฟังก์ชันเข้าสู่ระบบ (เชื่อมต่อกับ API) ---
+        async function handleLogin() {
+            const id = document.getElementById('loginId').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            const role = document.getElementById('loginRole').value;
+
+            if(!id || !pass) {
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'แจ้งเตือน', 
+                    text: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+                    confirmButtonColor: '#1e3a8a'
+                });
+                return;
+            }
+
+            showLoader(true);
+
+            try {
+                // สร้าง URL สำหรับยิง API ไปที่ Apps Script แบบ GET
+                const fetchUrl = `${GAS_WEB_APP_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}&role=${role}`;
+                
+                const response = await fetch(fetchUrl);
+                const result = await response.json();
+                
+                showLoader(false);
+
+                if (result.status === 'success') {
+                    // หาก Login สำเร็จ
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'เข้าสู่ระบบสำเร็จ', 
+                        text: `ยินดีต้อนรับคุณ ${result.name}`,
+                        timer: 1500, 
+                        showConfirmButton: false 
+                    });
+                    
+                    // แสดงชื่อและตำแหน่งในหน้า Dashboard
+                    document.getElementById('userNameDisplay').textContent = result.name;
+                    document.getElementById('userRoleDisplay').textContent = result.role;
+                    
+                    showSection('dashboard');
+                    
+                } else {
+                    // หากรหัสผิด หรือเกิดข้อผิดพลาดจาก Backend
+                    Swal.fire({ 
+                        icon: 'error', 
+                        title: i18n[currentLang].error, 
+                        text: result.message || i18n[currentLang].loginFailed,
+                        confirmButtonColor: '#1e3a8a'
+                    });
+                }
+
+            } catch (error) {
+                showLoader(false);
+                console.error('Error:', error);
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'ข้อผิดพลาดเครือข่าย', 
+                    text: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+                    confirmButtonColor: '#1e3a8a'
+                });
+            }
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'ยืนยันการออกจากระบบ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1e3a8a',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'ใช่, ออกจากระบบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('loginId').value = '';
+                    document.getElementById('loginPass').value = '';
+                    showSection('login');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
