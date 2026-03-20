@@ -73,7 +73,7 @@
                     <span id="langBtn">TH / EN</span>
                 </button>
                 
-                <!-- User Profile Section (Hidden until login) -->
+                <!-- User Profile Section -->
                 <div id="headerProfile" class="hidden items-center space-x-2 border-l border-blue-700 pl-3 md:pl-4 cursor-pointer hover:bg-blue-800 p-1 rounded transition" onclick="showAdminProfile()">
                     <img id="headerUserPic" src="" alt="Profile" class="w-8 h-8 md:w-9 md:h-9 rounded-full border-2 border-white object-cover bg-gray-200">
                     <div class="hidden md:block text-left leading-tight">
@@ -94,7 +94,6 @@
 
         <!-- ================= 1. LOGIN SECTION ================= -->
         <section id="loginSection" class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 mt-4 md:mt-10 border border-gray-100 fade-in">
-            <!-- (Login content remains exactly the same as before) -->
             <div class="text-center mb-6">
                 <div class="inline-block bg-blue-100 p-3 rounded-full mb-3">
                     <i data-lucide="lock" class="w-8 h-8 text-rdfBlue"></i>
@@ -103,40 +102,41 @@
                 <p class="text-gray-500 text-sm mt-1" data-i18n="loginSubtitle">เข้าสู่ระบบจัดการข้อมูลทุนการศึกษา</p>
             </div>
             
-            <div class="mb-4">
-                <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginId">ID Card / Username</label>
-                <div class="relative">
-                    <i data-lucide="user" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
-                    <input type="text" id="loginId" class="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition" placeholder="...">
+            <form onsubmit="event.preventDefault(); handleLogin();">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginId">ID Card / Username</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                        <input type="text" id="loginId" class="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition" placeholder="..." required>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="mb-5">
-                <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginPass">Password</label>
-                <div class="relative">
-                    <i data-lucide="key" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
-                    <input type="password" id="loginPass" class="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition" placeholder="...">
+                
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginPass">Password</label>
+                    <div class="relative">
+                        <i data-lucide="key" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                        <input type="password" id="loginPass" class="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition" placeholder="..." required>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mb-8">
-                <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginRole">Login As</label>
-                <select id="loginRole" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition appearance-none">
-                    <option value="admin" data-i18n="roleAdmin">Administrator (ผู้ดูแลระบบ)</option>
-                    <option value="student" data-i18n="roleStudent">Student (นักเรียนทุน)</option>
-                </select>
-            </div>
-            
-            <button onclick="handleLogin()" class="w-full bg-rdfBlue text-white font-bold py-3.5 rounded-lg hover:bg-blue-800 shadow-md hover:shadow-lg transition duration-200 flex justify-center items-center">
-                <span data-i18n="btnLogin">Login to System</span>
-                <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
-            </button>
+                <div class="mb-8">
+                    <label class="block text-sm font-semibold mb-2 text-gray-700" data-i18n="loginRole">Login As</label>
+                    <select id="loginRole" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-rdfBlue focus:ring-1 focus:ring-rdfBlue transition appearance-none">
+                        <option value="admin" data-i18n="roleAdmin">Administrator (ผู้ดูแลระบบ)</option>
+                        <option value="student" data-i18n="roleStudent">Student (นักเรียนทุน)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-rdfBlue text-white font-bold py-3.5 rounded-lg hover:bg-blue-800 shadow-md hover:shadow-lg transition duration-200 flex justify-center items-center">
+                    <span data-i18n="btnLogin">Login to System</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                </button>
+            </form>
             <div class="mt-4 text-center text-xs text-gray-400">User: admin | Pass: 1234</div>
         </section>
 
         <!-- ================= 2. DASHBOARD SECTION ================= -->
         <section id="dashboardSection" class="hidden fade-in">
-            <!-- Alert / Welcome Card -->
             <div class="bg-gradient-to-r from-rdfBlue to-blue-600 rounded-xl shadow-md p-6 mb-8 text-white flex justify-between items-center">
                 <div>
                     <h2 class="text-2xl font-bold" data-i18n="dashboardTitle">Dashboard Overview</h2>
@@ -145,37 +145,36 @@
                 <i data-lucide="layout-dashboard" class="w-12 h-12 text-blue-200 opacity-50 hidden md:block"></i>
             </div>
 
-            <!-- Stats Summary Row (เพิ่มใหม่) -->
+            <!-- Stats Summary Row (ตัวเลขมาจาก Database) -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <!-- MBS -->
                 <div onclick="filterAndShowStudents('MBS')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-400 transition cursor-pointer flex flex-col items-center text-center group">
                     <div class="text-blue-500 mb-2 bg-blue-50 p-3 rounded-full group-hover:bg-blue-500 group-hover:text-white transition"><i data-lucide="school" class="w-6 h-6"></i></div>
-                    <h3 class="text-3xl font-bold text-gray-800">120</h3>
+                    <h3 id="statMBSCount" class="text-3xl font-bold text-gray-800">0</h3>
                     <p class="text-xs md:text-sm text-gray-500 mt-1 font-semibold" data-i18n="statMBS">นักเรียน MBS</p>
                 </div>
                 <!-- VC -->
                 <div onclick="filterAndShowStudents('VC')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-400 transition cursor-pointer flex flex-col items-center text-center group">
                     <div class="text-orange-500 mb-2 bg-orange-50 p-3 rounded-full group-hover:bg-orange-500 group-hover:text-white transition"><i data-lucide="wrench" class="w-6 h-6"></i></div>
-                    <h3 class="text-3xl font-bold text-gray-800">45</h3>
+                    <h3 id="statVCCount" class="text-3xl font-bold text-gray-800">0</h3>
                     <p class="text-xs md:text-sm text-gray-500 mt-1 font-semibold" data-i18n="statVC">นักศึกษา VC</p>
                 </div>
                 <!-- UNI -->
                 <div onclick="filterAndShowStudents('UNI')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-400 transition cursor-pointer flex flex-col items-center text-center group">
                     <div class="text-purple-500 mb-2 bg-purple-50 p-3 rounded-full group-hover:bg-purple-500 group-hover:text-white transition"><i data-lucide="building-2" class="w-6 h-6"></i></div>
-                    <h3 class="text-3xl font-bold text-gray-800">30</h3>
+                    <h3 id="statUNICount" class="text-3xl font-bold text-gray-800">0</h3>
                     <p class="text-xs md:text-sm text-gray-500 mt-1 font-semibold" data-i18n="statUNI">ระดับมหาวิทยาลัย</p>
                 </div>
                 <!-- Alumni -->
                 <div onclick="filterAndShowStudents('Alumni')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-green-400 transition cursor-pointer flex flex-col items-center text-center group">
                     <div class="text-green-500 mb-2 bg-green-50 p-3 rounded-full group-hover:bg-green-500 group-hover:text-white transition"><i data-lucide="award" class="w-6 h-6"></i></div>
-                    <h3 class="text-3xl font-bold text-gray-800">250</h3>
+                    <h3 id="statAlumniCount" class="text-3xl font-bold text-gray-800">0</h3>
                     <p class="text-xs md:text-sm text-gray-500 mt-1 font-semibold" data-i18n="statAlumni">ศิษย์เก่า (Alumni)</p>
                 </div>
             </div>
 
             <!-- Dashboard Menu Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Menu 1: Students -->
                 <button onclick="showSection('studentList')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border-t-4 border-t-rdfBlue flex flex-col items-center text-center group">
                     <div class="bg-blue-50 p-4 rounded-full text-rdfBlue group-hover:scale-110 transition duration-200 mb-4">
                         <i data-lucide="users" class="w-10 h-10"></i>
@@ -184,8 +183,7 @@
                     <p class="text-sm text-gray-500 mt-2">เพิ่ม แก้ไข ลบ และพิมพ์ประวัตินักเรียนทุน (PDF)</p>
                 </button>
                 
-                <!-- Menu 2: Academic -->
-                <button onclick="alert('ระบบจัดการผลการเรียน จะทำในส่วนต่อไปครับ')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border-t-4 border-t-green-500 flex flex-col items-center text-center group">
+                <button onclick="alert('กำลังพัฒนา')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border-t-4 border-t-green-500 flex flex-col items-center text-center group">
                     <div class="bg-green-50 p-4 rounded-full text-green-600 group-hover:scale-110 transition duration-200 mb-4">
                         <i data-lucide="graduation-cap" class="w-10 h-10"></i>
                     </div>
@@ -193,8 +191,7 @@
                     <p class="text-sm text-gray-500 mt-2">บันทึกเกรด ดูสรุปผลการเรียนแต่ละภาคเรียน</p>
                 </button>
 
-                <!-- Menu 3: Settings -->
-                <button onclick="alert('ระบบตั้งค่า จะทำในส่วนต่อไปครับ')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border-t-4 border-t-amber-500 flex flex-col items-center text-center group">
+                <button onclick="alert('กำลังพัฒนา')" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition duration-200 border-t-4 border-t-amber-500 flex flex-col items-center text-center group">
                     <div class="bg-amber-50 p-4 rounded-full text-amber-600 group-hover:scale-110 transition duration-200 mb-4">
                         <i data-lucide="settings" class="w-10 h-10"></i>
                     </div>
@@ -206,7 +203,6 @@
 
         <!-- ================= 3. STUDENT LIST SECTION ================= -->
         <section id="studentListSection" class="hidden fade-in">
-            <!-- Breadcrumb & Header -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <button onclick="showSection('dashboard')" class="text-gray-500 hover:text-rdfBlue flex items-center text-sm mb-1 font-semibold transition">
@@ -217,23 +213,27 @@
                         <span data-i18n="menuStudentData">รายชื่อนักเรียนทุน (Student List)</span>
                     </h2>
                 </div>
-                <button onclick="showSection('studentForm')" class="bg-rdfBlue text-white px-5 py-2.5 rounded-lg flex items-center hover:bg-blue-800 shadow-md transition w-full md:w-auto justify-center">
-                    <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> 
-                    <span data-i18n="btnAddStudent">เพิ่มนักเรียนใหม่ (Add New)</span>
-                </button>
+                <div class="flex space-x-2 w-full md:w-auto">
+                    <button onclick="loadStudentsFromDatabase()" class="bg-white text-gray-600 border border-gray-300 px-4 py-2.5 rounded-lg flex items-center hover:bg-gray-50 shadow-sm transition justify-center">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> รีเฟรชข้อมูล
+                    </button>
+                    <button onclick="showSection('studentForm')" class="bg-rdfBlue text-white px-5 py-2.5 rounded-lg flex items-center hover:bg-blue-800 shadow-md transition w-full md:w-auto justify-center">
+                        <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> 
+                        <span data-i18n="btnAddStudent">เพิ่มนักเรียนใหม่</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Filter & Search Bar -->
             <div class="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div class="flex gap-2 w-full md:w-auto">
-                    <!-- เพิ่ม ID ให้กับ Select เพื่อใช้ JS ควบคุม -->
-                    <select id="filterInstitution" class="border p-2 rounded-lg bg-gray-50 text-sm focus:ring-rdfBlue focus:border-rdfBlue w-full md:w-auto transition">
+                    <select id="filterInstitution" onchange="applyFilters()" class="border p-2 rounded-lg bg-gray-50 text-sm focus:ring-rdfBlue focus:border-rdfBlue w-full md:w-auto transition cursor-pointer">
                         <option value="ALL">ทุกสถานศึกษา</option>
                         <option value="MBS">Maesariang Boripat Suksa School</option>
                         <option value="VC">Vocational College</option>
                         <option value="UNI">University</option>
                     </select>
-                    <select id="filterStatus" class="border p-2 rounded-lg bg-gray-50 text-sm focus:ring-rdfBlue focus:border-rdfBlue w-full md:w-auto transition">
+                    <select id="filterStatus" onchange="applyFilters()" class="border p-2 rounded-lg bg-gray-50 text-sm focus:ring-rdfBlue focus:border-rdfBlue w-full md:w-auto transition cursor-pointer">
                         <option value="ALL">ทุกสถานะ</option>
                         <option value="Active">กำลังศึกษา</option>
                         <option value="Graduated">สำเร็จการศึกษา (ศิษย์เก่า)</option>
@@ -241,7 +241,7 @@
                 </div>
                 <div class="relative w-full md:w-64">
                     <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-                    <input type="text" placeholder="ค้นหาชื่อ, Stip No., เลขบัตร..." class="w-full pl-9 p-2 border rounded-lg bg-gray-50 text-sm focus:ring-rdfBlue focus:border-rdfBlue">
+                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="ค้นหาชื่อ, Stip No., เลขบัตร..." class="w-full pl-9 p-2 border rounded-lg bg-gray-50 text-sm focus:ring-rdfBlue focus:border-rdfBlue transition">
                 </div>
             </div>
 
@@ -259,74 +259,20 @@
                         </tr>
                     </thead>
                     <tbody id="studentTableBody" class="text-sm">
-                        <!-- Mockup Row 1 -->
-                        <tr class="border-b hover:bg-blue-50 transition">
-                            <td class="p-4 font-bold text-rdfBlue">MBS_001</td>
-                            <td class="p-4">
-                                <div class="flex items-center space-x-3">
-                                    <img src="https://ui-avatars.com/api/?name=สมชาย+ใจดี&background=random" class="w-10 h-10 rounded-full border border-gray-200 object-cover">
-                                    <div>
-                                        <div class="font-bold text-gray-800">นาย สมชาย ใจดี</div>
-                                        <div class="text-xs text-gray-500">1-5899-00123-xx-x</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-4">
-                                <div class="font-medium text-gray-800">Maesariang Boripat Suksa School</div>
-                                <div class="text-xs text-gray-500">มัธยมศึกษาปีที่ 4</div>
-                            </td>
-                            <td class="p-4 text-gray-600">081-234-5678</td>
-                            <td class="p-4 text-center">
-                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">กำลังศึกษา</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <div class="flex items-center justify-center space-x-2">
-                                    <button onclick="alert('แสดงข้อมูลส่วนตัว (PDF Print)')" title="ดูข้อมูล / พิมพ์" class="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                                    <button onclick="showSection('studentForm')" title="แก้ไข" class="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200 transition"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                    <button onclick="deleteStudentMock('MBS_001')" title="ลบ" class="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- Mockup Row 2 -->
-                        <tr class="border-b hover:bg-blue-50 transition">
-                            <td class="p-4 font-bold text-rdfBlue">VC_001</td>
-                            <td class="p-4">
-                                <div class="flex items-center space-x-3">
-                                    <img src="https://ui-avatars.com/api/?name=มานี+มีนา&background=random" class="w-10 h-10 rounded-full border border-gray-200 object-cover">
-                                    <div>
-                                        <div class="font-bold text-gray-800">นางสาว มานี มีนา</div>
-                                        <div class="text-xs text-gray-500">1-5899-00999-xx-x</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-4">
-                                <div class="font-medium text-gray-800">Vocational College</div>
-                                <div class="text-xs text-gray-500">ปวส. ชั้นปีที่ 2 (เทคโนโลยีสารสนเทศ)</div>
-                            </td>
-                            <td class="p-4 text-gray-600">089-999-8888</td>
-                            <td class="p-4 text-center">
-                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">กำลังศึกษา</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <div class="flex items-center justify-center space-x-2">
-                                    <button class="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                                    <button class="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200 transition"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                    <button class="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </td>
-                        </tr>
+                        <!-- ข้อมูลตารางจะถูกสร้างที่นี่ด้วย JavaScript -->
                     </tbody>
                 </table>
+                <!-- ข้อความแสดงเมื่อไม่พบข้อมูลการค้นหา -->
+                <div id="noDataMessage" class="hidden text-center p-8 text-gray-500">
+                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                    <p class="text-lg">ไม่มีข้อมูลในระบบ หรือไม่พบข้อมูลที่ค้นหา</p>
+                    <p class="text-xs text-gray-400 mt-1">ลองเพิ่มข้อมูลลงใน Google Sheets ดูครับ</p>
+                </div>
             </div>
             
             <!-- Pagination (Mock) -->
             <div class="flex justify-between items-center mt-4 text-sm text-gray-500">
-                <div>แสดง 1 ถึง 2 จาก 2 รายการ</div>
-                <div class="flex space-x-1">
-                    <button class="px-3 py-1 border rounded hover:bg-gray-50" disabled>ก่อนหน้า</button>
-                    <button class="px-3 py-1 border rounded bg-rdfBlue text-white">1</button>
-                    <button class="px-3 py-1 border rounded hover:bg-gray-50" disabled>ถัดไป</button>
-                </div>
+                <div id="tableRecordInfo">แสดง 0 จาก 0 รายการ</div>
             </div>
         </section>
 
@@ -341,11 +287,8 @@
                 </div>
             </div>
 
-            <!-- Form Container -->
             <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 md:p-8">
                 <form id="studentDataForm" onsubmit="event.preventDefault(); saveStudentData();">
-                    
-                    <!-- Section: ข้อมูลการศึกษา (Academic Info) -->
                     <h3 class="text-lg font-bold text-rdfBlue border-b pb-2 mb-4 flex items-center">
                         <i data-lucide="book-open" class="w-5 h-5 mr-2"></i> 1. ข้อมูลการศึกษา (Academic Info)
                     </h3>
@@ -362,90 +305,35 @@
                         </div>
                         <div>
                             <label class="block text-sm font-semibold mb-1 text-gray-700">ระดับชั้นที่กำลังศึกษา <span class="text-red-500">*</span></label>
-                            <select id="f_level" class="w-full p-2.5 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-rdfBlue" required>
-                                <option value="">-- เลือกระดับชั้น --</option>
-                                <optgroup label="มัธยมศึกษา (MBS)">
-                                    <option value="ม.4">มัธยมศึกษาปีที่ 4</option>
-                                    <option value="ม.5">มัธยมศึกษาปีที่ 5</option>
-                                    <option value="ม.6">มัธยมศึกษาปีที่ 6</option>
-                                </optgroup>
-                                <optgroup label="อาชีวศึกษา (VC)">
-                                    <option value="ปวช.1">ปวช. ชั้นปีที่ 1</option>
-                                    <option value="ปวช.2">ปวช. ชั้นปีที่ 2</option>
-                                    <option value="ปวช.3">ปวช. ชั้นปีที่ 3</option>
-                                    <option value="ปวส.1">ปวส. ชั้นปีที่ 1</option>
-                                    <option value="ปวส.2">ปวส. ชั้นปีที่ 2</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold mb-1 text-gray-700">ปีการศึกษาที่เข้าเรียน / ภาคเรียน</label>
-                            <div class="flex space-x-2">
-                                <input type="number" placeholder="พ.ศ. (เช่น 2568)" class="w-2/3 p-2.5 bg-gray-50 border rounded-lg">
-                                <select class="w-1/3 p-2.5 bg-gray-50 border rounded-lg">
-                                    <option value="1">เทอม 1</option>
-                                    <option value="2">เทอม 2</option>
-                                    <option value="3">เทอม 3</option>
-                                    <option value="S">Summer</option>
-                                </select>
-                            </div>
+                            <input type="text" id="f_level" placeholder="เช่น ปวส.2" class="w-full p-2.5 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-rdfBlue" required>
                         </div>
                     </div>
 
-                    <!-- Section: ข้อมูลส่วนตัว (Personal Info) -->
                     <h3 class="text-lg font-bold text-rdfBlue border-b pb-2 mb-4 mt-8 flex items-center">
                         <i data-lucide="user" class="w-5 h-5 mr-2"></i> 2. ข้อมูลส่วนตัว (Personal Info)
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div class="md:col-span-2">
                             <label class="block text-sm font-semibold mb-1 text-gray-700">เลขประจำตัวประชาชน (13 หลัก) <span class="text-red-500">*</span></label>
-                            <input type="text" maxlength="13" placeholder="เลข 13 หลัก หรือขึ้นต้นด้วย G" class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
+                            <input type="text" id="f_idcard" maxlength="13" placeholder="เลข 13 หลัก หรือขึ้นต้นด้วย G" class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold mb-1 text-gray-700">รูปถ่ายนักเรียน (Profile Picture)</label>
-                            <input type="file" accept="image/*" class="w-full p-2 bg-gray-50 border rounded-lg text-sm">
-                        </div>
-
                         <div>
                             <label class="block text-sm font-semibold mb-1 text-gray-700">คำนำหน้า <span class="text-red-500">*</span></label>
-                            <select class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
+                            <select id="f_title" class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
                                 <option value="นาย">นาย</option>
                                 <option value="นางสาว">นางสาว</option>
                             </select>
                         </div>
                         <div class="md:col-span-1">
                             <label class="block text-sm font-semibold mb-1 text-gray-700">ชื่อ <span class="text-red-500">*</span></label>
-                            <input type="text" class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
+                            <input type="text" id="f_fname" class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold mb-1 text-gray-700 flex justify-between">
-                                <span>นามสกุล <span class="text-red-500">*</span></span>
-                                <label class="inline-flex items-center text-xs font-normal text-gray-500">
-                                    <input type="checkbox" class="mr-1 rounded"> ไม่มีนามสกุล
-                                </label>
-                            </label>
-                            <input type="text" class="w-full p-2.5 bg-gray-50 border rounded-lg">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-semibold mb-1 text-gray-700">เบอร์โทรศัพท์ 1 <span class="text-red-500">*</span></label>
-                            <input type="tel" class="w-full p-2.5 bg-gray-50 border rounded-lg" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold mb-1 text-gray-700">เบอร์โทรศัพท์ 2</label>
-                            <input type="tel" class="w-full p-2.5 bg-gray-50 border rounded-lg">
+                            <label class="block text-sm font-semibold mb-1 text-gray-700">นามสกุล <span class="text-red-500">*</span></label>
+                            <input type="text" id="f_lname" class="w-full p-2.5 bg-gray-50 border rounded-lg">
                         </div>
                     </div>
 
-                    <!-- Placeholder for address & parents -->
-                    <div class="p-4 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-lg text-sm mb-6 flex items-start">
-                        <i data-lucide="info" class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0"></i>
-                        <div>
-                            <strong>หมายเหตุ:</strong> ใน Phase ถัดไปจะมีการเพิ่มฟิลด์ ข้อมูลที่อยู่, สถานภาพผู้ปกครอง, ข้อมูลบิดามารดา และส่วนของระดับมหาวิทยาลัยให้ครบถ้วนตาม Spec ที่คุณระบุไว้ครับ (ทำโครงสร้างหลักให้ใช้งานได้ก่อน)
-                        </div>
-                    </div>
-
-                    <!-- Submit Buttons -->
                     <div class="border-t pt-6 flex justify-end space-x-3">
                         <button type="button" onclick="showSection('studentList')" class="px-6 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-100 font-semibold transition">
                             ยกเลิก
@@ -461,187 +349,224 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-gray-300 py-6 mt-auto">
-        <div class="container mx-auto px-4 text-center">
-            <p class="text-sm">&copy; <span id="currentYear"></span> Dr. Robert Dyckerhoff Foundation Thailand.</p>
-            <p class="text-xs mt-2 text-gray-500">System Developed for Maesariang Boripat Suksa School & Vocational College</p>
-        </div>
-    </footer>
-
-    <!-- Application Logic -->
+    <!-- Application Logic (Expert Mode Data Driven) -->
     <script>
-        // Initialize Icons
         lucide.createIcons();
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-        // --- URL ของ Google Apps Script (ตรวจสอบให้ตรงกับที่ Deploy) ---
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzklnfm26cbthyN0jQgZaDPZDucfAcQKdIZIv3BXiyQ5NWSDY-6swY5_N9Gm-rgKMz5/exec";
-
-        // --- BILINGUAL SYSTEM ---
-        const i18n = {
-            en: {
-                foundationNameEn: "Dr. Robert Dyckerhoff Foundation",
-                foundationNameTh: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
-                loading: "Loading data...",
-                loginTitle: "System Login",
-                loginSubtitle: "Scholarship Management System",
-                loginId: "ID Card / Username",
-                loginPass: "Password",
-                loginRole: "Login As",
-                roleStudent: "Student",
-                roleAdmin: "Administrator",
-                btnLogin: "Login to System",
-                dashboardTitle: "Dashboard Overview",
-                statMBS: "MBS Students",
-                statVC: "VC Students",
-                statUNI: "University",
-                statAlumni: "Alumni",
-                menuStudentData: "Student Profiles",
-                menuAcademic: "Academic Records",
-                menuSettings: "System Settings",
-                btnAddStudent: "Add New Student",
-                error: "Error",
-                success: "Success",
-                loginFailed: "Invalid ID or Password"
-            },
-            th: {
-                foundationNameEn: "Dr. Robert Dyckerhoff Foundation",
-                foundationNameTh: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
-                loading: "กำลังเชื่อมต่อฐานข้อมูล...",
-                loginTitle: "เข้าสู่ระบบ",
-                loginSubtitle: "ระบบจัดการข้อมูลทุนการศึกษา",
-                loginId: "ชื่อผู้ใช้ (Username) / เลขบัตรประชาชน",
-                loginPass: "รหัสผ่าน (Password)",
-                loginRole: "เข้าสู่ระบบในฐานะ",
-                roleStudent: "นักเรียนทุน",
-                roleAdmin: "ผู้ดูแลระบบ",
-                btnLogin: "เข้าสู่ระบบ",
-                dashboardTitle: "หน้าหลัก (Dashboard)",
-                statMBS: "นักเรียน MBS",
-                statVC: "นักศึกษา VC",
-                statUNI: "ระดับมหาวิทยาลัย",
-                statAlumni: "ศิษย์เก่า (Alumni)",
-                menuStudentData: "จัดการประวัตินักเรียนทุน",
-                menuAcademic: "จัดการผลการเรียน",
-                menuSettings: "ตั้งค่าระบบ & แอดมิน",
-                btnAddStudent: "เพิ่มนักเรียนใหม่ (Add New)",
-                error: "เกิดข้อผิดพลาด",
-                success: "สำเร็จ",
-                loginFailed: "ข้อมูลเข้าสู่ระบบไม่ถูกต้อง"
-            }
-        };
+        // ⚠️ อย่าลืมแก้ URL นี้ให้เป็นอันใหม่หลังจาก Deploy Code.gs
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyJwHM-vyqSddDfqSu1puLc86E42O6Pxjg4PHRfhuCSvc4fcmuNp1YS85OvYMWdAlc2/exec";
 
         let currentLang = 'th';
-        
-        // ตัวแปรเก็บข้อมูลผู้ใช้ที่ Login
         let currentUser = null; 
+        
+        // ตัวแปรสำหรับเก็บข้อมูลนักเรียนทั้งหมดจาก Database
+        let globalStudentsData = []; 
 
-        function toggleLanguage() {
-            currentLang = currentLang === 'en' ? 'th' : 'en';
-            applyLanguage();
-        }
-
-        function applyLanguage() {
-            const elements = document.querySelectorAll('[data-i18n]');
-            elements.forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if(i18n[currentLang][key]) {
-                    if (el.tagName === 'INPUT' && el.type !== 'button') {
-                        el.placeholder = i18n[currentLang][key];
-                    } else {
-                        el.textContent = i18n[currentLang][key];
-                    }
-                }
-            });
-        }
-        applyLanguage();
-
-        // --- SYSTEM NAVIGATION & UI ---
-        function showLoader(show) {
-            document.getElementById('loader').classList.toggle('hidden', !show);
+        function showLoader(show, text="กำลังโหลดข้อมูล...") {
+            const loader = document.getElementById('loader');
+            loader.querySelector('p').innerText = text;
+            loader.classList.toggle('hidden', !show);
         }
 
         function showSection(sectionName) {
-            // ซ่อนทุกหน้าก่อน
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.add('hidden');
             document.getElementById('studentListSection').classList.add('hidden');
             document.getElementById('studentFormSection').classList.add('hidden');
 
-            // แสดงหน้าเป้าหมาย
             document.getElementById(sectionName + 'Section').classList.remove('hidden');
-            
-            // รีโหลดไอคอนอีกครั้งเผื่อมี element ใหม่
             lucide.createIcons();
+            
+            if(sectionName === 'studentList') {
+                applyFilters();
+            }
         }
 
-        // --- AUTH & PROFILE ---
+        // ==========================================
+        // 🚀 DATA FETCHING & RENDERING (Expert Mode)
+        // ==========================================
+        
         async function handleLogin() {
             const id = document.getElementById('loginId').value.trim();
             const pass = document.getElementById('loginPass').value.trim();
             const role = document.getElementById('loginRole').value;
 
-            if(!id || !pass) {
-                Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณากรอกข้อมูลให้ครบถ้วน', confirmButtonColor: '#1e3a8a' });
-                return;
-            }
+            if(!id || !pass) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
 
-            showLoader(true);
+            showLoader(true, "กำลังเข้าสู่ระบบ...");
 
             try {
-                // ยิง API ไปที่ GAS
-                const fetchUrl = `${GAS_WEB_APP_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}&role=${role}`;
-                const response = await fetch(fetchUrl);
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}&role=${role}`);
                 const result = await response.json();
-                
-                showLoader(false);
 
                 if (result.status === 'success') {
-                    // เซ็ตค่า Global User
                     currentUser = result;
-                    
-                    // อัปเดต UI Profile บน Header
                     document.getElementById('headerProfile').classList.remove('hidden');
                     document.getElementById('btnLogout').classList.remove('hidden');
                     document.getElementById('headerUserName').textContent = result.name;
                     document.getElementById('headerUserRole').textContent = result.role;
+                    document.getElementById('headerUserPic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(result.name)}&background=1e3a8a&color=fff&bold=true`;
                     
-                    // ใช้ ui-avatars สร้างรูปโปรไฟล์จากชื่อ (หากไม่มี URL รูปจริง)
-                    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(result.name)}&background=1e3a8a&color=fff&bold=true`;
-                    document.getElementById('headerUserPic').src = avatarUrl;
+                    // เมื่อล็อกอินผ่าน ให้ดึงข้อมูลนักเรียนจากฐานข้อมูลต่อทันที
+                    await loadStudentsFromDatabase();
                     
                     showSection('dashboard');
-                    
                 } else {
-                    Swal.fire({ icon: 'error', title: i18n[currentLang].error, text: result.message || i18n[currentLang].loginFailed, confirmButtonColor: '#1e3a8a' });
+                    showLoader(false);
+                    Swal.fire('เกิดข้อผิดพลาด', result.message || 'ข้อมูลเข้าสู่ระบบไม่ถูกต้อง', 'error');
                 }
             } catch (error) {
                 showLoader(false);
-                console.error('Error:', error);
-                Swal.fire({ icon: 'error', title: 'ข้อผิดพลาดเครือข่าย', text: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', confirmButtonColor: '#1e3a8a' });
+                Swal.fire('ข้อผิดพลาดเครือข่าย', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
             }
         }
 
+        // ฟังก์ชันวิ่งไปดึงข้อมูลจริงจาก Google Sheets
+        async function loadStudentsFromDatabase() {
+            showLoader(true, "กำลังดึงข้อมูลจาก Google Sheets...");
+            try {
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getStudents`);
+                const result = await response.json();
+                
+                showLoader(false);
+                if(result.status === 'success') {
+                    globalStudentsData = result.data; // เก็บลง Array
+                    updateDashboardStats(result.stats); // อัปเดตตัวเลขหน้าแรก
+                    applyFilters(); // สร้างตาราง
+                } else {
+                    Swal.fire('ดึงข้อมูลล้มเหลว', result.message, 'error');
+                }
+            } catch (error) {
+                showLoader(false);
+                console.error(error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลนักเรียนได้', 'error');
+            }
+        }
+
+        // อัปเดตตัวเลขในการ์ดหน้า Dashboard
+        function updateDashboardStats(stats) {
+            document.getElementById('statMBSCount').innerText = stats.MBS || 0;
+            document.getElementById('statVCCount').innerText = stats.VC || 0;
+            document.getElementById('statUNICount').innerText = stats.UNI || 0;
+            document.getElementById('statAlumniCount').innerText = stats.Alumni || 0;
+        }
+
+        // ==========================================
+        // 🧮 LIVE FILTER & RENDER TABLE 
+        // ==========================================
+
+        function filterAndShowStudents(type) {
+            document.getElementById('searchInput').value = ''; 
+            const filterInst = document.getElementById('filterInstitution');
+            const filterStat = document.getElementById('filterStatus');
+            
+            if (type === 'Alumni') {
+                filterInst.value = 'ALL';
+                filterStat.value = 'Graduated';
+            } else {
+                filterInst.value = type;
+                filterStat.value = 'Active';
+            }
+            showSection('studentList');
+        }
+
+        // กรองข้อมูลจาก Array และส่งไป Render
+        function applyFilters() {
+            const instFilter = document.getElementById('filterInstitution').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            
+            // กรอง (Filter) จากข้อมูล globalStudentsData จริงๆ
+            const filteredData = globalStudentsData.filter(student => {
+                let matchInst = (instFilter === 'ALL' || student.institution === instFilter);
+                
+                let isAlumni = (student.status === 'Graduated' || student.status === 'สำเร็จการศึกษา');
+                let matchStatus = true;
+                if (statusFilter === 'Active' && isAlumni) matchStatus = false;
+                if (statusFilter === 'Graduated' && !isAlumni) matchStatus = false;
+                
+                let searchString = `${student.stipNo} ${student.idCard} ${student.name}`.toLowerCase();
+                let matchKeyword = searchString.includes(keyword);
+
+                return matchInst && matchStatus && matchKeyword;
+            });
+
+            renderTableHTML(filteredData);
+        }
+
+        // สร้าง HTML ของตารางจาก Data Array
+        function renderTableHTML(dataArray) {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = ''; // ล้างตารางเก่าทิ้ง
+            
+            if(dataArray.length === 0) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+            } else {
+                document.getElementById('noDataMessage').classList.add('hidden');
+                
+                // วนลูปสร้างตารางทีละบรรทัด
+                dataArray.forEach(student => {
+                    // กำหนดสีป้ายสถานะ
+                    let statusColor = student.status.includes('สำเร็จ') || student.status === 'Graduated' 
+                        ? 'bg-purple-100 text-purple-700' 
+                        : 'bg-green-100 text-green-700';
+                    let displayStatus = student.status === 'Graduated' ? 'สำเร็จการศึกษา' : (student.status || 'กำลังศึกษา');
+                    
+                    // ถ้ารูปไม่มี ให้ใช้บริการ UI Avatars สร้างรูปจากชื่อ
+                    let picUrl = student.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+
+                    let tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-blue-50 transition";
+                    tr.innerHTML = `
+                        <td class="p-4 font-bold text-rdfBlue">${student.stipNo}</td>
+                        <td class="p-4">
+                            <div class="flex items-center space-x-3">
+                                <img src="${picUrl}" class="w-10 h-10 rounded-full border border-gray-200 object-cover">
+                                <div>
+                                    <div class="font-bold text-gray-800">${student.name}</div>
+                                    <div class="text-xs text-gray-500">${student.idCard || '-'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <div class="font-medium text-gray-800">${student.institution || '-'}</div>
+                            <div class="text-xs text-gray-500">${student.level || '-'}</div>
+                        </td>
+                        <td class="p-4 text-gray-600">${student.phone || '-'}</td>
+                        <td class="p-4 text-center">
+                            <span class="${statusColor} px-2 py-1 rounded-full text-xs font-semibold">${displayStatus}</span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button onclick="alert('Print PDF: ${student.stipNo}')" class="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                                <button onclick="showSection('studentForm')" class="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                <button onclick="deleteStudentMock('${student.stipNo}')" class="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            document.getElementById('tableRecordInfo').textContent = `แสดง ${dataArray.length} จาก ${globalStudentsData.length} รายการ`;
+            lucide.createIcons(); // โหลดไอคอนใหม่ลงในตาราง
+        }
+
+        // ==========================================
+        // OTHER LOGICS
+        // ==========================================
         function logout() {
             Swal.fire({
                 title: 'ยืนยันการออกจากระบบ?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#1e3a8a',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'ใช่, ออกจากระบบ',
-                cancelButtonText: 'ยกเลิก'
+                icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#1e3a8a'
             }).then((result) => {
                 if (result.isConfirmed) {
                     currentUser = null;
+                    globalStudentsData = []; // ล้างข้อมูลนักเรียนออกจากหน่วยความจำเพื่อความปลอดภัย
                     document.getElementById('loginId').value = '';
                     document.getElementById('loginPass').value = '';
-                    
-                    // ซ่อนเมนู Header
                     document.getElementById('headerProfile').classList.add('hidden');
                     document.getElementById('btnLogout').classList.add('hidden');
-                    
                     showSection('login');
                 }
             });
@@ -649,90 +574,21 @@
 
         function showAdminProfile() {
             if(!currentUser) return;
-            // หน้าต่าง Popup สำหรับดูและแก้ไขข้อมูลผู้ดูแลระบบ
             Swal.fire({
                 title: 'ข้อมูลส่วนตัว',
-                html: `
-                    <div class="text-left mt-4 text-sm">
-                        <p class="mb-2"><strong>ชื่อ-สกุล:</strong> ${currentUser.name}</p>
-                        <p class="mb-2"><strong>ระดับสิทธิ์ (Role):</strong> <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">${currentUser.role}</span></p>
-                        <hr class="my-3">
-                        <p class="text-gray-500 text-xs text-center">* การเปลี่ยนรหัสผ่านและอัปเดตข้อมูลเต็มรูปแบบจะเปิดใช้งานใน Phase ถัดไป</p>
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: '<i data-lucide="edit-3" class="w-4 h-4 inline mr-1"></i> ขอแก้ไขข้อมูล',
-                cancelButtonText: 'ปิด',
-                confirmButtonColor: '#1e3a8a',
+                html: `<div class="text-left mt-4 text-sm"><p class="mb-2"><strong>ชื่อ-สกุล:</strong> ${currentUser.name}</p></div>`,
+                showCancelButton: true, confirmButtonText: 'แก้ไข', cancelButtonText: 'ปิด', confirmButtonColor: '#1e3a8a',
             }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire('กำลังพัฒนา', 'ฟังก์ชันแก้ไขโปรไฟล์แอดมิน (อัปโหลดรูป/เปลี่ยนรหัสผ่าน) จะมาในอัปเดตถัดไปครับ', 'info');
-                }
-            });
-            lucide.createIcons(); // รีโหลดไอคอนใน SweetAlert
-        }
-
-        // --- FILTER & NAVIGATION ---
-        function filterAndShowStudents(type) {
-            // 1. นำทางไปหน้าตารางรายชื่อ
-            showSection('studentList');
-            
-            // 2. ปรับค่าตัวกรอง (Dropdown) อัตโนมัติ
-            const filterInstitution = document.getElementById('filterInstitution');
-            const filterStatus = document.getElementById('filterStatus');
-            
-            if(filterInstitution && filterStatus) {
-                if (type === 'Alumni') {
-                    filterInstitution.value = 'ALL';
-                    filterStatus.value = 'Graduated';
-                } else {
-                    filterInstitution.value = type;
-                    filterStatus.value = 'Active';
-                }
-            }
-            
-            // 3. แสดง Popup แถบเล็กๆ (Toast) มุมขวาบนเพื่อบอกผู้ใช้
-            let toastName = type === 'Alumni' ? 'ศิษย์เก่า' : `สถานศึกษา ${type}`;
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'info',
-                title: `แสดงข้อมูล: ${toastName}`,
-                showConfirmButton: false,
-                timer: 1500
-            });
-        }
-
-        // --- STUDENT MANAGEMENT (MOCKUPS) ---
-        function deleteStudentMock(stipNo) {
-            Swal.fire({
-                title: `ยืนยันการลบข้อมูล?`,
-                text: `คุณต้องการลบข้อมูลประวัติหมายเลข ${stipNo} ใช่หรือไม่? (ไม่สามารถกู้คืนได้)`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'ยืนยันการลบ',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire('ลบข้อมูลสำเร็จ', 'ข้อมูลถูกลบออกจากระบบแล้ว (Simulation)', 'success');
-                }
+                if (result.isConfirmed) Swal.fire('กำลังพัฒนา', 'ฟังก์ชันแก้ไขโปรไฟล์', 'info');
             });
         }
 
         function saveStudentData() {
-            Swal.fire({
-                title: 'บันทึกข้อมูลสำเร็จ',
-                text: 'ระบบได้สร้าง Stip No. ใหม่และบันทึกลง Google Sheets แล้ว (Simulation)',
-                icon: 'success',
-                confirmButtonColor: '#1e3a8a'
-            }).then(() => {
-                // กลับไปหน้าตาราง
-                showSection('studentList');
-            });
+            Swal.fire({ title: 'กำลังพัฒนาใน Phase ต่อไป', text: 'ระบบรับข้อมูล POST API', icon: 'info' });
         }
-
+        function deleteStudentMock(stipNo) {
+            Swal.fire({ title: `ต้องการลบข้อมูล ${stipNo}?`, icon: 'warning', showCancelButton: true });
+        }
     </script>
 </body>
 </html>
