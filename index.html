@@ -548,21 +548,211 @@
     <script>
         lucide.createIcons();
 
-        // ⚠️ อย่าลืมแก้ URL นี้ให้เป็นอันใหม่หลังจาก Deploy Code.gs
+        // ⚠️ อย่าลืมเช็ค URL ว่าเป็นของคุณหรือไม่ (ใช้ URL เดิมจากที่แก้ครั้งล่าสุดได้เลย)
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyJwHM-vyqSddDfqSu1puLc86E42O6Pxjg4PHRfhuCSvc4fcmuNp1YS85OvYMWdAlc2/exec";
 
-// ... existing code ... (keep translation i18n, handleLogin, showLoader, updateDashboardStats as they were)
+        // ==========================================
+        // 🌐 BILINGUAL SYSTEM & VARIABLES
+        // ==========================================
+        const i18n = {
+            en: {
+                foundationNameEn: "Dr. Robert Dyckerhoff Foundation",
+                foundationNameTh: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
+                loading: "Loading data...",
+                loginTitle: "System Login",
+                loginSubtitle: "Scholarship Management System",
+                loginId: "ID Card / Username",
+                loginPass: "Password",
+                loginRole: "Login As",
+                roleStudent: "Student",
+                roleAdmin: "Administrator",
+                btnLogin: "Login to System",
+                dashboardTitle: "Dashboard Overview",
+                statMBS: "MBS Students",
+                statVC: "VC Students",
+                statUNI: "University",
+                statAlumni: "Alumni",
+                menuStudentData: "Student Profiles",
+                menuAcademic: "Academic Records",
+                menuSettings: "System Settings",
+                btnAddStudent: "Add New Student",
+                error: "Error",
+                success: "Success",
+                loginFailed: "Invalid ID or Password"
+            },
+            th: {
+                foundationNameEn: "Dr. Robert Dyckerhoff Foundation",
+                foundationNameTh: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
+                loading: "กำลังเชื่อมต่อฐานข้อมูล...",
+                loginTitle: "เข้าสู่ระบบ",
+                loginSubtitle: "ระบบจัดการข้อมูลทุนการศึกษา",
+                loginId: "ชื่อผู้ใช้ (Username) / เลขบัตรประชาชน",
+                loginPass: "รหัสผ่าน (Password)",
+                loginRole: "เข้าสู่ระบบในฐานะ",
+                roleStudent: "นักเรียนทุน",
+                roleAdmin: "ผู้ดูแลระบบ",
+                btnLogin: "เข้าสู่ระบบ",
+                dashboardTitle: "หน้าหลัก (Dashboard)",
+                statMBS: "นักเรียน MBS",
+                statVC: "นักศึกษา VC",
+                statUNI: "ระดับมหาวิทยาลัย",
+                statAlumni: "ศิษย์เก่า (Alumni)",
+                menuStudentData: "จัดการประวัตินักเรียนทุน",
+                menuAcademic: "จัดการผลการเรียน",
+                menuSettings: "ตั้งค่าระบบ & แอดมิน",
+                btnAddStudent: "เพิ่มนักเรียนใหม่ (Add New)",
+                error: "เกิดข้อผิดพลาด",
+                success: "สำเร็จ",
+                loginFailed: "ข้อมูลเข้าสู่ระบบไม่ถูกต้อง"
+            }
+        };
+
+        let currentLang = 'th';
+        let currentUser = null; 
+        let globalStudentsData = []; 
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'th' : 'en';
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(i18n[currentLang][key]) {
+                    if (el.tagName === 'INPUT' && el.type !== 'button') {
+                        el.placeholder = i18n[currentLang][key];
+                    } else {
+                        el.textContent = i18n[currentLang][key];
+                    }
+                }
+            });
+        }
+        applyLanguage();
+
+        // ==========================================
+        // 🔄 UI NAVIGATION
+        // ==========================================
+        function showLoader(show, text="กำลังโหลดข้อมูล...") {
+            const loader = document.getElementById('loader');
+            loader.querySelector('p').innerText = text;
+            loader.classList.toggle('hidden', !show);
+        }
+
+        function showSection(sectionName) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('studentListSection').classList.add('hidden');
+            document.getElementById('studentFormSection').classList.add('hidden');
+
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            lucide.createIcons();
+            
+            if(sectionName === 'studentList') {
+                applyFilters();
+            }
+        }
+
+        // ==========================================
+        // 🔐 AUTH & API FETCHING
+        // ==========================================
+        async function handleLogin() {
+            const id = document.getElementById('loginId').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            const role = document.getElementById('loginRole').value;
+
+            if(!id || !pass) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+
+            showLoader(true, "กำลังเข้าสู่ระบบ...");
+
+            try {
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}&role=${role}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    currentUser = result;
+                    document.getElementById('headerProfile').classList.remove('hidden');
+                    document.getElementById('btnLogout').classList.remove('hidden');
+                    document.getElementById('headerUserName').textContent = result.name;
+                    document.getElementById('headerUserRole').textContent = result.role;
+                    document.getElementById('headerUserPic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(result.name)}&background=1e3a8a&color=fff&bold=true`;
+                    
+                    await loadStudentsFromDatabase();
+                    showSection('dashboard');
+                } else {
+                    showLoader(false);
+                    Swal.fire('เกิดข้อผิดพลาด', result.message || 'ข้อมูลเข้าสู่ระบบไม่ถูกต้อง', 'error');
+                }
+            } catch (error) {
+                showLoader(false);
+                console.error(error);
+                Swal.fire('ข้อผิดพลาดเครือข่าย', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            }
+        }
+
+        async function loadStudentsFromDatabase() {
+            showLoader(true, "กำลังดึงข้อมูลจาก Google Sheets...");
+            try {
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getStudents`);
+                const result = await response.json();
+                
+                showLoader(false);
+                if(result.status === 'success') {
+                    globalStudentsData = result.data;
+                    updateDashboardStats(result.stats);
+                    applyFilters();
+                } else {
+                    Swal.fire('ดึงข้อมูลล้มเหลว', result.message, 'error');
+                }
+            } catch (error) {
+                showLoader(false);
+                console.error(error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลนักเรียนได้', 'error');
+            }
+        }
+
+        function updateDashboardStats(stats) {
+            document.getElementById('statMBSCount').innerText = stats.MBS || 0;
+            document.getElementById('statVCCount').innerText = stats.VC || 0;
+            document.getElementById('statUNICount').innerText = stats.UNI || 0;
+            document.getElementById('statAlumniCount').innerText = stats.Alumni || 0;
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'ยืนยันการออกจากระบบ?',
+                icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#1e3a8a'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    currentUser = null;
+                    globalStudentsData = [];
+                    document.getElementById('loginId').value = '';
+                    document.getElementById('loginPass').value = '';
+                    document.getElementById('headerProfile').classList.add('hidden');
+                    document.getElementById('btnLogout').classList.add('hidden');
+                    showSection('login');
+                }
+            });
+        }
+
+        function showAdminProfile() {
+            if(!currentUser) return;
+            Swal.fire({
+                title: 'ข้อมูลส่วนตัว',
+                html: `<div class="text-left mt-4 text-sm"><p class="mb-2"><strong>ชื่อ-สกุล:</strong> ${currentUser.name}</p></div>`,
+                showCancelButton: true, confirmButtonText: 'แก้ไข', cancelButtonText: 'ปิด', confirmButtonColor: '#1e3a8a',
+            }).then((result) => {
+                if (result.isConfirmed) Swal.fire('กำลังพัฒนา', 'ฟังก์ชันแก้ไขโปรไฟล์', 'info');
+            });
+        }
 
         // ==========================================
         // 🚀 FORM LOGIC (DEPENDENT DROPDOWNS & UI)
         // ==========================================
-
-        // อัปเดตตัวเลือกระดับชั้นตามสถานศึกษาที่เลือก
         function updateLevelDropdown() {
             const inst = document.getElementById('f_institution').value;
             const levelSelect = document.getElementById('f_level');
-            
-            // ล้างตัวเลือกเดิม
             levelSelect.innerHTML = '<option value="">-- เลือกระดับชั้น --</option>';
             
             if (!inst) {
@@ -583,7 +773,6 @@
                 options = ['อื่นๆ (โปรดระบุในหมายเหตุ)'];
             }
 
-            // นำตัวเลือกใส่ใน Dropdown
             options.forEach(opt => {
                 const el = document.createElement('option');
                 el.value = opt;
@@ -592,7 +781,6 @@
             });
         }
 
-        // จัดการกรณีคนไม่มีนามสกุล (ชนเผ่า/พื้นที่สูง)
         function toggleSurname() {
             const isNoSurname = document.getElementById('f_noSurname').checked;
             const lnameInput = document.getElementById('f_lname');
@@ -607,7 +795,6 @@
             }
         }
 
-        // พรีวิวรูปภาพก่อนอัปโหลด
         function previewImage(event) {
             const reader = new FileReader();
             reader.onload = function() {
@@ -619,12 +806,8 @@
             }
         }
 
-        // สร้างไฟล์ Template ให้ผู้ใช้โหลดไปกรอก
         function downloadTemplate() {
-            // สร้างข้อมูล CSV สมมติ
             const csvContent = "\uFEFFStipNo,IDCard,Institution,Level,Title,FirstName,LastName\n,1589900000000,MBS,มัธยมศึกษาปีที่ 4,นาย,ตัวอย่าง,นามสกุล\n,G123456789012,VC,ปวส. ชั้นปีที่ 1,นางสาว,ทดสอบ,-";
-            
-            // สร้างไฟล์แล้วสั่งโหลด
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -643,14 +826,26 @@
         // ==========================================
         // 🧮 LIVE FILTER & RENDER TABLE 
         // ==========================================
+        function filterAndShowStudents(type) {
+            document.getElementById('searchInput').value = ''; 
+            const filterInst = document.getElementById('filterInstitution');
+            const filterStat = document.getElementById('filterStatus');
+            
+            if (type === 'Alumni') {
+                filterInst.value = 'ALL';
+                filterStat.value = 'Graduated';
+            } else {
+                filterInst.value = type;
+                filterStat.value = 'Active';
+            }
+            showSection('studentList');
+        }
 
-        // กรองข้อมูลจาก Array และส่งไป Render
         function applyFilters() {
             const instFilter = document.getElementById('filterInstitution').value;
             const statusFilter = document.getElementById('filterStatus').value;
             const keyword = document.getElementById('searchInput').value.toLowerCase();
             
-            // กรอง (Filter) จากข้อมูล globalStudentsData จริงๆ
             const filteredData = globalStudentsData.filter(student => {
                 let matchInst = (instFilter === 'ALL' || student.institution === instFilter);
                 
@@ -668,25 +863,21 @@
             renderTableHTML(filteredData);
         }
 
-        // สร้าง HTML ของตารางจาก Data Array
         function renderTableHTML(dataArray) {
             const tbody = document.getElementById('studentTableBody');
-            tbody.innerHTML = ''; // ล้างตารางเก่าทิ้ง
+            tbody.innerHTML = ''; 
             
             if(dataArray.length === 0) {
                 document.getElementById('noDataMessage').classList.remove('hidden');
             } else {
                 document.getElementById('noDataMessage').classList.add('hidden');
                 
-                // วนลูปสร้างตารางทีละบรรทัด
                 dataArray.forEach(student => {
-                    // กำหนดสีป้ายสถานะ
                     let statusColor = student.status.includes('สำเร็จ') || student.status === 'Graduated' 
                         ? 'bg-purple-100 text-purple-700' 
                         : 'bg-green-100 text-green-700';
                     let displayStatus = student.status === 'Graduated' ? 'สำเร็จการศึกษา' : (student.status || 'กำลังศึกษา');
                     
-                    // ถ้ารูปไม่มี ให้ใช้บริการ UI Avatars สร้างรูปจากชื่อ
                     let picUrl = student.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
                     let tr = document.createElement('tr');
@@ -723,14 +914,12 @@
             }
             
             document.getElementById('tableRecordInfo').textContent = `แสดง ${dataArray.length} จาก ${globalStudentsData.length} รายการ`;
-            lucide.createIcons(); // โหลดไอคอนใหม่ลงในตาราง
+            lucide.createIcons();
         }
 
         // ==========================================
         // 💾 OTHER LOGICS (SAVE & DELETE MOCK)
         // ==========================================
-        
-        // จำลองการบันทึกข้อมูล (เดี๋ยวเราจะมาเขียนเชื่อมต่อ API POST ในขั้นต่อไป)
         function saveStudentData() {
             Swal.fire({
                 title: 'บันทึกข้อมูลสำเร็จ',
@@ -742,7 +931,6 @@
             });
         }
 
-        // จำลองการลบข้อมูล
         function deleteStudentMock(stipNo) {
             Swal.fire({
                 title: `ยืนยันการลบข้อมูล?`,
