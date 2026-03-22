@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เพิ่ม/แก้ไขนักเรียน — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav no-print">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+        <div class="hide-mobile">
+          <div id="navUserName" class="nav-user-name">—</div>
+          <div id="navUserRole" class="nav-user-role">—</div>
+        </div>
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
+    <div>
+      <a href="students.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-1 font-semibold transition">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span data-t="backToList">กลับรายชื่อ</span>
+      </a>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2" id="pageTitle">
+        <i data-lucide="user-plus" class="w-5 h-5" style="color:#1e3a8a"></i>
+        <span data-t="addStudentTitle">เพิ่มนักเรียนใหม่</span>
+      </h2>
+    </div>
+    <!-- Bulk Import -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
+      <div>
+        <p class="text-xs font-bold text-blue-800" data-t="bulkInsert">นำเข้าข้อมูลจำนวนมาก</p>
+        <p class="text-xs text-blue-500">Excel template พร้อมข้อมูลตัวอย่าง</p>
+      </div>
+      <div class="flex flex-col gap-1">
+        <button onclick="downloadTemplate()" class="btn btn-secondary btn-sm text-blue-700 border-blue-200">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-t="templateDL">แบบฟอร์ม</span>
+        </button>
+        <label class="btn btn-primary btn-sm cursor-pointer">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span data-t="importCSV">CSV</span>
+          <input type="file" accept=".csv" class="hidden" onchange="importCSV(event)">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <form id="studentForm" onsubmit="event.preventDefault(); saveStudent();" novalidate>
+  <input type="hidden" id="f_editMode" value="new">
+  <input type="hidden" id="f_profilePicUrl" value="">
+
+  <!-- ─── SECTION A: Identification ─── -->
+  <div class="form-section mb-4">
+    <div class="form-section-header" style="background:#1e3a8a">
+      <i data-lucide="id-card" class="w-4 h-4"></i>
+      <span data-t="secA">ก. ข้อมูลการระบุตัวตน</span>
+    </div>
+    <div class="form-section-body">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="field-label"><span data-t="scholarshipStatus">สถานะทุนการศึกษา</span> <span class="text-red-500">*</span></label>
+          <select id="f_status" class="field-select font-semibold" style="color:#1e3a8a" required>
+            <option value="Active">กำลังศึกษา (Active)</option>
+            <option value="Graduated">สำเร็จการศึกษา</option>
+            <option value="Suspended">พักการเรียน</option>
+            <option value="Incomplete">ไม่สำเร็จการศึกษา</option>
+            <option value="Resigned">ลาออกจากทุน</option>
+            <option value="University">ต่อมหาวิทยาลัย</option>
+            <option value="Other">อื่นๆ</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label"><span data-t="stipNoLabel">รหัสทุน (Stip No.)</span></label>
+          <div class="flex gap-1">
+            <input type="text" id="f_stipNo" class="field-input readonly flex-1" placeholder="สร้างอัตโนมัติ" readonly>
+            <button type="button" onclick="generateStipNo()" title="สร้างรหัสทุน"
+                    class="btn btn-secondary flex-shrink-0" style="padding:8px 10px">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">
+            <span data-t="idCard">เลขบัตรประชาชน (13 หลัก)</span> <span class="text-red-500">*</span>
+            <button type="button" onclick="openOCRModal()"
+                    class="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 font-semibold hover:text-blue-800 transition">
+              <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+              <span data-t="scanIdCard">สแกนบัตร</span>
+            </button>
+          </label>
+          <input type="text" id="f_idcard" maxlength="14" class="field-input"
+                 placeholder="1234567890123 หรือ G..." oninput="validateIDCard(this)" required>
+          <p id="idcardErr" class="text-red-500 text-xs mt-1 hidden" data-t="invalidId">เลขบัตรไม่ถูกต้อง</p>
+        </div>
+        <div>
+          <label class="field-label">
+            <span data-t="birthYear">ปีเกิด (ค.ศ.)</span> <span class="text-red-500">*</span>
+          </label>
+          <input type="number" id="f_birthYear" min="1990" max="2015"
+                 placeholder="เช่น 2000" class="field-input" required>
+          <p class="text-xs text-gray-400 mt-1" data-t="birthYearHint">ใช้เป็นรหัสผ่านนักเรียน</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION B: Academic ─── -->
+  <div class="form-section mb-4">
+    <div class="form-section-header" style="background:#1d4ed8">
+      <i data-lucide="book-open" class="w-4 h-4"></i>
+      <span data-t="secB">ข. ข้อมูลการศึกษา</span>
+    </div>
+    <div class="form-section-body">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="field-label"><span data-t="institutionLabel">สถานที่ศึกษา</span> <span class="text-red-500">*</span></label>
+          <select id="f_institution" onchange="onInstitutionChange()" class="field-select" required>
+            <option value="">-- เลือกสถานศึกษา --</option>
+            <option value="MBS">1. Maesariang Boripat Suksa School (MBS)</option>
+            <option value="VC">2. Vocational College (VC)</option>
+            <option value="UNI">3. University (มหาวิทยาลัย)</option>
+            <option value="OTHER">4. อื่นๆ (Other)</option>
+          </select>
+        </div>
+        <div id="otherInstWrap" class="hidden">
+          <label class="field-label"><span data-t="otherInst">ระบุชื่อสถานศึกษา</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="f_otherInst" class="field-input" placeholder="ชื่อสถานศึกษา">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="currentLevel">ระดับชั้นที่กำลังศึกษา</span> <span class="text-red-500">*</span></label>
+          <select id="f_level" class="field-select" required disabled>
+            <option value="">-- เลือกสถานศึกษาก่อน --</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label"><span data-t="studentId">รหัสนักเรียน/นักศึกษา</span></label>
+          <input type="text" id="f_studentId" class="field-input" placeholder="รหัสประจำตัวนักเรียน">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="scholarshipYearLabel">ปีการศึกษาที่ได้รับทุน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
+          <input type="number" id="f_scholarshipYear" min="2000" max="2100" placeholder="2023" class="field-input" required>
+        </div>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="field-label"><span data-t="entryYear">ปีที่เข้าเรียน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
+            <input type="number" id="f_entryYear" placeholder="2023" class="field-input" required>
+          </div>
+          <div style="width:110px">
+            <label class="field-label"><span data-t="entryTerm">ภาคเรียน</span></label>
+            <select id="f_entryTerm" class="field-select">
+              <option value="1">ภาค 1</option>
+              <option value="2">ภาค 2</option>
+              <option value="3">ภาค 3</option>
+              <option value="Summer">Summer</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label"><span data-t="major">แผนการเรียน / สาขาวิชา</span></label>
+          <input type="text" id="f_major" class="field-input" placeholder="วิทยาศาสตร์-คณิตศาสตร์ / IT">
+        </div>
+        <div id="deptWrap" class="hidden">
+          <label class="field-label"><span data-t="department">แผนกวิชา (สำหรับอาชีวะ)</span></label>
+          <input type="text" id="f_department" class="field-input" placeholder="แผนกวิชา">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="oldSchool">สถานศึกษาเดิม (ก่อนรับทุน)</span></label>
+          <input type="text" id="f_oldSchool" class="field-input" placeholder="ชื่อโรงเรียนเดิม">
+        </div>
+      </div>
+
+      <!-- University sub-section -->
+      <div id="uniSection" class="hidden rounded-xl p-4 border border-purple-200 bg-purple-50">
+        <p class="font-bold text-sm text-purple-800 mb-3 flex items-center gap-2">
+          <i data-lucide="building-2" class="w-4 h-4"></i>
+          <span data-t="uniSection">ข้อมูลมหาวิทยาลัย</span>
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span></label>
+            <input type="text" id="f_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย">
+            <datalist id="uniList"></datalist>
+          </div>
+          <div>
+            <label class="field-label"><span data-t="courseDuration">ระยะเวลาหลักสูตร (ปี)</span></label>
+            <select id="f_uniDuration" class="field-select">
+              <option value="">-- เลือก --</option>
+              <option value="1">1 ปี</option><option value="2">2 ปี</option>
+              <option value="3">3 ปี</option><option value="4">4 ปี</option><option value="5">5 ปี</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้งมหาวิทยาลัย</span></label>
+            <input type="text" id="f_uniProvince" class="field-input" placeholder="จังหวัด">
+          </div>
+          <div>
+            <label class="field-label"><span data-t="faculty">คณะ</span></label>
+            <input type="text" id="f_uniFaculty" class="field-input" placeholder="ชื่อคณะ">
+          </div>
+          <div>
+            <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span></label>
+            <input type="text" id="f_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION C: Personal ─── -->
+  <div class="form-section mb-4">
+    <div class="form-section-header" style="background:#2563eb">
+      <i data-lucide="user" class="w-4 h-4"></i>
+      <span data-t="secC">ค. ข้อมูลส่วนตัว</span>
+    </div>
+    <div class="form-section-body">
+      <!-- Photo -->
+      <div class="flex flex-col sm:flex-row items-start gap-4 bg-gray-50 rounded-xl p-4 border border-gray-200 mb-5">
+        <div class="flex-shrink-0 text-center">
+          <img id="imgPreview" src="https://via.placeholder.com/120x120?text=รูปภาพ"
+               class="w-28 h-28 rounded-xl object-cover border-2 border-gray-300 shadow-sm">
+          <p class="text-xs text-gray-400 mt-1">รูปนักเรียน</p>
+        </div>
+        <div class="flex-grow space-y-2">
+          <div>
+            <label class="field-label" data-t="uploadPhoto">อัปโหลดรูปภาพ</label>
+            <input type="file" id="f_picFile" accept="image/*" onchange="previewImg(event)"
+                   class="field-input text-xs file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0
+                          file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700
+                          hover:file:bg-blue-100 cursor-pointer">
+          </div>
+          <div>
+            <label class="field-label" data-t="driveUrl">หรือวาง Google Drive URL</label>
+            <input type="url" id="f_picUrl" class="field-input text-xs"
+                   placeholder="https://drive.google.com/..."
+                   oninput="setPicUrl(this.value)">
+          </div>
+          <button type="button" onclick="openOCRModal()"
+                  class="btn btn-secondary btn-sm border-blue-200 text-blue-700">
+            <i data-lucide="camera" class="w-4 h-4"></i>
+            <span data-t="scanIdCard">สแกนบัตรประชาชน (OCR อัตโนมัติ)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Thai Name -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="field-label"><span data-t="titleLabel">คำนำหน้า</span> <span class="text-red-500">*</span></label>
+          <select id="f_title" class="field-select" required>
+            <option value="นาย">นาย</option>
+            <option value="นางสาว">นางสาว</option>
+            <option value="เด็กชาย">เด็กชาย</option>
+            <option value="เด็กหญิง">เด็กหญิง</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label"><span data-t="firstName">ชื่อ</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="f_fname" class="field-input" required>
+        </div>
+        <div class="md:col-span-2">
+          <label class="field-label flex justify-between items-center">
+            <span><span data-t="lastName">นามสกุล</span> <span class="text-red-500">*</span></span>
+            <label class="flex items-center gap-1 text-xs font-normal text-gray-500 cursor-pointer">
+              <input type="checkbox" id="f_noSurname" onchange="toggleSurname()" class="rounded">
+              <span data-t="noSurname">ไม่มีนามสกุล</span>
+            </label>
+          </label>
+          <input type="text" id="f_lname" class="field-input" required>
+        </div>
+      </div>
+
+      <!-- English Name -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="field-label" data-t="engTitle">คำนำหน้า (อังกฤษ)</label>
+          <select id="f_engTitle" class="field-select">
+            <option value="Mr.">Mr.</option>
+            <option value="Miss">Miss</option>
+            <option value="Mrs.">Mrs.</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" data-t="engFirstName">ชื่อภาษาอังกฤษ</label>
+          <input type="text" id="f_engFname" class="field-input" placeholder="First name">
+        </div>
+        <div class="md:col-span-2">
+          <label class="field-label" data-t="engLastName">นามสกุลภาษาอังกฤษ</label>
+          <input type="text" id="f_engLname" class="field-input" placeholder="Last name">
+        </div>
+      </div>
+
+      <!-- Other personal -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="field-label" data-t="nickname">ชื่อเล่น</label>
+          <input type="text" id="f_nickname" class="field-input">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="gender">เพศ</span> <span class="text-red-500">*</span></label>
+          <select id="f_gender" class="field-select" required>
+            <option value="Male">ชาย (Male)</option>
+            <option value="Female">หญิง (Female)</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" data-t="nationality">สัญชาติ</label>
+          <input type="text" id="f_nationality" class="field-input" value="ไทย">
+        </div>
+        <div>
+          <label class="field-label" data-t="religion">ศาสนา</label>
+          <input type="text" id="f_religion" class="field-input" value="พุทธ">
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="field-label" data-t="talent">ความสามารถพิเศษ</label>
+        <input type="text" id="f_talent" class="field-input" placeholder="กีฬา, ดนตรี, ศิลปะ...">
+      </div>
+
+      <!-- Health -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-red-50 rounded-xl p-4 border border-red-100">
+        <div>
+          <label class="field-label" data-t="weight">น้ำหนัก (กก.)</label>
+          <input type="number" id="f_weight" class="field-input" placeholder="กก.">
+        </div>
+        <div>
+          <label class="field-label" data-t="height">ส่วนสูง (ซม.)</label>
+          <input type="number" id="f_height" class="field-input" placeholder="ซม.">
+        </div>
+        <div>
+          <label class="field-label" data-t="bloodType">หมู่เลือด</label>
+          <select id="f_blood" class="field-select">
+            <option value="">ไม่ทราบ</option>
+            <option value="A">A</option><option value="B">B</option>
+            <option value="AB">AB</option><option value="O">O</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" data-t="disease">โรคประจำตัว</label>
+          <input type="text" id="f_disease" class="field-input" placeholder="ถ้าไม่มีเว้นว่างไว้">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION D: Contact ─── -->
+  <div class="form-section mb-4">
+    <div class="form-section-header" style="background:#0d9488">
+      <i data-lucide="map-pin" class="w-4 h-4"></i>
+      <span data-t="secD">ง. ข้อมูลติดต่อและที่อยู่</span>
+    </div>
+    <div class="form-section-body">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="field-label"><span data-t="phone1">หมายเลขโทรศัพท์ 1</span> <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <i data-lucide="phone" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+            <input type="tel" id="f_phone1" class="field-input" style="padding-left:38px" required>
+          </div>
+        </div>
+        <div>
+          <label class="field-label" data-t="phone2">หมายเลขโทรศัพท์ 2 (ผู้ปกครอง)</label>
+          <div class="relative">
+            <i data-lucide="phone" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+            <input type="tel" id="f_phone2" class="field-input" style="padding-left:38px">
+          </div>
+        </div>
+      </div>
+      <!-- Address split -->
+      <p class="field-label mb-3 text-teal-700 font-bold" data-t="currentAddress">ที่อยู่ปัจจุบัน</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-teal-50 rounded-xl p-4 border border-teal-100">
+        <div class="md:col-span-2">
+          <label class="field-label text-xs" data-t="village">ชื่อหมู่บ้าน</label>
+          <input type="text" id="f_village" class="field-input" placeholder="ชื่อหมู่บ้าน / ชุมชน">
+        </div>
+        <div>
+          <label class="field-label text-xs" data-t="houseNo">บ้านเลขที่</label>
+          <input type="text" id="f_houseNo" class="field-input" placeholder="123/4">
+        </div>
+        <div>
+          <label class="field-label text-xs" data-t="moo">หมู่ที่</label>
+          <input type="text" id="f_moo" class="field-input" placeholder="หมู่ 5">
+        </div>
+        <div>
+          <label class="field-label text-xs" data-t="tambon">ตำบล/แขวง</label>
+          <input type="text" id="f_tambon" class="field-input">
+        </div>
+        <div>
+          <label class="field-label text-xs" data-t="amphoe">อำเภอ/เขต</label>
+          <input type="text" id="f_amphoe" class="field-input">
+        </div>
+        <div>
+          <label class="field-label text-xs" data-t="province">จังหวัด</label>
+          <input type="text" id="f_province" class="field-input">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION E: Family ─── -->
+  <div class="form-section mb-4">
+    <div class="form-section-header" style="background:#4f46e5">
+      <i data-lucide="users" class="w-4 h-4"></i>
+      <span data-t="secE">จ. ข้อมูลครอบครัว</span>
+    </div>
+    <div class="form-section-body">
+      <div class="flex flex-col md:flex-row gap-4 mb-4">
+        <div class="flex-1">
+          <label class="field-label" data-t="parentStatus">สถานภาพบิดา-มารดา</label>
+          <select id="f_parentStatus" onchange="toggleParentOther()" class="field-select">
+            <option value="อยู่ด้วยกัน">อยู่ด้วยกัน (Living together)</option>
+            <option value="หย่าร้าง">หย่าร้าง (Divorced)</option>
+            <option value="แยกกันอยู่">แยกกันอยู่ (Separated)</option>
+            <option value="บิดาเสียชีวิต">บิดาเสียชีวิต</option>
+            <option value="มารดาเสียชีวิต">มารดาเสียชีวิต</option>
+            <option value="เสียชีวิตทั้งคู่">เสียชีวิตทั้งคู่</option>
+            <option value="Other">อื่นๆ (Other)</option>
+          </select>
+        </div>
+        <div id="parentOtherWrap" class="hidden flex-1">
+          <label class="field-label" data-t="specifyStatus">ระบุสถานภาพ</label>
+          <input type="text" id="f_parentStatusOther" class="field-input" placeholder="ระบุ...">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Father -->
+        <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+          <p class="font-bold text-sm text-blue-800 mb-3 flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4"></i> <span data-t="father">บิดา (พ่อ)</span>
+          </p>
+          <input type="text" id="f_fatherID" class="field-input mb-2 text-xs"
+                 placeholder="เลขบัตรประชาชน (ถ้ามี)" maxlength="13">
+          <div class="flex gap-2 mb-2">
+            <select id="f_fatherTitle" class="field-select text-xs" style="width:90px">
+              <option value="นาย">นาย</option><option value="Mr.">Mr.</option>
+            </select>
+            <input type="text" id="f_fatherFname" class="field-input text-xs flex-1" placeholder="ชื่อ">
+          </div>
+          <input type="text" id="f_fatherLname" class="field-input text-xs" placeholder="นามสกุล">
+        </div>
+        <!-- Mother -->
+        <div class="rounded-xl border border-pink-100 bg-pink-50 p-4">
+          <p class="font-bold text-sm text-pink-800 mb-3 flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4"></i> <span data-t="mother">มารดา / ผู้ปกครอง</span>
+          </p>
+          <input type="text" id="f_motherID" class="field-input mb-2 text-xs"
+                 placeholder="เลขบัตรประชาชน (ถ้ามี)" maxlength="13">
+          <div class="flex gap-2 mb-2">
+            <select id="f_motherTitle" class="field-select text-xs" style="width:90px">
+              <option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
+              <option value="Mrs.">Mrs.</option><option value="Miss">Miss</option>
+            </select>
+            <input type="text" id="f_motherFname" class="field-input text-xs flex-1" placeholder="ชื่อ">
+          </div>
+          <input type="text" id="f_motherLname" class="field-input text-xs" placeholder="นามสกุล">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION F: Remarks ─── -->
+  <div class="form-section mb-5">
+    <div class="form-section-header" style="background:#475569">
+      <i data-lucide="file-text" class="w-4 h-4"></i>
+      <span data-t="secF">ฉ. หมายเหตุเพิ่มเติม</span>
+    </div>
+    <div class="form-section-body">
+      <label class="field-label" data-t="additionalNotes">หมายเหตุ / บันทึกเพิ่มเติม</label>
+      <textarea id="f_remarks" rows="3" class="field-input" placeholder="หมายเหตุ..."></textarea>
+    </div>
+  </div>
+
+  <!-- Submit Buttons -->
+  <div class="flex flex-col-reverse md:flex-row justify-end gap-3 pb-6">
+    <a href="students.html" class="btn btn-secondary">
+      <i data-lucide="x" class="w-4 h-4"></i> <span data-t="cancel">ยกเลิก</span>
+    </a>
+    <button type="submit" class="btn btn-primary">
+      <i data-lucide="save" class="w-4 h-4"></i> <span data-t="save">บันทึกข้อมูล</span>
+    </button>
+  </div>
+  </form>
+</main>
+
+<footer class="rdf-footer no-print">
+  <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+</footer>
+
+<!-- ─── OCR Modal ─── -->
+<div id="ocrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,0.8)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+    <div class="flex justify-between items-center p-4" style="background:#1e3a8a;color:#fff">
+      <h3 class="font-bold flex items-center gap-2">
+        <i data-lucide="camera" class="w-5 h-5"></i>
+        <span data-t="scanIdCard">สแกนบัตรประชาชน (OCR)</span>
+      </h3>
+      <button onclick="closeOCR()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="p-4">
+      <div class="relative bg-black rounded-xl overflow-hidden mb-3" style="aspect-ratio:16/9">
+        <video id="ocrVideo" class="w-full h-full object-cover" autoplay muted playsinline></video>
+        <canvas id="ocrCanvas" class="hidden"></canvas>
+        <!-- Guide frame -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="border-2 border-yellow-400 rounded-lg opacity-80" style="width:85%;aspect-ratio:1.586;box-shadow:0 0 0 9999px rgba(0,0,0,0.4)"></div>
+        </div>
+        <p class="absolute bottom-2 left-0 right-0 text-center text-xs text-yellow-300 font-semibold">
+          วางบัตรให้อยู่ในกรอบสีเหลือง
+        </p>
+      </div>
+      <p id="ocrStatus" class="text-xs text-gray-500 text-center mb-3 min-h-4"></p>
+      <div class="flex gap-2 mb-3">
+        <button id="ocrCaptureBtn" onclick="ocrCapture()" class="btn btn-primary btn-full">
+          <i data-lucide="camera" class="w-4 h-4"></i> ถ่ายและอ่านข้อมูล
+        </button>
+        <button onclick="closeOCR()" class="btn btn-secondary" data-t="cancel">ยกเลิก</button>
+      </div>
+      <div id="ocrResult" class="bg-blue-50 border border-blue-100 rounded-xl p-3 min-h-8 text-sm"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+lucide.createIcons();
+const user = requireAuth();
+if (user) renderNavUser(user);
+
+const urlParams = new URLSearchParams(window.location.search);
+const editStipNo = urlParams.get('stipNo');
+let ocrStream = null;
+
+// ── Load existing data if editing ──
+if (editStipNo) {
+  document.getElementById('pageTitle').innerHTML =
+    `<i data-lucide="edit" class="w-5 h-5" style="color:#1e3a8a"></i> ${t('editStudentTitle')} ${editStipNo}`;
+  loadStudentForEdit(editStipNo);
+  document.getElementById('f_editMode').value = 'edit';
+}
+
+async function loadStudentForEdit(stipNo) {
+  showLoader(true, t('loading'));
+  try {
+    const result = await API.getStudent(stipNo);
+    showLoader(false);
+    if (result.status !== 'success') {
+      Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
+      return;
+    }
+    fillForm(result.data);
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), t('network_error'), 'error');
+  }
+}
+
+function fillForm(d) {
+  const sv = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  sv('f_stipNo', d.StipNo); sv('f_status', d.Status);
+  sv('f_idcard', d.IDCard); sv('f_birthYear', d.BirthYear);
+  sv('f_institution', d.Institution);
+  onInstitutionChange();
+  sv('f_level', d.CurrentLevel); sv('f_studentId', d.StudentID);
+  sv('f_scholarshipYear', d.ScholarshipYear); sv('f_entryYear', d.EntryYear);
+  sv('f_entryTerm', d.EntryTerm); sv('f_major', d.Major);
+  sv('f_department', d.Department); sv('f_oldSchool', d.OldSchool);
+  sv('f_otherInst', d.OtherInstitution);
+  sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration);
+  sv('f_uniProvince', d.UniProvince); sv('f_uniFaculty', d.UniFaculty); sv('f_uniMajor', d.UniMajor);
+  sv('f_title', d.Title); sv('f_fname', d.FirstName); sv('f_lname', d.LastName);
+  document.getElementById('f_noSurname').checked = d.HasNoSurname === 'true';
+  sv('f_engTitle', d.EngTitle); sv('f_engFname', d.EngFirstName); sv('f_engLname', d.EngLastName);
+  sv('f_nickname', d.Nickname); sv('f_gender', d.Sex);
+  sv('f_nationality', d.Nationality); sv('f_religion', d.Religion);
+  sv('f_talent', d.Talent); sv('f_weight', d.Weight);
+  sv('f_height', d.Height); sv('f_blood', d.BloodType); sv('f_disease', d.Disease);
+  sv('f_phone1', d.Phone1); sv('f_phone2', d.Phone2);
+  sv('f_village', d.Village); sv('f_houseNo', d.HouseNo);
+  sv('f_moo', d.Moo); sv('f_tambon', d.Tambon);
+  sv('f_amphoe', d.Amphoe); sv('f_province', d.Province);
+  sv('f_parentStatus', d.ParentStatus); sv('f_parentStatusOther', d.ParentStatusOther);
+  sv('f_fatherID', d.Parent1_IDCard); sv('f_fatherTitle', d.Parent1_Title);
+  sv('f_fatherFname', d.Parent1_FirstName); sv('f_fatherLname', d.Parent1_LastName);
+  sv('f_motherID', d.Parent2_IDCard); sv('f_motherTitle', d.Parent2_Title);
+  sv('f_motherFname', d.Parent2_FirstName); sv('f_motherLname', d.Parent2_LastName);
+  sv('f_remarks', d.Remarks);
+  if (d.ProfilePicURL) {
+    document.getElementById('f_profilePicUrl').value = d.ProfilePicURL;
+    document.getElementById('f_picUrl').value = d.ProfilePicURL;
+    document.getElementById('imgPreview').src = d.ProfilePicURL;
+  }
+  lucide.createIcons();
+}
+
+// ── Institution change ──
+function onInstitutionChange() {
+  const inst = document.getElementById('f_institution').value;
+  const lvl  = document.getElementById('f_level');
+  const dept = document.getElementById('deptWrap');
+  const uni  = document.getElementById('uniSection');
+  const other= document.getElementById('otherInstWrap');
+  lvl.innerHTML = `<option value="">-- เลือกระดับชั้น --</option>`;
+  lvl.disabled = !inst;
+  dept.classList.add('hidden');
+  uni.classList.add('hidden');
+  other.classList.add('hidden');
+  document.getElementById('f_otherInst').required = false;
+  const levels = {
+    MBS: ['มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)'],
+    VC:  ['ปวช. ชั้นปีที่ 1','ปวช. ชั้นปีที่ 2','ปวช. ชั้นปีที่ 3','ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'],
+    UNI: ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4','ชั้นปีที่ 5'],
+    OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','อื่นๆ']
+  };
+  (levels[inst]||[]).forEach(l => {
+    const o = document.createElement('option'); o.value = l; o.textContent = l; lvl.appendChild(o);
+  });
+  if (inst) { lvl.disabled = false; }
+  if (inst === 'VC')    { dept.classList.remove('hidden'); }
+  if (inst === 'UNI')   { uni.classList.remove('hidden'); loadUniNames(); }
+  if (inst === 'OTHER') {
+    other.classList.remove('hidden');
+    document.getElementById('f_otherInst').required = true;
+  }
+  if (inst && !document.getElementById('f_stipNo').value) generateStipNo();
+}
+
+async function generateStipNo() {
+  const inst = document.getElementById('f_institution').value;
+  if (!inst || document.getElementById('f_editMode').value === 'edit') return;
+  try {
+    const r = await API.generateStipNo(inst);
+    if (r.status === 'success') document.getElementById('f_stipNo').value = r.stipNo;
+  } catch(e) {}
+}
+
+async function loadUniNames() {
+  try {
+    const r = await API.getUniNames();
+    const dl = document.getElementById('uniList');
+    dl.innerHTML = '';
+    (r.data||[]).forEach(n => { const o=document.createElement('option'); o.value=n; dl.appendChild(o); });
+  } catch(e) {}
+}
+
+function toggleSurname() {
+  const cb = document.getElementById('f_noSurname').checked;
+  const el = document.getElementById('f_lname');
+  el.disabled = cb; el.required = !cb;
+  if (cb) el.value = '';
+}
+
+function toggleParentOther() {
+  const v = document.getElementById('f_parentStatus').value;
+  document.getElementById('parentOtherWrap').classList.toggle('hidden', v !== 'Other');
+}
+
+function validateIDCard(el) {
+  const v = el.value.trim();
+  const ok = /^G\d{12}$/.test(v) || /^\d{13}$/.test(v) || v === '';
+  document.getElementById('idcardErr').classList.toggle('hidden', ok);
+}
+
+function previewImg(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { document.getElementById('imgPreview').src = ev.target.result; document.getElementById('f_profilePicUrl').value = ''; };
+  r.readAsDataURL(f);
+}
+
+function setPicUrl(url) {
+  if (url) { document.getElementById('imgPreview').src = url; document.getElementById('f_profilePicUrl').value = url; }
+}
+
+// ── Collect form data ──
+function collectForm() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const inst = get('f_institution');
+  const idCard = get('f_idcard');
+  if (!inst)   { Swal.fire(t('warning'), t('fillRequired'), 'warning'); return null; }
+  if (!idCard || (!/^G\d{12}$/.test(idCard) && !/^\d{13}$/.test(idCard))) {
+    Swal.fire(t('warning'), t('invalidId'), 'warning'); return null;
+  }
+  return {
+    StipNo: get('f_stipNo'), Status: get('f_status'),
+    IDCard: idCard, BirthYear: get('f_birthYear'),
+    Institution: inst, OtherInstitution: get('f_otherInst'),
+    CurrentLevel: get('f_level'), StudentID: get('f_studentId'),
+    ScholarshipYear: get('f_scholarshipYear'), EntryYear: get('f_entryYear'),
+    EntryTerm: get('f_entryTerm'), Major: get('f_major'),
+    Department: get('f_department'), OldSchool: get('f_oldSchool'),
+    UniName: get('f_uniName'), UniDuration: get('f_uniDuration'),
+    UniProvince: get('f_uniProvince'), UniFaculty: get('f_uniFaculty'), UniMajor: get('f_uniMajor'),
+    Title: get('f_title'), FirstName: get('f_fname'), LastName: get('f_lname'),
+    HasNoSurname: document.getElementById('f_noSurname').checked.toString(),
+    EngTitle: get('f_engTitle'), EngFirstName: get('f_engFname'), EngLastName: get('f_engLname'),
+    Nickname: get('f_nickname'), Sex: get('f_gender'),
+    Nationality: get('f_nationality'), Religion: get('f_religion'),
+    Talent: get('f_talent'), Weight: get('f_weight'), Height: get('f_height'),
+    BloodType: get('f_blood'), Disease: get('f_disease'),
+    Phone1: get('f_phone1'), Phone2: get('f_phone2'),
+    Village: get('f_village'), HouseNo: get('f_houseNo'), Moo: get('f_moo'),
+    Tambon: get('f_tambon'), Amphoe: get('f_amphoe'), Province: get('f_province'),
+    ParentStatus: get('f_parentStatus'), ParentStatusOther: get('f_parentStatusOther'),
+    Parent1_IDCard: get('f_fatherID'), Parent1_Title: get('f_fatherTitle'),
+    Parent1_FirstName: get('f_fatherFname'), Parent1_LastName: get('f_fatherLname'),
+    Parent2_IDCard: get('f_motherID'), Parent2_Title: get('f_motherTitle'),
+    Parent2_FirstName: get('f_motherFname'), Parent2_LastName: get('f_motherLname'),
+    Remarks: get('f_remarks'),
+    ProfilePicURL: document.getElementById('f_profilePicUrl').value,
+    SavedBy: user ? user.name : 'Admin'
+  };
+}
+
+// ── Save ──
+async function saveStudent() {
+  const data = collectForm();
+  if (!data) return;
+  const isEdit = document.getElementById('f_editMode').value === 'edit';
+  showLoader(true, t('saving'));
+  try {
+    const result = isEdit ? await API.updateStudent(data) : await API.saveStudent(data);
+    showLoader(false);
+    if (result.status === 'success') {
+      await Swal.fire({
+        title: t('success'),
+        html: `${isEdit ? t('updated') : t('saved')}<br><b>Stip No.: ${result.stipNo || data.StipNo}</b>`,
+        icon: 'success', confirmButtonColor: '#1e3a8a'
+      });
+      window.location.href = `student-profile.html?stipNo=${encodeURIComponent(result.stipNo||data.StipNo)}`;
+    } else {
+      Swal.fire(t('error'), result.message, 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), t('network_error') + ': ' + e.message, 'error');
+  }
+}
+
+// ── OCR ──
+function openOCRModal() {
+  document.getElementById('ocrModal').classList.remove('hidden');
+  startOCRCamera();
+  lucide.createIcons();
+}
+function closeOCR() {
+  if (ocrStream) { ocrStream.getTracks().forEach(t => t.stop()); ocrStream = null; }
+  document.getElementById('ocrVideo').srcObject = null;
+  document.getElementById('ocrModal').classList.add('hidden');
+  document.getElementById('ocrResult').innerHTML = '';
+  document.getElementById('ocrStatus').textContent = '';
+}
+async function startOCRCamera() {
+  try {
+    ocrStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
+    document.getElementById('ocrVideo').srcObject = ocrStream;
+    document.getElementById('ocrStatus').textContent = 'กล้องพร้อมใช้งาน — วางบัตรให้ตรงกรอบ';
+  } catch(e) {
+    document.getElementById('ocrStatus').textContent = 'ไม่สามารถเปิดกล้องได้: ' + e.message;
+  }
+}
+function ocrCapture() {
+  const video = document.getElementById('ocrVideo');
+  const canvas = document.getElementById('ocrCanvas');
+  const status = document.getElementById('ocrStatus');
+  if (!video.srcObject) return;
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  status.textContent = '⏳ กำลังประมวลผล OCR...';
+  document.getElementById('ocrCaptureBtn').disabled = true;
+  Tesseract.recognize(canvas, 'tha+eng', {
+    logger: m => { if (m.status === 'recognizing text') status.textContent = 'กำลังอ่าน: ' + Math.round(m.progress*100) + '%'; }
+  }).then(({ data: { text } }) => {
+    document.getElementById('ocrCaptureBtn').disabled = false;
+    const data = parseIDCard(text);
+    status.textContent = '✅ อ่านสำเร็จ — กรุณาตรวจสอบข้อมูล';
+    document.getElementById('ocrResult').innerHTML = renderOCRResult(data);
+    lucide.createIcons();
+  }).catch(err => {
+    document.getElementById('ocrCaptureBtn').disabled = false;
+    status.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+  });
+}
+function parseIDCard(text) {
+  const clean = text.replace(/\n/g,' ').replace(/\s+/g,' ');
+  const r = {};
+  const idM = clean.match(/\b(\d[\s-]?\d{4}[\s-]?\d{5}[\s-]?\d{2}[\s-]?\d)\b/) || clean.match(/\b\d{13}\b/);
+  if (idM) r.idCard = idM[0].replace(/[\s-]/g,'');
+  const nameM = clean.match(/(?:ชื่อ|Name)[:\s]+([ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)?)/i);
+  if (nameM) r.firstName = nameM[1].trim();
+  const lnM = clean.match(/(?:นามสกุล|Last\s*Name)[:\s]+([ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)?)/i);
+  if (lnM) r.lastName = lnM[1].trim();
+  const dobM = clean.match(/(\d{1,2})\s+(?:ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s+(\d{4})/);
+  if (dobM) { const be = parseInt(dobM[2]); r.birthYear = be > 2500 ? be-543 : be; }
+  if (/นาย/.test(clean)) r.title='นาย';
+  else if (/นางสาว/.test(clean)) r.title='นางสาว';
+  else if (/นาง/.test(clean)) r.title='นาง';
+  return r;
+}
+function renderOCRResult(d) {
+  if (!Object.keys(d).length)
+    return `<p class="text-red-500 text-xs">ไม่พบข้อมูล — กรุณาถ่ายรูปอีกครั้ง</p>`;
+  const rows = [
+    d.idCard    ? `<div><b>เลขบัตร:</b> <span class="text-blue-700 font-bold">${d.idCard}</span></div>` : '',
+    d.title     ? `<div><b>คำนำหน้า:</b> ${d.title}</div>` : '',
+    d.firstName ? `<div><b>ชื่อ:</b> ${d.firstName}</div>` : '',
+    d.lastName  ? `<div><b>นามสกุล:</b> ${d.lastName}</div>` : '',
+    d.birthYear ? `<div><b>ปีเกิด (ค.ศ.):</b> ${d.birthYear}</div>` : '',
+  ].filter(Boolean).join('');
+  return `<div class="space-y-1 text-sm mb-3">${rows}</div>
+    <button onclick='applyOCR(${JSON.stringify(d)})' class="btn btn-primary btn-sm">
+      ✓ ใช้ข้อมูลนี้
+    </button>`;
+}
+function applyOCR(d) {
+  const sv = (id, v) => { const el=document.getElementById(id); if(el&&v) el.value=v; };
+  sv('f_idcard', d.idCard); sv('f_title', d.title);
+  sv('f_fname', d.firstName); sv('f_lname', d.lastName); sv('f_birthYear', d.birthYear);
+  closeOCR();
+  Swal.fire({ title:'นำเข้าข้อมูลสำเร็จ', text:'กรุณาตรวจสอบและแก้ไขข้อมูลก่อนบันทึก',
+    icon:'success', confirmButtonColor:'#1e3a8a', timer:3000, showConfirmButton:false });
+}
+
+// ── Template Download ──
+function downloadTemplate() {
+  const headers = ['StipNo','IDCard','BirthYear','Institution','CurrentLevel','StudentID','ScholarshipYear','EntryYear','EntryTerm','Major','Department','Title','FirstName','LastName','EngTitle','EngFirstName','EngLastName','Nickname','Sex','Nationality','Religion','Talent','Weight','Height','BloodType','Disease','Phone1','Phone2','Village','HouseNo','Moo','Tambon','Amphoe','Province','ParentStatus','Parent1_IDCard','Parent1_Title','Parent1_FirstName','Parent1_LastName','Parent2_IDCard','Parent2_Title','Parent2_FirstName','Parent2_LastName','OldSchool','Remarks','Status'];
+  const ex = ['MBS_001','1234567890123','2000','MBS','มัธยมศึกษาปีที่ 4 (Grade 10)','ST001','2023','2023','1','วิทยาศาสตร์-คณิตศาสตร์','','นาย','สมชาย','ใจดี','Mr.','Somchai','Jaidee','ชาย','Male','ไทย','พุทธ','ฟุตบอล','60','165','O','ไม่มี','0812345678','0898765432','หมู่บ้านสุขใจ','123','5','แม่สะเรียง','แม่สะเรียง','แม่ฮ่องสอน','อยู่ด้วยกัน','','นาย','สมศักดิ์','ใจดี','','นาง','สมหมาย','ใจดี','โรงเรียนเดิม','','Active'];
+  const csv = '\uFEFF' + headers.join(',') + '\n' + ex.join(',');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = 'RDF_Import_Template.csv'; a.click();
+}
+function importCSV() {
+  Swal.fire(t('info'), 'ระบบนำเข้า CSV จะพัฒนาในเวอร์ชันถัดไป', 'info');
+}
+</script>
+</body>
+</html>
