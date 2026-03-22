@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายชื่อนักเรียนทุน — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+        <div class="hide-mobile">
+          <div id="navUserName" class="nav-user-name">—</div>
+          <div id="navUserRole" class="nav-user-role">—</div>
+        </div>
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
+    <div>
+      <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-1 font-semibold transition">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span data-t="backToDashboard">กลับหน้าหลัก</span>
+      </a>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <i data-lucide="users" class="w-5 h-5" style="color:#1e3a8a"></i>
+        <span data-t="studentList">รายชื่อนักเรียนทุน</span>
+      </h2>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="loadStudents()" class="btn btn-secondary btn-sm">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        <span data-t="refresh">รีเฟรช</span>
+      </button>
+      <a href="student-form.html" class="btn btn-primary btn-sm">
+        <i data-lucide="user-plus" class="w-4 h-4"></i>
+        <span data-t="addStudent">เพิ่มนักเรียนใหม่</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Card -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <!-- Main Search Row -->
+      <div class="flex flex-col md:flex-row gap-3 mb-3">
+        <div class="search-wrap flex-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="searchInput" oninput="applyFilters()" class="field-input search-input"
+                 data-t="searchPlaceholder" data-t-attr="placeholder" placeholder="ค้นหาชื่อ, รหัสทุน, เลขบัตร...">
+        </div>
+        <button onclick="toggleAdvSearch()" id="advToggleBtn" class="btn btn-secondary btn-sm flex-shrink-0">
+          <i data-lucide="sliders" class="w-4 h-4"></i>
+          <span id="advToggleText" data-t="advancedSearch">ค้นหาขั้นสูง</span>
+        </button>
+        <button onclick="resetFilters()" class="btn btn-secondary btn-sm flex-shrink-0">
+          <i data-lucide="x" class="w-4 h-4"></i>
+          <span data-t="resetSearch">รีเซ็ต</span>
+        </button>
+      </div>
+
+      <!-- Advanced Search Panel -->
+      <div id="advancedSearchPanel" class="hidden">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <!-- Academic Year -->
+          <div>
+            <label class="field-label" data-t="scholarshipYear">ปีการศึกษา (พ.ศ.)</label>
+            <select id="filterYear" onchange="applyFilters()" class="field-select text-sm">
+              <option value="" data-t="allYears">ทุกปีการศึกษา</option>
+            </select>
+          </div>
+          <!-- Institution -->
+          <div>
+            <label class="field-label" data-t="institution">สถานศึกษา</label>
+            <select id="filterInst" onchange="applyFilters()" class="field-select text-sm">
+              <option value="" data-t="allInstitutions">ทุกสถานศึกษา</option>
+              <option value="MBS">Maesariang Boripat Suksa School</option>
+              <option value="VC">Vocational College</option>
+              <option value="UNI">University</option>
+              <option value="OTHER">อื่นๆ</option>
+            </select>
+          </div>
+          <!-- Level -->
+          <div>
+            <label class="field-label" data-t="level">ระดับชั้น</label>
+            <select id="filterLevel" onchange="applyFilters()" class="field-select text-sm">
+              <option value="" data-t="allLevels">ทุกระดับชั้น</option>
+            </select>
+          </div>
+          <!-- Status -->
+          <div>
+            <label class="field-label" data-t="status">สถานะ</label>
+            <select id="filterStatus" onchange="applyFilters()" class="field-select text-sm">
+              <option value="">ทุกสถานะ</option>
+              <option value="Active" data-t="statusActive">กำลังศึกษา</option>
+              <option value="Graduated">ศิษย์เก่า (สำเร็จการศึกษา)</option>
+              <option value="University">ต่อมหาวิทยาลัย</option>
+              <option value="Continued">ทุนต่อ (ขึ้นมหาวิทยาลัย)</option>
+              <option value="Suspended">พักการเรียน</option>
+              <option value="Resigned">ลาออกจากทุน</option>
+              <option value="Incomplete">ไม่สำเร็จการศึกษา</option>
+            </select>
+          </div>
+        </div>
+        <!-- Active filters display -->
+        <div id="activeFiltersWrap" class="hidden flex flex-wrap gap-2">
+          <span class="text-xs text-gray-500 font-semibold self-center">ตัวกรองที่ใช้:</span>
+          <div id="activeFilterTags" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results count -->
+  <div class="flex items-center justify-between mb-3 px-1">
+    <p id="recordInfo" class="text-xs text-gray-500">กำลังโหลด...</p>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-500" data-t="showing">แสดง</span>
+      <select id="perPageSel" onchange="applyFilters()" class="border border-gray-200 text-xs rounded-lg px-2 py-1 bg-white">
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="0">ทั้งหมด</option>
+      </select>
+      <span class="text-xs text-gray-500">รายการ/หน้า</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card overflow-x-auto">
+    <table class="rdf-table" style="min-width:820px">
+      <thead>
+        <tr>
+          <th data-t="stipNo">รหัสทุน</th>
+          <th data-t="namePhoto">รูป / ชื่อ-สกุล</th>
+          <th data-t="instLevel">สถานศึกษา / ชั้นปี</th>
+          <th class="hide-mobile" data-t="scholarshipYear">ปีการศึกษา</th>
+          <th data-t="phone">โทรศัพท์</th>
+          <th>สถานะ</th>
+          <th class="text-center" data-t="actions">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="studentTableBody"></tbody>
+    </table>
+    <div id="noDataMsg" class="hidden text-center py-14 text-gray-400">
+      <i data-lucide="inbox" class="w-14 h-14 mx-auto mb-3 opacity-30"></i>
+      <p class="font-semibold" data-t="noData">ไม่พบข้อมูล</p>
+      <p class="text-xs mt-1" data-t="noDataHint">ลองเพิ่มนักเรียนหรือเปลี่ยนตัวกรอง</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="paginationWrap" class="flex justify-center gap-2 mt-4"></div>
+</main>
+
+<footer class="rdf-footer">
+  <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+lucide.createIcons();
+const user = requireAuth();
+if (user) renderNavUser(user);
+
+let allStudents = [];
+let filteredStudents = [];
+let currentPage = 1;
+let advSearchOpen = false;
+
+// Read URL params for initial filter
+const urlParams = new URLSearchParams(window.location.search);
+const initInst   = urlParams.get('inst')   || '';
+const initStatus = urlParams.get('status') || '';
+
+async function loadStudents() {
+  showLoader(true, t('loading'));
+  try {
+    const result = await API.getStudents();
+    showLoader(false);
+    if (result.status === 'success') {
+      allStudents = result.data || [];
+      populateFilterOptions();
+      if (initInst)   document.getElementById('filterInst').value   = initInst;
+      if (initStatus) document.getElementById('filterStatus').value = initStatus;
+      applyFilters();
+    } else {
+      Swal.fire(t('error'), result.message, 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), t('network_error'), 'error');
+  }
+}
+
+function populateFilterOptions() {
+  // Academic years (convert to BE for display)
+  const yearSel = document.getElementById('filterYear');
+  const years = getAcademicYears(allStudents);
+  yearSel.innerHTML = `<option value="">${t('allYears')}</option>`;
+  years.forEach(y => {
+    const be = parseInt(y) + 543;
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = `ปีการศึกษา ${be} (${y})`;
+    yearSel.appendChild(opt);
+  });
+  // Levels (dynamic based on institution)
+  const levels = new Set();
+  allStudents.forEach(s => { if (s.level) levels.add(s.level); });
+  const levelSel = document.getElementById('filterLevel');
+  levelSel.innerHTML = `<option value="">${t('allLevels')}</option>`;
+  [...levels].sort().forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l; opt.textContent = l;
+    levelSel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const q      = (document.getElementById('searchInput').value||'').toLowerCase();
+  const inst   = document.getElementById('filterInst').value;
+  const status = document.getElementById('filterStatus').value;
+  const level  = document.getElementById('filterLevel').value;
+  const year   = document.getElementById('filterYear').value;
+
+  filteredStudents = allStudents.filter(s => {
+    // Text search
+    if (q) {
+      const hay = [s.name,s.stipNo,s.idCard,s.studentId,s.phone].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    // Institution
+    if (inst && s.institution !== inst) return false;
+    // Level
+    if (level && s.level !== level) return false;
+    // Year
+    if (year && s.scholarshipYear !== year && s.entryYear !== year) return false;
+    // Status
+    if (status) {
+      if (status === 'Continued') { if (!isContinuedScholarship(s)) return false; }
+      else if (status === 'Graduated') { if (s.status !== 'Graduated') return false; }
+      else if (s.status !== status) return false;
+    }
+    return true;
+  });
+
+  currentPage = 1;
+  renderTable();
+  updateActiveFilters({ q, inst, status, level, year });
+}
+
+function renderTable() {
+  const tbody = document.getElementById('studentTableBody');
+  const noData = document.getElementById('noDataMsg');
+  const perPage = parseInt(document.getElementById('perPageSel').value) || 0;
+
+  const total = filteredStudents.length;
+  const pageData = perPage > 0 ? filteredStudents.slice((currentPage-1)*perPage, currentPage*perPage) : filteredStudents;
+
+  tbody.innerHTML = '';
+  if (!total) {
+    noData.classList.remove('hidden');
+    document.getElementById('recordInfo').textContent = t('noData');
+    document.getElementById('paginationWrap').innerHTML = '';
+    return;
+  }
+  noData.classList.add('hidden');
+
+  pageData.forEach(s => {
+    const picUrl = s.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.fname||'?')}+${encodeURIComponent(s.lname||'')}&background=1e3a8a&color=fff&size=80&bold=true`;
+    const statusLabel = LANG === 'en' ? (RDF.STATUS_LABELS_EN[s.status]||s.status) : (RDF.STATUS_LABELS_TH[s.status]||s.status);
+    const statusColor = RDF.STATUS_COLORS[s.status] || 'badge-gray';
+    const instColor   = RDF.INST_COLORS[s.institution] || '#64748b';
+    const continued   = isContinuedScholarship(s);
+    const beYear      = s.scholarshipYear ? parseInt(s.scholarshipYear) + 543 : '—';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <span class="font-bold text-xs" style="color:${instColor}">${s.stipNo||'—'}</span>
+        ${continued ? `<span class="badge badge-gold ml-1" style="font-size:10px">${t('continuedScholarship')}</span>` : ''}
+      </td>
+      <td>
+        <div class="flex items-center gap-3">
+          <img src="${picUrl}" class="w-9 h-9 rounded-full border border-gray-200 object-cover flex-shrink-0"
+               onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent((s.fname||'?')+' '+(s.lname||''))}&background=1e3a8a&color=fff&size=80'">
+          <div>
+            <div class="font-bold text-gray-800" style="font-size:13.5px">${s.name||'—'}</div>
+            <div class="text-xs text-gray-400">${s.idCard||'—'}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="font-semibold text-xs" style="color:${instColor}">${instLabel(s.institution)}</div>
+        <div class="text-xs text-gray-400">${s.level||'—'}</div>
+      </td>
+      <td class="hide-mobile text-xs text-gray-500">
+        ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
+      </td>
+      <td class="text-sm text-gray-600">${s.phone||'—'}</td>
+      <td><span class="badge ${statusColor}">${statusLabel}</span></td>
+      <td>
+        <div class="flex items-center justify-center gap-1">
+          <a href="student-profile.html?stipNo=${encodeURIComponent(s.stipNo)}" title="${t('view')}"
+             class="btn btn-icon" style="background:#eff6ff;color:#1d4ed8">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+          </a>
+          <a href="student-form.html?stipNo=${encodeURIComponent(s.stipNo)}" title="${t('edit')}"
+             class="btn btn-icon btn-warning">
+            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+          </a>
+          <a href="student-profile.html?stipNo=${encodeURIComponent(s.stipNo)}&print=1" title="${t('print')}"
+             class="btn btn-icon btn-secondary">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          </a>
+          <button onclick="confirmDelete('${s.stipNo}')" title="${t('delete')}"
+                  class="btn btn-icon btn-danger">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  lucide.createIcons();
+
+  // Record info
+  const start = perPage > 0 ? (currentPage-1)*perPage + 1 : 1;
+  const end   = perPage > 0 ? Math.min(currentPage*perPage, total) : total;
+  document.getElementById('recordInfo').textContent =
+    `${t('showing')} ${start}–${end} ${t('of')} ${total} ${t('records')}`;
+
+  // Pagination
+  if (perPage > 0) renderPagination(total, perPage);
+  else document.getElementById('paginationWrap').innerHTML = '';
+}
+
+function renderPagination(total, perPage) {
+  const pages = Math.ceil(total / perPage);
+  const wrap = document.getElementById('paginationWrap');
+  if (pages <= 1) { wrap.innerHTML = ''; return; }
+  let html = '';
+  for (let i = 1; i <= pages; i++) {
+    const active = i === currentPage;
+    html += `<button onclick="goPage(${i})" class="btn btn-sm ${active ? 'btn-primary' : 'btn-secondary'}" style="min-width:36px">${i}</button>`;
+  }
+  wrap.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderTable(); window.scrollTo(0, 0); }
+
+function toggleAdvSearch() {
+  advSearchOpen = !advSearchOpen;
+  document.getElementById('advancedSearchPanel').classList.toggle('hidden', !advSearchOpen);
+  const btn = document.getElementById('advToggleText');
+  btn.setAttribute('data-t', advSearchOpen ? 'hideAdvSearch' : 'advancedSearch');
+  btn.textContent = t(advSearchOpen ? 'hideAdvSearch' : 'advancedSearch');
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterInst').value  = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterLevel').value = '';
+  document.getElementById('filterYear').value  = '';
+  applyFilters();
+}
+
+function updateActiveFilters(f) {
+  const tags = [];
+  if (f.q)      tags.push(`ค้นหา: "${f.q}"`);
+  if (f.inst)   tags.push(instLabel(f.inst));
+  if (f.status) tags.push(f.status === 'Continued' ? t('continuedScholarship') : RDF.STATUS_LABELS_TH[f.status]||f.status);
+  if (f.level)  tags.push(f.level);
+  if (f.year)   tags.push(`ปีการศึกษา ${parseInt(f.year)+543}`);
+  const wrap = document.getElementById('activeFiltersWrap');
+  const tagEl = document.getElementById('activeFilterTags');
+  if (tags.length) {
+    wrap.classList.remove('hidden');
+    tagEl.innerHTML = tags.map(t => `<span class="badge badge-blue">${t}</span>`).join('');
+  } else {
+    wrap.classList.add('hidden');
+  }
+}
+
+async function confirmDelete(stipNo) {
+  const result = await Swal.fire({
+    title: t('deleteConfirm'),
+    html: `${LANG==='th'?'ลบข้อมูลนักเรียน':'Delete student'} <b>${stipNo}</b>?<br><small class="text-red-500">${t('deleteWarn')}</small>`,
+    icon: 'warning', showCancelButton: true,
+    confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
+    confirmButtonText: t('confirmDelete'), cancelButtonText: t('cancel')
+  });
+  if (!result.isConfirmed) return;
+  showLoader(true, t('deleting'));
+  try {
+    const r = await API.deleteStudent(stipNo);
+    showLoader(false);
+    if (r.status === 'success') {
+      Swal.fire(t('success'), `${LANG==='th'?'ลบข้อมูล':'Deleted'} ${stipNo} ${LANG==='th'?'สำเร็จ':'successfully'}`, 'success');
+      allStudents = allStudents.filter(s => s.stipNo !== stipNo);
+      applyFilters();
+    } else {
+      Swal.fire(t('error'), r.message, 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), t('network_error'), 'error');
+  }
+}
+
+loadStudents();
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>หน้าหลัก — ระบบทุนการศึกษา RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav">
+  <div class="nav-inner">
+    <!-- LEFT: Foundation name + Logo -->
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <!-- RIGHT: Lang + User -->
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user" onclick="showUserProfile()">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+        <div class="hide-mobile">
+          <div id="navUserName" class="nav-user-name">—</div>
+          <div id="navUserRole" class="nav-user-role">—</div>
+        </div>
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1" title="ออกจากระบบ">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+  <!-- Welcome Banner -->
+  <div class="rounded-2xl overflow-hidden mb-6 fade-in-up"
+       style="background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 50%,#3b82f6 100%)">
+    <div class="p-6 md:p-8 flex justify-between items-center">
+      <div class="text-white">
+        <p class="text-sm text-blue-200 mb-1" data-t="welcome">ยินดีต้อนรับ</p>
+        <h2 class="text-2xl font-bold" id="welcomeName">—</h2>
+        <p class="text-blue-200 text-sm mt-1" data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</p>
+      </div>
+      <div class="hidden md:flex items-center gap-3 text-white opacity-30">
+        <i data-lucide="layout-dashboard" class="w-16 h-16"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat-card fade-in-up delay-1" onclick="window.location.href='students.html?inst=MBS'">
+      <div class="stat-icon" style="background:#eff6ff">
+        <i data-lucide="school" class="w-6 h-6" style="color:#1d4ed8"></i>
+      </div>
+      <div class="stat-num" id="statMBS">—</div>
+      <div class="stat-label" data-t="mbsStudents">นักเรียน MBS</div>
+    </div>
+    <div class="stat-card fade-in-up delay-1" onclick="window.location.href='students.html?inst=VC'">
+      <div class="stat-icon" style="background:#fff7ed">
+        <i data-lucide="wrench" class="w-6 h-6" style="color:#ea580c"></i>
+      </div>
+      <div class="stat-num" id="statVC">—</div>
+      <div class="stat-label" data-t="vcStudents">นักศึกษา VC</div>
+    </div>
+    <div class="stat-card fade-in-up delay-2" onclick="window.location.href='students.html?inst=UNI'">
+      <div class="stat-icon" style="background:#faf5ff">
+        <i data-lucide="building-2" class="w-6 h-6" style="color:#7c3aed"></i>
+      </div>
+      <div class="stat-num" id="statUNI">—</div>
+      <div class="stat-label" data-t="uniStudents">นักศึกษามหาวิทยาลัย</div>
+    </div>
+    <div class="stat-card fade-in-up delay-2" onclick="window.location.href='students.html?status=Graduated'">
+      <div class="stat-icon" style="background:#f0fdf4">
+        <i data-lucide="award" class="w-6 h-6" style="color:#16a34a"></i>
+      </div>
+      <div class="stat-num" id="statAlumni">—</div>
+      <div class="stat-label" data-t="alumni">ศิษย์เก่า</div>
+    </div>
+  </div>
+
+  <!-- Menu Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 fade-in-up delay-3">
+    <div class="menu-card" style="border-top-color:#1e3a8a" onclick="window.location.href='students.html'">
+      <div class="menu-icon" style="background:#eff6ff">
+        <i data-lucide="users" class="w-7 h-7" style="color:#1e3a8a"></i>
+      </div>
+      <h4 class="font-bold text-gray-800 text-base mb-1" data-t="menuStudents">จัดการประวัตินักเรียน</h4>
+      <p class="text-xs text-gray-500" data-t="menuStudentsDesc">เพิ่ม แก้ไข ดู และพิมพ์ประวัตินักเรียน</p>
+    </div>
+    <div class="menu-card" style="border-top-color:#16a34a"
+         onclick="Swal.fire(t('info'),LANG==='th'?'ระบบผลการเรียนอยู่ในขั้นตอนพัฒนา':'Academic records module is coming soon','info')">
+      <div class="menu-icon" style="background:#f0fdf4">
+        <i data-lucide="graduation-cap" class="w-7 h-7" style="color:#16a34a"></i>
+      </div>
+      <h4 class="font-bold text-gray-800 text-base mb-1" data-t="menuAcademic">ผลการเรียน</h4>
+      <p class="text-xs text-gray-500" data-t="menuAcademicDesc">บันทึกและดูผลการเรียนรายภาคเรียน</p>
+    </div>
+    <div class="menu-card" style="border-top-color:#d97706"
+         onclick="Swal.fire(t('info'),LANG==='th'?'ระบบตั้งค่าอยู่ในขั้นตอนพัฒนา':'Settings module is coming soon','info')">
+      <div class="menu-icon" style="background:#fffbeb">
+        <i data-lucide="settings" class="w-7 h-7" style="color:#d97706"></i>
+      </div>
+      <h4 class="font-bold text-gray-800 text-base mb-1" data-t="menuSettings">ตั้งค่าระบบ</h4>
+      <p class="text-xs text-gray-500" data-t="menuSettingsDesc">จัดการผู้ดูแลและตั้งค่าระบบ</p>
+    </div>
+  </div>
+</main>
+
+<footer class="rdf-footer">
+  <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+  <span class="mx-2">•</span> Scholarship Management System &copy; <span id="footerYear"></span>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+lucide.createIcons();
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+const user = requireAuth();
+if (user) {
+  renderNavUser(user);
+  document.getElementById('welcomeName').textContent = user.name;
+  loadStats();
+}
+function showUserProfile() {
+  const u = getUser();
+  if (!u) return;
+  Swal.fire({ title: u.name, html:`<p><b>${t('roleAdmin')}:</b> ${u.role}</p>`, confirmButtonColor:'#1e3a8a' });
+}
+async function loadStats() {
+  try {
+    const result = await API.getStudents();
+    if (result.status === 'success') {
+      const s = result.stats || {};
+      document.getElementById('statMBS').textContent   = s.MBS   || 0;
+      document.getElementById('statVC').textContent    = s.VC    || 0;
+      document.getElementById('statUNI').textContent   = s.UNI   || 0;
+      document.getElementById('statAlumni').textContent= s.Alumni|| 0;
+    }
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
