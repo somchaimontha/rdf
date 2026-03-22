@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ประวัตินักเรียน — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  .rdf-nav, .rdf-footer, #loader { display: none !important; }
+  body { background: white; font-family: 'Open Sans', 'Sarabun', sans-serif; }
+  .print-header { display: block !important; }
+  .print-footer { display: block !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  @page { size: A4; margin: 1.5cm; }
+}
+.print-header, .print-footer { display: none; }
+</style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav no-print">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+  <!-- Toolbar -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 no-print">
+    <div>
+      <a href="students.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-1 font-semibold transition">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span data-t="backToList">กลับรายชื่อ</span>
+      </a>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <i data-lucide="user-circle" class="w-5 h-5" style="color:#1e3a8a"></i>
+        <span data-t="personalInfo">ข้อมูลประวัติส่วนตัว</span>
+      </h2>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="printProfile()" class="btn btn-secondary btn-sm">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="printProfile">พิมพ์ประวัติ</span>
+      </button>
+      <a id="editBtn" href="#" class="btn btn-warning btn-sm">
+        <i data-lucide="edit" class="w-4 h-4"></i>
+        <span data-t="edit">แก้ไข</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Print Header (visible only on print) -->
+  <div class="print-header text-center mb-6 pb-4" style="border-bottom:2px solid #1e3a8a">
+    <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png"
+         alt="RDF" style="width:72px;height:72px;margin:0 auto 10px;object-fit:contain">
+    <h1 style="font-size:17pt;font-weight:800;color:#1e3a8a;" data-t="personalInfo">ข้อมูลประวัติส่วนตัว</h1>
+    <h2 style="font-size:13pt;font-weight:600;color:#374151;" data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</h2>
+  </div>
+
+  <!-- Profile Content -->
+  <div id="profileContent">
+
+    <!-- Hero Card -->
+    <div id="profileHero" class="rounded-2xl overflow-hidden mb-5"
+         style="background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#3b82f6 100%)">
+      <div class="p-6 flex flex-col md:flex-row items-center md:items-start gap-5">
+        <img id="profilePic" src="" alt="Photo"
+             class="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-lg bg-gray-200 flex-shrink-0">
+        <div class="flex-grow text-center md:text-left">
+          <p id="profileStipNo" class="text-blue-200 text-xs mb-1"></p>
+          <h2 id="profileName" class="text-white text-2xl font-bold"></h2>
+          <p id="profileEngName" class="text-blue-100 text-sm mt-1"></p>
+          <div class="flex flex-wrap gap-2 mt-3 justify-center md:justify-start" id="profileBadges"></div>
+        </div>
+        <div class="text-right text-xs text-blue-200 hide-mobile">
+          <div id="profilePhoneRight"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <!-- Academic -->
+      <div class="card">
+        <div class="card-header" style="background:#1d4ed8">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          <span data-t="academicInfo">ข้อมูลการศึกษา</span>
+        </div>
+        <div class="card-body" id="academicInfo"></div>
+      </div>
+      <!-- Personal -->
+      <div class="card">
+        <div class="card-header" style="background:#2563eb">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          <span data-t="personalInfo">ข้อมูลส่วนตัว</span>
+        </div>
+        <div class="card-body" id="personalInfo"></div>
+      </div>
+      <!-- Contact -->
+      <div class="card">
+        <div class="card-header" style="background:#0d9488">
+          <i data-lucide="map-pin" class="w-4 h-4"></i>
+          <span data-t="contactInfo">ข้อมูลติดต่อ</span>
+        </div>
+        <div class="card-body" id="contactInfo"></div>
+      </div>
+      <!-- Family -->
+      <div class="card">
+        <div class="card-header" style="background:#4f46e5">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span data-t="familyInfo">ข้อมูลครอบครัว</span>
+        </div>
+        <div class="card-body" id="familyInfo"></div>
+      </div>
+    </div>
+
+    <!-- University (conditional) -->
+    <div id="uniCard" class="card mb-4 hidden">
+      <div class="card-header" style="background:#7c3aed">
+        <i data-lucide="building-2" class="w-4 h-4"></i>
+        <span data-t="uniInfo">ข้อมูลมหาวิทยาลัย</span>
+      </div>
+      <div class="card-body" id="uniInfo"></div>
+    </div>
+
+    <!-- Remarks (conditional) -->
+    <div id="remarksCard" class="card mb-4 hidden">
+      <div class="card-header" style="background:#475569">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span data-t="additionalNotes">หมายเหตุ</span>
+      </div>
+      <div class="card-body" id="remarksInfo"></div>
+    </div>
+
+    <!-- Print Footer -->
+    <div class="print-footer text-center mt-8 pt-4" style="border-top:1px solid #9ca3af">
+      <p id="printDateLine" class="text-xs text-gray-500"></p>
+      <p class="text-sm font-semibold mt-1" data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</p>
+    </div>
+
+    <!-- Edit History (no-print) -->
+    <div class="card no-print">
+      <div class="card-header" style="background:#64748b">
+        <i data-lucide="clock" class="w-4 h-4"></i>
+        <span data-t="editHistory">ประวัติการแก้ไข</span>
+      </div>
+      <div class="card-body text-xs text-gray-500" id="editHistory">—</div>
+    </div>
+  </div>
+</main>
+
+<footer class="rdf-footer no-print">
+  <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+lucide.createIcons();
+const user = requireAuth();
+if (user) renderNavUser(user);
+
+const urlParams = new URLSearchParams(window.location.search);
+const stipNo    = urlParams.get('stipNo');
+const autoPrint = urlParams.get('print') === '1';
+
+document.getElementById('editBtn').href = `student-form.html?stipNo=${encodeURIComponent(stipNo||'')}`;
+
+if (!stipNo) {
+  Swal.fire(t('error'), 'No student specified', 'error').then(() => window.location.href = 'students.html');
+} else {
+  loadProfile();
+}
+
+async function loadProfile() {
+  showLoader(true, t('loading'));
+  try {
+    const result = await API.getStudent(stipNo);
+    showLoader(false);
+    if (result.status !== 'success') {
+      Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
+      return;
+    }
+    renderProfile(result.data);
+    if (autoPrint) setTimeout(printProfile, 600);
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), t('network_error'), 'error');
+  }
+}
+
+function renderProfile(d) {
+  const lang = LANG;
+  const picUrl = d.ProfilePicURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent((d.FirstName||'?')+' '+(d.LastName||''))}&background=1e3a8a&color=fff&size=128&bold=true`;
+
+  // Hero
+  const pic = document.getElementById('profilePic');
+  pic.src = picUrl;
+  pic.onerror = () => pic.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.FirstName||'?')}&background=1e3a8a&color=fff&size=128`;
+  document.getElementById('profileStipNo').textContent = `Stip No. ${d.StipNo||'—'}`;
+  document.getElementById('profileName').textContent = `${d.Title||''}${d.FirstName||''} ${d.LastName||''}`;
+  const engName = [d.EngTitle,d.EngFirstName,d.EngLastName].filter(Boolean).join(' ');
+  document.getElementById('profileEngName').textContent = engName || '';
+
+  // Phone right
+  document.getElementById('profilePhoneRight').innerHTML =
+    `<div>${lang==='th'?'โทรศัพท์':'Phone'}: <span class="text-white font-bold">${d.Phone1||'—'}</span></div>`;
+
+  // Badges
+  const st = d.Status || 'Active';
+  const stLabel = lang==='en' ? (RDF.STATUS_LABELS_EN[st]||st) : (RDF.STATUS_LABELS_TH[st]||st);
+  const stColor = RDF.STATUS_COLORS[st] || 'badge-gray';
+  const instC   = RDF.INST_COLORS[d.Institution] || '#fff';
+  document.getElementById('profileBadges').innerHTML = `
+    <span class="badge ${stColor}">${stLabel}</span>
+    <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff">${instLabel(d.Institution)}</span>
+    ${d.CurrentLevel ? `<span class="badge" style="background:rgba(255,255,255,0.2);color:#fff">${d.CurrentLevel}</span>` : ''}`;
+
+  // Document title
+  document.title = `${d.FirstName||''} ${d.LastName||''} — RDF`;
+
+  // Academic
+  const beYear = d.ScholarshipYear ? parseInt(d.ScholarshipYear)+543 : '—';
+  const beEntry = d.EntryYear ? parseInt(d.EntryYear)+543 : '—';
+  document.getElementById('academicInfo').innerHTML = infoSection([
+    [lang==='th'?'สถานที่ศึกษา':'Institution',         instLabel(d.Institution)],
+    [lang==='th'?'ระดับชั้น':'Current Level',          d.CurrentLevel],
+    [lang==='th'?'รหัสนักเรียน':'Student ID',          d.StudentID],
+    [lang==='th'?'ปีที่ได้รับทุน':'Scholarship Year',  `${beYear} (${d.ScholarshipYear||'—'})`],
+    [lang==='th'?'ปีที่เข้าเรียน/ภาค':'Entry Year/Term',`${beEntry} / ภาค ${d.EntryTerm||'—'}`],
+    [lang==='th'?'สาขาวิชา':'Major',                  d.Major],
+    [lang==='th'?'แผนกวิชา':'Department',             d.Department],
+    [lang==='th'?'สถานศึกษาเดิม':'Previous School',   d.OldSchool],
+  ]);
+
+  // Personal
+  document.getElementById('personalInfo').innerHTML = infoSection([
+    [lang==='th'?'เพศ':'Gender',          d.Sex === 'Male' || d.Sex === 'ชาย' ? (lang==='th'?'ชาย':'Male') : (lang==='th'?'หญิง':'Female')],
+    [lang==='th'?'ชื่อเล่น':'Nickname',  d.Nickname],
+    [lang==='th'?'ปีเกิด (ค.ศ.)':'Birth Year', d.BirthYear ? `${d.BirthYear} (พ.ศ.${parseInt(d.BirthYear)+543})` : '—'],
+    [lang==='th'?'สัญชาติ':'Nationality', d.Nationality],
+    [lang==='th'?'ศาสนา':'Religion',     d.Religion],
+    [lang==='th'?'ความสามารถพิเศษ':'Special Talents', d.Talent||'—'],
+    [lang==='th'?'น้ำหนัก/ส่วนสูง':'Weight/Height', `${d.Weight||'—'} กก. / ${d.Height||'—'} ซม.`],
+    [lang==='th'?'หมู่เลือด':'Blood Type', d.BloodType||'—'],
+    [lang==='th'?'โรคประจำตัว':'Disease', d.Disease||lang==='th'?'ไม่มี':'None'],
+  ]);
+
+  // Contact
+  const addr = [d.Village, d.HouseNo?`เลขที่ ${d.HouseNo}`:'', d.Moo?`หมู่ ${d.Moo}`:'', d.Tambon, d.Amphoe, d.Province].filter(Boolean).join(', ');
+  document.getElementById('contactInfo').innerHTML = infoSection([
+    [lang==='th'?'โทรศัพท์ 1':'Phone 1',  d.Phone1],
+    [lang==='th'?'โทรศัพท์ 2':'Phone 2',  d.Phone2||'—'],
+    [lang==='th'?'ที่อยู่ปัจจุบัน':'Address', addr||'—'],
+  ]);
+
+  // Family
+  const fName = [d.Parent1_Title,d.Parent1_FirstName,d.Parent1_LastName].filter(Boolean).join(' ') || '—';
+  const mName = [d.Parent2_Title,d.Parent2_FirstName,d.Parent2_LastName].filter(Boolean).join(' ') || '—';
+  document.getElementById('familyInfo').innerHTML = infoSection([
+    [lang==='th'?'สถานภาพบิดา-มารดา':'Parents Status',
+      d.ParentStatus + (d.ParentStatusOther?` — ${d.ParentStatusOther}`:'')],
+    [lang==='th'?'บิดา':'Father',
+      fName + (d.Parent1_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${d.Parent1_IDCard}</span>` : '')],
+    [lang==='th'?'มารดา/ผู้ปกครอง':'Mother/Guardian',
+      mName + (d.Parent2_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${d.Parent2_IDCard}</span>` : '')],
+  ]);
+
+  // University
+  if (d.UniName) {
+    document.getElementById('uniCard').classList.remove('hidden');
+    document.getElementById('uniInfo').innerHTML = infoSection([
+      [lang==='th'?'มหาวิทยาลัย':'University',    d.UniName],
+      [lang==='th'?'ระยะเวลาหลักสูตร':'Duration', (d.UniDuration||'—') + (lang==='th'?' ปี':' years')],
+      [lang==='th'?'จังหวัดที่ตั้ง':'Province',  d.UniProvince],
+      [lang==='th'?'คณะ':'Faculty',              d.UniFaculty],
+      [lang==='th'?'สาขาวิชา':'Major',           d.UniMajor],
+    ]);
+  }
+
+  // Remarks
+  if (d.Remarks) {
+    document.getElementById('remarksCard').classList.remove('hidden');
+    document.getElementById('remarksInfo').textContent = d.Remarks;
+  }
+
+  // Edit history
+  const hist = [
+    d.CreatedAt ? (lang==='th'?`เพิ่มข้อมูล: ${d.CreatedAt}`:`Added: ${d.CreatedAt}`) : '',
+    d.UpdatedAt ? (lang==='th'?`แก้ไขล่าสุด: ${d.UpdatedAt}`:`Last updated: ${d.UpdatedAt}`) : '',
+  ].filter(Boolean).join('  |  ');
+  document.getElementById('editHistory').textContent = hist || '—';
+
+  lucide.createIcons();
+}
+
+function infoSection(pairs) {
+  const filtered = pairs.filter(([,v]) => v && v !== '—' && v !== '' && v !== 'undefined');
+  if (!filtered.length) return `<p class="text-gray-400 text-xs">${LANG==='th'?'ไม่มีข้อมูล':'No data'}</p>`;
+  return filtered.map(([label, val]) =>
+    `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${val||'—'}</span></div>`
+  ).join('');
+}
+
+function printProfile() {
+  // Set print date
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(LANG==='th'?'th-TH':'en-GB',
+    { day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('printDateLine').textContent = `${t('printDate')} ${dateStr}`;
+  window.print();
+}
+</script>
+</body>
+</html>
