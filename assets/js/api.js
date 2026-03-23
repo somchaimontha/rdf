@@ -28,6 +28,7 @@ const API = {
   async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }); },
   async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }); },
   async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }); },
+  async getLogs(limit)             { return apiGet({ action: 'getLogs', limit: limit || 200 }); },
 };
 
 /* ── Shared Loader ── */
