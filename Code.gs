@@ -22,6 +22,7 @@ function doGet(e) {
     else if (action === 'generateStipNo') result = { status:'success', stipNo: generateNextStipNo(e.parameter.institution) };
     else if (action === 'deleteStudent')  result = deleteStudentData(e.parameter.stipNo);
     else if (action === 'getUniNames')    result = getUniNames();
+    else if (action === 'ping')           result = { status: 'ok', timestamp: new Date().toISOString() };
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
