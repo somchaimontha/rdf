@@ -82,7 +82,7 @@
   <div class="form-section mb-4">
     <div class="form-section-header" style="background:#1e3a8a">
       <i data-lucide="id-card" class="w-4 h-4"></i>
-      <span data-t="secA">ก. ข้อมูลการระบุตัวตน</span>
+      <span data-t="secA">1. ข้อมูลการระบุตัวตน</span>
     </div>
     <div class="form-section-body">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -137,7 +137,7 @@
   <div class="form-section mb-4">
     <div class="form-section-header" style="background:#1d4ed8">
       <i data-lucide="book-open" class="w-4 h-4"></i>
-      <span data-t="secB">ข. ข้อมูลการศึกษา</span>
+      <span data-t="secB">2. ข้อมูลการศึกษา</span>
     </div>
     <div class="form-section-body">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -167,12 +167,16 @@
         </div>
         <div>
           <label class="field-label"><span data-t="scholarshipYearLabel">ปีการศึกษาที่ได้รับทุน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
-          <input type="number" id="f_scholarshipYear" min="2000" max="2100" placeholder="2023" class="field-input" required>
+          <input type="number" id="f_scholarshipYear" min="2000" max="2100" placeholder="เช่น 2023" class="field-input" required
+                 oninput="showBeHint(this,'hintScholarYear')">
+          <p id="hintScholarYear" class="text-xs text-blue-500 mt-1 hidden"></p>
         </div>
         <div class="flex gap-2">
           <div class="flex-1">
             <label class="field-label"><span data-t="entryYear">ปีที่เข้าเรียน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
-            <input type="number" id="f_entryYear" placeholder="2023" class="field-input" required>
+            <input type="number" id="f_entryYear" placeholder="เช่น 2023" class="field-input" required
+                   oninput="showBeHint(this,'hintEntryYear')">
+            <p id="hintEntryYear" class="text-xs text-blue-500 mt-1 hidden"></p>
           </div>
           <div style="width:110px">
             <label class="field-label"><span data-t="entryTerm">ภาคเรียน</span></label>
@@ -184,13 +188,20 @@
             </select>
           </div>
         </div>
-        <div>
+        <div id="majorWrap">
           <label class="field-label"><span data-t="major">แผนการเรียน / สาขาวิชา</span></label>
-          <input type="text" id="f_major" class="field-input" placeholder="วิทยาศาสตร์-คณิตศาสตร์ / IT">
+          <input type="text" id="f_major" list="majorList" class="field-input"
+                 placeholder="เลือกหรือพิมพ์สาขาวิชา">
+          <datalist id="majorList"></datalist>
+          <p id="majorAdminNote" class="text-xs text-gray-400 mt-1 hidden">
+            <i>ผู้ดูแลระบบสามารถเพิ่มสาขาวิชาได้ในหน้าตั้งค่า</i>
+          </p>
         </div>
         <div id="deptWrap" class="hidden">
-          <label class="field-label"><span data-t="department">แผนกวิชา (สำหรับอาชีวะ)</span></label>
-          <input type="text" id="f_department" class="field-input" placeholder="แผนกวิชา">
+          <label class="field-label"><span data-t="department">แผนกวิชา</span></label>
+          <input type="text" id="f_department" list="deptList" class="field-input"
+                 placeholder="เลือกหรือพิมพ์แผนกวิชา">
+          <datalist id="deptList"></datalist>
         </div>
         <div>
           <label class="field-label"><span data-t="oldSchool">สถานศึกษาเดิม (ก่อนรับทุน)</span></label>
@@ -239,7 +250,7 @@
   <div class="form-section mb-4">
     <div class="form-section-header" style="background:#2563eb">
       <i data-lucide="user" class="w-4 h-4"></i>
-      <span data-t="secC">ค. ข้อมูลส่วนตัว</span>
+      <span data-t="secC">3. ข้อมูลส่วนตัว</span>
     </div>
     <div class="form-section-body">
       <!-- Photo -->
@@ -375,7 +386,7 @@
   <div class="form-section mb-4">
     <div class="form-section-header" style="background:#0d9488">
       <i data-lucide="map-pin" class="w-4 h-4"></i>
-      <span data-t="secD">ง. ข้อมูลติดต่อและที่อยู่</span>
+      <span data-t="secD">4. ข้อมูลติดต่อและที่อยู่</span>
     </div>
     <div class="form-section-body">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -429,7 +440,7 @@
   <div class="form-section mb-4">
     <div class="form-section-header" style="background:#4f46e5">
       <i data-lucide="users" class="w-4 h-4"></i>
-      <span data-t="secE">จ. ข้อมูลครอบครัว</span>
+      <span data-t="secE">5. ข้อมูลครอบครัว</span>
     </div>
     <div class="form-section-body">
       <div class="flex flex-col md:flex-row gap-4 mb-4">
@@ -490,7 +501,7 @@
   <div class="form-section mb-5">
     <div class="form-section-header" style="background:#475569">
       <i data-lucide="file-text" class="w-4 h-4"></i>
-      <span data-t="secF">ฉ. หมายเหตุเพิ่มเติม</span>
+      <span data-t="secF">6. หมายเหตุเพิ่มเติม</span>
     </div>
     <div class="form-section-body">
       <label class="field-label" data-t="additionalNotes">หมายเหตุ / บันทึกเพิ่มเติม</label>
@@ -639,12 +650,17 @@ function onInstitutionChange() {
   const dept = document.getElementById('deptWrap');
   const uni  = document.getElementById('uniSection');
   const other= document.getElementById('otherInstWrap');
+  const majorWrap = document.getElementById('majorWrap');
+  const majorNote = document.getElementById('majorAdminNote');
+
   lvl.innerHTML = `<option value="">-- เลือกระดับชั้น --</option>`;
   lvl.disabled = !inst;
   dept.classList.add('hidden');
   uni.classList.add('hidden');
   other.classList.add('hidden');
+  majorWrap.classList.remove('hidden');
   document.getElementById('f_otherInst').required = false;
+
   const levels = {
     MBS: ['มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)'],
     VC:  ['ปวช. ชั้นปีที่ 1','ปวช. ชั้นปีที่ 2','ปวช. ชั้นปีที่ 3','ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'],
@@ -654,9 +670,31 @@ function onInstitutionChange() {
   (levels[inst]||[]).forEach(l => {
     const o = document.createElement('option'); o.value = l; o.textContent = l; lvl.appendChild(o);
   });
-  if (inst) { lvl.disabled = false; }
-  if (inst === 'VC')    { dept.classList.remove('hidden'); }
-  if (inst === 'UNI')   { uni.classList.remove('hidden'); loadUniNames(); }
+  if (inst) lvl.disabled = false;
+
+  // Populate major datalist from config
+  const majorDL = document.getElementById('majorList');
+  majorDL.innerHTML = '';
+  const majors = (RDF.MAJORS && RDF.MAJORS[inst]) ? RDF.MAJORS[inst] : [];
+  majors.forEach(m => { const o = document.createElement('option'); o.value = m; majorDL.appendChild(o); });
+  majorNote.classList.toggle('hidden', majors.length === 0);
+
+  // Populate department datalist (VC only)
+  const deptDL = document.getElementById('deptList');
+  deptDL.innerHTML = '';
+  const depts = (RDF.DEPARTMENTS && RDF.DEPARTMENTS[inst]) ? RDF.DEPARTMENTS[inst] : [];
+  depts.forEach(d => { const o = document.createElement('option'); o.value = d; deptDL.appendChild(o); });
+
+  if (inst === 'VC') {
+    dept.classList.remove('hidden');
+  }
+  if (inst === 'UNI') {
+    // For UNI use f_uniMajor field — hide the general major field
+    majorWrap.classList.add('hidden');
+    document.getElementById('f_major').value = '';
+    uni.classList.remove('hidden');
+    loadUniNames();
+  }
   if (inst === 'OTHER') {
     other.classList.remove('hidden');
     document.getElementById('f_otherInst').required = true;
@@ -680,6 +718,19 @@ async function loadUniNames() {
     dl.innerHTML = '';
     (r.data||[]).forEach(n => { const o=document.createElement('option'); o.value=n; dl.appendChild(o); });
   } catch(e) {}
+}
+
+// ── BE year hint ──
+function showBeHint(el, hintId) {
+  const val  = parseInt(el.value);
+  const hint = document.getElementById(hintId);
+  if (!hint) return;
+  if (val && val > 1900 && val < 2200) {
+    hint.textContent = `= พ.ศ. ${val + 543}`;
+    hint.classList.remove('hidden');
+  } else {
+    hint.classList.add('hidden');
+  }
 }
 
 function toggleSurname() {
