@@ -511,7 +511,15 @@
 </main>
 
 <footer class="rdf-footer no-print">
-  <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+  <div class="footer-left">
+    <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+    <span class="mx-2 hide-xs">•</span>
+    <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
+  </div>
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง">
+    <span class="db-dot"></span>
+    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+  </div>
 </footer>
 
 <!-- ─── OCR Modal ─── -->
@@ -864,6 +872,9 @@ function downloadTemplate() {
 function importCSV() {
   Swal.fire(t('info'), 'ระบบนำเข้า CSV จะพัฒนาในเวอร์ชันถัดไป', 'info');
 }
+
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+initDBStatus();
 </script>
 </body>
 </html>

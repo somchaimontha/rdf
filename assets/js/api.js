@@ -57,6 +57,44 @@ function getAcademicYears(students) {
   return [...years].sort((a,b) => b - a);
 }
 
+/* ── DB Connection Status ── */
+let _dbCheckTimer = null;
+
+async function checkDBConnection() {
+  const el  = document.getElementById('dbStatus');
+  const txt = document.getElementById('dbStatusText');
+  if (!el || !txt) return;
+
+  el.className = 'db-status checking';
+  txt.textContent = (typeof LANG !== 'undefined' && LANG === 'en') ? 'Checking...' : 'กำลังตรวจสอบ...';
+
+  const t0 = Date.now();
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res   = await fetch(RDF.GAS_URL + '?action=ping', { signal: ctrl.signal });
+    clearTimeout(timer);
+    const data  = await res.json();
+    const ms    = Date.now() - t0;
+    if (data.status === 'ok') {
+      el.className = 'db-status online';
+      const label  = (typeof LANG !== 'undefined' && LANG === 'en') ? 'Connected' : 'เชื่อมต่อแล้ว';
+      txt.textContent = `${label} (${ms} ms)`;
+    } else {
+      throw new Error('bad response');
+    }
+  } catch(e) {
+    el.className = 'db-status offline';
+    txt.textContent = (typeof LANG !== 'undefined' && LANG === 'en') ? 'Cannot connect' : 'ไม่สามารถเชื่อมต่อได้';
+  }
+}
+
+function initDBStatus() {
+  checkDBConnection();
+  if (_dbCheckTimer) clearInterval(_dbCheckTimer);
+  _dbCheckTimer = setInterval(checkDBConnection, 60000); // re-check every 60s
+}
+
 /* ── Check if student has "ทุนต่อ" (continued scholarship) ── */
 function isContinuedScholarship(student) {
   const stipNo = student.stipNo || '';
