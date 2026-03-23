@@ -9,22 +9,23 @@
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 /* ── Settings Tabs ── */
 .settings-tab-bar {
-  display: flex; gap: 2px;
-  border-bottom: 2px solid #e2e8f0;
-  margin-bottom: 20px;
+  display: flex; gap: 0; overflow-x: auto;
+  border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;
 }
+.settings-tab-bar::-webkit-scrollbar { height: 0; }
 .s-tab {
-  padding: 10px 22px; font-size: 13.5px; font-weight: 700;
-  cursor: pointer; border: none; background: none;
+  padding: 11px 20px; font-size: 13px; font-weight: 700;
+  cursor: pointer; border: none; background: none; white-space: nowrap;
   color: #64748b; border-bottom: 3px solid transparent;
   margin-bottom: -2px; transition: all 0.2s; font-family: inherit;
-  display: flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
 }
-.s-tab.active { color: #1e3a8a; border-bottom-color: #1e3a8a; }
-.s-tab:hover  { color: #1e3a8a; }
+.s-tab.active { color: #1e3a8a; border-bottom-color: #1e3a8a; background: #f8faff; }
+.s-tab:hover:not(.active) { color: #1e3a8a; background: #f8fafc; }
 
 /* ── Role Badges ── */
 .role-badge {
@@ -36,6 +37,68 @@
 .role-finance    { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
 .role-committee  { background:#faf5ff; color:#7c3aed; border:1px solid #ddd6fe; }
 .role-dormteacher{ background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; }
+
+/* ── Admin Cards Grid ── */
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; }
+.admin-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 18px; transition: all 0.2s; position: relative;
+  overflow: hidden;
+}
+.admin-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.admin-card.role-superadmin::before { background: #dc2626; }
+.admin-card.role-manager::before    { background: #1d4ed8; }
+.admin-card.role-finance::before    { background: #16a34a; }
+.admin-card.role-committee::before  { background: #7c3aed; }
+.admin-card.role-dormteacher::before{ background: #ea580c; }
+.admin-card:hover { box-shadow: 0 8px 25px rgba(30,58,138,0.12); transform: translateY(-2px); }
+.admin-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 2px solid #e2e8f0; object-fit: cover;
+}
+.admin-status-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid #fff; position: absolute; bottom: 1px; right: 1px;
+}
+.admin-status-dot.active   { background: #22c55e; }
+.admin-status-dot.inactive { background: #94a3b8; }
+
+/* ── Overview Stat Cards ── */
+.ov-stat {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 20px 18px; display: flex; align-items: center; gap: 16px;
+}
+.ov-stat-icon {
+  width: 50px; height: 50px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ov-stat-num { font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1; }
+.ov-stat-label { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 3px; }
+
+/* ── Chart Card ── */
+.chart-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 18px; overflow: hidden;
+}
+.chart-title {
+  font-size: 13px; font-weight: 700; color: #374151;
+  display: flex; align-items: center; gap: 7px; margin-bottom: 14px;
+}
+
+/* ── Audit Log ── */
+.log-row { transition: background 0.15s; }
+.log-row:hover { background: #f8fafc; }
+.log-action-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px; font-family: monospace;
+}
+.log-add    { background:#f0fdf4; color:#15803d; }
+.log-update { background:#eff6ff; color:#1d4ed8; }
+.log-delete { background:#fef2f2; color:#dc2626; }
+.log-login  { background:#f8fafc; color:#475569; }
+.log-setting{ background:#fffbeb; color:#92400e; }
 
 /* ── Tag editor ── */
 .tag-wrap {
@@ -62,12 +125,11 @@
 .tag-remove:hover { opacity: 1; background: rgba(0,0,0,0.1); }
 .tag-add-input {
   border: none; outline: none; background: transparent;
-  font-size: 13px; min-width: 130px; font-family: inherit; color: #1e293b;
-  flex: 1;
+  font-size: 13px; min-width: 130px; font-family: inherit; color: #1e293b; flex: 1;
 }
 .tag-add-input::placeholder { color: #94a3b8; font-size: 12.5px; }
 
-/* ── Modal overlay ── */
+/* ── Modal ── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 200;
   background: rgba(15,23,42,0.55); backdrop-filter: blur(3px);
@@ -76,16 +138,17 @@
 }
 .modal-box {
   background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
-  animation: fadeInUp 0.2s ease;
-  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.25); animation: fadeInUp 0.2s ease; overflow: hidden;
 }
 .modal-header {
   padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid #f1f5f9;
 }
 .modal-body { padding: 20px; }
-.modal-footer { padding: 14px 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-footer {
+  padding: 14px 20px; border-top: 1px solid #f1f5f9;
+  display: flex; justify-content: flex-end; gap: 10px;
+}
 </style>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
@@ -121,6 +184,7 @@
 </nav>
 
 <main class="container main-content">
+
   <!-- Page Header -->
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 fade-in-up">
     <div>
@@ -133,8 +197,8 @@
       </h2>
     </div>
     <div id="superAdminBadge" class="hidden">
-      <span class="badge badge-red flex items-center gap-1">
-        <i data-lucide="shield" class="w-3.5 h-3.5"></i> SuperAdmin Mode
+      <span class="badge badge-red flex items-center gap-1 px-3 py-1.5">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> SuperAdmin Mode
       </span>
     </div>
   </div>
@@ -144,29 +208,43 @@
     <button class="s-tab active" id="tabAdmins" onclick="switchTab('admins')">
       <i data-lucide="users" class="w-4 h-4"></i> ผู้ดูแลระบบ
     </button>
+    <button class="s-tab" id="tabOverview" onclick="switchTab('overview')">
+      <i data-lucide="bar-chart-2" class="w-4 h-4"></i> ภาพรวมระบบ
+    </button>
     <button class="s-tab" id="tabMajors" onclick="switchTab('majors')">
       <i data-lucide="book-open" class="w-4 h-4"></i> สาขาวิชา
     </button>
+    <button class="s-tab" id="tabLogs" onclick="switchTab('logs')">
+      <i data-lucide="scroll-text" class="w-4 h-4"></i> ประวัติการใช้งาน
+    </button>
   </div>
 
-  <!-- ─── Panel: Admins ─── -->
+  <!-- ═══════════════════════════════════════════
+       PANEL: ADMINS
+  ════════════════════════════════════════════ -->
   <div id="panelAdmins">
+    <!-- Toolbar -->
     <div class="card mb-4 fade-in-up">
-      <div class="card-body">
+      <div class="card-body py-3">
         <div class="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-          <div class="flex gap-2 items-center">
+          <div class="flex flex-wrap gap-2 items-center">
             <div class="search-wrap">
               <i data-lucide="search" class="w-4 h-4"></i>
               <input type="text" id="adminSearch" class="field-input search-input" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้..."
-                     oninput="renderAdmins()" style="width:220px">
+                     oninput="renderAdmins()" style="width:210px">
             </div>
-            <select id="adminRoleFilter" class="field-select" onchange="renderAdmins()" style="width:160px">
+            <select id="adminRoleFilter" class="field-select" onchange="renderAdmins()" style="width:155px">
               <option value="">ทุกสิทธิ์</option>
               <option value="SuperAdmin">SuperAdmin</option>
               <option value="Manager">Manager</option>
               <option value="Finance">Finance</option>
               <option value="Committee">Committee</option>
               <option value="DormTeacher">DormTeacher</option>
+            </select>
+            <select id="adminStatusFilter" class="field-select" onchange="renderAdmins()" style="width:130px">
+              <option value="">ทุกสถานะ</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
             </select>
           </div>
           <button id="btnAddAdmin" class="btn btn-primary btn-sm" onclick="openAdminModal()">
@@ -176,41 +254,110 @@
       </div>
     </div>
 
-    <div class="card fade-in-up delay-1">
-      <div class="overflow-x-auto">
-        <table class="rdf-table" id="adminTable">
-          <thead>
-            <tr>
-              <th>ชื่อ-นามสกุล</th>
-              <th>ชื่อผู้ใช้</th>
-              <th>สิทธิ์</th>
-              <th>สถานะ</th>
-              <th class="text-center">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="adminTableBody">
-            <tr><td colspan="5" class="text-center text-gray-400 py-8">กำลังโหลด...</td></tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- Admin count summary -->
+    <div id="adminSummary" class="flex gap-2 flex-wrap mb-4"></div>
+
+    <!-- Admin Cards Grid -->
+    <div id="adminGrid" class="admin-grid fade-in-up delay-1">
+      <div class="text-center text-gray-400 py-12 col-span-full">กำลังโหลด...</div>
     </div>
   </div>
 
-  <!-- ─── Panel: Majors ─── -->
+  <!-- ═══════════════════════════════════════════
+       PANEL: OVERVIEW
+  ════════════════════════════════════════════ -->
+  <div id="panelOverview" class="hidden">
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5 fade-in-up">
+      <div class="ov-stat">
+        <div class="ov-stat-icon" style="background:#eff6ff">
+          <i data-lucide="users" class="w-6 h-6" style="color:#1d4ed8"></i>
+        </div>
+        <div>
+          <div class="ov-stat-num" id="ovTotal">—</div>
+          <div class="ov-stat-label">นักเรียนทั้งหมด</div>
+        </div>
+      </div>
+      <div class="ov-stat">
+        <div class="ov-stat-icon" style="background:#f0fdf4">
+          <i data-lucide="check-circle" class="w-6 h-6" style="color:#16a34a"></i>
+        </div>
+        <div>
+          <div class="ov-stat-num" id="ovActive">—</div>
+          <div class="ov-stat-label">กำลังศึกษา</div>
+        </div>
+      </div>
+      <div class="ov-stat">
+        <div class="ov-stat-icon" style="background:#faf5ff">
+          <i data-lucide="award" class="w-6 h-6" style="color:#7c3aed"></i>
+        </div>
+        <div>
+          <div class="ov-stat-num" id="ovGrad">—</div>
+          <div class="ov-stat-label">สำเร็จการศึกษา</div>
+        </div>
+      </div>
+      <div class="ov-stat">
+        <div class="ov-stat-icon" style="background:#fff7ed">
+          <i data-lucide="shield" class="w-6 h-6" style="color:#ea580c"></i>
+        </div>
+        <div>
+          <div class="ov-stat-num" id="ovAdmins">—</div>
+          <div class="ov-stat-label">ผู้ดูแลระบบ</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Chart: students per year -->
+    <div class="chart-card mb-5 fade-in-up delay-1">
+      <div class="chart-title">
+        <i data-lucide="trending-up" class="w-4 h-4" style="color:#1d4ed8"></i>
+        จำนวนนักเรียนแยกตามปีการศึกษา (พ.ศ.)
+        <span class="ml-auto text-xs text-gray-400 font-normal" id="lineChartNote"></span>
+      </div>
+      <div style="position:relative; height:240px">
+        <canvas id="chartLine"></canvas>
+      </div>
+    </div>
+
+    <!-- Donut + Bar charts side by side -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 fade-in-up delay-2">
+      <div class="chart-card">
+        <div class="chart-title">
+          <i data-lucide="pie-chart" class="w-4 h-4" style="color:#7c3aed"></i>
+          สัดส่วนนักเรียนตามสถานศึกษา
+        </div>
+        <div style="position:relative; height:220px">
+          <canvas id="chartDonut"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">
+          <i data-lucide="bar-chart" class="w-4 h-4" style="color:#16a34a"></i>
+          จำนวนนักเรียนแยกตามสถานะ
+        </div>
+        <div style="position:relative; height:220px">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PANEL: MAJORS
+  ════════════════════════════════════════════ -->
   <div id="panelMajors" class="hidden">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-      <!-- MBS -->
       <div class="card fade-in-up">
         <div class="card-header" style="background:#1d4ed8">
-          <i data-lucide="school" class="w-4 h-4"></i>
-          แผนการเรียน / สาขาวิชา — MBS
+          <i data-lucide="school" class="w-4 h-4"></i> แผนการเรียน / สาขาวิชา — MBS
         </div>
         <div class="card-body">
           <p class="text-xs text-gray-500 mb-3">Maesariang Boripat Suksa School — พิมพ์แล้วกด Enter เพื่อเพิ่ม</p>
           <div class="tag-wrap" id="tagsMBS" onclick="document.getElementById('tagInputMBS').focus()">
-            <input type="text" id="tagInputMBS" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..."
-                   onkeydown="addTag(event,'MBS')">
+            <input type="text" id="tagInputMBS" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..." onkeydown="addTag(event,'MBS')">
           </div>
           <div class="flex justify-end mt-3">
             <button onclick="saveMajors('MBS')" class="btn btn-primary btn-sm">
@@ -220,17 +367,14 @@
         </div>
       </div>
 
-      <!-- VC Majors -->
       <div class="card fade-in-up delay-1">
         <div class="card-header" style="background:#ea580c">
-          <i data-lucide="wrench" class="w-4 h-4"></i>
-          สาขาวิชา — VC (แผนการเรียน)
+          <i data-lucide="wrench" class="w-4 h-4"></i> สาขาวิชา — VC (แผนการเรียน)
         </div>
         <div class="card-body">
           <p class="text-xs text-gray-500 mb-3">Vocational College — แผนการเรียน/สาขาวิชาหลัก</p>
           <div class="tag-wrap" id="tagsVC" onclick="document.getElementById('tagInputVC').focus()">
-            <input type="text" id="tagInputVC" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..."
-                   onkeydown="addTag(event,'VC')">
+            <input type="text" id="tagInputVC" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..." onkeydown="addTag(event,'VC')">
           </div>
           <div class="flex justify-end mt-3">
             <button onclick="saveMajors('VC')" class="btn btn-sm" style="background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa">
@@ -240,17 +384,14 @@
         </div>
       </div>
 
-      <!-- VC Departments -->
       <div class="card fade-in-up delay-2 md:col-span-2">
         <div class="card-header" style="background:#7c3aed">
-          <i data-lucide="layers" class="w-4 h-4"></i>
-          แผนกวิชา — VC (Department)
+          <i data-lucide="layers" class="w-4 h-4"></i> แผนกวิชา — VC (Department)
         </div>
         <div class="card-body">
           <p class="text-xs text-gray-500 mb-3">แผนกวิชาของ Vocational College (ใช้สำหรับช่อง "แผนกวิชา" ในฟอร์ม)</p>
           <div class="tag-wrap" id="tagsDEPT_VC" onclick="document.getElementById('tagInputDEPT_VC').focus()">
-            <input type="text" id="tagInputDEPT_VC" class="tag-add-input" placeholder="เพิ่มแผนกวิชา..."
-                   onkeydown="addTag(event,'DEPT_VC')">
+            <input type="text" id="tagInputDEPT_VC" class="tag-add-input" placeholder="เพิ่มแผนกวิชา..." onkeydown="addTag(event,'DEPT_VC')">
           </div>
           <div class="flex justify-end mt-3">
             <button onclick="saveMajors('DEPT_VC')" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #ddd6fe">
@@ -262,9 +403,71 @@
 
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════
+       PANEL: AUDIT LOGS
+  ════════════════════════════════════════════ -->
+  <div id="panelLogs" class="hidden">
+
+    <!-- Log toolbar -->
+    <div class="card mb-4 fade-in-up">
+      <div class="card-body py-3">
+        <div class="flex flex-wrap gap-2 items-center justify-between">
+          <div class="flex flex-wrap gap-2 items-center">
+            <div class="search-wrap">
+              <i data-lucide="search" class="w-4 h-4"></i>
+              <input type="text" id="logSearch" class="field-input search-input" placeholder="ค้นหาผู้ใช้ / รายละเอียด..."
+                     oninput="renderLogs()" style="width:220px">
+            </div>
+            <select id="logTypeFilter" class="field-select" onchange="renderLogs()" style="width:160px">
+              <option value="">ทุกประเภท</option>
+              <option value="ADD">➕ เพิ่มข้อมูล</option>
+              <option value="UPDATE">✏️ แก้ไขข้อมูล</option>
+              <option value="DELETE">🗑️ ลบข้อมูล</option>
+              <option value="LOGIN">🔑 เข้าสู่ระบบ</option>
+              <option value="SETTING">⚙️ ตั้งค่า</option>
+            </select>
+          </div>
+          <button onclick="loadLogs()" class="btn btn-secondary btn-sm">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> รีเฟรช
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log stats bar -->
+    <div id="logSummary" class="flex gap-3 flex-wrap mb-4"></div>
+
+    <!-- Log table -->
+    <div class="card fade-in-up delay-1">
+      <div class="overflow-x-auto">
+        <table class="rdf-table">
+          <thead>
+            <tr>
+              <th style="width:160px">เวลา</th>
+              <th style="width:110px">ผู้ดำเนินการ</th>
+              <th style="width:130px">ประเภท</th>
+              <th>รายละเอียด</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <tr><td colspan="4" class="text-center text-gray-400 py-10">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="logPager" class="flex justify-between items-center px-4 py-3 border-t border-gray-100 text-xs text-gray-500">
+        <span id="logCount"></span>
+        <div class="flex gap-1" id="logPagerBtns"></div>
+      </div>
+    </div>
+
+  </div>
+
 </main>
 
-<!-- ─── Admin Modal ─── -->
+<!-- ═══════════════════════════════════════════
+     ADMIN MODAL
+════════════════════════════════════════════ -->
 <div id="adminModal" class="hidden modal-overlay" onclick="closeAdminModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -279,11 +482,11 @@
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
           <label class="field-label">ชื่อ <span class="text-red-500">*</span></label>
-          <input type="text" id="m_fname" class="field-input" placeholder="ชื่อ" required>
+          <input type="text" id="m_fname" class="field-input" placeholder="ชื่อ">
         </div>
         <div>
-          <label class="field-label">นามสกุล <span class="text-red-500">*</span></label>
-          <input type="text" id="m_lname" class="field-input" placeholder="นามสกุล" required>
+          <label class="field-label">นามสกุล</label>
+          <input type="text" id="m_lname" class="field-input" placeholder="นามสกุล">
         </div>
       </div>
       <div class="mb-3">
@@ -300,26 +503,28 @@
           <input type="password" id="m_password2" class="field-input" placeholder="ยืนยันอีกครั้ง">
         </div>
       </div>
-      <div class="mb-3">
-        <label class="field-label">สิทธิ์ <span class="text-red-500">*</span></label>
-        <select id="m_role" class="field-select">
-          <option value="Manager">Manager — ผู้จัดการ</option>
-          <option value="Finance">Finance — การเงิน</option>
-          <option value="Committee">Committee — คณะกรรมการ</option>
-          <option value="DormTeacher">DormTeacher — ครูหอพัก</option>
-          <option value="SuperAdmin">SuperAdmin — สิทธิ์สูงสุด</option>
-        </select>
+      <div class="grid grid-cols-2 gap-3 mb-1">
+        <div>
+          <label class="field-label">สิทธิ์ <span class="text-red-500">*</span></label>
+          <select id="m_role" class="field-select">
+            <option value="Manager">Manager — ผู้จัดการ</option>
+            <option value="Finance">Finance — การเงิน</option>
+            <option value="Committee">Committee — คณะกรรมการ</option>
+            <option value="DormTeacher">DormTeacher — ครูหอพัก</option>
+            <option value="SuperAdmin">SuperAdmin — สิทธิ์สูงสุด</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">สถานะบัญชี</label>
+          <select id="m_status" class="field-select">
+            <option value="Active">Active — เปิดใช้งาน</option>
+            <option value="Inactive">Inactive — ปิดใช้งาน</option>
+          </select>
+        </div>
       </div>
-      <div class="mb-1">
-        <label class="field-label">สถานะบัญชี</label>
-        <select id="m_status" class="field-select">
-          <option value="Active">Active — เปิดใช้งาน</option>
-          <option value="Inactive">Inactive — ปิดใช้งาน</option>
-        </select>
-      </div>
-      <p id="m_editHint" class="text-xs text-gray-400 mt-2 hidden">
-        <i data-lucide="info" class="w-3 h-3 inline"></i>
-        หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นช่องรหัสผ่านว่างไว้
+      <p id="m_editHint" class="text-xs text-blue-500 mt-2 hidden flex items-center gap-1">
+        <i data-lucide="info" class="w-3 h-3"></i>
+        เว้นรหัสผ่านว่างไว้หากไม่ต้องการเปลี่ยน
       </p>
     </div>
     <div class="modal-footer">
@@ -354,20 +559,28 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
 const user = requireAuth();
 if (user) {
   renderNavUser(user);
-  if (user.role === 'SuperAdmin') {
+  if (user.role === 'SuperAdmin')
     document.getElementById('superAdminBadge').classList.remove('hidden');
-  }
 }
 
-// ── Tab switching ──
+// ─────────────────────────────────────────────
+// TAB SWITCHING
+// ─────────────────────────────────────────────
+const ALL_TABS = ['admins','overview','majors','logs'];
+
 function switchTab(tab) {
-  ['admins','majors'].forEach(t => {
-    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('hidden');
-    document.getElementById('tab'   + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
+  ALL_TABS.forEach(t => {
+    const pid = 'panel' + t.charAt(0).toUpperCase() + t.slice(1);
+    const tid = 'tab'   + t.charAt(0).toUpperCase() + t.slice(1);
+    document.getElementById(pid)?.classList.add('hidden');
+    document.getElementById(tid)?.classList.remove('active');
   });
-  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
-  document.getElementById('tab'   + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.remove('hidden');
+  document.getElementById('tab'   + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
   lucide.createIcons();
+
+  if (tab === 'overview' && !chartsBuilt) loadOverview();
+  if (tab === 'logs'     && !logsLoaded)  loadLogs();
 }
 
 // ─────────────────────────────────────────────
@@ -375,19 +588,17 @@ function switchTab(tab) {
 // ─────────────────────────────────────────────
 let allAdmins = [];
 
-const ROLE_LABELS = {
-  SuperAdmin: 'SuperAdmin',
-  Manager:    'Manager',
-  Finance:    'Finance',
-  Committee:  'Committee',
-  DormTeacher:'DormTeacher'
-};
 const ROLE_CSS = {
-  SuperAdmin: 'role-superadmin',
-  Manager:    'role-manager',
-  Finance:    'role-finance',
-  Committee:  'role-committee',
-  DormTeacher:'role-dormteacher'
+  SuperAdmin:'role-superadmin', Manager:'role-manager',
+  Finance:'role-finance', Committee:'role-committee', DormTeacher:'role-dormteacher'
+};
+const ROLE_COLORS = {
+  SuperAdmin:'#dc2626', Manager:'#1d4ed8', Finance:'#16a34a',
+  Committee:'#7c3aed', DormTeacher:'#ea580c'
+};
+const ROLE_BG = {
+  SuperAdmin:'#fef2f2', Manager:'#eff6ff', Finance:'#f0fdf4',
+  Committee:'#faf5ff', DormTeacher:'#fff7ed'
 };
 
 async function loadAdmins() {
@@ -397,82 +608,101 @@ async function loadAdmins() {
       allAdmins = r.data || [];
       renderAdmins();
     } else {
-      document.getElementById('adminTableBody').innerHTML =
-        `<tr><td colspan="5" class="text-center text-red-400 py-6">${r.message||'เกิดข้อผิดพลาด'}</td></tr>`;
+      document.getElementById('adminGrid').innerHTML =
+        `<div class="col-span-full text-center text-red-400 py-10">${r.message||'เกิดข้อผิดพลาด'}</div>`;
     }
   } catch(e) {
-    document.getElementById('adminTableBody').innerHTML =
-      `<tr><td colspan="5" class="text-center text-red-400 py-6">ไม่สามารถโหลดข้อมูลได้</td></tr>`;
+    document.getElementById('adminGrid').innerHTML =
+      `<div class="col-span-full text-center text-red-400 py-10">ไม่สามารถโหลดข้อมูลได้</div>`;
   }
 }
 
 function renderAdmins() {
-  const q    = (document.getElementById('adminSearch').value||'').toLowerCase();
-  const role = document.getElementById('adminRoleFilter').value;
+  const q      = (document.getElementById('adminSearch').value||'').toLowerCase();
+  const role   = document.getElementById('adminRoleFilter').value;
+  const status = document.getElementById('adminStatusFilter').value;
+
   const filtered = allAdmins.filter(a => {
     const name = ((a.FirstName||'') + ' ' + (a.LastName||'') + ' ' + (a.Username||'')).toLowerCase();
-    return (!q || name.includes(q)) && (!role || a.Role === role);
+    return (!q || name.includes(q)) && (!role || a.Role === role) && (!status || a.Status === status);
   });
+
+  // Summary badges
+  const roleCounts = {};
+  allAdmins.forEach(a => { roleCounts[a.Role] = (roleCounts[a.Role]||0) + 1; });
+  document.getElementById('adminSummary').innerHTML =
+    Object.entries(roleCounts).map(([r, c]) =>
+      `<span class="badge" style="background:${ROLE_BG[r]||'#f8fafc'};color:${ROLE_COLORS[r]||'#64748b'};border:1px solid ${ROLE_COLORS[r]||'#e2e8f0'}33">
+        ${r} <strong>${c}</strong>
+      </span>`
+    ).join('') +
+    `<span class="badge badge-gray ml-auto">${t('total')||'ทั้งหมด'}: <strong>${allAdmins.length}</strong></span>`;
+
   const isSuperAdmin = user && user.role === 'SuperAdmin';
-  const tbody = document.getElementById('adminTableBody');
+
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบผู้ดูแลระบบ</td></tr>`;
+    document.getElementById('adminGrid').innerHTML =
+      `<div class="col-span-full text-center text-gray-400 py-12">ไม่พบผู้ดูแลระบบ</div>`;
     return;
   }
-  tbody.innerHTML = filtered.map(a => {
-    const name = (a.FirstName||'—') + ' ' + (a.LastName||'');
-    const roleClass = ROLE_CSS[a.Role] || 'badge-gray';
-    const statusBadge = a.Status === 'Active'
-      ? `<span class="badge badge-green">Active</span>`
-      : `<span class="badge badge-gray">Inactive</span>`;
-    const isSelf = user && user.username === a.Username;
+
+  document.getElementById('adminGrid').innerHTML = filtered.map(a => {
+    const name    = ((a.FirstName||'') + ' ' + (a.LastName||'')).trim() || a.Username || '—';
+    const roleClass = ROLE_CSS[a.Role] || '';
+    const isActive  = a.Status === 'Active';
+    const isSelf    = user && user.username === a.Username;
     const canDelete = isSuperAdmin && !isSelf;
-    return `<tr>
-      <td>
-        <div class="flex items-center gap-2">
-          <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(name.trim())}&background=1e3a8a&color=fff&bold=true&size=32"
-               class="w-8 h-8 rounded-full flex-shrink-0">
-          <div>
-            <div class="font-semibold text-gray-800 text-sm">${name}</div>
-          </div>
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${(ROLE_COLORS[a.Role]||'#1e3a8a').replace('#','')}&color=fff&bold=true&size=64`;
+    const lastLogin = a.LastLogin ? `<span class="text-xs text-gray-400">เข้าล่าสุด: ${a.LastLogin}</span>` : '';
+    return `
+    <div class="admin-card ${roleClass}">
+      <div class="flex items-start justify-between mb-3">
+        <div class="relative inline-block">
+          <img src="${avatarUrl}" class="admin-avatar" alt="${name}">
+          <span class="admin-status-dot ${isActive ? 'active' : 'inactive'}"></span>
         </div>
-      </td>
-      <td class="text-gray-500 text-sm font-mono">${a.Username||'—'}</td>
-      <td><span class="role-badge ${roleClass}">${a.Role||'—'}</span></td>
-      <td>${statusBadge}</td>
-      <td class="text-center">
-        <div class="flex gap-1 justify-center">
-          <button onclick="openAdminModal(${JSON.stringify(a).replace(/"/g,'&quot;')})"
-                  class="btn btn-secondary btn-icon btn-sm" title="แก้ไข">
+        <div class="flex gap-1">
+          <button onclick='openAdminModal(${JSON.stringify(a).replace(/'/g,"&#39;")})'
+                  class="btn btn-secondary btn-icon" style="padding:5px" title="แก้ไข">
             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
           </button>
           ${canDelete ? `<button onclick="confirmDeleteAdmin('${a.Username}')"
-                  class="btn btn-danger btn-icon btn-sm" title="ลบ">
+                  class="btn btn-danger btn-icon" style="padding:5px" title="ลบ">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           </button>` : ''}
         </div>
-      </td>
-    </tr>`;
+      </div>
+      <div class="font-bold text-gray-800 text-sm leading-tight">${name}</div>
+      <div class="text-xs text-gray-400 font-mono mb-2">${a.Username||'—'}</div>
+      <div class="flex items-center justify-between">
+        <span class="role-badge ${roleClass}">${a.Role||'—'}</span>
+        <span class="badge ${isActive ? 'badge-green' : 'badge-gray'}" style="font-size:10.5px">
+          ${isActive ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+      ${lastLogin ? `<div class="mt-2">${lastLogin}</div>` : ''}
+    </div>`;
   }).join('');
   lucide.createIcons();
 }
 
 function openAdminModal(adminData) {
+  if (typeof adminData === 'string') adminData = JSON.parse(adminData);
   const isEdit = !!adminData;
-  document.getElementById('m_editMode').value   = isEdit ? 'edit' : 'new';
-  document.getElementById('m_fname').value      = adminData?.FirstName || '';
-  document.getElementById('m_lname').value      = adminData?.LastName  || '';
-  document.getElementById('m_username').value   = adminData?.Username  || '';
-  document.getElementById('m_username').readOnly= isEdit;
+  document.getElementById('m_editMode').value    = isEdit ? 'edit' : 'new';
+  document.getElementById('m_fname').value       = adminData?.FirstName || '';
+  document.getElementById('m_lname').value       = adminData?.LastName  || '';
+  document.getElementById('m_username').value    = adminData?.Username  || '';
+  document.getElementById('m_username').readOnly = isEdit;
   document.getElementById('m_username').style.background = isEdit ? '#f8fafc' : '';
-  document.getElementById('m_role').value       = adminData?.Role   || 'Manager';
-  document.getElementById('m_status').value     = adminData?.Status || 'Active';
-  document.getElementById('m_password').value   = '';
-  document.getElementById('m_password2').value  = '';
+  document.getElementById('m_role').value        = adminData?.Role   || 'Manager';
+  document.getElementById('m_status').value      = adminData?.Status || 'Active';
+  document.getElementById('m_password').value    = '';
+  document.getElementById('m_password2').value   = '';
   document.getElementById('modalTitle').querySelector('span').textContent =
     isEdit ? 'แก้ไขผู้ดูแลระบบ' : 'เพิ่มผู้ดูแลระบบ';
   document.getElementById('m_passLabel').innerHTML =
-    isEdit ? 'รหัสผ่านใหม่ <span class="text-gray-400">(เว้นว่างถ้าไม่เปลี่ยน)</span>'
+    isEdit ? 'รหัสผ่านใหม่ <span class="text-gray-400 font-normal">(เว้นว่างถ้าไม่เปลี่ยน)</span>'
            : 'รหัสผ่าน <span class="text-red-500">*</span>';
   document.getElementById('m_editHint').classList.toggle('hidden', !isEdit);
   document.getElementById('adminModal').classList.remove('hidden');
@@ -487,67 +717,302 @@ function closeAdminModal(e) {
 async function submitAdminForm() {
   const isEdit = document.getElementById('m_editMode').value === 'edit';
   const fname  = document.getElementById('m_fname').value.trim();
-  const lname  = document.getElementById('m_lname').value.trim();
   const uname  = document.getElementById('m_username').value.trim();
   const pass   = document.getElementById('m_password').value.trim();
   const pass2  = document.getElementById('m_password2').value.trim();
   const role   = document.getElementById('m_role').value;
   const status = document.getElementById('m_status').value;
+  const lname  = document.getElementById('m_lname').value.trim();
 
   if (!fname || !uname) { Swal.fire('แจ้งเตือน','กรุณากรอกชื่อและชื่อผู้ใช้','warning'); return; }
   if (!isEdit && !pass) { Swal.fire('แจ้งเตือน','กรุณากรอกรหัสผ่าน','warning'); return; }
   if (pass && pass !== pass2) { Swal.fire('แจ้งเตือน','รหัสผ่านไม่ตรงกัน','warning'); return; }
 
   const btn = document.getElementById('m_submitBtn');
-  btn.disabled = true;
+  btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...';
   try {
-    const payload = { Username: uname, FirstName: fname, LastName: lname, Role: role, Status: status };
+    const payload = { Username:uname, FirstName:fname, LastName:lname, Role:role, Status:status };
     if (pass) payload.Password = pass;
     const r = await API.saveAdmin(payload);
-    btn.disabled = false;
+    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> บันทึก';
     if (r.status === 'success') {
       document.getElementById('adminModal').classList.add('hidden');
       Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false });
       loadAdmins();
-    } else {
-      Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error');
-    }
+    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
   } catch(e) {
-    btn.disabled = false;
+    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> บันทึก';
     Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
   }
+  lucide.createIcons();
 }
 
 async function confirmDeleteAdmin(username) {
-  const result = await Swal.fire({
-    title: 'ลบผู้ดูแล?',
-    html: `ต้องการลบบัญชี <b>${username}</b> ออกจากระบบ?<br><small class="text-red-500">ไม่สามารถยกเลิกได้</small>`,
-    icon: 'warning', showCancelButton: true,
-    confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#dc2626'
+  const res = await Swal.fire({
+    title:'ลบผู้ดูแล?',
+    html:`ลบบัญชี <b>${username}</b> ออกจากระบบ?<br><small class="text-red-500">ไม่สามารถยกเลิกได้</small>`,
+    icon:'warning', showCancelButton:true,
+    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#dc2626'
   });
-  if (!result.isConfirmed) return;
+  if (!res.isConfirmed) return;
   try {
     const r = await API.deleteAdmin(username);
     if (r.status === 'success') {
       Swal.fire({ icon:'success', title:'ลบสำเร็จ', timer:1500, showConfirmButton:false });
       loadAdmins();
+    } else { Swal.fire('ผิดพลาด', r.message, 'error'); }
+  } catch(e) { Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
+}
+
+// ─────────────────────────────────────────────
+// OVERVIEW / CHARTS
+// ─────────────────────────────────────────────
+let chartsBuilt = false;
+let chartLine, chartDonut, chartStatus;
+
+async function loadOverview() {
+  showLoader(true, 'กำลังโหลดข้อมูล...');
+  try {
+    const r = await API.getStudents();
+    showLoader(false);
+    if (r.status !== 'success') return;
+    const students = r.data || [];
+    const stats    = r.stats || {};
+
+    // Stat cards
+    document.getElementById('ovTotal').textContent   = stats.Total || students.length || 0;
+    document.getElementById('ovActive').textContent  = students.filter(s => s.status === 'Active').length;
+    document.getElementById('ovGrad').textContent    = stats.Alumni || 0;
+    document.getElementById('ovAdmins').textContent  = allAdmins.length || '—';
+
+    buildCharts(students);
+    chartsBuilt = true;
+  } catch(e) { showLoader(false); }
+}
+
+function buildCharts(students) {
+  // ── Line chart: students per scholarship year by institution ──
+  const yearInstMap = {};
+  students.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (!y || y < 2000 || y > 2100) return;
+    const be = y + 543;
+    if (!yearInstMap[be]) yearInstMap[be] = { MBS:0, VC:0, UNI:0 };
+    if (s.institution === 'MBS') yearInstMap[be].MBS++;
+    else if (s.institution === 'VC') yearInstMap[be].VC++;
+    else if (s.institution === 'UNI') yearInstMap[be].UNI++;
+  });
+  const sortedYears = Object.keys(yearInstMap).sort();
+  document.getElementById('lineChartNote').textContent =
+    sortedYears.length ? `${sortedYears[0]} – ${sortedYears[sortedYears.length-1]}` : '';
+
+  if (chartLine) chartLine.destroy();
+  chartLine = new Chart(document.getElementById('chartLine'), {
+    type: 'line',
+    data: {
+      labels: sortedYears,
+      datasets: [
+        { label:'MBS', data: sortedYears.map(y => yearInstMap[y].MBS),
+          borderColor:'#1d4ed8', backgroundColor:'rgba(29,78,216,0.08)',
+          borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#1d4ed8', tension:0.35, fill:true },
+        { label:'VC',  data: sortedYears.map(y => yearInstMap[y].VC),
+          borderColor:'#ea580c', backgroundColor:'rgba(234,88,12,0.08)',
+          borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#ea580c', tension:0.35, fill:true },
+        { label:'UNI', data: sortedYears.map(y => yearInstMap[y].UNI),
+          borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.08)',
+          borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#7c3aed', tension:0.35, fill:true },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ position:'top', labels:{ font:{size:12}, usePointStyle:true, pointStyleWidth:8 } } },
+      scales:{
+        y:{ beginAtZero:true, ticks:{stepSize:1, font:{size:11}}, grid:{color:'#f1f5f9'} },
+        x:{ ticks:{font:{size:11}}, grid:{display:false} }
+      }
+    }
+  });
+
+  // ── Donut chart: distribution by institution (active only) ──
+  const activeStudents = students.filter(s => s.status !== 'Graduated');
+  const instCounts = { MBS:0, VC:0, UNI:0, อื่นๆ:0 };
+  activeStudents.forEach(s => {
+    if      (s.institution === 'MBS') instCounts.MBS++;
+    else if (s.institution === 'VC')  instCounts.VC++;
+    else if (s.institution === 'UNI') instCounts.UNI++;
+    else instCounts.อื่นๆ++;
+  });
+  if (chartDonut) chartDonut.destroy();
+  chartDonut = new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(instCounts),
+      datasets:[{ data: Object.values(instCounts),
+        backgroundColor:['#1d4ed8','#ea580c','#7c3aed','#94a3b8'],
+        borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ position:'bottom', labels:{ font:{size:12}, usePointStyle:true, padding:16 } } }
+    }
+  });
+
+  // ── Bar chart: status distribution ──
+  const statusMap = {};
+  const STATUS_TH = {
+    Active:'กำลังศึกษา', Graduated:'สำเร็จการศึกษา', Suspended:'พักการเรียน',
+    Incomplete:'ไม่สำเร็จ', Resigned:'ลาออก', University:'ต่อมหาวิทยาลัย', Other:'อื่นๆ'
+  };
+  const STATUS_COLOR = {
+    Active:'#10b981', Graduated:'#7c3aed', Suspended:'#f59e0b',
+    Incomplete:'#ef4444', Resigned:'#ef4444', University:'#1d4ed8', Other:'#94a3b8'
+  };
+  students.forEach(s => { statusMap[s.status] = (statusMap[s.status]||0) + 1; });
+  const statusKeys = Object.keys(statusMap).sort((a,b) => statusMap[b] - statusMap[a]);
+  if (chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(document.getElementById('chartStatus'), {
+    type: 'bar',
+    data: {
+      labels: statusKeys.map(k => STATUS_TH[k] || k),
+      datasets:[{ data: statusKeys.map(k => statusMap[k]),
+        backgroundColor: statusKeys.map(k => (STATUS_COLOR[k]||'#94a3b8') + 'cc'),
+        borderColor:     statusKeys.map(k => STATUS_COLOR[k]||'#94a3b8'),
+        borderWidth:1.5, borderRadius:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ beginAtZero:true, ticks:{stepSize:1,font:{size:11}}, grid:{color:'#f1f5f9'} },
+        y:{ ticks:{font:{size:11}}, grid:{display:false} }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────
+let allLogs = [];
+let logsLoaded = false;
+let logPage = 1;
+const LOG_PER_PAGE = 50;
+
+async function loadLogs() {
+  logsLoaded = false;
+  document.getElementById('logTableBody').innerHTML =
+    `<tr><td colspan="4" class="text-center text-gray-400 py-10">กำลังโหลด...</td></tr>`;
+  try {
+    const r = await API.getLogs(500);
+    if (r.status === 'success') {
+      allLogs = r.data || [];
+      logPage = 1;
+      renderLogs();
+      logsLoaded = true;
     } else {
-      Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error');
+      document.getElementById('logTableBody').innerHTML =
+        `<tr><td colspan="4" class="text-center text-red-400 py-8">${r.message||'ไม่สามารถโหลดข้อมูลได้'}</td></tr>`;
     }
   } catch(e) {
-    Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
+    document.getElementById('logTableBody').innerHTML =
+      `<tr><td colspan="4" class="text-center text-red-400 py-8">ไม่สามารถเชื่อมต่อได้</td></tr>`;
   }
+}
+
+function getLogClass(action) {
+  if (!action) return 'log-login';
+  const a = action.toUpperCase();
+  if (a.includes('ADD'))     return 'log-add';
+  if (a.includes('UPDATE'))  return 'log-update';
+  if (a.includes('DELETE'))  return 'log-delete';
+  if (a.includes('SETTING') || a.includes('SAVE_SETTING')) return 'log-setting';
+  return 'log-login';
+}
+
+function getLogIcon(action) {
+  const a = (action||'').toUpperCase();
+  if (a.includes('ADD'))    return '➕';
+  if (a.includes('UPDATE')) return '✏️';
+  if (a.includes('DELETE')) return '🗑️';
+  if (a.includes('LOGIN'))  return '🔑';
+  if (a.includes('SETTING'))return '⚙️';
+  return '•';
+}
+
+function renderLogs() {
+  const q    = (document.getElementById('logSearch').value||'').toLowerCase();
+  const type = document.getElementById('logTypeFilter').value.toUpperCase();
+
+  const filtered = allLogs.filter(l => {
+    const text = ((l.user||'') + ' ' + (l.action||'') + ' ' + (l.details||'')).toLowerCase();
+    const matchQ = !q || text.includes(q);
+    const matchT = !type || (l.action||'').toUpperCase().includes(type);
+    return matchQ && matchT;
+  });
+
+  // Summary
+  const typeCounts = { ADD:0, UPDATE:0, DELETE:0, LOGIN:0, OTHER:0 };
+  filtered.forEach(l => {
+    const a = (l.action||'').toUpperCase();
+    if      (a.includes('ADD'))    typeCounts.ADD++;
+    else if (a.includes('UPDATE')) typeCounts.UPDATE++;
+    else if (a.includes('DELETE')) typeCounts.DELETE++;
+    else if (a.includes('LOGIN'))  typeCounts.LOGIN++;
+    else                           typeCounts.OTHER++;
+  });
+  document.getElementById('logSummary').innerHTML = [
+    ['ADD','log-add','เพิ่ม'],['UPDATE','log-update','แก้ไข'],
+    ['DELETE','log-delete','ลบ'],['LOGIN','log-login','Login']
+  ].map(([k,c,label]) => typeCounts[k]
+    ? `<span class="log-action-badge ${c}">${label} ${typeCounts[k]}</span>` : ''
+  ).join('') + `<span class="text-xs text-gray-400 ml-1">รวม ${filtered.length} รายการ</span>`;
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LOG_PER_PAGE));
+  if (logPage > totalPages) logPage = totalPages;
+  const sliced = filtered.slice((logPage-1)*LOG_PER_PAGE, logPage*LOG_PER_PAGE);
+
+  document.getElementById('logCount').textContent =
+    `แสดง ${((logPage-1)*LOG_PER_PAGE)+1}–${Math.min(logPage*LOG_PER_PAGE, filtered.length)} จาก ${filtered.length}`;
+
+  // Pager buttons
+  document.getElementById('logPagerBtns').innerHTML = Array.from({length:Math.min(totalPages,8)},(_,i) => {
+    const p = i+1;
+    return `<button onclick="logPage=${p};renderLogs()" class="btn btn-sm ${p===logPage?'btn-primary':'btn-secondary'}" style="min-width:32px;padding:4px 8px">${p}</button>`;
+  }).join('');
+
+  if (!sliced.length) {
+    document.getElementById('logTableBody').innerHTML =
+      `<tr><td colspan="4" class="text-center text-gray-400 py-10">ไม่พบรายการ</td></tr>`;
+    return;
+  }
+
+  document.getElementById('logTableBody').innerHTML = sliced.map(l => {
+    const cls  = getLogClass(l.action);
+    const icon = getLogIcon(l.action);
+    const action = (l.action||'').replace(/_/g,' ');
+    return `<tr class="log-row">
+      <td class="text-xs text-gray-500 whitespace-nowrap">${l.timestamp||'—'}</td>
+      <td>
+        <div class="flex items-center gap-1.5">
+          <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(l.user||'?')}&background=1e3a8a&color=fff&size=20&bold=true"
+               class="w-5 h-5 rounded-full flex-shrink-0">
+          <span class="text-xs font-semibold text-gray-700">${l.user||'—'}</span>
+        </div>
+      </td>
+      <td><span class="log-action-badge ${cls}">${icon} ${action}</span></td>
+      <td class="text-xs text-gray-600">${l.details||'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────────
 // MAJORS MANAGEMENT
 // ─────────────────────────────────────────────
-// majorsState: { MBS: [...], VC: [...], DEPT_VC: [...] }
 let majorsState = {};
 
 async function loadMajors() {
-  // Start with config defaults
   majorsState = {
     MBS:     [...(RDF.MAJORS?.MBS     || [])],
     VC:      [...(RDF.MAJORS?.VC      || [])],
@@ -564,25 +1029,17 @@ async function loadMajors() {
   renderAllTags();
 }
 
-function renderAllTags() {
-  renderTags('MBS');
-  renderTags('VC');
-  renderTags('DEPT_VC');
-}
+function renderAllTags() { ['MBS','VC','DEPT_VC'].forEach(renderTags); }
 
 function renderTags(key) {
   const wrap  = document.getElementById('tags' + key);
   const input = document.getElementById('tagInput' + key);
   if (!wrap || !input) return;
-  // Remove all existing tags (keep input)
   [...wrap.querySelectorAll('.tag-item')].forEach(t => t.remove());
-  const list = majorsState[key] || [];
-  list.forEach(val => {
+  (majorsState[key] || []).forEach(val => {
     const span = document.createElement('span');
-    const cls  = key.startsWith('DEPT') ? 'tag-item dept' : (key === 'VC' ? 'tag-item vc' : 'tag-item');
-    span.className = cls;
-    const safeVal = val.replace(/'/g, "\\'");
-    span.innerHTML = `${val} <span class="tag-remove" onclick="removeTag('${key}','${safeVal}')">×</span>`;
+    span.className = key.startsWith('DEPT') ? 'tag-item dept' : (key === 'VC' ? 'tag-item vc' : 'tag-item');
+    span.innerHTML = `${val} <span class="tag-remove" onclick="removeTag('${key}','${val.replace(/'/g,"\\'")}')">×</span>`;
     wrap.insertBefore(span, input);
   });
 }
@@ -591,17 +1048,15 @@ function addTag(e, key) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
   const val = e.target.value.trim();
-  if (!val) return;
+  if (!val || (majorsState[key]||[]).includes(val)) { e.target.value=''; return; }
   if (!majorsState[key]) majorsState[key] = [];
-  if (!majorsState[key].includes(val)) {
-    majorsState[key].push(val);
-    renderTags(key);
-  }
+  majorsState[key].push(val);
+  renderTags(key);
   e.target.value = '';
 }
 
 function removeTag(key, val) {
-  majorsState[key] = (majorsState[key] || []).filter(m => m !== val);
+  majorsState[key] = (majorsState[key]||[]).filter(m => m !== val);
   renderTags(key);
 }
 
@@ -614,25 +1069,11 @@ async function saveMajors(key) {
     const r = await API.saveSetting(settingKey, majorsState[key]);
     showLoader(false);
     if (r.status === 'success') {
-      // Update local RDF config
-      if (key === 'MBS' || key === 'VC') {
-        if (!RDF.MAJORS) RDF.MAJORS = {};
-        RDF.MAJORS[key] = [...majorsState[key]];
-      }
-      if (key === 'DEPT_VC') {
-        if (!RDF.DEPARTMENTS) RDF.DEPARTMENTS = {};
-        RDF.DEPARTMENTS.VC = [...majorsState[key]];
-      }
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ',
-        text: `บันทึกรายการสาขาวิชา ${key === 'DEPT_VC' ? 'แผนกวิชา VC' : key} เรียบร้อย`,
-        timer: 2000, showConfirmButton: false });
-    } else {
-      Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error');
-    }
-  } catch(e) {
-    showLoader(false);
-    Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
-  }
+      if (key === 'MBS' || key === 'VC') { if (!RDF.MAJORS) RDF.MAJORS={}; RDF.MAJORS[key]=[...majorsState[key]]; }
+      if (key === 'DEPT_VC') { if (!RDF.DEPARTMENTS) RDF.DEPARTMENTS={}; RDF.DEPARTMENTS.VC=[...majorsState[key]]; }
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
+    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
 }
 
 // ─────────────────────────────────────────────

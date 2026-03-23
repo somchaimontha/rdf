@@ -25,6 +25,7 @@ function doGet(e) {
     else if (action === 'ping')           result = { status: 'ok', timestamp: new Date().toISOString() };
     else if (action === 'getAdmins')          result = getAdmins();
     else if (action === 'getSystemSettings')  result = getSystemSettings();
+    else if (action === 'getLogs')            result = getLogs(parseInt(e.parameter.limit)||200);
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -468,4 +469,23 @@ function saveSetting(key, values, reqUser) {
   if (!found) sheet.appendRow([key, jsonVal, now]);
   logAction(reqUser||'Admin', 'SAVE_SETTING', 'Key: ' + key);
   return { status:'success' };
+}
+
+function getLogs(limit) {
+  const sheet = db.getSheetByName('Logs');
+  if (!sheet || sheet.getLastRow() <= 1) return { status:'success', data:[] };
+  const data = sheet.getDataRange().getValues();
+  const result = [];
+  const start = Math.max(1, data.length - parseInt(limit));
+  for (let i = data.length - 1; i >= start; i--) {
+    const row = data[i];
+    if (!row[0]) continue;
+    result.push({
+      timestamp: row[0] ? row[0].toString() : '',
+      user:      row[1] ? row[1].toString() : '',
+      action:    row[2] ? row[2].toString() : '',
+      details:   row[3] ? row[3].toString() : ''
+    });
+  }
+  return { status:'success', data: result };
 }
