@@ -37,7 +37,7 @@ async function handleLogin() {
     const result = await res.json();
     showLoader(false);
     if (result.status === 'success') {
-      setUser({ name: result.name, role: result.role, stipNo: result.stipNo || '', pic: result.pic || '' });
+      setUser({ name: result.name, role: result.role, stipNo: result.stipNo || '', pic: result.pic || '', username: id });
       window.location.href = 'dashboard.html';
     } else {
       Swal.fire(t('error'), result.message || t('loginFailed'), 'error');
