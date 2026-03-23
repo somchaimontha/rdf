@@ -20,5 +20,35 @@ const RDF = {
   STATUS_COLORS: {
     Active:"badge-green", Graduated:"badge-purple", Suspended:"badge-orange",
     Incomplete:"badge-red", Resigned:"badge-red", University:"badge-blue", Other:"badge-gray"
+  },
+  /* ── Majors/Departments — admin can extend these via Settings ── */
+  MAJORS: {
+    MBS: [
+      'วิทยาศาสตร์-คณิตศาสตร์',
+      'วิทยาศาสตร์',
+      'ภาษาอังกฤษ',
+      'ดิจิทัล',
+      'ศิลป์คำนวณ',
+      'ศิลป์ภาษาอังกฤษ',
+      'ศิลป์ภาษาจีน',
+      'ศิลป์ภาษาญี่ปุ่น',
+      'ศิลป์ทั่วไป'
+    ],
+    VC: [
+      'ช่างยนต์',
+      'ช่างไฟฟ้า',
+      'ช่างก่อสร้าง',
+      'เทคโนโลยีสารสนเทศ',
+      'การบัญชี'
+    ]
+  },
+  DEPARTMENTS: {
+    VC: [
+      'ช่างยนต์',
+      'ช่างไฟฟ้า',
+      'ช่างก่อสร้าง',
+      'เทคโนโลยีสารสนเทศ',
+      'การบัญชี'
+    ]
   }
 };
