@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตั้งค่าระบบ — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+/* ── Settings Tabs ── */
+.settings-tab-bar {
+  display: flex; gap: 2px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+.s-tab {
+  padding: 10px 22px; font-size: 13.5px; font-weight: 700;
+  cursor: pointer; border: none; background: none;
+  color: #64748b; border-bottom: 3px solid transparent;
+  margin-bottom: -2px; transition: all 0.2s; font-family: inherit;
+  display: flex; align-items: center; gap: 7px;
+}
+.s-tab.active { color: #1e3a8a; border-bottom-color: #1e3a8a; }
+.s-tab:hover  { color: #1e3a8a; }
+
+/* ── Role Badges ── */
+.role-badge {
+  display: inline-block; padding: 2px 10px;
+  border-radius: 20px; font-size: 11.5px; font-weight: 700;
+}
+.role-superadmin { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+.role-manager    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+.role-finance    { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+.role-committee  { background:#faf5ff; color:#7c3aed; border:1px solid #ddd6fe; }
+.role-dormteacher{ background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; }
+
+/* ── Tag editor ── */
+.tag-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  padding: 8px 10px; background: #f8fafc;
+  border: 1.5px solid #e2e8f0; border-radius: 8px; min-height: 48px;
+  cursor: text; transition: border-color 0.2s;
+}
+.tag-wrap:focus-within { border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.tag-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.tag-item.vc  { background:#fff7ed; border-color:#fed7aa; color:#ea580c; }
+.tag-item.dept{ background:#faf5ff; border-color:#ddd6fe; color:#7c3aed; }
+.tag-remove {
+  cursor: pointer; width: 15px; height: 15px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 12px; line-height: 1;
+  color: inherit; opacity: 0.6; transition: all 0.15s;
+}
+.tag-remove:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+.tag-add-input {
+  border: none; outline: none; background: transparent;
+  font-size: 13px; min-width: 130px; font-family: inherit; color: #1e293b;
+  flex: 1;
+}
+.tag-add-input::placeholder { color: #94a3b8; font-size: 12.5px; }
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15,23,42,0.55); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn 0.15s ease;
+}
+.modal-box {
+  background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+  animation: fadeInUp 0.2s ease;
+  overflow: hidden;
+}
+.modal-header {
+  padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+.modal-body { padding: 20px; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
+</style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+        <div class="hide-mobile">
+          <div id="navUserName" class="nav-user-name">—</div>
+          <div id="navUserRole" class="nav-user-role">—</div>
+        </div>
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 fade-in-up">
+    <div>
+      <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-1 font-semibold transition">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> กลับหน้าหลัก
+      </a>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <i data-lucide="settings" class="w-5 h-5" style="color:#1e3a8a"></i>
+        ตั้งค่าระบบ
+      </h2>
+    </div>
+    <div id="superAdminBadge" class="hidden">
+      <span class="badge badge-red flex items-center gap-1">
+        <i data-lucide="shield" class="w-3.5 h-3.5"></i> SuperAdmin Mode
+      </span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="settings-tab-bar fade-in-up">
+    <button class="s-tab active" id="tabAdmins" onclick="switchTab('admins')">
+      <i data-lucide="users" class="w-4 h-4"></i> ผู้ดูแลระบบ
+    </button>
+    <button class="s-tab" id="tabMajors" onclick="switchTab('majors')">
+      <i data-lucide="book-open" class="w-4 h-4"></i> สาขาวิชา
+    </button>
+  </div>
+
+  <!-- ─── Panel: Admins ─── -->
+  <div id="panelAdmins">
+    <div class="card mb-4 fade-in-up">
+      <div class="card-body">
+        <div class="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+          <div class="flex gap-2 items-center">
+            <div class="search-wrap">
+              <i data-lucide="search" class="w-4 h-4"></i>
+              <input type="text" id="adminSearch" class="field-input search-input" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้..."
+                     oninput="renderAdmins()" style="width:220px">
+            </div>
+            <select id="adminRoleFilter" class="field-select" onchange="renderAdmins()" style="width:160px">
+              <option value="">ทุกสิทธิ์</option>
+              <option value="SuperAdmin">SuperAdmin</option>
+              <option value="Manager">Manager</option>
+              <option value="Finance">Finance</option>
+              <option value="Committee">Committee</option>
+              <option value="DormTeacher">DormTeacher</option>
+            </select>
+          </div>
+          <button id="btnAddAdmin" class="btn btn-primary btn-sm" onclick="openAdminModal()">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ดูแล
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card fade-in-up delay-1">
+      <div class="overflow-x-auto">
+        <table class="rdf-table" id="adminTable">
+          <thead>
+            <tr>
+              <th>ชื่อ-นามสกุล</th>
+              <th>ชื่อผู้ใช้</th>
+              <th>สิทธิ์</th>
+              <th>สถานะ</th>
+              <th class="text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <tr><td colspan="5" class="text-center text-gray-400 py-8">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Panel: Majors ─── -->
+  <div id="panelMajors" class="hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+      <!-- MBS -->
+      <div class="card fade-in-up">
+        <div class="card-header" style="background:#1d4ed8">
+          <i data-lucide="school" class="w-4 h-4"></i>
+          แผนการเรียน / สาขาวิชา — MBS
+        </div>
+        <div class="card-body">
+          <p class="text-xs text-gray-500 mb-3">Maesariang Boripat Suksa School — พิมพ์แล้วกด Enter เพื่อเพิ่ม</p>
+          <div class="tag-wrap" id="tagsMBS" onclick="document.getElementById('tagInputMBS').focus()">
+            <input type="text" id="tagInputMBS" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..."
+                   onkeydown="addTag(event,'MBS')">
+          </div>
+          <div class="flex justify-end mt-3">
+            <button onclick="saveMajors('MBS')" class="btn btn-primary btn-sm">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก MBS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VC Majors -->
+      <div class="card fade-in-up delay-1">
+        <div class="card-header" style="background:#ea580c">
+          <i data-lucide="wrench" class="w-4 h-4"></i>
+          สาขาวิชา — VC (แผนการเรียน)
+        </div>
+        <div class="card-body">
+          <p class="text-xs text-gray-500 mb-3">Vocational College — แผนการเรียน/สาขาวิชาหลัก</p>
+          <div class="tag-wrap" id="tagsVC" onclick="document.getElementById('tagInputVC').focus()">
+            <input type="text" id="tagInputVC" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..."
+                   onkeydown="addTag(event,'VC')">
+          </div>
+          <div class="flex justify-end mt-3">
+            <button onclick="saveMajors('VC')" class="btn btn-sm" style="background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก VC
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VC Departments -->
+      <div class="card fade-in-up delay-2 md:col-span-2">
+        <div class="card-header" style="background:#7c3aed">
+          <i data-lucide="layers" class="w-4 h-4"></i>
+          แผนกวิชา — VC (Department)
+        </div>
+        <div class="card-body">
+          <p class="text-xs text-gray-500 mb-3">แผนกวิชาของ Vocational College (ใช้สำหรับช่อง "แผนกวิชา" ในฟอร์ม)</p>
+          <div class="tag-wrap" id="tagsDEPT_VC" onclick="document.getElementById('tagInputDEPT_VC').focus()">
+            <input type="text" id="tagInputDEPT_VC" class="tag-add-input" placeholder="เพิ่มแผนกวิชา..."
+                   onkeydown="addTag(event,'DEPT_VC')">
+          </div>
+          <div class="flex justify-end mt-3">
+            <button onclick="saveMajors('DEPT_VC')" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #ddd6fe">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกแผนกวิชา VC
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ─── Admin Modal ─── -->
+<div id="adminModal" class="hidden modal-overlay" onclick="closeAdminModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2" id="modalTitle">
+        <i data-lucide="user-plus" class="w-4 h-4" style="color:#1e3a8a"></i>
+        <span>เพิ่มผู้ดูแลระบบ</span>
+      </h3>
+      <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none font-light">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="m_editMode" value="new">
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="field-label">ชื่อ <span class="text-red-500">*</span></label>
+          <input type="text" id="m_fname" class="field-input" placeholder="ชื่อ" required>
+        </div>
+        <div>
+          <label class="field-label">นามสกุล <span class="text-red-500">*</span></label>
+          <input type="text" id="m_lname" class="field-input" placeholder="นามสกุล" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="field-label">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
+        <input type="text" id="m_username" class="field-input" placeholder="username" autocomplete="off">
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="field-label" id="m_passLabel">รหัสผ่าน <span class="text-red-500">*</span></label>
+          <input type="password" id="m_password" class="field-input" placeholder="รหัสผ่าน" autocomplete="new-password">
+        </div>
+        <div>
+          <label class="field-label">ยืนยันรหัสผ่าน</label>
+          <input type="password" id="m_password2" class="field-input" placeholder="ยืนยันอีกครั้ง">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="field-label">สิทธิ์ <span class="text-red-500">*</span></label>
+        <select id="m_role" class="field-select">
+          <option value="Manager">Manager — ผู้จัดการ</option>
+          <option value="Finance">Finance — การเงิน</option>
+          <option value="Committee">Committee — คณะกรรมการ</option>
+          <option value="DormTeacher">DormTeacher — ครูหอพัก</option>
+          <option value="SuperAdmin">SuperAdmin — สิทธิ์สูงสุด</option>
+        </select>
+      </div>
+      <div class="mb-1">
+        <label class="field-label">สถานะบัญชี</label>
+        <select id="m_status" class="field-select">
+          <option value="Active">Active — เปิดใช้งาน</option>
+          <option value="Inactive">Inactive — ปิดใช้งาน</option>
+        </select>
+      </div>
+      <p id="m_editHint" class="text-xs text-gray-400 mt-2 hidden">
+        <i data-lucide="info" class="w-3 h-3 inline"></i>
+        หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นช่องรหัสผ่านว่างไว้
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeAdminModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
+      <button onclick="submitAdminForm()" class="btn btn-primary btn-sm" id="m_submitBtn">
+        <i data-lucide="save" class="w-4 h-4"></i> บันทึก
+      </button>
+    </div>
+  </div>
+</div>
+
+<footer class="rdf-footer">
+  <div class="footer-left">
+    <strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong>
+    <span class="mx-2 hide-xs">•</span>
+    <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
+  </div>
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง">
+    <span class="db-dot"></span>
+    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+lucide.createIcons();
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+const user = requireAuth();
+if (user) {
+  renderNavUser(user);
+  if (user.role === 'SuperAdmin') {
+    document.getElementById('superAdminBadge').classList.remove('hidden');
+  }
+}
+
+// ── Tab switching ──
+function switchTab(tab) {
+  ['admins','majors'].forEach(t => {
+    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('hidden');
+    document.getElementById('tab'   + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
+  });
+  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+  document.getElementById('tab'   + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  lucide.createIcons();
+}
+
+// ─────────────────────────────────────────────
+// ADMIN MANAGEMENT
+// ─────────────────────────────────────────────
+let allAdmins = [];
+
+const ROLE_LABELS = {
+  SuperAdmin: 'SuperAdmin',
+  Manager:    'Manager',
+  Finance:    'Finance',
+  Committee:  'Committee',
+  DormTeacher:'DormTeacher'
+};
+const ROLE_CSS = {
+  SuperAdmin: 'role-superadmin',
+  Manager:    'role-manager',
+  Finance:    'role-finance',
+  Committee:  'role-committee',
+  DormTeacher:'role-dormteacher'
+};
+
+async function loadAdmins() {
+  try {
+    const r = await API.getAdmins();
+    if (r.status === 'success') {
+      allAdmins = r.data || [];
+      renderAdmins();
+    } else {
+      document.getElementById('adminTableBody').innerHTML =
+        `<tr><td colspan="5" class="text-center text-red-400 py-6">${r.message||'เกิดข้อผิดพลาด'}</td></tr>`;
+    }
+  } catch(e) {
+    document.getElementById('adminTableBody').innerHTML =
+      `<tr><td colspan="5" class="text-center text-red-400 py-6">ไม่สามารถโหลดข้อมูลได้</td></tr>`;
+  }
+}
+
+function renderAdmins() {
+  const q    = (document.getElementById('adminSearch').value||'').toLowerCase();
+  const role = document.getElementById('adminRoleFilter').value;
+  const filtered = allAdmins.filter(a => {
+    const name = ((a.FirstName||'') + ' ' + (a.LastName||'') + ' ' + (a.Username||'')).toLowerCase();
+    return (!q || name.includes(q)) && (!role || a.Role === role);
+  });
+  const isSuperAdmin = user && user.role === 'SuperAdmin';
+  const tbody = document.getElementById('adminTableBody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบผู้ดูแลระบบ</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(a => {
+    const name = (a.FirstName||'—') + ' ' + (a.LastName||'');
+    const roleClass = ROLE_CSS[a.Role] || 'badge-gray';
+    const statusBadge = a.Status === 'Active'
+      ? `<span class="badge badge-green">Active</span>`
+      : `<span class="badge badge-gray">Inactive</span>`;
+    const isSelf = user && user.username === a.Username;
+    const canDelete = isSuperAdmin && !isSelf;
+    return `<tr>
+      <td>
+        <div class="flex items-center gap-2">
+          <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(name.trim())}&background=1e3a8a&color=fff&bold=true&size=32"
+               class="w-8 h-8 rounded-full flex-shrink-0">
+          <div>
+            <div class="font-semibold text-gray-800 text-sm">${name}</div>
+          </div>
+        </div>
+      </td>
+      <td class="text-gray-500 text-sm font-mono">${a.Username||'—'}</td>
+      <td><span class="role-badge ${roleClass}">${a.Role||'—'}</span></td>
+      <td>${statusBadge}</td>
+      <td class="text-center">
+        <div class="flex gap-1 justify-center">
+          <button onclick="openAdminModal(${JSON.stringify(a).replace(/"/g,'&quot;')})"
+                  class="btn btn-secondary btn-icon btn-sm" title="แก้ไข">
+            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+          </button>
+          ${canDelete ? `<button onclick="confirmDeleteAdmin('${a.Username}')"
+                  class="btn btn-danger btn-icon btn-sm" title="ลบ">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function openAdminModal(adminData) {
+  const isEdit = !!adminData;
+  document.getElementById('m_editMode').value   = isEdit ? 'edit' : 'new';
+  document.getElementById('m_fname').value      = adminData?.FirstName || '';
+  document.getElementById('m_lname').value      = adminData?.LastName  || '';
+  document.getElementById('m_username').value   = adminData?.Username  || '';
+  document.getElementById('m_username').readOnly= isEdit;
+  document.getElementById('m_username').style.background = isEdit ? '#f8fafc' : '';
+  document.getElementById('m_role').value       = adminData?.Role   || 'Manager';
+  document.getElementById('m_status').value     = adminData?.Status || 'Active';
+  document.getElementById('m_password').value   = '';
+  document.getElementById('m_password2').value  = '';
+  document.getElementById('modalTitle').querySelector('span').textContent =
+    isEdit ? 'แก้ไขผู้ดูแลระบบ' : 'เพิ่มผู้ดูแลระบบ';
+  document.getElementById('m_passLabel').innerHTML =
+    isEdit ? 'รหัสผ่านใหม่ <span class="text-gray-400">(เว้นว่างถ้าไม่เปลี่ยน)</span>'
+           : 'รหัสผ่าน <span class="text-red-500">*</span>';
+  document.getElementById('m_editHint').classList.toggle('hidden', !isEdit);
+  document.getElementById('adminModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeAdminModal(e) {
+  if (e && e.target !== document.getElementById('adminModal')) return;
+  document.getElementById('adminModal').classList.add('hidden');
+}
+
+async function submitAdminForm() {
+  const isEdit = document.getElementById('m_editMode').value === 'edit';
+  const fname  = document.getElementById('m_fname').value.trim();
+  const lname  = document.getElementById('m_lname').value.trim();
+  const uname  = document.getElementById('m_username').value.trim();
+  const pass   = document.getElementById('m_password').value.trim();
+  const pass2  = document.getElementById('m_password2').value.trim();
+  const role   = document.getElementById('m_role').value;
+  const status = document.getElementById('m_status').value;
+
+  if (!fname || !uname) { Swal.fire('แจ้งเตือน','กรุณากรอกชื่อและชื่อผู้ใช้','warning'); return; }
+  if (!isEdit && !pass) { Swal.fire('แจ้งเตือน','กรุณากรอกรหัสผ่าน','warning'); return; }
+  if (pass && pass !== pass2) { Swal.fire('แจ้งเตือน','รหัสผ่านไม่ตรงกัน','warning'); return; }
+
+  const btn = document.getElementById('m_submitBtn');
+  btn.disabled = true;
+  try {
+    const payload = { Username: uname, FirstName: fname, LastName: lname, Role: role, Status: status };
+    if (pass) payload.Password = pass;
+    const r = await API.saveAdmin(payload);
+    btn.disabled = false;
+    if (r.status === 'success') {
+      document.getElementById('adminModal').classList.add('hidden');
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false });
+      loadAdmins();
+    } else {
+      Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
+  }
+}
+
+async function confirmDeleteAdmin(username) {
+  const result = await Swal.fire({
+    title: 'ลบผู้ดูแล?',
+    html: `ต้องการลบบัญชี <b>${username}</b> ออกจากระบบ?<br><small class="text-red-500">ไม่สามารถยกเลิกได้</small>`,
+    icon: 'warning', showCancelButton: true,
+    confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#dc2626'
+  });
+  if (!result.isConfirmed) return;
+  try {
+    const r = await API.deleteAdmin(username);
+    if (r.status === 'success') {
+      Swal.fire({ icon:'success', title:'ลบสำเร็จ', timer:1500, showConfirmButton:false });
+      loadAdmins();
+    } else {
+      Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error');
+    }
+  } catch(e) {
+    Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// MAJORS MANAGEMENT
+// ─────────────────────────────────────────────
+// majorsState: { MBS: [...], VC: [...], DEPT_VC: [...] }
+let majorsState = {};
+
+async function loadMajors() {
+  // Start with config defaults
+  majorsState = {
+    MBS:     [...(RDF.MAJORS?.MBS     || [])],
+    VC:      [...(RDF.MAJORS?.VC      || [])],
+    DEPT_VC: [...(RDF.DEPARTMENTS?.VC || [])]
+  };
+  try {
+    const r = await API.getSystemSettings();
+    if (r.status === 'success' && r.data) {
+      if (Array.isArray(r.data.MAJORS_MBS))     majorsState.MBS     = r.data.MAJORS_MBS;
+      if (Array.isArray(r.data.MAJORS_VC))      majorsState.VC      = r.data.MAJORS_VC;
+      if (Array.isArray(r.data.DEPARTMENTS_VC)) majorsState.DEPT_VC = r.data.DEPARTMENTS_VC;
+    }
+  } catch(e) {}
+  renderAllTags();
+}
+
+function renderAllTags() {
+  renderTags('MBS');
+  renderTags('VC');
+  renderTags('DEPT_VC');
+}
+
+function renderTags(key) {
+  const wrap  = document.getElementById('tags' + key);
+  const input = document.getElementById('tagInput' + key);
+  if (!wrap || !input) return;
+  // Remove all existing tags (keep input)
+  [...wrap.querySelectorAll('.tag-item')].forEach(t => t.remove());
+  const list = majorsState[key] || [];
+  list.forEach(val => {
+    const span = document.createElement('span');
+    const cls  = key.startsWith('DEPT') ? 'tag-item dept' : (key === 'VC' ? 'tag-item vc' : 'tag-item');
+    span.className = cls;
+    const safeVal = val.replace(/'/g, "\\'");
+    span.innerHTML = `${val} <span class="tag-remove" onclick="removeTag('${key}','${safeVal}')">×</span>`;
+    wrap.insertBefore(span, input);
+  });
+}
+
+function addTag(e, key) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const val = e.target.value.trim();
+  if (!val) return;
+  if (!majorsState[key]) majorsState[key] = [];
+  if (!majorsState[key].includes(val)) {
+    majorsState[key].push(val);
+    renderTags(key);
+  }
+  e.target.value = '';
+}
+
+function removeTag(key, val) {
+  majorsState[key] = (majorsState[key] || []).filter(m => m !== val);
+  renderTags(key);
+}
+
+async function saveMajors(key) {
+  const keyMap = { MBS:'MAJORS_MBS', VC:'MAJORS_VC', DEPT_VC:'DEPARTMENTS_VC' };
+  const settingKey = keyMap[key];
+  if (!settingKey) return;
+  try {
+    showLoader(true, 'กำลังบันทึก...');
+    const r = await API.saveSetting(settingKey, majorsState[key]);
+    showLoader(false);
+    if (r.status === 'success') {
+      // Update local RDF config
+      if (key === 'MBS' || key === 'VC') {
+        if (!RDF.MAJORS) RDF.MAJORS = {};
+        RDF.MAJORS[key] = [...majorsState[key]];
+      }
+      if (key === 'DEPT_VC') {
+        if (!RDF.DEPARTMENTS) RDF.DEPARTMENTS = {};
+        RDF.DEPARTMENTS.VC = [...majorsState[key]];
+      }
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ',
+        text: `บันทึกรายการสาขาวิชา ${key === 'DEPT_VC' ? 'แผนกวิชา VC' : key} เรียบร้อย`,
+        timer: 2000, showConfirmButton: false });
+    } else {
+      Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+loadAdmins();
+loadMajors();
+initDBStatus();
+</script>
+</body>
+</html>

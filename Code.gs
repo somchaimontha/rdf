@@ -23,6 +23,8 @@ function doGet(e) {
     else if (action === 'deleteStudent')  result = deleteStudentData(e.parameter.stipNo);
     else if (action === 'getUniNames')    result = getUniNames();
     else if (action === 'ping')           result = { status: 'ok', timestamp: new Date().toISOString() };
+    else if (action === 'getAdmins')          result = getAdmins();
+    else if (action === 'getSystemSettings')  result = getSystemSettings();
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -38,6 +40,9 @@ function doPost(e) {
     const student = body.student;
     if      (action === 'saveStudent')   result = saveStudentData(student);
     else if (action === 'updateStudent') result = updateStudentData(student);
+    else if (action === 'saveAdmin')    result = saveAdmin(body.admin, body.reqUser);
+    else if (action === 'deleteAdmin')  result = deleteAdmin(body.username, body.reqUser);
+    else if (action === 'saveSetting')  result = saveSetting(body.key, body.values, body.reqUser);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -75,7 +80,8 @@ function handleLogin(id, pass, role) {
         return {
           status: 'success', role: row[rCol],
           name: row[fnCol] + ' ' + row[lnCol],
-          pic: row[picCol] || ''
+          pic: row[picCol] || '',
+          username: id
         };
       }
     }
@@ -353,4 +359,113 @@ function logAction(userId, action, details) {
     const sheet = db.getSheetByName('Logs');
     if (sheet) sheet.appendRow([new Date().toLocaleString('en-GB'), userId, action, details]);
   } catch (e) {}
+}
+
+// ─────────────────────────────────────────────
+// ADMIN MANAGEMENT
+// ─────────────────────────────────────────────
+function getAdmins() {
+  const sheet = db.getSheetByName('Admins');
+  if (!sheet) return { status:'error', message:'Admins sheet not found.' };
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const admins = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+    const obj = {};
+    headers.forEach((h, j) => {
+      if (h !== 'Password') obj[h] = row[j] !== undefined ? row[j].toString() : '';
+    });
+    admins.push(obj);
+  }
+  return { status:'success', data: admins };
+}
+
+function saveAdmin(adminData, reqUser) {
+  if (!adminData || !adminData.Username) return { status:'error', message:'Username required.' };
+  const sheet = db.getSheetByName('Admins');
+  if (!sheet) return { status:'error', message:'Admins sheet not found.' };
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const uCol = headers.indexOf('Username');
+  const pCol = headers.indexOf('Password');
+
+  let existingRow = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][uCol].toString() === adminData.Username.toString()) {
+      existingRow = i + 1; break;
+    }
+  }
+
+  if (existingRow > 0) {
+    headers.forEach((h, j) => {
+      if (h === 'Password') { if (adminData.Password) sheet.getRange(existingRow, j+1).setValue(adminData.Password); }
+      else if (adminData[h] !== undefined) sheet.getRange(existingRow, j+1).setValue(adminData[h]);
+    });
+    logAction(reqUser||'Admin', 'UPDATE_ADMIN', 'Updated: ' + adminData.Username);
+  } else {
+    const now = new Date().toLocaleString('en-GB');
+    const newRow = headers.map(h => {
+      if (h === 'CreatedAt') return now;
+      if (h === 'Status' && !adminData.Status) return 'Active';
+      return adminData[h] !== undefined ? adminData[h] : '';
+    });
+    sheet.appendRow(newRow);
+    logAction(reqUser||'Admin', 'ADD_ADMIN', 'Added: ' + adminData.Username);
+  }
+  return { status:'success' };
+}
+
+function deleteAdmin(username, reqUser) {
+  if (!username) return { status:'error', message:'Username required.' };
+  const sheet = db.getSheetByName('Admins');
+  if (!sheet) return { status:'error', message:'Admins sheet not found.' };
+  const data = sheet.getDataRange().getValues();
+  const uCol = data[0].indexOf('Username');
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][uCol].toString() === username.toString()) {
+      sheet.deleteRow(i + 1);
+      logAction(reqUser||'Admin', 'DELETE_ADMIN', 'Deleted: ' + username);
+      return { status:'success' };
+    }
+  }
+  return { status:'error', message:'Admin not found.' };
+}
+
+// ─────────────────────────────────────────────
+// SYSTEM SETTINGS
+// ─────────────────────────────────────────────
+function getSystemSettings() {
+  const sheet = db.getSheetByName('SystemSettings');
+  if (!sheet) return { status:'success', data:{} };
+  const data = sheet.getDataRange().getValues();
+  const settings = {};
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+    try   { settings[row[0]] = JSON.parse(row[1]); }
+    catch  { settings[row[0]] = row[1]; }
+  }
+  return { status:'success', data: settings };
+}
+
+function saveSetting(key, values, reqUser) {
+  if (!key) return { status:'error', message:'Key required.' };
+  const sheet = db.getSheetByName('SystemSettings');
+  if (!sheet) return { status:'error', message:'SystemSettings sheet not found.' };
+  const data = sheet.getDataRange().getValues();
+  const jsonVal = JSON.stringify(values);
+  const now = new Date().toLocaleString('en-GB');
+  let found = false;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0].toString() === key) {
+      sheet.getRange(i+1, 2).setValue(jsonVal);
+      sheet.getRange(i+1, 3).setValue(now);
+      found = true; break;
+    }
+  }
+  if (!found) sheet.appendRow([key, jsonVal, now]);
+  logAction(reqUser||'Admin', 'SAVE_SETTING', 'Key: ' + key);
+  return { status:'success' };
 }
