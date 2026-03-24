@@ -12,11 +12,12 @@ function setupDatabase() {
     ],
     "Admins": [
       "AdminID", "Username", "Password", "Role", "SubRole",
-      "Title", "FirstName", "LastName", "ProfilePicURL", "Status", "CreatedAt"
+      "Title", "FirstName", "LastName", "ProfilePicURL", "Status", "CreatedAt",
+      "LoginCount", "LastLogin"
     ],
     "Students": [
       // Identification
-      "StipNo", "IDCard", "BirthYear", "StudentID", "Status",
+      "StipNo", "IDCard", "BirthYear", "BirthMonth", "BirthDay", "StudentID", "Status",
       // Academic
       "Institution", "OtherInstitution", "CurrentLevel", "ScholarshipYear",
       "EntryYear", "EntryTerm", "Major", "Department", "OldSchool",

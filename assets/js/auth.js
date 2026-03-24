@@ -1,5 +1,7 @@
 /* ── RDF Auth & Session ── */
 
+const SESSION_TTL = 5 * 60 * 60 * 1000; // 5 hours in ms
+
 function getUser() {
   try { return JSON.parse(localStorage.getItem('rdfUser')); } catch { return null; }
 }
@@ -9,6 +11,12 @@ function clearUser() { localStorage.removeItem('rdfUser'); }
 function requireAuth(redirectTo = 'index.html') {
   const user = getUser();
   if (!user) { window.location.href = redirectTo; return null; }
+  // Check 5-hour session expiry
+  if (user.loginTime && (Date.now() - user.loginTime) > SESSION_TTL) {
+    clearUser();
+    window.location.href = redirectTo + '?expired=1';
+    return null;
+  }
   return user;
 }
 
@@ -37,7 +45,23 @@ async function handleLogin() {
     const result = await res.json();
     showLoader(false);
     if (result.status === 'success') {
-      setUser({ name: result.name, role: result.role, stipNo: result.stipNo || '', pic: result.pic || '', username: id });
+      const loginTime = Date.now();
+      setUser({
+        name: result.name, role: result.role,
+        stipNo: result.stipNo || '', pic: result.pic || '',
+        username: id, loginTime,
+        loginCount: result.loginCount || 0,
+        lastLogin: result.lastLogin || ''
+      });
+      // Warn if duplicate session detected (same username already logged in)
+      if (result.duplicateSession) {
+        await Swal.fire({
+          icon: 'warning',
+          title: t('warning'),
+          text: t('duplicateLogin'),
+          confirmButtonText: t('confirm')
+        });
+      }
       window.location.href = 'dashboard.html';
     } else {
       Swal.fire(t('error'), result.message || t('loginFailed'), 'error');
@@ -54,6 +78,21 @@ function logout() {
     confirmButtonText: t('yes'), cancelButtonText: t('cancel'),
     confirmButtonColor: '#1e3a8a'
   }).then(r => {
-    if (r.isConfirmed) { clearUser(); window.location.href = 'index.html'; }
+    if (r.isConfirmed) {
+      const u = getUser();
+      if (u && u.username && typeof API !== 'undefined') {
+        // Best-effort: notify server of logout (don't await)
+        API.clearSession(u.username).catch(() => {});
+      }
+      clearUser(); window.location.href = 'index.html';
+    }
   });
 }
+
+// Show session-expired message on login page
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('expired') === '1' && document.getElementById('loginId')) {
+    setTimeout(() => Swal.fire({ icon:'warning', title: t('warning'), text: t('sessionExpired'), timer:3000, showConfirmButton:false }), 300);
+  }
+});
