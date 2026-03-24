@@ -32,6 +32,8 @@ const API = {
   async parseOCRText(text)         { return apiPost({ action: 'parseOCRText', ocrText: text }); },
   async getApiKeyStatus()          { return apiGet({ action: 'getApiKeyStatus' }); },
   async saveApiKey(key)            { return apiPost({ action: 'saveApiKey', key, reqUser: (getUser()||{}).username||'' }); },
+  async getActiveSessions()        { return apiGet({ action: 'getActiveSessions' }); },
+  async clearSession(username)     { return apiPost({ action: 'clearSession', username }); },
 };
 
 /* ── Shared Loader ── */

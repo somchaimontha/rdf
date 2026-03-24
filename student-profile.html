@@ -150,6 +150,15 @@
       <div class="card-body" id="uniInfo"></div>
     </div>
 
+    <!-- Education Path (VC/MBS progression, conditional) -->
+    <div id="eduPathCard" class="card mb-4 hidden">
+      <div class="card-header" style="background:#0f766e">
+        <i data-lucide="route" class="w-4 h-4"></i>
+        <span data-t="eduPath">เส้นทางการศึกษา</span>
+      </div>
+      <div class="card-body" id="eduPathBody"></div>
+    </div>
+
     <!-- Remarks (conditional) -->
     <div id="remarksCard" class="card mb-4 hidden">
       <div class="card-header" style="background:#475569">
@@ -242,7 +251,7 @@ function renderProfile(d) {
 
   // Phone right
   document.getElementById('profilePhoneRight').innerHTML =
-    `<div>${lang==='th'?'โทรศัพท์':'Phone'}: <span class="text-white font-bold">${d.Phone1||'—'}</span></div>`;
+    `<div>${lang==='th'?'โทรศัพท์':'Phone'}: <span class="text-white font-bold">${fmtPhone(d.Phone1)}</span></div>`;
 
   // Badges
   const st = d.Status || 'Active';
@@ -275,7 +284,17 @@ function renderProfile(d) {
   document.getElementById('personalInfo').innerHTML = infoSection([
     [lang==='th'?'เพศ':'Gender',          d.Sex === 'Male' || d.Sex === 'ชาย' ? (lang==='th'?'ชาย':'Male') : (lang==='th'?'หญิง':'Female')],
     [lang==='th'?'ชื่อเล่น':'Nickname',  d.Nickname],
-    [lang==='th'?'ปีเกิด (ค.ศ.)':'Birth Year', d.BirthYear ? `${d.BirthYear} (พ.ศ.${parseInt(d.BirthYear)+543})` : '—'],
+    [lang==='th'?'วันเดือนปีเกิด':'Date of Birth', (() => {
+      if (!d.BirthYear) return '—';
+      const mNames = lang==='en' ? RDF.MONTHS_EN : RDF.MONTHS_TH;
+      const mName = d.BirthMonth ? mNames[parseInt(d.BirthMonth)-1] : '';
+      const dPart = d.BirthDay ? `${d.BirthDay} ` : '';
+      const mPart = mName ? `${mName} ` : '';
+      const age = calcAgeFromDOB(d.BirthYear, d.BirthMonth, d.BirthDay);
+      const agePart = age !== null ? ` (${lang==='en'?'Age':'อายุ'} ${age} ${lang==='en'?'yrs':'ปี'})` : '';
+      const bePart = lang==='th' ? ` พ.ศ.${parseInt(d.BirthYear)+543}` : '';
+      return `${dPart}${mPart}${d.BirthYear}${bePart}${agePart}`;
+    })()],
     [lang==='th'?'สัญชาติ':'Nationality', d.Nationality],
     [lang==='th'?'ศาสนา':'Religion',     d.Religion],
     [lang==='th'?'ความสามารถพิเศษ':'Special Talents', d.Talent||'—'],
@@ -287,8 +306,8 @@ function renderProfile(d) {
   // Contact
   const addr = [d.Village, d.HouseNo?`เลขที่ ${d.HouseNo}`:'', d.Moo?`หมู่ ${d.Moo}`:'', d.Tambon, d.Amphoe, d.Province].filter(Boolean).join(', ');
   document.getElementById('contactInfo').innerHTML = infoSection([
-    [lang==='th'?'โทรศัพท์ 1':'Phone 1',  d.Phone1],
-    [lang==='th'?'โทรศัพท์ 2':'Phone 2',  d.Phone2||'—'],
+    [lang==='th'?'โทรศัพท์ 1':'Phone 1',  fmtPhone(d.Phone1)],
+    [lang==='th'?'โทรศัพท์ 2':'Phone 2',  d.Phone2 ? fmtPhone(d.Phone2) : '—'],
     [lang==='th'?'ที่อยู่ปัจจุบัน':'Address', addr||'—'],
   ]);
 
@@ -299,9 +318,9 @@ function renderProfile(d) {
     [lang==='th'?'สถานภาพบิดา-มารดา':'Parents Status',
       d.ParentStatus + (d.ParentStatusOther?` — ${d.ParentStatusOther}`:'')],
     [lang==='th'?'บิดา':'Father',
-      fName + (d.Parent1_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${d.Parent1_IDCard}</span>` : '')],
+      fName + (d.Parent1_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${fmtIDCard(d.Parent1_IDCard)}</span>` : '')],
     [lang==='th'?'มารดา/ผู้ปกครอง':'Mother/Guardian',
-      mName + (d.Parent2_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${d.Parent2_IDCard}</span>` : '')],
+      mName + (d.Parent2_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${fmtIDCard(d.Parent2_IDCard)}</span>` : '')],
   ]);
 
   // University
@@ -322,6 +341,9 @@ function renderProfile(d) {
     document.getElementById('remarksInfo').textContent = d.Remarks;
   }
 
+  // Education Path — show for VC/MBS students and continued-scholarship alumni
+  renderEduPath(d, lang);
+
   // Edit history
   const hist = [
     d.CreatedAt ? (lang==='th'?`เพิ่มข้อมูล: ${d.CreatedAt}`:`Added: ${d.CreatedAt}`) : '',
@@ -339,34 +361,64 @@ function renderProfile(d) {
   _banner.id = 'completionBanner';
   _banner.className = 'card mb-5 no-print';
 
+  const _gradientFor = pct => pct===100 ? 'linear-gradient(90deg,#4ade80,#22c55e)' : pct>=50 ? 'linear-gradient(90deg,#fbbf24,#f59e0b)' : 'linear-gradient(90deg,#f87171,#ef4444)';
+  const _colorFor    = pct => pct===100 ? '#16a34a' : pct>=50 ? '#d97706' : '#dc2626';
   const _secBars = _comp.sections.map(s => `
-    <div class="flex items-center gap-2 mb-1.5">
-      <span class="text-xs text-gray-500 w-36 flex-shrink-0">${s.label_th}</span>
-      <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${s.pct}%;background:${s.pct===100?'#22c55e':s.pct>0?'#f59e0b':'#ef4444'};border-radius:3px;transition:width 0.6s"></div>
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-xs text-gray-500 flex-shrink-0" style="width:130px">${s.label_th}</span>
+      <div style="flex:1;height:7px;background:#e2e8f0;border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.07)">
+        <div class="completion-bar-fill" style="height:100%;width:0;background:${_gradientFor(s.pct)};border-radius:10px;transition:width 0.8s cubic-bezier(.4,0,.2,1)" data-target="${s.pct}"></div>
       </div>
-      <span class="text-xs font-bold w-10 text-right" style="color:${s.pct===100?'#16a34a':s.pct>0?'#d97706':'#dc2626'}">${s.pct}%</span>
+      <span class="text-xs font-bold w-10 text-right" style="color:${_colorFor(s.pct)}">${s.pct}%</span>
     </div>`).join('');
 
+  const _mainGradient = _comp.pct>=80
+    ? 'linear-gradient(135deg,#166534,#16a34a)'
+    : _comp.pct>=50 ? 'linear-gradient(135deg,#92400e,#d97706)'
+    : 'linear-gradient(135deg,#991b1b,#dc2626)';
+
   _banner.innerHTML = `
-    <div class="card-header flex items-center justify-between" style="background:${_comp.pct>=80?'#16a34a':_comp.pct>=50?'#d97706':'#dc2626'}">
+    <style>
+      @keyframes completion-shimmer {
+        0%{background-position:-200% center}100%{background-position:200% center}
+      }
+      .completion-main-bar {
+        height:12px;border-radius:99px;overflow:hidden;
+        background:#e2e8f0;box-shadow:inset 0 2px 4px rgba(0,0,0,.08);margin-bottom:18px;
+      }
+      .completion-main-fill {
+        height:100%;border-radius:99px;
+        background-size:200% auto;
+        animation:completion-shimmer 2.5s linear infinite;
+        transition:width 1s cubic-bezier(.4,0,.2,1);
+      }
+    </style>
+    <div class="card-header flex items-center justify-between" style="background:${_mainGradient}">
       <div class="flex items-center gap-2">
         <i data-lucide="shield-check" class="w-4 h-4"></i>
-        <span>ความสมบูรณ์ของโปรไฟล์</span>
+        <span class="font-semibold">ความสมบูรณ์ของโปรไฟล์</span>
       </div>
-      <span class="font-bold text-lg">${_comp.pct}%</span>
+      <div class="flex items-center gap-2">
+        <div style="width:80px;height:6px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${_comp.pct}%;background:rgba(255,255,255,.85);border-radius:99px;transition:width 1s"></div>
+        </div>
+        <span class="font-bold text-xl">${_comp.pct}%</span>
+      </div>
     </div>
     <div class="card-body">
-      <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;margin-bottom:16px">
-        <div style="height:100%;width:${_comp.pct}%;background:${_comp.color};border-radius:4px;transition:width 0.8s ease"></div>
+      <div class="completion-main-bar">
+        <div class="completion-main-fill" id="completionMainFill"
+             style="width:0;background:${_gradientFor(_comp.pct)};background-size:200% auto"></div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">${_secBars}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">${_secBars}</div>
       ${_comp.pct < 100 ? `<div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
         <p class="text-xs text-gray-500">${_isStudentView ? 'กรุณากรอกข้อมูลให้ครบเพื่อให้มูลนิธิสามารถติดต่อและดูแลท่านได้อย่างครบถ้วน' : 'ข้อมูลนักเรียนยังไม่สมบูรณ์'}</p>
         <a href="student-form.html?stipNo=${encodeURIComponent(d.StipNo||'')}" class="btn btn-warning btn-sm">
           <i data-lucide="edit" class="w-3.5 h-3.5"></i> กรอกข้อมูลเพิ่มเติม
         </a>
-      </div>` : `<p class="text-xs text-green-600 font-semibold mt-3 text-center">✓ ข้อมูลครบถ้วนสมบูรณ์</p>`}
+      </div>` : `<div class="mt-3 flex items-center justify-center gap-2 text-green-700 font-semibold text-sm">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i> ข้อมูลครบถ้วนสมบูรณ์
+      </div>`}
     </div>`;
 
   // Insert after hero card
@@ -375,6 +427,91 @@ function renderProfile(d) {
     _heroCard.parentNode.insertBefore(_banner, _heroCard.nextSibling);
   }
 
+  // Animate bars after DOM insert
+  requestAnimationFrame(() => setTimeout(() => {
+    const mainFill = document.getElementById('completionMainFill');
+    if (mainFill) mainFill.style.width = _comp.pct + '%';
+    document.querySelectorAll('.completion-bar-fill').forEach(el => {
+      el.style.width = (el.dataset.target || 0) + '%';
+    });
+  }, 80));
+
+  lucide.createIcons();
+}
+
+// ── Education Path for VC/MBS students ──
+function renderEduPath(d, lang) {
+  const card = document.getElementById('eduPathCard');
+  const body = document.getElementById('eduPathBody');
+  if (!card || !body) return;
+
+  const inst   = d.Institution || '';
+  const stipNo = d.StipNo || '';
+  const level  = d.CurrentLevel || '';
+  const status = d.Status || '';
+
+  // Determine if we should show the path
+  const isVC  = inst === 'VC' || stipNo.startsWith('VC_');
+  const isMBS = inst === 'MBS' || stipNo.startsWith('MBS_');
+  const isUNI = inst === 'UNI';
+  const isCont = isContinuedScholarship(d); // VC_ or MBS_ in UNI
+
+  if (!isVC && !isMBS && !isCont) { card.classList.add('hidden'); return; }
+
+  card.classList.remove('hidden');
+
+  // Build path steps
+  const steps = [];
+  const label = lang === 'en';
+
+  if (isMBS || stipNo.startsWith('MBS_')) {
+    const mbsLevels = ['มัธยมศึกษาปีที่ 4', 'มัธยมศึกษาปีที่ 5', 'มัธยมศึกษาปีที่ 6'];
+    mbsLevels.forEach((l, i) => {
+      const isActive = inst === 'MBS' && level === l;
+      const isDone   = (inst !== 'MBS') || mbsLevels.indexOf(level) > i;
+      steps.push({ label: l, shortLabel: `ม.${i+4}`, done: isDone, active: isActive, color: '#1d4ed8' });
+    });
+  }
+  if (isVC || stipNo.startsWith('VC_')) {
+    const pqLevels = [
+      { label:'ปวช. ชั้นปีที่ 1', short:'ปวช.1', color:'#ea580c' },
+      { label:'ปวช. ชั้นปีที่ 2', short:'ปวช.2', color:'#ea580c' },
+      { label:'ปวช. ชั้นปีที่ 3', short:'ปวช.3', color:'#ea580c' },
+      { label:'ปวส. ชั้นปีที่ 1', short:'ปวส.1', color:'#dc2626' },
+      { label:'ปวส. ชั้นปีที่ 2', short:'ปวส.2', color:'#dc2626' },
+    ];
+    pqLevels.forEach(lv => {
+      const isActive = inst === 'VC' && level === lv.label;
+      const isDone   = (inst !== 'VC') || pqLevels.findIndex(x => x.label === level) > pqLevels.indexOf(lv);
+      steps.push({ label: lv.label, shortLabel: lv.short, done: isDone, active: isActive, color: lv.color });
+    });
+  }
+  if (isUNI || isCont) {
+    const uniYears = ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4'];
+    uniYears.forEach((l, i) => {
+      const isActive = inst === 'UNI' && level === l;
+      const isDone   = inst === 'UNI' && (uniYears.indexOf(level) > i || status === 'Graduated');
+      steps.push({ label: l, shortLabel: `ปี ${i+1}`, done: isDone, active: isActive, color: '#7c3aed' });
+    });
+  }
+
+  body.innerHTML = `
+    <div class="overflow-x-auto pb-2">
+      <div class="flex items-center gap-0 min-w-max py-2">
+        ${steps.map((s, i) => `
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div style="width:32px;height:32px;border-radius:50%;border:2px solid ${s.active||s.done?s.color:'#d1d5db'};background:${s.done?s.color:s.active?s.color:'#fff'};display:flex;align-items:center;justify-content:center;transition:all .3s">
+                ${s.done ? `<i data-lucide="check" style="width:14px;height:14px;color:#fff"></i>` : s.active ? `<span style="width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block"></span>` : `<span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;display:inline-block"></span>`}
+              </div>
+              <span class="text-xs mt-1 font-semibold text-center" style="color:${s.active||s.done?s.color:'#9ca3af'};font-size:10px;max-width:54px;word-break:break-all">${s.shortLabel}</span>
+            </div>
+            ${i < steps.length-1 ? `<div style="width:24px;height:2px;margin-bottom:18px;background:${steps[i+1].done||steps[i+1].active?steps[i+1].color:'#e5e7eb'};transition:background .3s"></div>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>
+    ${d.UniName ? `<div class="mt-2 text-xs text-gray-500 border-t pt-2"><span class="font-semibold text-purple-700">มหาวิทยาลัย:</span> ${d.UniName}${d.UniFaculty?` — ${d.UniFaculty}`:''}${d.UniMajor?` / ${d.UniMajor}`:''}</div>` : ''}
+    <p class="text-xs text-gray-400 mt-2">${label?'Education path based on current data':'เส้นทางการศึกษาตามข้อมูลในระบบ'}</p>`;
   lucide.createIcons();
 }
 

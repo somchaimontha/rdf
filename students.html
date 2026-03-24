@@ -333,7 +333,7 @@ function renderTable() {
           <div>
             <div class="font-bold text-gray-800" style="font-size:13.5px">${s.name||'—'}</div>
             <div class="text-xs text-gray-400 flex items-center gap-2">
-              <span>${s.idCard||'—'}</span>
+              <span>${fmtIDCard(s.idCard)}</span>
               ${(() => { const _cp = calcProfileCompletion({IDCard:s.idCard,FirstName:s.fname,LastName:s.lname,Institution:s.institution,ScholarshipYear:s.scholarshipYear,Phone1:s.phone}); return _cp.pct < 100 ? `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;background:${_cp.pct>=80?'#dcfce7':_cp.pct>=50?'#fef3c7':'#fee2e2'};color:${_cp.pct>=80?'#15803d':_cp.pct>=50?'#92400e':'#dc2626'}">${_cp.pct}%</span>` : ''; })()}
             </div>
           </div>
@@ -346,7 +346,7 @@ function renderTable() {
       <td class="hide-mobile text-xs text-gray-500">
         ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
       </td>
-      <td class="text-sm text-gray-600">${s.phone||'—'}</td>
+      <td class="text-sm text-gray-600">${fmtPhone(s.phone)}</td>
       <td><span class="badge ${statusColor}">${statusLabel}</span></td>
       <td>
         <div class="flex items-center justify-center gap-1">

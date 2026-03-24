@@ -63,11 +63,16 @@
         <p class="text-xs text-blue-500">Excel template พร้อมข้อมูลตัวอย่าง</p>
       </div>
       <div class="flex flex-col gap-1">
-        <button onclick="downloadTemplate()" class="btn btn-secondary btn-sm text-blue-700 border-blue-200">
-          <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-t="templateDL">แบบฟอร์ม</span>
-        </button>
-        <label class="btn btn-primary btn-sm cursor-pointer">
-          <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span data-t="importCSV">CSV</span>
+        <div class="flex gap-1">
+          <button onclick="downloadTemplate()" class="btn btn-secondary btn-sm text-blue-700 border-blue-200 flex-1" title="แบบฟอร์มครบทุก field">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-t="templateDL">แบบฟอร์มเต็ม</span>
+          </button>
+          <button onclick="downloadMiniTemplate()" class="btn btn-secondary btn-sm text-indigo-700 border-indigo-200 flex-1" title="แบบฟอร์มจำเป็น">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> <span data-t="miniImport">แบบย่อ</span>
+          </button>
+        </div>
+        <label class="btn btn-primary btn-sm cursor-pointer text-center">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span data-t="importCSV">นำเข้า CSV</span>
           <input type="file" accept=".csv" class="hidden" onchange="importCSV(event)">
         </label>
       </div>
@@ -123,11 +128,22 @@
         </div>
         <div>
           <label class="field-label">
-            <span data-t="birthYear">ปีเกิด (ค.ศ.)</span> <span class="text-red-500">*</span>
+            <span data-t="birthDate">วันเดือนปีเกิด</span> <span class="text-red-500">*</span>
           </label>
-          <input type="number" id="f_birthYear" min="1990" max="2015"
-                 placeholder="เช่น 2000" class="field-input" required>
-          <p class="text-xs text-gray-400 mt-1" data-t="birthYearHint">ใช้เป็นรหัสผ่านนักเรียน</p>
+          <div class="flex gap-1 items-center">
+            <select id="f_birthDay" class="field-select" style="width:62px;padding-left:4px;padding-right:2px" onchange="calcAge()">
+              <option value=""><span data-t="birthDay">วัน</span></option>
+            </select>
+            <select id="f_birthMonth" class="field-select" style="flex:1;padding-left:4px;padding-right:2px" onchange="calcAge()">
+              <option value=""><span data-t="birthMonth">เดือน</span></option>
+            </select>
+            <input type="number" id="f_birthYear" min="1980" max="2015"
+                   placeholder="ค.ศ." class="field-input" style="width:72px" required oninput="calcAge()">
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+            <p class="text-xs text-gray-400" data-t="birthDateHint">ใช้ปีเกิด (ค.ศ.) เป็นรหัสผ่าน</p>
+            <p id="ageDisplay" class="text-xs font-bold text-blue-600"></p>
+          </div>
         </div>
       </div>
     </div>
@@ -693,6 +709,8 @@ function fillForm(d) {
   const sv = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
   sv('f_stipNo', d.StipNo); sv('f_status', d.Status);
   sv('f_idcard', d.IDCard); sv('f_birthYear', d.BirthYear);
+  sv('f_birthDay', d.BirthDay); sv('f_birthMonth', d.BirthMonth);
+  calcAge();
   sv('f_institution', d.Institution);
   onInstitutionChange();
   sv('f_level', d.CurrentLevel); sv('f_studentId', d.StudentID);
@@ -804,6 +822,36 @@ async function loadUniNames() {
   } catch(e) {}
 }
 
+// ── Birthday dropdowns init ──
+function initBirthDropdowns() {
+  const dayEl = document.getElementById('f_birthDay');
+  const monEl = document.getElementById('f_birthMonth');
+  if (!dayEl || !monEl) return;
+  for (let d = 1; d <= 31; d++) {
+    const o = document.createElement('option'); o.value = d; o.textContent = d; dayEl.appendChild(o);
+  }
+  const months = typeof LANG !== 'undefined' && LANG === 'en' ? RDF.MONTHS_EN : RDF.MONTHS_TH;
+  months.forEach((name, i) => {
+    const o = document.createElement('option'); o.value = i+1; o.textContent = `${i+1} — ${name}`; monEl.appendChild(o);
+  });
+}
+
+function calcAge() {
+  const y = parseInt(document.getElementById('f_birthYear').value);
+  const m = parseInt(document.getElementById('f_birthMonth').value)||0;
+  const d = parseInt(document.getElementById('f_birthDay').value)||0;
+  const el = document.getElementById('ageDisplay');
+  if (!el) return;
+  const age = calcAgeFromDOB(y, m||1, d||1);
+  if (age !== null && y > 1900) {
+    const lang = typeof LANG !== 'undefined' ? LANG : 'th';
+    el.textContent = lang === 'en' ? `Age: ${age} years` : `อายุ ${age} ปี`;
+  } else {
+    el.textContent = '';
+  }
+}
+initBirthDropdowns();
+
 // ── BE year hint ──
 function showBeHint(el, hintId) {
   const val  = parseInt(el.value);
@@ -858,6 +906,7 @@ function collectForm() {
   return {
     StipNo: get('f_stipNo'), Status: get('f_status'),
     IDCard: idCard, BirthYear: get('f_birthYear'),
+    BirthMonth: get('f_birthMonth'), BirthDay: get('f_birthDay'),
     Institution: inst, OtherInstitution: get('f_otherInst'),
     CurrentLevel: get('f_level'), StudentID: get('f_studentId'),
     ScholarshipYear: get('f_scholarshipYear'), EntryYear: get('f_entryYear'),
@@ -1376,7 +1425,7 @@ async function csvImportSelected() {
 // ── CSV fields — ตรงกับ databasesetup.gs Students sheet (ลำดับเดิม) ──
 const CSV_DB_FIELDS = [
   // Identification
-  'StipNo','IDCard','BirthYear','StudentID','Status',
+  'StipNo','IDCard','BirthYear','BirthMonth','BirthDay','StudentID','Status',
   // Academic
   'Institution','OtherInstitution','CurrentLevel','ScholarshipYear',
   'EntryYear','EntryTerm','Major','Department','OldSchool',
@@ -1408,12 +1457,34 @@ function _csvToData(r) {
   return obj;
 }
 
+// ── Mini Template (essential fields only) ──
+const CSV_MINI_FIELDS = [
+  'StipNo','IDCard','BirthYear','Status',
+  'Institution','CurrentLevel','ScholarshipYear','EntryYear',
+  'Title','FirstName','LastName',
+  'EngFirstName','EngLastName','Phone1'
+];
+
+function downloadMiniTemplate() {
+  const headers = [...CSV_MINI_FIELDS];
+  const ex = [
+    'MBS_001','1234567890123','2000','Active',
+    'MBS','มัธยมศึกษาปีที่ 4','2023','2023',
+    'นาย','สมชาย','ใจดี',
+    'Somchai','Jaidee','0812345678'
+  ];
+  const csv = '\uFEFF' + headers.join(',') + '\n' + ex.map(v => v.includes(',') ? `"${v}"` : v).join(',');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = 'RDF_Import_Mini.csv'; a.click();
+}
+
 // ── Template Download ──
 function downloadTemplate() {
   const headers = [...CSV_DB_FIELDS];
   const ex = [
     // Identification
-    'MBS_001','1234567890123','2000','ST001','Active',
+    'MBS_001','1234567890123','2000','1','15','ST001','Active',
     // Academic
     'MBS','','มัธยมศึกษาปีที่ 4','2023','2023','1','วิทยาศาสตร์-คณิตศาสตร์','','โรงเรียนเดิม',
     // University (ว่างถ้าไม่ใช่ UNI)

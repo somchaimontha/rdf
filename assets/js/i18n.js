@@ -112,6 +112,30 @@ const T = {
     statusOther: "อื่นๆ",
     /* Special */
     continuedScholarship: "ทุนต่อ", alumniGroup: "ศิษย์เก่า",
+    /* Birthday & Age */
+    birthDate: "วันเดือนปีเกิด", birthDay: "วัน", birthMonth: "เดือน",
+    ageDisplay: "อายุ", ageYears: "ปี", birthDateHint: "ใช้ปีเกิด (ค.ศ.) เป็นรหัสผ่าน",
+    /* CSV Import */
+    miniImport: "นำเข้าแบบย่อ", miniImportDesc: "ฟิลด์จำเป็นเท่านั้น",
+    fullImport: "นำเข้าแบบเต็ม", importOption: "เลือกรูปแบบการนำเข้า",
+    /* Session */
+    sessionExpired: "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่",
+    duplicateLogin: "มีการเข้าสู่ระบบด้วยบัญชีนี้จากอุปกรณ์อื่น",
+    /* Admin info */
+    loginCount: "จำนวนครั้งที่เข้าระบบ", lastLogin: "เข้าสู่ระบบล่าสุด",
+    activeSession: "เซสชันที่กำลังใช้งาน", noActiveSessions: "ไม่มีเซสชันที่ใช้งาน",
+    /* Roles */
+    rolesDoc: "สิทธิ์ผู้ใช้งาน", permissionTitle: "สิทธิ์การเข้าถึง",
+    roleSuperAdmin: "Super Admin", roleManager: "Manager",
+    roleFinance: "Finance", roleCommittee: "Committee",
+    roleDormTeacher: "DormTeacher",
+    /* Profile completion */
+    profileCompletion: "ความสมบูรณ์ของโปรไฟล์",
+    incompleteProfiles: "โปรไฟล์ไม่ครบ", completeProfile: "โปรไฟล์สมบูรณ์",
+    fillMissing: "กรอกข้อมูลที่ขาด",
+    /* Alumni */
+    eduPath: "เส้นทางการศึกษา", addEduLevel: "เพิ่มระดับการศึกษา",
+    eduHistory: "ประวัติการศึกษา",
     /* Misc */
     year: "ปี", term: "ภาคเรียน", male: "ชาย", female: "หญิง",
     unknown: "ไม่ทราบ", none: "ไม่มี", other: "อื่นๆ",
@@ -208,6 +232,31 @@ const T = {
     statusSuspended: "Suspended", statusIncomplete: "Incomplete",
     statusResigned: "Resigned", statusUni: "Promoted to University", statusOther: "Other",
     continuedScholarship: "Continued", alumniGroup: "Alumni",
+    /* Birthday & Age */
+    birthDate: "Date of Birth", birthDay: "Day", birthMonth: "Month",
+    ageDisplay: "Age", ageYears: "years", birthDateHint: "Birth year (C.E.) is used as student password",
+    /* CSV Import */
+    miniImport: "Quick Import", miniImportDesc: "Essential fields only",
+    fullImport: "Full Import", importOption: "Select import type",
+    /* Session */
+    sessionExpired: "Session expired. Please login again.",
+    duplicateLogin: "This account is already logged in from another device.",
+    /* Admin info */
+    loginCount: "Login Count", lastLogin: "Last Login",
+    activeSession: "Active Sessions", noActiveSessions: "No active sessions",
+    /* Roles */
+    rolesDoc: "User Roles & Permissions", permissionTitle: "Access Permissions",
+    roleSuperAdmin: "Super Admin", roleManager: "Manager",
+    roleFinance: "Finance", roleCommittee: "Committee",
+    roleDormTeacher: "Dorm Teacher",
+    /* Profile completion */
+    profileCompletion: "Profile Completion",
+    incompleteProfiles: "Incomplete Profiles", completeProfile: "Complete Profile",
+    fillMissing: "Fill Missing Fields",
+    /* Alumni */
+    eduPath: "Education Path", addEduLevel: "Add Education Level",
+    eduHistory: "Education History",
+    /* Misc */
     year: "Year", term: "Term", male: "Male", female: "Female",
     unknown: "Unknown", none: "None", other: "Other",
     yes: "Yes", no: "No", confirm: "Confirm", close: "Close",

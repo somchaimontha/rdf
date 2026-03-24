@@ -27,6 +27,7 @@ function doGet(e) {
     else if (action === 'getSystemSettings')  result = getSystemSettings();
     else if (action === 'getLogs')            result = getLogs(parseInt(e.parameter.limit)||200);
     else if (action === 'getApiKeyStatus')    result = getApiKeyStatus();
+    else if (action === 'getActiveSessions')  result = getActiveSessions();
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -47,6 +48,7 @@ function doPost(e) {
     else if (action === 'saveSetting')  result = saveSetting(body.key, body.values, body.reqUser);
     else if (action === 'saveApiKey')   result = saveApiKey(body.key, body.reqUser);
     else if (action === 'parseOCRText') result = parseOCRText(body.ocrText);
+    else if (action === 'clearSession') result = clearSession(body.username);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -77,15 +79,27 @@ function handleLogin(id, pass, role) {
     const picCol = headers.indexOf('ProfilePicURL');
     const stCol = headers.indexOf('Status');
 
+    const lcCol = headers.indexOf('LoginCount');
+    const llCol = headers.indexOf('LastLogin');
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       if (row[uCol].toString() === id && row[pCol].toString() === pass) {
         if (row[stCol] !== 'Active') return { status:'error', message:'Account is inactive.' };
+        // Track login count and last login timestamp
+        const now = new Date().toLocaleString('en-GB');
+        const loginCount = (parseInt(row[lcCol]) || 0) + 1;
+        if (lcCol >= 0) sheet.getRange(i + 1, lcCol + 1).setValue(loginCount);
+        if (llCol >= 0) sheet.getRange(i + 1, llCol + 1).setValue(now);
+        // Record session and detect duplicate
+        const duplicateSession = _recordSession(id, row[rCol]);
         return {
           status: 'success', role: row[rCol],
           name: row[fnCol] + ' ' + row[lnCol],
           pic: row[picCol] || '',
-          username: id
+          username: id,
+          loginCount: loginCount,
+          lastLogin: now,
+          duplicateSession: duplicateSession
         };
       }
     }
@@ -472,6 +486,54 @@ function saveSetting(key, values, reqUser) {
   if (!found) sheet.appendRow([key, jsonVal, now]);
   logAction(reqUser||'Admin', 'SAVE_SETTING', 'Key: ' + key);
   return { status:'success' };
+}
+
+// ─────────────────────────────────────────────
+// SESSION MANAGEMENT
+// Active sessions stored in Script Properties as JSON
+// ─────────────────────────────────────────────
+function _getSessions() {
+  const props = PropertiesService.getScriptProperties();
+  try { return JSON.parse(props.getProperty('ACTIVE_SESSIONS') || '{}'); }
+  catch (e) { return {}; }
+}
+function _saveSessions(sessions) {
+  PropertiesService.getScriptProperties().setProperty('ACTIVE_SESSIONS', JSON.stringify(sessions));
+}
+function _recordSession(username, role) {
+  const sessions = _getSessions();
+  // Check for duplicate (active within last 5 hours)
+  const existing = sessions[username];
+  const now = Date.now();
+  const SESSION_TTL_MS = 5 * 60 * 60 * 1000;
+  const duplicate = existing && (now - existing.loginTime) < SESSION_TTL_MS;
+  sessions[username] = { role, loginTime: now, lastSeen: now };
+  _saveSessions(sessions);
+  return duplicate;
+}
+function getActiveSessions() {
+  const sessions = _getSessions();
+  const now = Date.now();
+  const SESSION_TTL_MS = 5 * 60 * 60 * 1000;
+  // Return only active sessions (within 5 hours), clean up stale ones
+  const active = {};
+  let changed = false;
+  Object.keys(sessions).forEach(u => {
+    if ((now - sessions[u].loginTime) < SESSION_TTL_MS) {
+      active[u] = sessions[u];
+    } else {
+      changed = true;
+    }
+  });
+  if (changed) _saveSessions(active);
+  return { status: 'success', sessions: active };
+}
+function clearSession(username) {
+  if (!username) return { status: 'error', message: 'No username.' };
+  const sessions = _getSessions();
+  delete sessions[username];
+  _saveSessions(sessions);
+  return { status: 'success' };
 }
 
 // ─────────────────────────────────────────────

@@ -77,3 +77,38 @@ function calcProfileCompletion(student) {
   const color = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
   return { pct, sections, color };
 }
+
+/* ── Number Formatting Utilities ── */
+function fmtPhone(p) {
+  if (!p) return '—';
+  const s = String(p).replace(/\D/g, '');
+  if (s.length === 10) return s.slice(0,3) + '-' + s.slice(3,6) + '-' + s.slice(6);
+  if (s.length === 9)  return s.slice(0,2) + '-' + s.slice(2,5) + '-' + s.slice(5);
+  return String(p);
+}
+
+function fmtIDCard(id) {
+  if (!id) return '—';
+  const s = String(id).replace(/\D/g, '');
+  if (s.length === 13) return `${s[0]}-${s.slice(1,5)}-${s.slice(5,10)}-${s.slice(10,12)}-${s[12]}`;
+  return String(id);
+}
+
+/* ── Age Calculation ── */
+function calcAgeFromDOB(year, month, day) {
+  if (!year) return null;
+  const y = parseInt(year), m = parseInt(month)||1, d = parseInt(day)||1;
+  if (isNaN(y)) return null;
+  const today = new Date();
+  const birth = new Date(y, m-1, d);
+  let age = today.getFullYear() - birth.getFullYear();
+  const mo = today.getMonth() - birth.getMonth();
+  if (mo < 0 || (mo === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
+/* ── Thai month names ── */
+RDF.MONTHS_TH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                 'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+RDF.MONTHS_EN = ['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'];
