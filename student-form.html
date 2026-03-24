@@ -558,12 +558,96 @@
       </div>
       <p id="ocrStatus" class="text-xs text-gray-500 text-center mb-3 min-h-4"></p>
       <div class="flex gap-2 mb-3">
-        <button id="ocrCaptureBtn" onclick="ocrCapture()" class="btn btn-primary btn-full">
+        <button id="ocrCaptureBtn" onclick="ocrCapture()" class="btn btn-primary flex-1">
           <i data-lucide="camera" class="w-4 h-4"></i> ถ่ายและอ่านข้อมูล
         </button>
-        <button onclick="closeOCR()" class="btn btn-secondary" data-t="cancel">ยกเลิก</button>
+        <label class="btn btn-secondary cursor-pointer" title="อัปโหลดรูปบัตรประชาชน">
+          <i data-lucide="image" class="w-4 h-4"></i>
+          <input type="file" accept="image/*" class="hidden" onchange="ocrFromImage(event)">
+        </label>
+        <button onclick="closeOCR()" class="btn btn-secondary" title="ปิด">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
       <div id="ocrResult" class="bg-blue-50 border border-blue-100 rounded-xl p-3 min-h-8 text-sm"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CSV Import Preview Modal ─── -->
+<div id="csvModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4" style="background:rgba(0,0,0,0.75)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col" style="max-height:95vh">
+    <!-- Header -->
+    <div class="rounded-t-2xl text-white p-4 flex justify-between items-start flex-shrink-0" style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8)">
+      <div>
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i data-lucide="table" class="w-5 h-5"></i> ตรวจสอบข้อมูลก่อนนำเข้า
+        </h3>
+        <p id="csvSummaryLine" class="text-blue-200 text-xs mt-0.5"></p>
+      </div>
+      <button onclick="closeCSVModal()" class="text-white opacity-70 hover:opacity-100 text-2xl font-bold leading-none">×</button>
+    </div>
+    <!-- Stats row -->
+    <div id="csvStatRow" class="px-4 py-2 bg-gray-50 border-b text-xs flex flex-wrap items-center gap-2 flex-shrink-0"></div>
+    <!-- Controls -->
+    <div class="px-4 py-2 border-b flex flex-wrap items-center gap-2 flex-shrink-0">
+      <label class="flex items-center gap-1.5 text-sm font-medium cursor-pointer mr-1">
+        <input type="checkbox" id="csvSelectAll" onchange="csvToggleAll(this.checked)" class="rounded"> เลือกทั้งหมด
+      </label>
+      <div class="flex gap-1">
+        <button onclick="csvSetFilter('all')"  id="csvFAll"  class="csv-filter-btn active">ทั้งหมด</button>
+        <button onclick="csvSetFilter('new')"  id="csvFNew"  class="csv-filter-btn">ใหม่</button>
+        <button onclick="csvSetFilter('warn')" id="csvFWarn" class="csv-filter-btn">⚠ อาจซ้ำ</button>
+        <button onclick="csvSetFilter('dup')"  id="csvFDup"  class="csv-filter-btn">✕ บัตรซ้ำ</button>
+      </div>
+      <input type="text" id="csvSearch" placeholder="ค้นหา ชื่อ / บัตร ปชช. / StipNo..." oninput="csvRenderTable()"
+        class="ml-auto border rounded-lg px-3 py-1.5 text-xs w-52 focus:outline-none focus:ring-2 focus:ring-blue-300">
+    </div>
+    <!-- Table -->
+    <div class="overflow-auto flex-1">
+      <table class="w-full text-xs">
+        <thead class="sticky top-0 bg-white z-10 shadow-sm">
+          <tr class="border-b">
+            <th class="p-2 w-8"></th>
+            <th class="p-2 text-left text-gray-500 font-semibold w-8">#</th>
+            <th class="p-2 text-left text-gray-500 font-semibold">สถานะ</th>
+            <th class="p-2 text-left text-gray-500 font-semibold">ชื่อ-นามสกุล</th>
+            <th class="p-2 text-left text-gray-500 font-semibold">เลขบัตร ปชช.</th>
+            <th class="p-2 text-left text-gray-500 font-semibold">สถาบัน</th>
+            <th class="p-2 text-left text-gray-500 font-semibold">ปีทุน (พ.ศ.)</th>
+            <th class="p-2 text-left text-gray-500 font-semibold">สถานะทุน</th>
+          </tr>
+        </thead>
+        <tbody id="csvTbody"></tbody>
+      </table>
+      <div id="csvEmpty" class="hidden text-center py-12 text-gray-400">
+        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30"></i>
+        <p>ไม่พบข้อมูลตามเงื่อนไข</p>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="px-4 py-3 border-t bg-gray-50 rounded-b-2xl flex-shrink-0">
+      <div id="csvProgressWrap" class="hidden mb-2">
+        <div class="flex justify-between text-xs text-gray-500 mb-1">
+          <span id="csvProgressLabel">กำลังนำเข้า...</span>
+          <span id="csvProgressPct">0%</span>
+        </div>
+        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div id="csvProgressBar" class="h-full bg-blue-600 rounded-full transition-all duration-200" style="width:0"></div>
+        </div>
+      </div>
+      <div class="flex justify-between items-center gap-2">
+        <p class="text-xs text-gray-500">
+          เลือกแล้ว <span id="csvSelectedCnt" class="font-bold text-blue-700">0</span> แถว
+          <span id="csvDupWarn" class="hidden text-orange-500 ml-2">⚠ มีรายการอาจซ้ำ — ตรวจสอบก่อนนำเข้า</span>
+        </p>
+        <div class="flex gap-2">
+          <button onclick="closeCSVModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
+          <button onclick="csvImportSelected()" id="csvImportBtn" class="btn btn-primary btn-sm">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> นำเข้าที่เลือก
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -827,49 +911,98 @@ async function saveStudent() {
   }
 }
 
-// ── OCR ──
+// ── OCR ──────────────────────────────────────────────
+let _lastOCRText = '';
+
 function openOCRModal() {
   document.getElementById('ocrModal').classList.remove('hidden');
-  startOCRCamera();
+  _startOCRCamera();
   lucide.createIcons();
 }
 function closeOCR() {
   if (ocrStream) { ocrStream.getTracks().forEach(t => t.stop()); ocrStream = null; }
-  document.getElementById('ocrVideo').srcObject = null;
+  const vid = document.getElementById('ocrVideo');
+  vid.srcObject = null; vid.style.display = '';
+  document.getElementById('ocrCanvas').classList.add('hidden');
   document.getElementById('ocrModal').classList.add('hidden');
   document.getElementById('ocrResult').innerHTML = '';
   document.getElementById('ocrStatus').textContent = '';
+  _lastOCRText = '';
 }
-async function startOCRCamera() {
+async function _startOCRCamera() {
+  const vid = document.getElementById('ocrVideo');
+  vid.style.display = ''; document.getElementById('ocrCanvas').classList.add('hidden');
   try {
     ocrStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
-    document.getElementById('ocrVideo').srcObject = ocrStream;
+    vid.srcObject = ocrStream;
     document.getElementById('ocrStatus').textContent = 'กล้องพร้อมใช้งาน — วางบัตรให้ตรงกรอบ';
   } catch(e) {
-    document.getElementById('ocrStatus').textContent = 'ไม่สามารถเปิดกล้องได้: ' + e.message;
+    document.getElementById('ocrStatus').textContent = 'ไม่สามารถเปิดกล้องได้ กรุณาใช้ปุ่มอัปโหลดรูปแทน';
   }
 }
+// Camera capture
 function ocrCapture() {
   const video = document.getElementById('ocrVideo');
   const canvas = document.getElementById('ocrCanvas');
-  const status = document.getElementById('ocrStatus');
-  if (!video.srcObject) return;
+  if (!video.srcObject) { document.getElementById('ocrStatus').textContent = 'กล้องยังไม่พร้อม'; return; }
   canvas.width = video.videoWidth; canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
-  status.textContent = '⏳ กำลังประมวลผล OCR...';
+  _runOCR(canvas);
+}
+// Image file upload
+function ocrFromImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.getElementById('ocrCanvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    canvas.classList.remove('hidden');
+    document.getElementById('ocrVideo').style.display = 'none';
+    URL.revokeObjectURL(url);
+    _runOCR(canvas);
+  };
+  img.src = url;
+}
+// Shared Tesseract runner
+function _runOCR(canvas) {
+  const status = document.getElementById('ocrStatus');
   document.getElementById('ocrCaptureBtn').disabled = true;
+  status.textContent = '⏳ กำลังประมวลผล OCR...';
   Tesseract.recognize(canvas, 'tha+eng', {
     logger: m => { if (m.status === 'recognizing text') status.textContent = 'กำลังอ่าน: ' + Math.round(m.progress*100) + '%'; }
   }).then(({ data: { text } }) => {
     document.getElementById('ocrCaptureBtn').disabled = false;
-    const data = parseIDCard(text);
-    status.textContent = '✅ อ่านสำเร็จ — กรุณาตรวจสอบข้อมูล';
-    document.getElementById('ocrResult').innerHTML = renderOCRResult(data);
+    _lastOCRText = text;
+    const parsed = parseIDCard(text);
+    status.textContent = '✅ อ่านสำเร็จ — ตรวจสอบข้อมูลด้านล่าง';
+    document.getElementById('ocrResult').innerHTML = renderOCRResult(parsed);
     lucide.createIcons();
   }).catch(err => {
     document.getElementById('ocrCaptureBtn').disabled = false;
     status.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
   });
+}
+// AI-enhanced parse via GAS → Claude API
+async function ocrAIFill() {
+  if (!_lastOCRText) return;
+  const btn = document.getElementById('ocrAIBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '🤖 กำลังประมวลผล AI...'; }
+  try {
+    const res = await API.parseOCRText(_lastOCRText);
+    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI แปลอัจฉริยะ'; }
+    if (res.status === 'success' && res.data) {
+      applyOCR(res.data);
+    } else {
+      Swal.fire('AI Parse', res.message || 'ไม่สามารถใช้ AI ได้ — กรุณาตั้งค่า CLAUDE_API_KEY ใน Apps Script Properties', 'info');
+    }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI แปลอัจฉริยะ'; }
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+  }
 }
 function parseIDCard(text) {
   const clean = text.replace(/\n/g,' ').replace(/\s+/g,' ');
@@ -882,14 +1015,17 @@ function parseIDCard(text) {
   if (lnM) r.lastName = lnM[1].trim();
   const dobM = clean.match(/(\d{1,2})\s+(?:ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s+(\d{4})/);
   if (dobM) { const be = parseInt(dobM[2]); r.birthYear = be > 2500 ? be-543 : be; }
-  if (/นาย/.test(clean)) r.title='นาย';
+  if (/(?:^|\s)นาย(?:\s|$)/.test(clean)) r.title='นาย';
   else if (/นางสาว/.test(clean)) r.title='นางสาว';
-  else if (/นาง/.test(clean)) r.title='นาง';
+  else if (/(?:^|\s)นาง(?:\s|$)/.test(clean)) r.title='นาง';
+  else if (/เด็กชาย/.test(clean)) r.title='เด็กชาย';
+  else if (/เด็กหญิง/.test(clean)) r.title='เด็กหญิง';
   return r;
 }
 function renderOCRResult(d) {
   if (!Object.keys(d).length)
-    return `<p class="text-red-500 text-xs">ไม่พบข้อมูล — กรุณาถ่ายรูปอีกครั้ง</p>`;
+    return `<p class="text-red-500 text-xs">ไม่พบข้อมูล — ลองถ่ายรูปใหม่หรืออัปโหลดรูปภาพที่ชัดกว่านี้ หรือกด AI แปลอัจฉริยะ</p>
+    <button id="ocrAIBtn" onclick="ocrAIFill()" class="btn btn-secondary btn-sm mt-2">🤖 AI แปลอัจฉริยะ</button>`;
   const rows = [
     d.idCard    ? `<div><b>เลขบัตร:</b> <span class="text-blue-700 font-bold">${d.idCard}</span></div>` : '',
     d.title     ? `<div><b>คำนำหน้า:</b> ${d.title}</div>` : '',
@@ -897,18 +1033,218 @@ function renderOCRResult(d) {
     d.lastName  ? `<div><b>นามสกุล:</b> ${d.lastName}</div>` : '',
     d.birthYear ? `<div><b>ปีเกิด (ค.ศ.):</b> ${d.birthYear}</div>` : '',
   ].filter(Boolean).join('');
-  return `<div class="space-y-1 text-sm mb-3">${rows}</div>
-    <button onclick='applyOCR(${JSON.stringify(d)})' class="btn btn-primary btn-sm">
-      ✓ ใช้ข้อมูลนี้
-    </button>`;
+  return `<div class="space-y-1 text-sm mb-2">${rows}</div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick='applyOCR(${JSON.stringify(d)})' class="btn btn-primary btn-sm">✓ ใช้ข้อมูลนี้</button>
+      <button id="ocrAIBtn" onclick="ocrAIFill()" class="btn btn-secondary btn-sm">🤖 AI แปลอัจฉริยะ</button>
+    </div>`;
 }
 function applyOCR(d) {
-  const sv = (id, v) => { const el=document.getElementById(id); if(el&&v) el.value=v; };
+  const sv = (id, v) => { const el=document.getElementById(id); if(el&&v!==undefined) el.value=v; };
   sv('f_idcard', d.idCard); sv('f_title', d.title);
   sv('f_fname', d.firstName); sv('f_lname', d.lastName); sv('f_birthYear', d.birthYear);
   closeOCR();
   Swal.fire({ title:'นำเข้าข้อมูลสำเร็จ', text:'กรุณาตรวจสอบและแก้ไขข้อมูลก่อนบันทึก',
     icon:'success', confirmButtonColor:'#1e3a8a', timer:3000, showConfirmButton:false });
+}
+
+// ── CSV IMPORT ────────────────────────────────────────
+let _csvRows = [], _csvFilter = 'all', _csvExisting = [];
+
+async function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  showLoader(true, 'กำลังโหลดรายชื่อนักเรียนเพื่อตรวจสอบซ้ำ...');
+  try {
+    const res = await API.getStudents();
+    _csvExisting = (res.status === 'success') ? res.data : [];
+  } catch(e) { _csvExisting = []; }
+  const text = await file.text();
+  const rows = _parseCSV(text);
+  showLoader(false);
+  if (!rows.length) { Swal.fire('ไม่พบข้อมูล', 'ไม่พบข้อมูลในไฟล์ หรือรูปแบบ CSV ไม่ถูกต้อง', 'warning'); return; }
+  _csvRows = rows.map((r, i) => ({ ...r, _idx:i, _selected:true, _dup:_csvCheckDup(r) }));
+  _csvFilter = 'all';
+  _csvRenderModal();
+  document.getElementById('csvModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+function _parseCSV(text) {
+  const lines = text.replace(/^\uFEFF/,'').split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = _csvSplitLine(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = _csvSplitLine(line);
+    const obj = {};
+    headers.forEach((h, j) => { obj[h.trim()] = (vals[j]||'').trim(); });
+    if (obj.FirstName || obj.IDCard) rows.push(obj);
+  }
+  return rows;
+}
+function _csvSplitLine(line) {
+  const r = []; let cur = ''; let inQ = false;
+  for (const c of line) {
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { r.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  r.push(cur); return r;
+}
+function _csvCheckDup(row) {
+  if (!_csvExisting.length) return { type:'new', msg:'' };
+  if (row.IDCard && row.IDCard.length >= 13) {
+    const m = _csvExisting.find(s => s.idCard === row.IDCard);
+    if (m) return { type:'dup', msg:`เลขบัตรตรงกับ ${m.fname||''} ${m.lname||''} (${m.stipNo})` };
+  }
+  if (row.FirstName && row.LastName) {
+    const m = _csvExisting.find(s => s.fname === row.FirstName && s.lname === row.LastName);
+    if (m) return { type:'warn', msg:`ชื่อ-นามสกุลตรงกับ ${m.stipNo} (ปีทุน ${m.scholarshipYear||'—'}) — อาจเป็นคนละคน` };
+  }
+  return { type:'new', msg:'' };
+}
+function _csvRenderModal() {
+  const tot = _csvRows.length;
+  const dupCnt  = _csvRows.filter(r=>r._dup.type==='dup').length;
+  const warnCnt = _csvRows.filter(r=>r._dup.type==='warn').length;
+  const newCnt  = tot - dupCnt - warnCnt;
+  document.getElementById('csvSummaryLine').textContent = `พบ ${tot} แถว — ใหม่ ${newCnt} | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}`;
+  document.getElementById('csvStatRow').innerHTML = `
+    <span class="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full border border-green-200">
+      <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span> ใหม่ <b>${newCnt}</b>
+    </span>
+    <span class="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 rounded-full border border-yellow-200">
+      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> อาจซ้ำ (ชื่อตรงกัน) <b>${warnCnt}</b>
+    </span>
+    <span class="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 rounded-full border border-red-200">
+      <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span> บัตรซ้ำ (เลขบัตรตรงกัน) <b>${dupCnt}</b>
+    </span>
+    <span class="ml-auto text-gray-400 text-xs italic">ชื่อซ้ำอาจเป็นคนละคนได้ ตรวจสอบก่อนนำเข้า</span>`;
+  csvRenderTable(); _csvUpdateCount();
+}
+function csvRenderTable() {
+  const q = (document.getElementById('csvSearch')?.value||'').toLowerCase();
+  const filtered = _csvRows.filter(r => {
+    if (_csvFilter==='new'  && r._dup.type!=='new')  return false;
+    if (_csvFilter==='warn' && r._dup.type!=='warn') return false;
+    if (_csvFilter==='dup'  && r._dup.type!=='dup')  return false;
+    if (q) { const txt=`${r.FirstName||''} ${r.LastName||''} ${r.IDCard||''} ${r.StipNo||''}`.toLowerCase(); return txt.includes(q); }
+    return true;
+  });
+  const tbody = document.getElementById('csvTbody');
+  const empty = document.getElementById('csvEmpty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  const IC = { MBS:'text-blue-700 font-semibold', VC:'text-orange-600 font-semibold', UNI:'text-purple-600 font-semibold' };
+  tbody.innerHTML = filtered.map(r => {
+    const dt = r._dup.type;
+    const rc = dt==='new'?'csv-row-new': dt==='warn'?'csv-row-warn':'csv-row-dup';
+    const badge = dt==='new'
+      ? '<span class="badge badge-green" style="font-size:10px">✓ ใหม่</span>'
+      : dt==='warn'
+      ? '<span class="badge badge-orange" style="font-size:10px">⚠ อาจซ้ำ</span>'
+      : '<span class="badge badge-red" style="font-size:10px">✕ บัตรซ้ำ</span>';
+    const idFmt = r.IDCard ? r.IDCard.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5') : '—';
+    const yr = r.ScholarshipYear ? (parseInt(r.ScholarshipYear)+543) : '—';
+    return `<tr class="${rc} border-b transition" data-idx="${r._idx}">
+      <td class="p-2 text-center"><input type="checkbox" ${r._selected?'checked':''} onchange="_csvToggle(${r._idx},this.checked)" class="rounded accent-blue-700"></td>
+      <td class="p-2 text-gray-400">${r._idx+1}</td>
+      <td class="p-2">${badge}${r._dup.msg?`<div class="text-xs text-orange-600 mt-0.5 leading-tight">↳ ${r._dup.msg}</div>`:''}</td>
+      <td class="p-2"><div class="font-medium text-gray-800">${r.Title||''} ${r.FirstName||''} ${r.LastName||''}</div>${r.StipNo?`<div class="text-gray-400 text-xs">${r.StipNo}</div>`:''}</td>
+      <td class="p-2 font-mono text-gray-600 text-xs">${idFmt}</td>
+      <td class="p-2 ${IC[r.Institution]||'text-gray-600'}">${r.Institution||'—'}</td>
+      <td class="p-2 text-gray-600">${yr}</td>
+      <td class="p-2 text-gray-600">${r.Status||'Active'}</td>
+    </tr>`;
+  }).join('');
+}
+function csvSetFilter(f) {
+  _csvFilter = f;
+  ['All','New','Warn','Dup'].forEach(k => {
+    const el = document.getElementById('csvF'+k);
+    if (el) el.classList.toggle('active', k.toLowerCase()===f);
+  });
+  csvRenderTable();
+}
+function _csvToggle(idx, checked) {
+  const r = _csvRows.find(x=>x._idx===idx);
+  if (r) r._selected = checked;
+  _csvUpdateCount();
+}
+function csvToggleAll(checked) {
+  _csvRows.forEach(r=>r._selected=checked);
+  csvRenderTable(); _csvUpdateCount();
+}
+function _csvUpdateCount() {
+  const sel = _csvRows.filter(r=>r._selected);
+  document.getElementById('csvSelectedCnt').textContent = sel.length;
+  document.getElementById('csvDupWarn').classList.toggle('hidden', !sel.some(r=>r._dup.type!=='new'));
+  const all = document.getElementById('csvSelectAll');
+  all.checked = sel.length===_csvRows.length;
+  all.indeterminate = sel.length>0 && sel.length<_csvRows.length;
+}
+function closeCSVModal() {
+  document.getElementById('csvModal').classList.add('hidden');
+  _csvRows = [];
+}
+async function csvImportSelected() {
+  const sel = _csvRows.filter(r=>r._selected);
+  if (!sel.length) { Swal.fire('แจ้งเตือน','กรุณาเลือกอย่างน้อย 1 แถว','warning'); return; }
+  const redDup = sel.filter(r=>r._dup.type==='dup');
+  if (redDup.length) {
+    const cf = await Swal.fire({
+      title:`พบเลขบัตรซ้ำ ${redDup.length} รายการ`,
+      html:`ข้อมูลเหล่านี้มีเลขบัตรประชาชนตรงกับรายการที่มีอยู่แล้ว<br><b>ต้องการนำเข้าต่อไปหรือไม่?</b>`,
+      icon:'warning', showCancelButton:true,
+      confirmButtonText:'นำเข้าต่อไป', cancelButtonText:'ยกเลิก', confirmButtonColor:'#1e3a8a'
+    });
+    if (!cf.isConfirmed) return;
+  }
+  const wrap = document.getElementById('csvProgressWrap');
+  const bar = document.getElementById('csvProgressBar');
+  const lbl = document.getElementById('csvProgressLabel');
+  const pct = document.getElementById('csvProgressPct');
+  const btn = document.getElementById('csvImportBtn');
+  wrap.classList.remove('hidden'); btn.disabled = true;
+  let ok=0, fail=0, errs=[];
+  for (let i=0; i<sel.length; i++) {
+    const row = sel[i];
+    const p = Math.round((i/sel.length)*100);
+    bar.style.width=p+'%'; pct.textContent=p+'%';
+    lbl.textContent=`กำลังนำเข้า ${i+1}/${sel.length}: ${row.Title||''}${row.FirstName||''} ${row.LastName||''}`;
+    try {
+      const res = await API.saveStudent(_csvToData(row));
+      if (res.status==='success') ok++; else { fail++; errs.push(`แถว ${row._idx+1}: ${res.message}`); }
+    } catch(e) { fail++; errs.push(`แถว ${row._idx+1}: ${e.message}`); }
+  }
+  bar.style.width='100%'; pct.textContent='100%';
+  wrap.classList.add('hidden'); btn.disabled=false;
+  closeCSVModal();
+  await Swal.fire({
+    title:'นำเข้าเสร็จสิ้น',
+    html:`<p class="text-base">✅ สำเร็จ <b class="text-green-600">${ok}</b> รายการ`+
+      (fail?`&nbsp;❌ ล้มเหลว <b class="text-red-500">${fail}</b> รายการ`:'')+`</p>`+
+      (errs.length?`<div class="mt-2 text-xs text-red-500 text-left bg-red-50 rounded p-2 max-h-24 overflow-auto">${errs.slice(0,8).join('<br>')}</div>`:''),
+    icon: ok>0?'success':'error', confirmButtonColor:'#1e3a8a'
+  });
+  if (ok>0) window.location.href='students.html';
+}
+function _csvToData(r) {
+  const u = getUser();
+  const F = ['StipNo','IDCard','BirthYear','Institution','CurrentLevel','StudentID','ScholarshipYear',
+    'EntryYear','EntryTerm','Major','Department','Title','FirstName','LastName','EngTitle',
+    'EngFirstName','EngLastName','Nickname','Sex','Nationality','Religion','Talent','Weight',
+    'Height','BloodType','Disease','Phone1','Phone2','Village','HouseNo','Moo','Tambon',
+    'Amphoe','Province','ParentStatus','Parent1_IDCard','Parent1_Title','Parent1_FirstName',
+    'Parent1_LastName','Parent2_IDCard','Parent2_Title','Parent2_FirstName','Parent2_LastName',
+    'OldSchool','Remarks'];
+  const obj = {}; F.forEach(f=>{ obj[f]=r[f]||''; });
+  obj.Status = r.Status||'Active';
+  obj.SavedBy = u ? u.name : 'CSV Import';
+  return obj;
 }
 
 // ── Template Download ──
@@ -919,9 +1255,6 @@ function downloadTemplate() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
   a.download = 'RDF_Import_Template.csv'; a.click();
-}
-function importCSV() {
-  Swal.fire(t('info'), 'ระบบนำเข้า CSV จะพัฒนาในเวอร์ชันถัดไป', 'info');
 }
 
 document.getElementById('footerYear').textContent = new Date().getFullYear();
