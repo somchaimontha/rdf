@@ -30,6 +30,8 @@ const API = {
   async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }); },
   async getLogs(limit)             { return apiGet({ action: 'getLogs', limit: limit || 200 }); },
   async parseOCRText(text)         { return apiPost({ action: 'parseOCRText', ocrText: text }); },
+  async getApiKeyStatus()          { return apiGet({ action: 'getApiKeyStatus' }); },
+  async saveApiKey(key)            { return apiPost({ action: 'saveApiKey', key, reqUser: (getUser()||{}).username||'' }); },
 };
 
 /* ── Shared Loader ── */
