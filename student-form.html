@@ -1121,6 +1121,13 @@ function _parseCSV(text) {
       obj.BirthYear = String(parseInt(obj.BirthYear) - 543);
     }
 
+    // Auto-detect HasNoSurname: LastName is "-", "–", "—" or empty
+    const ln = (obj.LastName||'').trim();
+    if (!obj.HasNoSurname && (ln === '-' || ln === '–' || ln === '—' || ln === '')) {
+      obj.HasNoSurname = 'true';
+      if (ln === '-' || ln === '–' || ln === '—') obj.LastName = '';
+    }
+
     if (obj.FirstName || obj.LastName || obj.EngFirstName || obj.EngLastName || obj.IDCard) rows.push(obj);
   }
   return rows;
