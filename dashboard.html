@@ -118,6 +118,76 @@
       <p class="text-xs text-gray-500" data-t="menuSettingsDesc">จัดการผู้ดูแลและตั้งค่าระบบ</p>
     </div>
   </div>
+
+  <!-- Incomplete Profiles Alert — Admin view -->
+  <div id="incompleteCard" class="hidden mt-5 fade-in-up delay-3">
+    <div class="card" style="border-left:4px solid #f59e0b">
+      <div class="card-header flex items-center justify-between" style="background:#d97706">
+        <div class="flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+          <span>โปรไฟล์ไม่สมบูรณ์</span>
+        </div>
+        <span id="incompleteCount" class="font-bold text-lg">—</span>
+      </div>
+      <div class="card-body py-3">
+        <p class="text-xs text-gray-500 mb-3">นักเรียนที่ข้อมูลยังไม่ครบ (ต่ำกว่า 80%)</p>
+        <div id="incompleteSummary" class="flex flex-wrap gap-2 mb-3"></div>
+        <a href="students.html?incomplete=1" class="btn btn-warning btn-sm">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i> ดูรายชื่อที่ต้องกรอกข้อมูล
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Guide — shown to Student role -->
+  <div id="studentGuide" class="hidden mt-5 fade-in-up delay-3">
+    <div class="card" style="border-left:4px solid #1d4ed8">
+      <div class="card-header" style="background:#1d4ed8">
+        <i data-lucide="info" class="w-4 h-4"></i>
+        <span>คู่มือการใช้งานระบบสำหรับนักเรียนทุน</span>
+      </div>
+      <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div class="flex gap-3">
+            <div style="width:36px;height:36px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i data-lucide="user-check" class="w-5 h-5" style="color:#1d4ed8"></i>
+            </div>
+            <div>
+              <p class="font-bold text-gray-700 mb-1">โปรไฟล์ส่วนตัว</p>
+              <p class="text-gray-500 text-xs">กรอกข้อมูลให้ครบถ้วนเพื่อให้มูลนิธิสามารถติดต่อและดูแลนักเรียนทุนได้อย่างมีประสิทธิภาพ ระบบจะแสดงเปอร์เซ็นต์ความสมบูรณ์ของโปรไฟล์</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div style="width:36px;height:36px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i data-lucide="shield" class="w-5 h-5" style="color:#16a34a"></i>
+            </div>
+            <div>
+              <p class="font-bold text-gray-700 mb-1">ความปลอดภัยของข้อมูล</p>
+              <p class="text-gray-500 text-xs">ข้อมูลของนักเรียนทุกอย่างถูกเก็บอย่างปลอดภัย เข้าถึงได้เฉพาะเจ้าหน้าที่มูลนิธิที่ได้รับอนุญาตเท่านั้น</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div style="width:36px;height:36px;background:#fffbeb;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i data-lucide="bell" class="w-5 h-5" style="color:#d97706"></i>
+            </div>
+            <div>
+              <p class="font-bold text-gray-700 mb-1">การแจ้งเตือนข้อมูลไม่ครบ</p>
+              <p class="text-gray-500 text-xs">ระบบจะแจ้งเตือนหากข้อมูลยังไม่ครบถ้วน นักเรียนสามารถกดข้ามและกลับมากรอกในภายหลังได้ทุกเมื่อ</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div style="width:36px;height:36px;background:#faf5ff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i data-lucide="help-circle" class="w-5 h-5" style="color:#7c3aed"></i>
+            </div>
+            <div>
+              <p class="font-bold text-gray-700 mb-1">ต้องการความช่วยเหลือ?</p>
+              <p class="text-gray-500 text-xs">หากพบปัญหาการใช้งานหรือต้องการแก้ไขข้อมูล กรุณาติดต่อเจ้าหน้าที่มูลนิธิโดยตรง</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 
 <footer class="rdf-footer">
@@ -160,6 +230,33 @@ async function loadStats() {
       document.getElementById('statVC').textContent    = s.VC    || 0;
       document.getElementById('statUNI').textContent   = s.UNI   || 0;
       document.getElementById('statAlumni').textContent= s.Alumni|| 0;
+
+      // Show incomplete card for admins
+      const _user = getUser();
+      if (_user && _user.role !== 'Student') {
+        const _students = result.data || [];
+        const _incomplete = _students.filter(s => {
+          const _obj = { IDCard:s.idCard, FirstName:s.fname, LastName:s.lname, Institution:s.institution, ScholarshipYear:s.scholarshipYear };
+          return calcProfileCompletion(_obj).pct < 80;
+        });
+        if (_incomplete.length > 0) {
+          document.getElementById('incompleteCard').classList.remove('hidden');
+          document.getElementById('incompleteCount').textContent = _incomplete.length + ' คน';
+          const _secCounts = {};
+          RDF.PROFILE_SECTIONS.forEach(s => _secCounts[s.label_th] = 0);
+          _incomplete.forEach(s => {
+            const _obj = { IDCard:s.idCard, FirstName:s.fname, LastName:s.lname, Institution:s.institution, ScholarshipYear:s.scholarshipYear };
+            calcProfileCompletion(_obj).sections.filter(sec => sec.missing.length > 0).forEach(sec => { _secCounts[sec.label_th] = (_secCounts[sec.label_th]||0)+1; });
+          });
+          document.getElementById('incompleteSummary').innerHTML = Object.entries(_secCounts)
+            .filter(([,c]) => c > 0).sort((a,b) => b[1]-a[1]).slice(0,4)
+            .map(([k,c]) => `<span class="badge badge-orange">${k}: ${c} คน</span>`).join('');
+        }
+        lucide.createIcons();
+      } else if (_user && _user.role === 'Student') {
+        document.getElementById('studentGuide').classList.remove('hidden');
+        lucide.createIcons();
+      }
     }
   } catch(e) {}
 }

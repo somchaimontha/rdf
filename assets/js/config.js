@@ -52,3 +52,28 @@ const RDF = {
     ]
   }
 };
+
+/* ── Profile Completion Sections ── */
+RDF.PROFILE_SECTIONS = [
+  { key:'identity', label_th:'ข้อมูลระบุตัวตน',      label_en:'Identity',         fields:['IDCard','Title','FirstName','LastName','BirthYear'],                        weight:25 },
+  { key:'academic', label_th:'ข้อมูลการศึกษา',        label_en:'Academic',         fields:['Institution','CurrentLevel','ScholarshipYear','EntryYear'],                 weight:20 },
+  { key:'personal', label_th:'ข้อมูลส่วนตัว',         label_en:'Personal',         fields:['Sex','Nationality','Religion','Phone1'],                                    weight:20 },
+  { key:'address',  label_th:'ที่อยู่และติดต่อ',      label_en:'Contact & Address', fields:['Province','Amphoe','Tambon'],                                              weight:15 },
+  { key:'family',   label_th:'ข้อมูลครอบครัว',        label_en:'Family',           fields:['ParentStatus','Parent1_FirstName','Parent1_LastName'],                     weight:10 },
+  { key:'photo',    label_th:'รูปโปรไฟล์',            label_en:'Profile Photo',    fields:['ProfilePicURL'],                                                           weight:10 },
+];
+
+function calcProfileCompletion(student) {
+  if (!student) return { pct:0, sections:[], color:'#ef4444' };
+  let totalW = 0, earnedW = 0;
+  const sections = RDF.PROFILE_SECTIONS.map(sec => {
+    const missing = sec.fields.filter(f => !student[f] || student[f].toString().trim() === '');
+    const filled  = sec.fields.length - missing.length;
+    totalW  += sec.weight;
+    earnedW += (sec.fields.length ? (filled / sec.fields.length) : 1) * sec.weight;
+    return { ...sec, filled, total: sec.fields.length, pct: sec.fields.length ? Math.round(filled/sec.fields.length*100) : 100, missing };
+  });
+  const pct = Math.round(earnedW / totalW * 100);
+  const color = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+  return { pct, sections, color };
+}
