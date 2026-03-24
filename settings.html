@@ -217,6 +217,9 @@
     <button class="s-tab" id="tabLogs" onclick="switchTab('logs')">
       <i data-lucide="scroll-text" class="w-4 h-4"></i> ประวัติการใช้งาน
     </button>
+    <button class="s-tab" id="tabApikeys" onclick="switchTab('apikeys')">
+      <i data-lucide="key" class="w-4 h-4"></i> API Keys
+    </button>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -463,6 +466,81 @@
 
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       PANEL: API KEYS
+  ════════════════════════════════════════════ -->
+  <div id="panelApikeys" class="hidden">
+    <div class="max-w-xl mx-auto">
+
+      <!-- Info box -->
+      <div class="card mb-5 fade-in-up" style="border-left:4px solid #1d4ed8">
+        <div class="card-body py-4">
+          <div class="flex gap-3 items-start">
+            <div style="width:38px;height:38px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i data-lucide="sparkles" class="w-5 h-5" style="color:#1d4ed8"></i>
+            </div>
+            <div>
+              <p class="font-bold text-gray-800 mb-1">Gemini AI — ฟรี</p>
+              <p class="text-sm text-gray-500">ใช้สำหรับ OCR อัจฉริยะ: แปลข้อความจากบัตรประชาชนให้เป็นข้อมูลที่ถูกต้อง</p>
+              <p class="text-xs text-gray-400 mt-1">Gemini 1.5 Flash — ฟรี 15 requests/นาที ไม่ต้องใช้บัตรเครดิต</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemini API Key card -->
+      <div class="card fade-in-up delay-1">
+        <div class="card-header flex items-center justify-between">
+          <div class="flex items-center gap-2 font-bold text-gray-700">
+            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" alt="Gemini" style="width:20px;height:20px">
+            Gemini API Key
+          </div>
+          <div id="geminiKeyStatus" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style="background:#f1f5f9;color:#64748b">
+            <span id="geminiKeyDot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
+            <span id="geminiKeyStatusText">กำลังตรวจสอบ...</span>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- Current key display -->
+          <div id="geminiCurrentKey" class="hidden mb-4 p-3 rounded-lg flex items-center gap-3" style="background:#f0fdf4;border:1px solid #bbf7d0">
+            <i data-lucide="check-circle" class="w-4 h-4" style="color:#16a34a;flex-shrink:0"></i>
+            <div>
+              <p class="text-xs font-semibold text-green-700">ตั้งค่าแล้ว</p>
+              <p class="text-sm font-mono text-green-800" id="geminiMaskedKey">—</p>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div class="mb-4">
+            <label class="field-label">วาง API Key ใหม่</label>
+            <div class="flex gap-2">
+              <div class="relative flex-1">
+                <input type="password" id="geminiKeyInput" class="field-input pr-10" placeholder="AIza...">
+                <button type="button" onclick="toggleKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" title="แสดง/ซ่อน">
+                  <i data-lucide="eye" class="w-4 h-4" id="eyeIcon"></i>
+                </button>
+              </div>
+              <button onclick="saveGeminiKey()" class="btn btn-primary btn-sm whitespace-nowrap" id="saveKeyBtn">
+                <i data-lucide="save" class="w-4 h-4"></i> บันทึก
+              </button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1.5">Key จะถูกเก็บใน GAS Script Properties อย่างปลอดภัย ไม่เปิดเผยต่อสาธารณะ</p>
+          </div>
+
+          <!-- Get key link -->
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"
+             class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition group">
+            <i data-lucide="external-link" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+            รับ API Key ฟรีจาก Google AI Studio
+          </a>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </main>
 
 <!-- ═══════════════════════════════════════════
@@ -566,7 +644,7 @@ if (user) {
 // ─────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────
-const ALL_TABS = ['admins','overview','majors','logs'];
+const ALL_TABS = ['admins','overview','majors','logs','apikeys'];
 
 function switchTab(tab) {
   ALL_TABS.forEach(t => {
@@ -1074,6 +1152,70 @@ async function saveMajors(key) {
       Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
     } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
   } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
+}
+
+// ─────────────────────────────────────────────
+// API KEY MANAGEMENT
+// ─────────────────────────────────────────────
+async function loadApiKeyStatus() {
+  try {
+    const r = await API.getApiKeyStatus();
+    const dot  = document.getElementById('geminiKeyDot');
+    const txt  = document.getElementById('geminiKeyStatusText');
+    const box  = document.getElementById('geminiCurrentKey');
+    const masked = document.getElementById('geminiMaskedKey');
+    const status = document.getElementById('geminiKeyStatus');
+    if (r.set) {
+      dot.style.background = '#22c55e';
+      txt.textContent = 'ตั้งค่าแล้ว';
+      status.style.background = '#f0fdf4'; status.style.color = '#15803d';
+      box.classList.remove('hidden');
+      masked.textContent = r.masked;
+    } else {
+      dot.style.background = '#f59e0b';
+      txt.textContent = 'ยังไม่ได้ตั้งค่า';
+      status.style.background = '#fffbeb'; status.style.color = '#92400e';
+      box.classList.add('hidden');
+    }
+  } catch(e) { /* skip */ }
+}
+
+async function saveGeminiKey() {
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if (!key) { Swal.fire('แจ้งเตือน','กรุณากรอก API Key','warning'); return; }
+  const btn = document.getElementById('saveKeyBtn');
+  btn.disabled = true;
+  try {
+    showLoader(true, 'กำลังบันทึก...');
+    const r = await API.saveApiKey(key);
+    showLoader(false);
+    btn.disabled = false;
+    if (r.status === 'success') {
+      document.getElementById('geminiKeyInput').value = '';
+      Swal.fire({ icon:'success', title:'บันทึก API Key สำเร็จ', timer:1800, showConfirmButton:false });
+      loadApiKeyStatus();
+    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
+  } catch(e) { showLoader(false); btn.disabled = false; Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
+}
+
+function toggleKeyVisibility() {
+  const inp  = document.getElementById('geminiKeyInput');
+  const icon = document.getElementById('eyeIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.setAttribute('data-lucide','eye-off');
+  } else {
+    inp.type = 'password';
+    icon.setAttribute('data-lucide','eye');
+  }
+  lucide.createIcons();
+}
+
+// Load API key status when tab is opened
+const _origSwitchTab = switchTab;
+function switchTab(tab) {
+  _origSwitchTab(tab);
+  if (tab === 'apikeys') loadApiKeyStatus();
 }
 
 // ─────────────────────────────────────────────

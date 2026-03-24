@@ -26,6 +26,7 @@ function doGet(e) {
     else if (action === 'getAdmins')          result = getAdmins();
     else if (action === 'getSystemSettings')  result = getSystemSettings();
     else if (action === 'getLogs')            result = getLogs(parseInt(e.parameter.limit)||200);
+    else if (action === 'getApiKeyStatus')    result = getApiKeyStatus();
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -44,6 +45,7 @@ function doPost(e) {
     else if (action === 'saveAdmin')    result = saveAdmin(body.admin, body.reqUser);
     else if (action === 'deleteAdmin')  result = deleteAdmin(body.username, body.reqUser);
     else if (action === 'saveSetting')  result = saveSetting(body.key, body.values, body.reqUser);
+    else if (action === 'saveApiKey')   result = saveApiKey(body.key, body.reqUser);
     else if (action === 'parseOCRText') result = parseOCRText(body.ocrText);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
@@ -473,15 +475,38 @@ function saveSetting(key, values, reqUser) {
 }
 
 // ─────────────────────────────────────────────
-// AI OCR PARSE — Claude API via UrlFetchApp
-// Setup: in Apps Script editor → Project Settings → Script Properties
-//        add property: CLAUDE_API_KEY = sk-ant-xxxxxxxx
+// API KEY MANAGEMENT
+// Keys stored securely in Script Properties (never in Sheets)
+// ─────────────────────────────────────────────
+function getApiKeyStatus() {
+  const props = PropertiesService.getScriptProperties();
+  const key = props.getProperty('GEMINI_API_KEY');
+  if (!key) return { status:'success', set: false, masked: '' };
+  const masked = key.length > 8
+    ? key.substring(0, 4) + '***' + key.substring(key.length - 4)
+    : '***';
+  return { status:'success', set: true, masked };
+}
+
+function saveApiKey(key, reqUser) {
+  if (!key || key.trim().length < 10) return { status:'error', message:'API Key ไม่ถูกต้อง' };
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('GEMINI_API_KEY', key.trim());
+  logAction(reqUser||'Admin', 'SAVE_SETTING', 'GEMINI_API_KEY updated');
+  return { status:'success' };
+}
+
+// ─────────────────────────────────────────────
+// AI OCR PARSE — Gemini API (Free tier) via UrlFetchApp
+// Setup: Settings → API Keys tab → วาง Gemini API Key
+//        หรือ Apps Script → Script Properties → GEMINI_API_KEY
+// Get free key: https://aistudio.google.com/app/apikey
 // ─────────────────────────────────────────────
 function parseOCRText(ocrText) {
   if (!ocrText) return { status:'error', message:'No OCR text provided.' };
   const props = PropertiesService.getScriptProperties();
-  const apiKey = props.getProperty('CLAUDE_API_KEY');
-  if (!apiKey) return { status:'error', message:'CLAUDE_API_KEY not set. Go to Apps Script → Project Settings → Script Properties and add CLAUDE_API_KEY.' };
+  const apiKey = props.getProperty('GEMINI_API_KEY');
+  if (!apiKey) return { status:'error', message:'ยังไม่ได้ตั้งค่า Gemini API Key ไปที่ Settings → API Keys เพื่อเพิ่ม key ฟรีจาก Google AI Studio' };
 
   const prompt = 'สกัดข้อมูลจาก OCR text ของบัตรประชาชนไทย ตอบกลับเป็น JSON เท่านั้น ไม่มีข้อความอื่น\n' +
     'fields: idCard (เลข 13 หลักตัวเลข ไม่มี -), title (นาย/นางสาว/นาง/เด็กชาย/เด็กหญิง), ' +
@@ -489,29 +514,26 @@ function parseOCRText(ocrText) {
     'ถ้าหาไม่พบให้ใส่ null\nOCR text:\n' + ocrText.substring(0, 2000);
 
   try {
-    const resp = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+    const resp = UrlFetchApp.fetch(url, {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
+      headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 256,
-        messages: [{ role: 'user', content: prompt }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 256 }
       }),
       muteHttpExceptions: true
     });
     const body = JSON.parse(resp.getContentText());
-    if (body.content && body.content[0] && body.content[0].text) {
-      const jsonText = body.content[0].text.trim().replace(/^```json\n?|```$/g,'').trim();
+    const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      const jsonText = text.trim().replace(/^```json\n?|```$/g,'').trim();
       const parsed = JSON.parse(jsonText);
-      // Convert null strings to undefined
       Object.keys(parsed).forEach(k => { if (parsed[k] === null) delete parsed[k]; });
       return { status:'success', data: parsed };
     }
-    return { status:'error', message: 'AI response format unexpected.' };
+    const errMsg = body?.error?.message || 'AI response format unexpected.';
+    return { status:'error', message: errMsg };
   } catch(e) {
     return { status:'error', message: e.toString() };
   }
