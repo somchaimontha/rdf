@@ -1294,7 +1294,7 @@ function csvRenderTable() {
       <td class="p-2 text-center"><input type="checkbox" ${r._selected?'checked':''} onchange="_csvToggle(${r._idx},this.checked)" class="rounded accent-blue-700"></td>
       <td class="p-2 text-gray-400">${r._idx+1}</td>
       <td class="p-2">${badge}${dupDetail}</td>
-      <td class="p-2"><div class="font-medium text-gray-800">${nameDisplay}</div>${engName}${r.StipNo?`<div class="text-gray-400 text-xs">${r.StipNo}</div>`:''}</td>
+      <td class="p-2">${r.StipNo?`<div class="text-xs font-mono font-bold mb-0.5" style="color:#1d4ed8">${r.StipNo}</div>`:''}<div class="font-medium text-gray-800">${nameDisplay}</div>${engName}</td>
       <td class="p-2 font-mono text-gray-600 text-xs">${idFmt}</td>
       <td class="p-2 ${IC[r.Institution]||'text-gray-600'}">${r.Institution||'—'}</td>
       <td class="p-2 text-gray-600">${yr}</td>
