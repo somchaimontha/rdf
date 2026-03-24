@@ -1373,26 +1373,68 @@ async function csvImportSelected() {
   });
   if (ok>0) window.location.href='students.html';
 }
+// ── CSV fields — ตรงกับ databasesetup.gs Students sheet (ลำดับเดิม) ──
+const CSV_DB_FIELDS = [
+  // Identification
+  'StipNo','IDCard','BirthYear','StudentID','Status',
+  // Academic
+  'Institution','OtherInstitution','CurrentLevel','ScholarshipYear',
+  'EntryYear','EntryTerm','Major','Department','OldSchool',
+  // University
+  'UniName','UniDuration','UniProvince','UniFaculty','UniMajor',
+  // Personal
+  'Title','FirstName','LastName','HasNoSurname',
+  'EngTitle','EngFirstName','EngLastName',
+  'Nickname','Sex','Nationality','Religion',
+  'Talent','Weight','Height','BloodType','Disease',
+  // Contact
+  'Phone1','Phone2',
+  // Address
+  'Village','HouseNo','Moo','Tambon','Amphoe','Province',
+  // Family
+  'ParentStatus','ParentStatusOther',
+  'Parent1_IDCard','Parent1_Title','Parent1_FirstName','Parent1_LastName',
+  'Parent2_IDCard','Parent2_Title','Parent2_FirstName','Parent2_LastName',
+  // Extra
+  'ProfilePicURL','Remarks'
+];
+
 function _csvToData(r) {
   const u = getUser();
-  const F = ['StipNo','IDCard','BirthYear','Institution','CurrentLevel','StudentID','ScholarshipYear',
-    'EntryYear','EntryTerm','Major','Department','Title','FirstName','LastName','EngTitle',
-    'EngFirstName','EngLastName','Nickname','Sex','Nationality','Religion','Talent','Weight',
-    'Height','BloodType','Disease','Phone1','Phone2','Village','HouseNo','Moo','Tambon',
-    'Amphoe','Province','ParentStatus','Parent1_IDCard','Parent1_Title','Parent1_FirstName',
-    'Parent1_LastName','Parent2_IDCard','Parent2_Title','Parent2_FirstName','Parent2_LastName',
-    'OldSchool','Remarks'];
-  const obj = {}; F.forEach(f=>{ obj[f]=r[f]||''; });
-  obj.Status = r.Status||'Active';
+  const obj = {};
+  CSV_DB_FIELDS.forEach(f => { obj[f] = r[f] || ''; });
+  if (!obj.Status) obj.Status = 'Active';
   obj.SavedBy = u ? u.name : 'CSV Import';
   return obj;
 }
 
 // ── Template Download ──
 function downloadTemplate() {
-  const headers = ['StipNo','IDCard','BirthYear','Institution','CurrentLevel','StudentID','ScholarshipYear','EntryYear','EntryTerm','Major','Department','Title','FirstName','LastName','EngTitle','EngFirstName','EngLastName','Nickname','Sex','Nationality','Religion','Talent','Weight','Height','BloodType','Disease','Phone1','Phone2','Village','HouseNo','Moo','Tambon','Amphoe','Province','ParentStatus','Parent1_IDCard','Parent1_Title','Parent1_FirstName','Parent1_LastName','Parent2_IDCard','Parent2_Title','Parent2_FirstName','Parent2_LastName','OldSchool','Remarks','Status'];
-  const ex = ['MBS_001','1234567890123','2000','MBS','มัธยมศึกษาปีที่ 4 (Grade 10)','ST001','2023','2023','1','วิทยาศาสตร์-คณิตศาสตร์','','นาย','สมชาย','ใจดี','Mr.','Somchai','Jaidee','ชาย','Male','ไทย','พุทธ','ฟุตบอล','60','165','O','ไม่มี','0812345678','0898765432','หมู่บ้านสุขใจ','123','5','แม่สะเรียง','แม่สะเรียง','แม่ฮ่องสอน','อยู่ด้วยกัน','','นาย','สมศักดิ์','ใจดี','','นาง','สมหมาย','ใจดี','โรงเรียนเดิม','','Active'];
-  const csv = '\uFEFF' + headers.join(',') + '\n' + ex.join(',');
+  const headers = [...CSV_DB_FIELDS];
+  const ex = [
+    // Identification
+    'MBS_001','1234567890123','2000','ST001','Active',
+    // Academic
+    'MBS','','มัธยมศึกษาปีที่ 4','2023','2023','1','วิทยาศาสตร์-คณิตศาสตร์','','โรงเรียนเดิม',
+    // University (ว่างถ้าไม่ใช่ UNI)
+    '','','','','',
+    // Personal
+    'นาย','สมชาย','ใจดี','false',
+    'Mr.','Somchai','Jaidee',
+    'ชาย','Male','ไทย','พุทธ',
+    'ฟุตบอล','60','165','O','ไม่มี',
+    // Contact
+    '0812345678','0898765432',
+    // Address
+    'หมู่บ้านสุขใจ','123','5','แม่สะเรียง','แม่สะเรียง','แม่ฮ่องสอน',
+    // Family
+    'อยู่ด้วยกัน','',
+    '','นาย','สมศักดิ์','ใจดี',
+    '','นาง','สมหมาย','ใจดี',
+    // Extra
+    '',''
+  ];
+  const csv = '\uFEFF' + headers.join(',') + '\n' + ex.map(v => v.includes(',') ? `"${v}"` : v).join(',');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
   a.download = 'RDF_Import_Template.csv'; a.click();
