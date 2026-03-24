@@ -1081,7 +1081,7 @@ function _parseCSV(text) {
     const vals = _csvSplitLine(line);
     const obj = {};
     headers.forEach((h, j) => { obj[h.trim()] = (vals[j]||'').trim(); });
-    if (obj.FirstName || obj.IDCard) rows.push(obj);
+    if (obj.FirstName || obj.LastName || obj.EngFirstName || obj.EngLastName || obj.IDCard) rows.push(obj);
   }
   return rows;
 }
@@ -1095,34 +1095,80 @@ function _csvSplitLine(line) {
   r.push(cur); return r;
 }
 function _csvCheckDup(row) {
-  if (!_csvExisting.length) return { type:'new', msg:'' };
+  if (!_csvExisting.length) return { type:'new', msg:'', fields:[] };
+
+  // Level 1: IDCard exact match — definite duplicate
   if (row.IDCard && row.IDCard.length >= 13) {
     const m = _csvExisting.find(s => s.idCard === row.IDCard);
-    if (m) return { type:'dup', msg:`เลขบัตรตรงกับ ${m.fname||''} ${m.lname||''} (${m.stipNo})` };
+    if (m) return {
+      type: 'dup',
+      msg: `เลขบัตรซ้ำกับ ${m.fname||''} ${m.lname||''} (${m.stipNo})`,
+      fields: ['IDCard'],
+      match: m
+    };
   }
+
+  // Level 2: Thai name match
   if (row.FirstName && row.LastName) {
     const m = _csvExisting.find(s => s.fname === row.FirstName && s.lname === row.LastName);
-    if (m) return { type:'warn', msg:`ชื่อ-นามสกุลตรงกับ ${m.stipNo} (ปีทุน ${m.scholarshipYear||'—'}) — อาจเป็นคนละคน` };
+    if (m) return {
+      type: 'warn',
+      msg: `ชื่อ-นามสกุล (ไทย) ตรงกับ ${m.stipNo} ปีทุน ${m.scholarshipYear||'—'}`,
+      fields: ['FirstName','LastName'],
+      match: m
+    };
   }
-  return { type:'new', msg:'' };
+
+  // Level 3: English name match
+  if (row.EngFirstName && row.EngLastName) {
+    const m = _csvExisting.find(s =>
+      s.fname && s.lname &&
+      s.fname.toLowerCase() === row.EngFirstName.toLowerCase() &&
+      s.lname.toLowerCase() === row.EngLastName.toLowerCase()
+    );
+    if (m) return {
+      type: 'warn',
+      msg: `ชื่อ-นามสกุล (Eng) ตรงกับ ${m.stipNo} ปีทุน ${m.scholarshipYear||'—'}`,
+      fields: ['EngFirstName','EngLastName'],
+      match: m
+    };
+  }
+
+  // Level 4: First name only (weakest signal — info only)
+  if (row.FirstName) {
+    const matches = _csvExisting.filter(s => s.fname === row.FirstName);
+    if (matches.length >= 2) return {
+      type: 'info',
+      msg: `ชื่อ "${row.FirstName}" ซ้ำกับ ${matches.length} คนในระบบ (นามสกุลต่างกัน)`,
+      fields: ['FirstName'],
+      match: null
+    };
+  }
+
+  return { type:'new', msg:'', fields:[] };
 }
 function _csvRenderModal() {
   const tot = _csvRows.length;
   const dupCnt  = _csvRows.filter(r=>r._dup.type==='dup').length;
   const warnCnt = _csvRows.filter(r=>r._dup.type==='warn').length;
-  const newCnt  = tot - dupCnt - warnCnt;
-  document.getElementById('csvSummaryLine').textContent = `พบ ${tot} แถว — ใหม่ ${newCnt} | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}`;
+  const infoCnt = _csvRows.filter(r=>r._dup.type==='info').length;
+  const newCnt  = tot - dupCnt - warnCnt - infoCnt;
+  document.getElementById('csvSummaryLine').textContent =
+    `พบ ${tot} แถว — ใหม่ ${newCnt} | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}` + (infoCnt?` | ชื่อพ้อง ${infoCnt}`:'');
   document.getElementById('csvStatRow').innerHTML = `
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full border border-green-200">
       <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span> ใหม่ <b>${newCnt}</b>
     </span>
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 rounded-full border border-yellow-200">
-      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> อาจซ้ำ (ชื่อตรงกัน) <b>${warnCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> อาจซ้ำ (ชื่อ-นามสกุลตรงกัน) <b>${warnCnt}</b>
     </span>
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 rounded-full border border-red-200">
       <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span> บัตรซ้ำ (เลขบัตรตรงกัน) <b>${dupCnt}</b>
     </span>
-    <span class="ml-auto text-gray-400 text-xs italic">ชื่อซ้ำอาจเป็นคนละคนได้ ตรวจสอบก่อนนำเข้า</span>`;
+    ${infoCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 rounded-full border border-blue-200">
+      <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span> ชื่อพ้อง <b>${infoCnt}</b>
+    </span>`:''}
+    <span class="ml-auto text-gray-400 text-xs italic">field ที่ตรวจ: IDCard → ชื่อ-นามสกุล (ไทย) → (Eng)</span>`;
   csvRenderTable(); _csvUpdateCount();
 }
 function csvRenderTable() {
@@ -1131,7 +1177,11 @@ function csvRenderTable() {
     if (_csvFilter==='new'  && r._dup.type!=='new')  return false;
     if (_csvFilter==='warn' && r._dup.type!=='warn') return false;
     if (_csvFilter==='dup'  && r._dup.type!=='dup')  return false;
-    if (q) { const txt=`${r.FirstName||''} ${r.LastName||''} ${r.IDCard||''} ${r.StipNo||''}`.toLowerCase(); return txt.includes(q); }
+    if (_csvFilter==='info' && r._dup.type!=='info') return false;
+    if (q) {
+      const txt = `${r.FirstName||''} ${r.LastName||''} ${r.EngFirstName||''} ${r.EngLastName||''} ${r.IDCard||''} ${r.StipNo||''}`.toLowerCase();
+      return txt.includes(q);
+    }
     return true;
   });
   const tbody = document.getElementById('csvTbody');
@@ -1141,19 +1191,38 @@ function csvRenderTable() {
   const IC = { MBS:'text-blue-700 font-semibold', VC:'text-orange-600 font-semibold', UNI:'text-purple-600 font-semibold' };
   tbody.innerHTML = filtered.map(r => {
     const dt = r._dup.type;
-    const rc = dt==='new'?'csv-row-new': dt==='warn'?'csv-row-warn':'csv-row-dup';
+    const rc = dt==='new'?'csv-row-new': dt==='warn'?'csv-row-warn': dt==='dup'?'csv-row-dup':'';
     const badge = dt==='new'
       ? '<span class="badge badge-green" style="font-size:10px">✓ ใหม่</span>'
       : dt==='warn'
       ? '<span class="badge badge-orange" style="font-size:10px">⚠ อาจซ้ำ</span>'
-      : '<span class="badge badge-red" style="font-size:10px">✕ บัตรซ้ำ</span>';
+      : dt==='dup'
+      ? '<span class="badge badge-red" style="font-size:10px">✕ บัตรซ้ำ</span>'
+      : '<span class="badge badge-blue" style="font-size:10px;background:#dbeafe;color:#1d4ed8">ℹ ชื่อพ้อง</span>';
+
+    // Field tags that matched
+    const fieldTags = (r._dup.fields||[]).map(f =>
+      `<span class="inline-block text-xs bg-white border rounded px-1 font-mono text-gray-500">${f}</span>`
+    ).join(' ');
+
+    // Name display: show Thai or Eng depending on what's available
+    const nameDisplay = [r.Title, r.FirstName||r.EngFirstName, r.LastName||r.EngLastName].filter(Boolean).join(' ') || '—';
+    const engName = (r.EngFirstName||r.EngLastName) ? `<div class="text-gray-400 text-xs">${r.EngFirstName||''} ${r.EngLastName||''}</div>` : '';
+
     const idFmt = r.IDCard ? r.IDCard.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5') : '—';
     const yr = r.ScholarshipYear ? (parseInt(r.ScholarshipYear)+543) : '—';
+
+    const dupDetail = r._dup.msg
+      ? `<div class="text-xs mt-0.5 leading-tight ${dt==='dup'?'text-red-600':dt==='warn'?'text-orange-600':'text-blue-500'}">
+           ↳ ${r._dup.msg} ${fieldTags}
+         </div>`
+      : '';
+
     return `<tr class="${rc} border-b transition" data-idx="${r._idx}">
       <td class="p-2 text-center"><input type="checkbox" ${r._selected?'checked':''} onchange="_csvToggle(${r._idx},this.checked)" class="rounded accent-blue-700"></td>
       <td class="p-2 text-gray-400">${r._idx+1}</td>
-      <td class="p-2">${badge}${r._dup.msg?`<div class="text-xs text-orange-600 mt-0.5 leading-tight">↳ ${r._dup.msg}</div>`:''}</td>
-      <td class="p-2"><div class="font-medium text-gray-800">${r.Title||''} ${r.FirstName||''} ${r.LastName||''}</div>${r.StipNo?`<div class="text-gray-400 text-xs">${r.StipNo}</div>`:''}</td>
+      <td class="p-2">${badge}${dupDetail}</td>
+      <td class="p-2"><div class="font-medium text-gray-800">${nameDisplay}</div>${engName}${r.StipNo?`<div class="text-gray-400 text-xs">${r.StipNo}</div>`:''}</td>
       <td class="p-2 font-mono text-gray-600 text-xs">${idFmt}</td>
       <td class="p-2 ${IC[r.Institution]||'text-gray-600'}">${r.Institution||'—'}</td>
       <td class="p-2 text-gray-600">${yr}</td>
