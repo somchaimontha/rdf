@@ -893,6 +893,31 @@ async function saveStudent() {
   const isEdit = document.getElementById('f_editMode').value === 'edit';
   showLoader(true, t('saving'));
   try {
+    // Profile completion check — role-based
+    const _completionCheck = calcProfileCompletion(data);
+    const _userRole = (getUser()||{}).role || '';
+    const _isStudent = _userRole === 'Student';
+
+    if (_isStudent && _completionCheck.pct < 100) {
+      const _missingSecs = _completionCheck.sections.filter(s => s.missing.length > 0);
+      const _missingHtml = _missingSecs.map(s =>
+        `<div class="flex items-center gap-2 py-1"><span style="width:8px;height:8px;border-radius:50%;background:${s.pct>0?'#f59e0b':'#ef4444'};display:inline-block;flex-shrink:0"></span><span class="text-sm"><b>${s.label_th}</b>: ${s.missing.join(', ')}</span></div>`
+      ).join('');
+      const _skipResult = await Swal.fire({
+        title: `โปรไฟล์สมบูรณ์ ${_completionCheck.pct}%`,
+        html: `<div class="text-left"><p class="text-sm text-gray-500 mb-3">ข้อมูลที่ยังขาด:</p>${_missingHtml}</div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกต่อ (ข้าม)',
+        cancelButtonText: 'กลับไปกรอก',
+        confirmButtonColor: '#f59e0b',
+      });
+      if (!_skipResult.isConfirmed) { showLoader(false); return; }
+    } else if (!_isStudent && _completionCheck.pct < 80) {
+      // Admin warning toast (non-blocking)
+      Swal.fire({ toast:true, position:'top-end', icon:'warning', title:`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}% — ข้อมูลยังไม่ครบ`, timer:3000, showConfirmButton:false });
+    }
+
     const result = isEdit ? await API.updateStudent(data) : await API.saveStudent(data);
     showLoader(false);
     if (result.status === 'success') {

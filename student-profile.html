@@ -329,6 +329,52 @@ function renderProfile(d) {
   ].filter(Boolean).join('  |  ');
   document.getElementById('editHistory').textContent = hist || '—';
 
+  // Profile completion banner
+  const _comp = calcProfileCompletion(d);
+  const _isStudentView = (getUser()||{}).role === 'Student';
+  const _existingBanner = document.getElementById('completionBanner');
+  if (_existingBanner) _existingBanner.remove();
+
+  const _banner = document.createElement('div');
+  _banner.id = 'completionBanner';
+  _banner.className = 'card mb-5 no-print';
+
+  const _secBars = _comp.sections.map(s => `
+    <div class="flex items-center gap-2 mb-1.5">
+      <span class="text-xs text-gray-500 w-36 flex-shrink-0">${s.label_th}</span>
+      <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${s.pct}%;background:${s.pct===100?'#22c55e':s.pct>0?'#f59e0b':'#ef4444'};border-radius:3px;transition:width 0.6s"></div>
+      </div>
+      <span class="text-xs font-bold w-10 text-right" style="color:${s.pct===100?'#16a34a':s.pct>0?'#d97706':'#dc2626'}">${s.pct}%</span>
+    </div>`).join('');
+
+  _banner.innerHTML = `
+    <div class="card-header flex items-center justify-between" style="background:${_comp.pct>=80?'#16a34a':_comp.pct>=50?'#d97706':'#dc2626'}">
+      <div class="flex items-center gap-2">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+        <span>ความสมบูรณ์ของโปรไฟล์</span>
+      </div>
+      <span class="font-bold text-lg">${_comp.pct}%</span>
+    </div>
+    <div class="card-body">
+      <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;margin-bottom:16px">
+        <div style="height:100%;width:${_comp.pct}%;background:${_comp.color};border-radius:4px;transition:width 0.8s ease"></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">${_secBars}</div>
+      ${_comp.pct < 100 ? `<div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
+        <p class="text-xs text-gray-500">${_isStudentView ? 'กรุณากรอกข้อมูลให้ครบเพื่อให้มูลนิธิสามารถติดต่อและดูแลท่านได้อย่างครบถ้วน' : 'ข้อมูลนักเรียนยังไม่สมบูรณ์'}</p>
+        <a href="student-form.html?stipNo=${encodeURIComponent(d.StipNo||'')}" class="btn btn-warning btn-sm">
+          <i data-lucide="edit" class="w-3.5 h-3.5"></i> กรอกข้อมูลเพิ่มเติม
+        </a>
+      </div>` : `<p class="text-xs text-green-600 font-semibold mt-3 text-center">✓ ข้อมูลครบถ้วนสมบูรณ์</p>`}
+    </div>`;
+
+  // Insert after hero card
+  const _heroCard = document.getElementById('profileHero');
+  if (_heroCard && _heroCard.parentNode) {
+    _heroCard.parentNode.insertBefore(_banner, _heroCard.nextSibling);
+  }
+
   lucide.createIcons();
 }
 
