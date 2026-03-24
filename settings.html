@@ -659,6 +659,7 @@ function switchTab(tab) {
 
   if (tab === 'overview' && !chartsBuilt) loadOverview();
   if (tab === 'logs'     && !logsLoaded)  loadLogs();
+  if (tab === 'apikeys')                  loadApiKeyStatus();
 }
 
 // ─────────────────────────────────────────────
@@ -1209,13 +1210,6 @@ function toggleKeyVisibility() {
     icon.setAttribute('data-lucide','eye');
   }
   lucide.createIcons();
-}
-
-// Load API key status when tab is opened
-const _origSwitchTab = switchTab;
-function switchTab(tab) {
-  _origSwitchTab(tab);
-  if (tab === 'apikeys') loadApiKeyStatus();
 }
 
 // ─────────────────────────────────────────────
