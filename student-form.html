@@ -1070,17 +1070,57 @@ async function importCSV(event) {
   document.getElementById('csvModal').classList.remove('hidden');
   lucide.createIcons();
 }
+// Field aliases: maps Google Sheet / alternate column names → system field names
+const CSV_FIELD_ALIASES = {
+  'ชื่อ':           'FirstName',
+  'นามสกุล':        'LastName',
+  'ชื่อ(ไทย)':      'FirstName',
+  'นามสกุล(ไทย)':   'LastName',
+  'เลขบัตร':        'IDCard',
+  'เลขบัตรประชาชน': 'IDCard',
+  'ชื่อภาษาอังกฤษ': 'EngFirstName',
+  'นามสกุลอังกฤษ':  'EngLastName',
+  'ScholarshipYear_BE': 'ScholarshipYear_BE', // kept for BE→CE conversion below
+};
+
+function _normalizeCSVHeaders(raw) {
+  return raw.map(h => {
+    const trimmed = h.trim();
+    return CSV_FIELD_ALIASES[trimmed] || trimmed;
+  });
+}
+
 function _parseCSV(text) {
   const lines = text.replace(/^\uFEFF/,'').split(/\r?\n/);
   if (lines.length < 2) return [];
-  const headers = _csvSplitLine(lines[0]);
+  const rawHeaders = _csvSplitLine(lines[0]);
+  const headers = _normalizeCSVHeaders(rawHeaders);
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     const vals = _csvSplitLine(line);
     const obj = {};
-    headers.forEach((h, j) => { obj[h.trim()] = (vals[j]||'').trim(); });
+    headers.forEach((h, j) => { obj[h] = (vals[j]||'').trim(); });
+
+    // Handle EngFullName → split into EngFirstName + EngLastName
+    if (obj.EngFullName && !obj.EngFirstName && !obj.EngLastName) {
+      const parts = obj.EngFullName.trim().split(/\s+/);
+      obj.EngFirstName = parts[0] || '';
+      obj.EngLastName  = parts.slice(1).join(' ') || '';
+    }
+
+    // Handle ScholarshipYear in BE (พ.ศ.) → convert to CE (ค.ศ.)
+    if (obj.ScholarshipYear && parseInt(obj.ScholarshipYear) > 2500) {
+      obj.ScholarshipYear = String(parseInt(obj.ScholarshipYear) - 543);
+    }
+    if (obj.EntryYear && parseInt(obj.EntryYear) > 2500) {
+      obj.EntryYear = String(parseInt(obj.EntryYear) - 543);
+    }
+    if (obj.BirthYear && parseInt(obj.BirthYear) > 2500) {
+      obj.BirthYear = String(parseInt(obj.BirthYear) - 543);
+    }
+
     if (obj.FirstName || obj.LastName || obj.EngFirstName || obj.EngLastName || obj.IDCard) rows.push(obj);
   }
   return rows;
