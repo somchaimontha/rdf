@@ -44,6 +44,7 @@ function doPost(e) {
     else if (action === 'saveAdmin')    result = saveAdmin(body.admin, body.reqUser);
     else if (action === 'deleteAdmin')  result = deleteAdmin(body.username, body.reqUser);
     else if (action === 'saveSetting')  result = saveSetting(body.key, body.values, body.reqUser);
+    else if (action === 'parseOCRText') result = parseOCRText(body.ocrText);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -469,6 +470,51 @@ function saveSetting(key, values, reqUser) {
   if (!found) sheet.appendRow([key, jsonVal, now]);
   logAction(reqUser||'Admin', 'SAVE_SETTING', 'Key: ' + key);
   return { status:'success' };
+}
+
+// ─────────────────────────────────────────────
+// AI OCR PARSE — Claude API via UrlFetchApp
+// Setup: in Apps Script editor → Project Settings → Script Properties
+//        add property: CLAUDE_API_KEY = sk-ant-xxxxxxxx
+// ─────────────────────────────────────────────
+function parseOCRText(ocrText) {
+  if (!ocrText) return { status:'error', message:'No OCR text provided.' };
+  const props = PropertiesService.getScriptProperties();
+  const apiKey = props.getProperty('CLAUDE_API_KEY');
+  if (!apiKey) return { status:'error', message:'CLAUDE_API_KEY not set. Go to Apps Script → Project Settings → Script Properties and add CLAUDE_API_KEY.' };
+
+  const prompt = 'สกัดข้อมูลจาก OCR text ของบัตรประชาชนไทย ตอบกลับเป็น JSON เท่านั้น ไม่มีข้อความอื่น\n' +
+    'fields: idCard (เลข 13 หลักตัวเลข ไม่มี -), title (นาย/นางสาว/นาง/เด็กชาย/เด็กหญิง), ' +
+    'firstName (ภาษาไทย), lastName (ภาษาไทย), birthYear (ค.ศ. เช่น 2000)\n' +
+    'ถ้าหาไม่พบให้ใส่ null\nOCR text:\n' + ocrText.substring(0, 2000);
+
+  try {
+    const resp = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      payload: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 256,
+        messages: [{ role: 'user', content: prompt }]
+      }),
+      muteHttpExceptions: true
+    });
+    const body = JSON.parse(resp.getContentText());
+    if (body.content && body.content[0] && body.content[0].text) {
+      const jsonText = body.content[0].text.trim().replace(/^```json\n?|```$/g,'').trim();
+      const parsed = JSON.parse(jsonText);
+      // Convert null strings to undefined
+      Object.keys(parsed).forEach(k => { if (parsed[k] === null) delete parsed[k]; });
+      return { status:'success', data: parsed };
+    }
+    return { status:'error', message: 'AI response format unexpected.' };
+  } catch(e) {
+    return { status:'error', message: e.toString() };
+  }
 }
 
 function getLogs(limit) {
