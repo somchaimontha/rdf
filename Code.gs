@@ -29,6 +29,7 @@ function doGet(e) {
     else if (action === 'getLogs')            result = getLogs(parseInt(e.parameter.limit)||200);
     else if (action === 'getApiKeyStatus')    result = getApiKeyStatus();
     else if (action === 'getActiveSessions')  result = getActiveSessions();
+    else if (action === 'getStudentDocs')     result = getStudentDocs(e.parameter.stipNo);
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -789,7 +790,7 @@ const DRIVE_FOLDER_ID        = '1SjpBFnfKHsh60I8UQddcWyGE7ffi6Isl';
 const PHOTO_MAX_BYTES        = 1 * 1024 * 1024;   // 1 MB
 const DOCUMENT_MAX_BYTES     = 5 * 1024 * 1024;   // 5 MB
 const ALLOWED_PHOTO_TYPES    = ['image/jpeg', 'image/png', 'image/webp'];
-const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
 /**
  * Get or create a named sub-folder inside a parent folder.
@@ -898,6 +899,46 @@ function deleteFile(fileId) {
 
 // Keep old name as alias for backward compatibility
 function deletePhoto(fileId) { return deleteFile(fileId); }
+
+/**
+ * List uploaded documents for a student in Drive → Documents/<inst>/
+ * Matches files whose name starts with "<stipNo>_"
+ * Returns: { status, data: [{fileId, name, url, mimeType, size, createdAt}] }
+ */
+function getStudentDocs(stipNo) {
+  if (!stipNo) return { status:'error', message:'No stipNo provided.' };
+  const validInst = ['MBS','VC','UNI','Other'];
+  const results = [];
+  try {
+    const root = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    const docIter = root.getFoldersByName('Documents');
+    if (!docIter.hasNext()) return { status:'success', data:[] };
+    const docFolder = docIter.next();
+    for (const inst of validInst) {
+      const instIter = docFolder.getFoldersByName(inst);
+      if (!instIter.hasNext()) continue;
+      const instFolder = instIter.next();
+      const files = instFolder.getFiles();
+      while (files.hasNext()) {
+        const f = files.next();
+        const name = f.getName();
+        if (name.startsWith(stipNo + '_')) {
+          results.push({
+            fileId:    f.getId(),
+            name:      name,
+            url:       'https://drive.google.com/file/d/' + f.getId() + '/view',
+            mimeType:  f.getMimeType(),
+            size:      f.getSize(),
+            createdAt: Utilities.formatDate(f.getDateCreated(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm')
+          });
+        }
+      }
+    }
+    return { status:'success', data: results };
+  } catch(e) {
+    return { status:'error', message: e.toString() };
+  }
+}
 
 function getLogs(limit) {
   const sheet = db.getSheetByName('Logs');
