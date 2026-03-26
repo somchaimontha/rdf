@@ -21,6 +21,7 @@ function doGet(e) {
     else if (action === 'getStudent')     result = getStudentByStipNo(e.parameter.stipNo);
     else if (action === 'generateStipNo') result = { status:'success', stipNo: generateNextStipNo(e.parameter.institution) };
     else if (action === 'deleteStudent')  result = deleteStudentData(e.parameter.stipNo);
+    else if (action === 'countBlankRows') result = countBlankStipNoRows();
     else if (action === 'getUniNames')    result = getUniNames();
     else if (action === 'ping')           result = { status: 'ok', timestamp: new Date().toISOString() };
     else if (action === 'getAdmins')          result = getAdmins();
@@ -49,6 +50,11 @@ function doPost(e) {
     else if (action === 'saveApiKey')   result = saveApiKey(body.key, body.reqUser);
     else if (action === 'parseOCRText') result = parseOCRText(body.ocrText);
     else if (action === 'clearSession') result = clearSession(body.username);
+    else if (action === 'uploadPhoto')    result = uploadPhoto(body.base64, body.mimeType, body.filename, body.institution);
+    else if (action === 'uploadDocument') result = uploadDocument(body.base64, body.mimeType, body.filename, body.institution, body.stipNo);
+    else if (action === 'deletePhoto')    result = deletePhoto(body.fileId);
+    else if (action === 'deleteFile')     result = deleteFile(body.fileId);
+    else if (action === 'cleanBlankRows') result = cleanBlankStipNoRows(body.reqUser);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -114,19 +120,24 @@ function handleLogin(id, pass, role) {
     const col = {};
     h.forEach((v, i) => col[v] = i);
 
+    const _sv = (row, colName) => (col[colName] !== undefined && row[col[colName]] !== undefined)
+      ? row[col[colName]].toString().trim() : '';
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const matchId = row[col['IDCard']].toString() === id ||
-                      row[col['StudentID']].toString() === id ||
-                      row[col['Phone1']].toString() === id;
-      if (matchId && row[col['BirthYear']].toString() === pass) {
-        const st = row[col['Status']];
+      if (!_sv(row, 'StipNo') && !_sv(row, 'IDCard') && !_sv(row, 'EngFirstName')) continue; // skip empty rows
+      const matchId = _sv(row, 'IDCard')    === id ||
+                      _sv(row, 'StudentID') === id ||
+                      _sv(row, 'Phone1')    === id;
+      if (matchId && _sv(row, 'BirthYear') === pass) {
+        const st = _sv(row, 'Status');
         if (st === 'Resigned' || st === 'Incomplete')
           return { status:'error', message:'Your account is not eligible to login.' };
+        const fname = _sv(row, 'FirstName') || _sv(row, 'EngFirstName');
+        const lname = _sv(row, 'LastName')  || _sv(row, 'EngLastName');
         return {
           status: 'success', role: 'Student',
-          name: row[col['FirstName']] + ' ' + row[col['LastName']],
-          stipNo: row[col['StipNo']]
+          name: (fname + ' ' + lname).trim() || _sv(row, 'StipNo'),
+          stipNo: _sv(row, 'StipNo')
         };
       }
     }
@@ -155,21 +166,28 @@ function getStudentsData() {
     if (!row[col['StipNo']]) continue;
     const status = row[col['Status']] || 'Active';
     const inst   = row[col['Institution']] || '';
+    // Safe column accessor: returns '' if column not found in sheet
+    const _c = (name) => (col[name] !== undefined && row[col[name]] !== undefined)
+      ? row[col[name]].toString().trim() : '';
     const student = {
-      stipNo:       row[col['StipNo']],
-      idCard:       row[col['IDCard']],
-      studentId:    row[col['StudentID']],
+      stipNo:       _c('StipNo'),
+      idCard:       _c('IDCard'),
+      studentId:    _c('StudentID'),
       institution:  inst,
-      level:        row[col['CurrentLevel']],
-      title:        row[col['Title']],
-      fname:        row[col['FirstName']],
-      lname:        row[col['LastName']],
-      name:         (row[col['Title']]||'') + (row[col['FirstName']]||'') + ' ' + (row[col['LastName']]||''),
-      phone:        row[col['Phone1']],
+      level:        _c('CurrentLevel'),
+      title:        _c('Title'),
+      fname:        _c('FirstName'),
+      lname:        _c('LastName'),
+      name:         (_c('Title') + _c('FirstName') + ' ' + _c('LastName')).trim() || '—',
+      engTitle:     _c('EngTitle'),
+      engFname:     _c('EngFirstName'),
+      engLname:     _c('EngLastName'),
+      phone:        _c('Phone1'),
+      birthYear:    _c('BirthYear'),
       status:       status,
-      pic:          row[col['ProfilePicURL']],
-      scholarshipYear: row[col['ScholarshipYear']] || '',
-      entryYear:    row[col['EntryYear']] || ''
+      pic:          _c('ProfilePicURL'),
+      scholarshipYear: _c('ScholarshipYear'),
+      entryYear:    _c('EntryYear')
     };
     students.push(student);
     stats.Total++;
@@ -187,10 +205,15 @@ function getStudentsData() {
 // ─────────────────────────────────────────────
 // GET SINGLE STUDENT
 // ─────────────────────────────────────────────
+// Fields that must be stored/returned as plain text (preserve leading zeros)
+const TEXT_FIELDS = ['StipNo','IDCard','Phone1','Phone2','StudentID',
+  'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth'];
+
 function getStudentByStipNo(stipNo) {
   const sheet = db.getSheetByName('Students');
   if (!sheet) return { status:'error', message:'Students sheet not found.' };
-  const data = sheet.getDataRange().getValues();
+  // Use getDisplayValues() to preserve text-formatted cells (leading zeros)
+  const data = sheet.getDataRange().getDisplayValues();
   const headers = data[0];
 
   for (let i = 1; i < data.length; i++) {
@@ -217,36 +240,105 @@ function saveStudentData(d) {
   const col = {};
   headers.forEach((h, i) => col[h] = i);
 
-  // Check duplicate IDCard
-  if (d.IDCard) {
+  // Safe cell value accessor
+  const _v = (row, colName) => {
+    const idx = col[colName];
+    return (idx !== undefined && row[idx] !== undefined) ? row[idx].toString().trim() : '';
+  };
+
+  // Auto-generate StipNo if empty
+  if (!d.StipNo || !d.StipNo.toString().trim()) {
+    d.StipNo = generateNextStipNo(d.Institution);
+  }
+  d.StipNo = d.StipNo.toString().trim();
+
+  // Check duplicate StipNo — if CSV explicitly provides a StipNo that already exists,
+  // treat it as an UPDATE request rather than an error.
+  for (let i = 1; i < allData.length; i++) {
+    const existStipNo = _v(allData[i], 'StipNo');
+    if (existStipNo && existStipNo === d.StipNo) {
+      // StipNo was explicitly provided (not auto-generated) → update the existing record
+      var upd = updateStudentData(d);
+      if (upd.status === 'success') upd._wasUpdated = true;
+      return upd;
+    }
+  }
+
+  // ── MERGE: update blank-StipNo row matching by IDCard, English name, or Thai name ──
+  // Handles re-import of students who were previously saved without a StipNo.
+  const dIdCard = (d.IDCard || '').toString().trim();
+  const dEngFn  = (d.EngFirstName || '').toString().toLowerCase().trim();
+  const dEngLn  = (d.EngLastName  || '').toString().toLowerCase().trim();
+  const dFn     = (d.FirstName    || '').toString().toLowerCase().trim();
+  const dLn     = (d.LastName     || '').toString().toLowerCase().trim();
+
+  if (dIdCard.length >= 13 || dEngFn || dFn) {
     for (let i = 1; i < allData.length; i++) {
-      if (allData[i][col['IDCard']].toString() === d.IDCard.toString()) {
-        return { status:'error', message:'ID Card ' + d.IDCard + ' already exists in the system.' };
+      if (_v(allData[i], 'StipNo')) continue; // skip rows that already have a StipNo
+
+      // Match priority: IDCard (strongest) → Eng name → Thai name
+      const exIdCard = _v(allData[i], 'IDCard');
+      const idMatch  = dIdCard.length >= 13 && exIdCard === dIdCard;
+
+      const exEngFn = _v(allData[i], 'EngFirstName').toLowerCase();
+      const exEngLn = _v(allData[i], 'EngLastName').toLowerCase();
+      const exFn    = _v(allData[i], 'FirstName').toLowerCase();
+      const exLn    = _v(allData[i], 'LastName').toLowerCase();
+
+      const engMatch  = dEngFn && dEngLn && exEngFn === dEngFn && exEngLn === dEngLn;
+      const thaiMatch = dFn    && dLn    && exFn    === dFn    && exLn    === dLn;
+
+      if (idMatch || engMatch || thaiMatch) {
+        // Found matching blank-StipNo row → patch it with incoming data
+        const now = new Date().toLocaleString('en-GB');
+        const updatedRow = headers.map((h, j) => {
+          if (h === 'CreatedAt') return allData[i][j]; // preserve original creation date
+          if (h === 'UpdatedAt') return now;
+          // Overwrite with incoming value if non-empty; otherwise keep existing
+          const incoming = d[h] !== undefined ? d[h].toString() : '';
+          const existing = allData[i][j] !== undefined ? allData[i][j].toString() : '';
+          return (incoming !== '') ? incoming : existing;
+        });
+        const range = sheet.getRange(i + 1, 1, 1, headers.length);
+        const formats = [headers.map(h => TEXT_FIELDS.includes(h) ? '@' : '')];
+        range.setNumberFormats(formats);
+        range.setValues([updatedRow]);
+
+        if (d.Institution === 'UNI' && d.UniName) saveUniversityData(d);
+        const matchType = idMatch ? 'IDCard' : (engMatch ? 'EngName' : 'ThaiName');
+        logAction(d.SavedBy || 'System', 'MERGE_STUDENT',
+          'Merged blank-StipNo row ' + (i + 1) + ' via ' + matchType + ' → StipNo: ' + d.StipNo);
+        return { status:'success', message:'Student merged with existing record.', stipNo: d.StipNo, merged:true };
       }
     }
   }
 
-  // Auto-generate StipNo if empty
-  if (!d.StipNo) d.StipNo = generateNextStipNo(d.Institution);
-
-  // Check duplicate StipNo
-  for (let i = 1; i < allData.length; i++) {
-    if (allData[i][col['StipNo']].toString() === d.StipNo.toString()) {
-      return { status:'error', message:'Stip No. ' + d.StipNo + ' already exists.', duplicate:true };
+  // Check duplicate IDCard — only reject if the existing row ALREADY has a StipNo
+  // (blank-StipNo rows are handled by MERGE above; if we reach here, no merge found)
+  if (dIdCard.length >= 13) {
+    for (let i = 1; i < allData.length; i++) {
+      if (_v(allData[i], 'IDCard') !== dIdCard) continue;
+      const exStipNo = _v(allData[i], 'StipNo');
+      if (exStipNo) {
+        return { status:'error', message:'ID Card ' + dIdCard + ' already exists. (StipNo: ' + exStipNo + ')' };
+      }
     }
   }
 
+  // ── CREATE NEW ROW ──
   const now = new Date().toLocaleString('en-GB');
   const row = headers.map(h => {
     if (h === 'CreatedAt' || h === 'UpdatedAt') return now;
-    return d[h] !== undefined ? d[h] : '';
+    return (d[h] !== undefined && d[h] !== null) ? d[h] : '';
   });
 
-  sheet.appendRow(row);
+  const newRowIdx = sheet.getLastRow() + 1;
+  const newRange  = sheet.getRange(newRowIdx, 1, 1, headers.length);
+  const formats   = [headers.map(h => TEXT_FIELDS.includes(h) ? '@' : '')];
+  newRange.setNumberFormats(formats);
+  newRange.setValues([row]);
 
-  // Save university data
   if (d.Institution === 'UNI' && d.UniName) saveUniversityData(d);
-
   logAction(d.SavedBy || 'System', 'ADD_STUDENT', 'Added StipNo: ' + d.StipNo);
   return { status:'success', message:'Student saved successfully.', stipNo: d.StipNo };
 }
@@ -257,30 +349,38 @@ function saveStudentData(d) {
 function updateStudentData(d) {
   const sheet = db.getSheetByName('Students');
   if (!sheet) return { status:'error', message:'Students sheet not found.' };
+  if (!d.StipNo) return { status:'error', message:'StipNo required for update.' };
 
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const col = {};
   headers.forEach((h, i) => col[h] = i);
 
+  const dStipNo = d.StipNo.toString().trim();
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][col['StipNo']].toString() === d.StipNo.toString()) {
-      const now = new Date().toLocaleString('en-GB');
-      headers.forEach((h, j) => {
-        if (h === 'UpdatedAt') {
-          sheet.getRange(i + 1, j + 1).setValue(now);
-        } else if (h !== 'StipNo' && h !== 'CreatedAt' && d[h] !== undefined) {
-          sheet.getRange(i + 1, j + 1).setValue(d[h]);
-        }
-      });
+    const existStipNo = (col['StipNo'] !== undefined && data[i][col['StipNo']] !== undefined)
+      ? data[i][col['StipNo']].toString().trim() : '';
+    if (existStipNo !== dStipNo) continue;
 
-      if (d.Institution === 'UNI' && d.UniName) saveUniversityData(d);
+    // Build updated row using setValues (single API call — much faster than per-cell)
+    const now = new Date().toLocaleString('en-GB');
+    const updatedRow = headers.map((h, j) => {
+      if (h === 'StipNo' || h === 'CreatedAt') return data[i][j]; // immutable fields
+      if (h === 'UpdatedAt') return now;
+      // Only overwrite if incoming value is defined (allows partial updates)
+      return (d[h] !== undefined && d[h] !== null) ? d[h] : data[i][j];
+    });
+    const range = sheet.getRange(i + 1, 1, 1, headers.length);
+    const formats = [headers.map(h => TEXT_FIELDS.includes(h) ? '@' : '')];
+    range.setNumberFormats(formats);
+    range.setValues([updatedRow]);
 
-      logAction(d.SavedBy || 'System', 'UPDATE_STUDENT', 'Updated StipNo: ' + d.StipNo);
-      return { status:'success', message:'Student updated successfully.', stipNo: d.StipNo };
-    }
+    if (d.Institution === 'UNI' && d.UniName) saveUniversityData(d);
+    logAction(d.SavedBy || 'System', 'UPDATE_STUDENT', 'Updated StipNo: ' + d.StipNo);
+    return { status:'success', message:'Student updated successfully.', stipNo: d.StipNo, _wasUpdated: true };
   }
-  return { status:'error', message:'Student not found.' };
+  return { status:'error', message:'Student not found: ' + d.StipNo };
 }
 
 // ─────────────────────────────────────────────
@@ -344,6 +444,68 @@ function getUniNames() {
 }
 
 // ─────────────────────────────────────────────
+// CLEANUP: BLANK STIPNO GARBAGE ROWS
+// ─────────────────────────────────────────────
+/**
+ * Count (GET) or delete (POST) rows that have blank StipNo
+ * AND no identifying data (no IDCard, no names).
+ * These are garbage rows from previous bad imports.
+ */
+function countBlankStipNoRows() {
+  const sheet = db.getSheetByName('Students');
+  if (!sheet) return { status:'error', message:'Students sheet not found.' };
+  const data = sheet.getDataRange().getValues();
+  const h = data[0];
+  const col = {};
+  h.forEach((v, i) => col[v] = i);
+  const _v = (row, name) => {
+    const idx = col[name];
+    return (idx !== undefined && row[idx] !== undefined) ? row[idx].toString().trim() : '';
+  };
+  let count = 0;
+  for (let i = 1; i < data.length; i++) {
+    if (_v(data[i], 'StipNo')) continue; // has StipNo — keep
+    const hasId   = _v(data[i], 'IDCard').length >= 5;
+    const hasName = _v(data[i], 'FirstName') || _v(data[i], 'LastName') ||
+                    _v(data[i], 'EngFirstName') || _v(data[i], 'EngLastName');
+    if (!hasId && !hasName) count++;
+  }
+  return { status:'success', count };
+}
+
+function cleanBlankStipNoRows(reqUser) {
+  const sheet = db.getSheetByName('Students');
+  if (!sheet) return { status:'error', message:'Students sheet not found.' };
+  const data = sheet.getDataRange().getValues();
+  const h = data[0];
+  const col = {};
+  h.forEach((v, i) => col[v] = i);
+  const _v = (row, name) => {
+    const idx = col[name];
+    return (idx !== undefined && row[idx] !== undefined) ? row[idx].toString().trim() : '';
+  };
+
+  // Collect row numbers to delete (iterate backwards to keep indices valid)
+  const toDelete = [];
+  for (let i = 1; i < data.length; i++) {
+    if (_v(data[i], 'StipNo')) continue; // has StipNo — keep
+    const hasId   = _v(data[i], 'IDCard').length >= 5;
+    const hasName = _v(data[i], 'FirstName') || _v(data[i], 'LastName') ||
+                    _v(data[i], 'EngFirstName') || _v(data[i], 'EngLastName');
+    if (!hasId && !hasName) toDelete.push(i + 1); // 1-based row number
+  }
+
+  // Delete from bottom to top to preserve row numbers
+  for (let i = toDelete.length - 1; i >= 0; i--) {
+    sheet.deleteRow(toDelete[i]);
+  }
+
+  logAction(reqUser || 'Admin', 'CLEAN_BLANK_ROWS',
+    'Deleted ' + toDelete.length + ' blank-StipNo rows with no identifying data');
+  return { status:'success', deleted: toDelete.length };
+}
+
+// ─────────────────────────────────────────────
 // STIP NO. GENERATOR
 // ─────────────────────────────────────────────
 function generateNextStipNo(institution) {
@@ -355,9 +517,16 @@ function generateNextStipNo(institution) {
   const data = sheet.getDataRange().getValues();
   let maxNum = 0;
   for (let i = 1; i < data.length; i++) {
-    const sno = data[i][0].toString();
+    const sno = (data[i][0] !== undefined) ? data[i][0].toString().trim() : '';
+    if (!sno) continue;
+    // Match prefix-based: MBS_123, VC_045, etc.
     if (sno.startsWith(prefix)) {
-      const num = parseInt(sno.replace(prefix, ''));
+      const num = parseInt(sno.substring(prefix.length));
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+    // Also consider plain numeric StipNos (legacy data without prefix)
+    if (/^\d+$/.test(sno)) {
+      const num = parseInt(sno);
       if (!isNaN(num) && num > maxNum) maxNum = num;
     }
   }
@@ -600,6 +769,135 @@ function parseOCRText(ocrText) {
     return { status:'error', message: e.toString() };
   }
 }
+
+// ─────────────────────────────────────────────
+// GOOGLE DRIVE — FILE MANAGEMENT
+// Root: https://drive.google.com/drive/folders/1SjpBFnfKHsh60I8UQddcWyGE7ffi6Isl
+//
+// Auto-created structure:
+//   📁 RDF (root)
+//   ├── 📁 Photos
+//   │   ├── 📁 MBS  ← profile photos for MBS students
+//   │   ├── 📁 VC
+//   │   └── 📁 UNI
+//   └── 📁 Documents
+//       ├── 📁 MBS  ← documents for MBS students
+//       ├── 📁 VC
+//       └── 📁 UNI
+// ─────────────────────────────────────────────
+const DRIVE_FOLDER_ID        = '1SjpBFnfKHsh60I8UQddcWyGE7ffi6Isl';
+const PHOTO_MAX_BYTES        = 1 * 1024 * 1024;   // 1 MB
+const DOCUMENT_MAX_BYTES     = 5 * 1024 * 1024;   // 5 MB
+const ALLOWED_PHOTO_TYPES    = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
+/**
+ * Get or create a named sub-folder inside a parent folder.
+ * Reuses existing folder to avoid duplicates.
+ */
+function _getOrCreateFolder(parentFolderId, name) {
+  const parent = DriveApp.getFolderById(parentFolderId);
+  const iter   = parent.getFoldersByName(name);
+  if (iter.hasNext()) return iter.next();
+  return parent.createFolder(name);
+}
+
+/**
+ * Resolve the correct sub-folder for a given type ('Photos'/'Documents')
+ * and institution ('MBS'/'VC'/'UNI').  Creates folders on first use.
+ */
+function _resolveFolder(type, institution) {
+  const validTypes = ['Photos', 'Documents'];
+  const validInst  = ['MBS', 'VC', 'UNI'];
+  const typeFolder = _getOrCreateFolder(DRIVE_FOLDER_ID, validTypes.includes(type) ? type : 'Photos');
+  const instName   = validInst.includes(institution) ? institution : 'Other';
+  return _getOrCreateFolder(typeFolder.getId(), instName);
+}
+
+/**
+ * Upload a profile photo to Drive → Photos/<institution>/<filename>
+ * Params: base64Data (string), mimeType, filename, institution ('MBS'|'VC'|'UNI')
+ * Returns: { status, url, fileId, path }
+ */
+function uploadPhoto(base64Data, mimeType, filename, institution) {
+  if (!base64Data) return { status:'error', message:'No image data.' };
+  if (!mimeType)   mimeType = 'image/jpeg';
+  if (!filename)   filename = 'photo_' + Date.now() + '.jpg';
+  institution = institution || 'Other';
+
+  // Type check
+  if (!ALLOWED_PHOTO_TYPES.includes(mimeType))
+    return { status:'error', message:'ประเภทไฟล์ไม่รองรับ — รองรับ JPG, PNG, WEBP เท่านั้น' };
+  // Size check (base64 → approx decoded bytes = length × 0.75)
+  const approxBytes = Math.round(base64Data.length * 0.75);
+  if (approxBytes > PHOTO_MAX_BYTES)
+    return { status:'error', message:'รูปภาพใหญ่เกิน 1 MB — กรุณาบีบอัดก่อนอัปโหลด (approx ' + Math.round(approxBytes/1024) + ' KB)' };
+
+  try {
+    const folder  = _resolveFolder('Photos', institution);
+    const decoded = Utilities.base64Decode(base64Data);
+    const blob    = Utilities.newBlob(decoded, mimeType, filename);
+    const file    = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileId = file.getId();
+    const url    = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    const path   = 'Photos/' + institution + '/' + filename;
+    return { status:'success', url, fileId, path };
+  } catch(e) {
+    return { status:'error', message: e.toString() };
+  }
+}
+
+/**
+ * Upload a document to Drive → Documents/<institution>/<filename>
+ * Params: base64Data (string), mimeType, filename, institution, stipNo
+ * Returns: { status, url, fileId, path }
+ */
+function uploadDocument(base64Data, mimeType, filename, institution, stipNo) {
+  if (!base64Data) return { status:'error', message:'No file data.' };
+  if (!mimeType)   mimeType = 'application/octet-stream';
+  if (!filename)   filename = (stipNo ? stipNo + '_' : '') + 'doc_' + Date.now();
+  institution = institution || 'Other';
+
+  // Type check
+  if (!ALLOWED_DOCUMENT_TYPES.includes(mimeType))
+    return { status:'error', message:'ประเภทไฟล์ไม่รองรับ — รองรับ PDF, JPG, PNG เท่านั้น' };
+  // Size check
+  const approxBytes = Math.round(base64Data.length * 0.75);
+  if (approxBytes > DOCUMENT_MAX_BYTES)
+    return { status:'error', message:'ไฟล์ใหญ่เกิน 5 MB (' + Math.round(approxBytes/1024/1024*10)/10 + ' MB)' };
+
+  try {
+    const folder  = _resolveFolder('Documents', institution);
+    const decoded = Utilities.base64Decode(base64Data);
+    const blob    = Utilities.newBlob(decoded, mimeType, filename);
+    const file    = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileId = file.getId();
+    const url    = 'https://drive.google.com/file/d/' + fileId + '/view';
+    const path   = 'Documents/' + institution + '/' + filename;
+    return { status:'success', url, fileId, path };
+  } catch(e) {
+    return { status:'error', message: e.toString() };
+  }
+}
+
+/**
+ * Move a Drive file to trash (soft-delete).
+ * Works for both photos and documents.
+ */
+function deleteFile(fileId) {
+  if (!fileId) return { status:'error', message:'No file ID provided.' };
+  try {
+    DriveApp.getFileById(fileId).setTrashed(true);
+    return { status:'success' };
+  } catch(e) {
+    return { status:'error', message: e.toString() };
+  }
+}
+
+// Keep old name as alias for backward compatibility
+function deletePhoto(fileId) { return deleteFile(fileId); }
 
 function getLogs(limit) {
   const sheet = db.getSheetByName('Logs');

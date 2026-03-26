@@ -9,6 +9,7 @@
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
@@ -130,11 +131,88 @@
         <span id="incompleteCount" class="font-bold text-lg">—</span>
       </div>
       <div class="card-body py-3">
-        <p class="text-xs text-gray-500 mb-3">นักเรียนที่ข้อมูลยังไม่ครบ (ต่ำกว่า 80%)</p>
+        <p class="text-xs text-gray-500 mb-2">นักเรียนที่ข้อมูลยังไม่ครบ (ต่ำกว่า 80%) — แยกตามกลุ่ม</p>
+        <!-- Institution breakdown bars -->
+        <div id="incompleteByInst" class="mb-3 divide-y divide-gray-100 rounded-lg border border-gray-100 overflow-hidden bg-gray-50 px-3 py-2"></div>
+        <!-- Section summary badges -->
+        <p class="text-xs text-gray-400 mb-1.5">ส่วนที่ขาดมากที่สุด:</p>
         <div id="incompleteSummary" class="flex flex-wrap gap-2 mb-3"></div>
-        <a href="students.html?incomplete=1" class="btn btn-warning btn-sm">
-          <i data-lucide="users" class="w-3.5 h-3.5"></i> ดูรายชื่อที่ต้องกรอกข้อมูล
-        </a>
+        <div class="flex flex-wrap gap-2">
+          <a href="students.html?incomplete=1" class="btn btn-warning btn-sm">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> ดูรายชื่อทั้งหมด
+          </a>
+          <a href="students.html?inst=MBS&incomplete=1" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">MBS</a>
+          <a href="students.html?inst=VC&incomplete=1" class="btn btn-sm" style="background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa">VC</a>
+          <a href="students.html?inst=UNI&incomplete=1" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #ddd6fe">UNI</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview Charts — Admin view -->
+  <div id="dashOverview" class="hidden mt-5 fade-in-up delay-3">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="bar-chart-2" class="w-4 h-4" style="color:#1e3a8a"></i>
+        <h3 class="text-sm font-bold text-gray-700">ภาพรวมระบบ</h3>
+      </div>
+    </div>
+    <!-- Mini stat row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#eff6ff">
+          <i data-lucide="users" class="w-5 h-5" style="color:#1d4ed8"></i>
+        </div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovTotal">—</div><div class="text-xs text-gray-400">ทั้งหมด</div></div>
+      </div>
+      <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#f0fdf4">
+          <i data-lucide="check-circle" class="w-5 h-5" style="color:#16a34a"></i>
+        </div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovActive">—</div><div class="text-xs text-gray-400">กำลังศึกษา</div></div>
+      </div>
+      <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#faf5ff">
+          <i data-lucide="award" class="w-5 h-5" style="color:#7c3aed"></i>
+        </div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovGrad">—</div><div class="text-xs text-gray-400">สำเร็จการศึกษา</div></div>
+      </div>
+      <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#fff7ed">
+          <i data-lucide="shield" class="w-5 h-5" style="color:#ea580c"></i>
+        </div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovAdmins">—</div><div class="text-xs text-gray-400">ผู้ดูแลระบบ</div></div>
+      </div>
+    </div>
+    <!-- Charts row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card md:col-span-2">
+        <div class="card-header" style="background:#1e3a8a;font-size:11px;padding:8px 14px">
+          <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+          จำนวนนักเรียนแยกตามปีการศึกษา (พ.ศ.)
+          <span class="ml-auto text-blue-200 font-normal" id="dashLineNote"></span>
+        </div>
+        <div class="p-3" style="height:220px;position:relative">
+          <canvas id="dashChartLine"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="background:#7c3aed;font-size:11px;padding:8px 14px">
+          <i data-lucide="pie-chart" class="w-3.5 h-3.5"></i>
+          สัดส่วนตามสถาบัน
+        </div>
+        <div class="p-3" style="height:220px;position:relative">
+          <canvas id="dashChartDonut"></canvas>
+        </div>
+      </div>
+      <div class="card md:col-span-3">
+        <div class="card-header" style="background:#16a34a;font-size:11px;padding:8px 14px">
+          <i data-lucide="bar-chart" class="w-3.5 h-3.5"></i>
+          จำนวนนักเรียนแยกตามสถานะ
+        </div>
+        <div class="p-3" style="height:180px;position:relative">
+          <canvas id="dashChartStatus"></canvas>
+        </div>
       </div>
     </div>
   </div>
@@ -231,27 +309,93 @@ async function loadStats() {
       document.getElementById('statUNI').textContent   = s.UNI   || 0;
       document.getElementById('statAlumni').textContent= s.Alumni|| 0;
 
-      // Show incomplete card for admins
       const _user = getUser();
       if (_user && _user.role !== 'Student') {
         const _students = result.data || [];
-        const _incomplete = _students.filter(s => {
-          const _obj = { IDCard:s.idCard, FirstName:s.fname, LastName:s.lname, Institution:s.institution, ScholarshipYear:s.scholarshipYear };
-          return calcProfileCompletion(_obj).pct < 80;
+
+        // ── Institution groups for incomplete detection ──
+        const _INST = [
+          { key:'MBS', label:'MBS (แม่สะเรียงบริพัตร)', color:'#1d4ed8' },
+          { key:'VC',  label:'VC (วิทยาลัยเทคนิค)',     color:'#ea580c' },
+          { key:'UNI', label:'UNI (มหาวิทยาลัย)',        color:'#7c3aed' }
+        ];
+        const _instGroups = {};
+        _INST.forEach(ic => { _instGroups[ic.key] = { incomplete:0, total:0 }; });
+
+        const _incomplete = [];
+        _students.forEach(stu => {
+          // Map available list fields to profile completion check
+          const _obj = {
+            IDCard: stu.idCard, Title: stu.title,
+            FirstName: stu.fname, LastName: stu.lname,
+            Institution: stu.institution, CurrentLevel: stu.level,
+            ScholarshipYear: stu.scholarshipYear, EntryYear: stu.entryYear,
+            Phone1: stu.phone, ProfilePicURL: stu.pic
+          };
+          const _res = calcProfileCompletion(_obj);
+          const ig = _instGroups[stu.institution];
+          if (ig) {
+            ig.total++;
+            if (_res.pct < 80) { ig.incomplete++; _incomplete.push(stu); }
+          } else if (_res.pct < 80) {
+            _incomplete.push(stu);
+          }
         });
+
         if (_incomplete.length > 0) {
           document.getElementById('incompleteCard').classList.remove('hidden');
           document.getElementById('incompleteCount').textContent = _incomplete.length + ' คน';
+
+          // ── Per-institution breakdown bars ──
+          document.getElementById('incompleteByInst').innerHTML = _INST.map(ic => {
+            const g = _instGroups[ic.key];
+            if (!g || !g.total || !g.incomplete) return '';
+            const pct = Math.round(g.incomplete / g.total * 100);
+            return `<div class="flex items-center gap-3 py-2">
+              <div class="text-xs font-bold w-36 truncate" style="color:${ic.color}">${ic.label}</div>
+              <div class="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
+                <div class="h-2 rounded-full transition-all duration-500" style="width:${pct}%;background:${ic.color}"></div>
+              </div>
+              <div class="text-xs text-gray-500 whitespace-nowrap w-20 text-right">
+                ${g.incomplete}/${g.total} คน
+              </div>
+            </div>`;
+          }).filter(Boolean).join('') || '<p class="text-xs text-gray-400 py-1">ไม่พบข้อมูลแยกกลุ่ม</p>';
+
+          // ── Section summary (most missing) ──
           const _secCounts = {};
-          RDF.PROFILE_SECTIONS.forEach(s => _secCounts[s.label_th] = 0);
-          _incomplete.forEach(s => {
-            const _obj = { IDCard:s.idCard, FirstName:s.fname, LastName:s.lname, Institution:s.institution, ScholarshipYear:s.scholarshipYear };
-            calcProfileCompletion(_obj).sections.filter(sec => sec.missing.length > 0).forEach(sec => { _secCounts[sec.label_th] = (_secCounts[sec.label_th]||0)+1; });
+          RDF.PROFILE_SECTIONS.forEach(sec => { _secCounts[sec.label_th] = 0; });
+          _incomplete.forEach(stu => {
+            const _obj = {
+              IDCard: stu.idCard, Title: stu.title,
+              FirstName: stu.fname, LastName: stu.lname,
+              Institution: stu.institution, CurrentLevel: stu.level,
+              ScholarshipYear: stu.scholarshipYear, EntryYear: stu.entryYear,
+              Phone1: stu.phone, ProfilePicURL: stu.pic
+            };
+            calcProfileCompletion(_obj).sections
+              .filter(sec => sec.missing.length > 0)
+              .forEach(sec => { _secCounts[sec.label_th] = (_secCounts[sec.label_th] || 0) + 1; });
           });
           document.getElementById('incompleteSummary').innerHTML = Object.entries(_secCounts)
-            .filter(([,c]) => c > 0).sort((a,b) => b[1]-a[1]).slice(0,4)
-            .map(([k,c]) => `<span class="badge badge-orange">${k}: ${c} คน</span>`).join('');
+            .filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).slice(0, 5)
+            .map(([k, c]) => `<span class="badge badge-orange">${k}: ${c} คน</span>`).join('');
         }
+
+        // ── Overview stat cards ──
+        const _stats = result.stats || {};
+        document.getElementById('ovTotal').textContent  = _stats.Total  || _students.length || 0;
+        document.getElementById('ovActive').textContent = _students.filter(s => s.status === 'Active').length;
+        document.getElementById('ovGrad').textContent   = _stats.Alumni || 0;
+        // Fetch admin count in background (non-blocking)
+        API.getAdmins().then(ar => {
+          if (ar && ar.status === 'success')
+            document.getElementById('ovAdmins').textContent = (ar.data || []).filter(a => a.Status === 'Active').length;
+        }).catch(() => {});
+
+        // ── Overview charts ──
+        buildDashboardCharts(_students);
+        document.getElementById('dashOverview').classList.remove('hidden');
         lucide.createIcons();
       } else if (_user && _user.role === 'Student') {
         document.getElementById('studentGuide').classList.remove('hidden');
@@ -259,6 +403,109 @@ async function loadStats() {
       }
     }
   } catch(e) {}
+}
+
+let _dashChartLine, _dashChartDonut, _dashChartStatus;
+function buildDashboardCharts(students) {
+  // ── Line chart: per scholarship year by institution ──
+  const yearMap = {};
+  students.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (!y || y < 2000 || y > 2100) return;
+    const be = y + 543;
+    if (!yearMap[be]) yearMap[be] = { MBS:0, VC:0, UNI:0 };
+    if      (s.institution === 'MBS') yearMap[be].MBS++;
+    else if (s.institution === 'VC')  yearMap[be].VC++;
+    else if (s.institution === 'UNI') yearMap[be].UNI++;
+  });
+  const sortedYears = Object.keys(yearMap).sort();
+  const noteEl = document.getElementById('dashLineNote');
+  if (noteEl && sortedYears.length)
+    noteEl.textContent = sortedYears[0] + ' – ' + sortedYears[sortedYears.length-1];
+
+  if (_dashChartLine) _dashChartLine.destroy();
+  _dashChartLine = new Chart(document.getElementById('dashChartLine'), {
+    type: 'line',
+    data: {
+      labels: sortedYears,
+      datasets: [
+        { label:'MBS', data: sortedYears.map(y => yearMap[y].MBS),
+          borderColor:'#1d4ed8', backgroundColor:'rgba(29,78,216,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#1d4ed8', tension:0.35, fill:true },
+        { label:'VC',  data: sortedYears.map(y => yearMap[y].VC),
+          borderColor:'#ea580c', backgroundColor:'rgba(234,88,12,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#ea580c', tension:0.35, fill:true },
+        { label:'UNI', data: sortedYears.map(y => yearMap[y].UNI),
+          borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.08)',
+          borderWidth:2, pointRadius:3, pointBackgroundColor:'#7c3aed', tension:0.35, fill:true }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ position:'top', labels:{ font:{size:11}, usePointStyle:true, pointStyleWidth:8 } } },
+      scales:{
+        y:{ beginAtZero:true, ticks:{stepSize:1, font:{size:10}}, grid:{color:'#f1f5f9'} },
+        x:{ ticks:{font:{size:10}}, grid:{display:false} }
+      }
+    }
+  });
+
+  // ── Donut: active students by institution ──
+  const active = students.filter(s => s.status !== 'Graduated');
+  const instCnt = { MBS:0, VC:0, UNI:0, อื่นๆ:0 };
+  active.forEach(s => {
+    if      (s.institution === 'MBS') instCnt.MBS++;
+    else if (s.institution === 'VC')  instCnt.VC++;
+    else if (s.institution === 'UNI') instCnt.UNI++;
+    else instCnt['อื่นๆ']++;
+  });
+  if (_dashChartDonut) _dashChartDonut.destroy();
+  _dashChartDonut = new Chart(document.getElementById('dashChartDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(instCnt),
+      datasets:[{ data: Object.values(instCnt),
+        backgroundColor:['#1d4ed8','#ea580c','#7c3aed','#94a3b8'],
+        borderWidth:2, borderColor:'#fff', hoverOffset:5 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, usePointStyle:true, padding:14 } } }
+    }
+  });
+
+  // ── Bar chart: status distribution ──
+  const STATUS_TH = {
+    Active:'กำลังศึกษา', Graduated:'สำเร็จการศึกษา', Suspended:'พักการเรียน',
+    Incomplete:'ไม่สำเร็จ', Resigned:'ลาออก', University:'ต่อมหาวิทยาลัย', Other:'อื่นๆ'
+  };
+  const STATUS_COLOR = {
+    Active:'#10b981', Graduated:'#7c3aed', Suspended:'#f59e0b',
+    Incomplete:'#ef4444', Resigned:'#ef4444', University:'#1d4ed8', Other:'#94a3b8'
+  };
+  const statusMap = {};
+  students.forEach(s => { statusMap[s.status] = (statusMap[s.status]||0) + 1; });
+  const statusKeys = Object.keys(statusMap).sort((a,b) => statusMap[b] - statusMap[a]);
+  if (_dashChartStatus) _dashChartStatus.destroy();
+  _dashChartStatus = new Chart(document.getElementById('dashChartStatus'), {
+    type: 'bar',
+    data: {
+      labels: statusKeys.map(k => STATUS_TH[k] || k),
+      datasets:[{ data: statusKeys.map(k => statusMap[k]),
+        backgroundColor: statusKeys.map(k => (STATUS_COLOR[k]||'#94a3b8') + 'cc'),
+        borderColor:     statusKeys.map(k => STATUS_COLOR[k]||'#94a3b8'),
+        borderWidth:1.5, borderRadius:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ beginAtZero:true, ticks:{stepSize:1, font:{size:10}}, grid:{color:'#f1f5f9'} },
+        y:{ ticks:{font:{size:10}}, grid:{display:false} }
+      }
+    }
+  });
 }
 </script>
 </body>
