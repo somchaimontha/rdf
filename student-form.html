@@ -716,7 +716,7 @@
         <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div id="csvProgressBar" class="h-full bg-blue-600 rounded-full transition-all duration-200" style="width:0"></div>
         </div>
-        <p id="csvAbortNotice" class="hidden text-xs text-red-500 mt-1 font-semibold">⛔ กำลังหยุด — รอให้รายการปัจจุบันเสร็จก่อน...</p>
+        <p id="csvAbortNotice" class="hidden text-xs text-amber-600 mt-1 font-semibold">⏸ หยุดชั่วคราว — รอให้รายการปัจจุบันเสร็จแล้วจะแสดงตัวเลือก...</p>
       </div>
       <div class="flex justify-between items-center gap-2">
         <p class="text-xs text-gray-500">
@@ -1703,7 +1703,9 @@ async function closeCSVModal() {
   }
   document.getElementById('csvModal').classList.add('hidden');
   document.getElementById('csvResultModal').classList.add('hidden');
-  _csvAborted = false;
+  _csvAborted      = false;
+  _csvPausing      = false;
+  _csvPauseResolve = null;
   _csvImportedStipNos = [];
   _csvRows = [];
   _csvFilter = 'all';
@@ -1719,34 +1721,57 @@ async function closeCSVModal() {
   if (cancelledBtn) cancelledBtn.classList.add('hidden');
   csvSetFilter('all');
 }
-// ── Abort flag + session tracking ──────────────────
-let _csvAborted = false;
-let _csvImportedStipNos = []; // StipNos imported in current session (for undo)
+// ── Abort / Pause flags + session tracking ──────────────────
+let _csvAborted      = false;
+let _csvPausing      = false;   // true while confirmation dialog is open
+let _csvPauseResolve = null;    // resolves the pause Promise to resume the loop
+let _csvImportedStipNos = [];   // StipNos imported this session (for undo)
 
 async function csvAbortImport() {
-  const alreadySaved = _csvImportedStipNos.length;
-  const cf = await Swal.fire({
-    title: '⛔ ยืนยันการยกเลิก',
-    html: alreadySaved > 0
-      ? `<p style="font-size:14px;line-height:1.8">
-           มีข้อมูลถูกนำเข้าไปแล้ว <b style="color:#dc2626;font-size:16px">${alreadySaved}</b> รายการ<br>
-           <b>ข้อมูลเหล่านั้นจะถูกลบออกจากฐานข้อมูลทั้งหมด</b>
-         </p>`
-      : `<p style="font-size:14px">ต้องการยกเลิกการนำเข้าข้อมูลหรือไม่?</p>`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: '⛔ ยืนยัน ยกเลิกและลบข้อมูล',
-    cancelButtonText: 'ดำเนินการต่อ',
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#1e3a8a'
-  });
-  if (!cf.isConfirmed) return;
-
-  _csvAborted = true;
+  // 1. Signal the loop to pause at the next opportunity
+  _csvPausing = true;
   const abortBtn = document.getElementById('csvAbortBtn');
   const notice   = document.getElementById('csvAbortNotice');
-  if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = '⏳ กำลังหยุด...'; }
+  if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = '⏸ หยุดชั่วคราว...'; }
   if (notice)   notice.classList.remove('hidden');
+
+  // 2. Show confirmation popup (loop pauses in background while dialog is open)
+  const alreadySaved = _csvImportedStipNos.length;
+  const cf = await Swal.fire({
+    title: '⏸ หยุดการนำเข้าชั่วคราว',
+    html: alreadySaved > 0
+      ? `<p style="font-size:14px;line-height:2">
+           นำเข้าไปแล้ว <b style="color:#16a34a;font-size:16px">${alreadySaved}</b> รายการ<br>
+           ต้องการ <b>นำเข้าต่อ</b> หรือ <b style="color:#dc2626">ยกเลิกและลบข้อมูลทั้งหมด</b>?
+         </p>`
+      : `<p style="font-size:14px">ต้องการ <b>นำเข้าต่อ</b> หรือ <b style="color:#dc2626">ยกเลิก</b>?</p>`,
+    icon: 'question',
+    showDenyButton: true,
+    showCancelButton: false,
+    confirmButtonText: '▶ นำเข้าต่อ',
+    denyButtonText: alreadySaved > 0 ? `⛔ ยกเลิกและลบ ${alreadySaved} รายการ` : '⛔ ยกเลิกการนำเข้า',
+    confirmButtonColor: '#1e3a8a',
+    denyButtonColor: '#dc2626'
+  });
+
+  // 3. Act on user choice
+  if (cf.isDenied) {
+    // User confirmed cancel → set abort flag (loop will skip remaining rows)
+    _csvAborted = true;
+    if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = '⏳ กำลังหยุด...'; }
+  } else {
+    // User chose to continue → restore UI
+    if (notice) notice.classList.add('hidden');
+    if (abortBtn) {
+      abortBtn.disabled = false;
+      abortBtn.innerHTML = '<i data-lucide="square" class="w-3 h-3 inline"></i> หยุด';
+      lucide.createIcons();
+    }
+  }
+
+  // 4. Resume the paused loop (whether continuing or aborting)
+  _csvPausing = false;
+  if (_csvPauseResolve) { _csvPauseResolve(); _csvPauseResolve = null; }
 }
 
 async function csvImportSelected() {
@@ -1784,8 +1809,10 @@ async function csvImportSelected() {
   const selFinal = _csvRows.filter(r=>r._selected);
   if (!selFinal.length) { Swal.fire('แจ้งเตือน','ไม่มีรายการที่เลือก','info'); return; }
 
-  // Reset abort state and session tracking
-  _csvAborted = false;
+  // Reset abort/pause state and session tracking
+  _csvAborted      = false;
+  _csvPausing      = false;
+  _csvPauseResolve = null;
   _csvImportedStipNos = [];
 
   const wrap      = document.getElementById('csvProgressWrap');
@@ -1808,6 +1835,12 @@ async function csvImportSelected() {
 
   for (let i=0; i<selFinal.length; i++) {
     const row = selFinal[i];
+
+    // ── Pause check: wait here while confirmation dialog is open ──
+    if (_csvPausing) {
+      await new Promise(resolve => { _csvPauseResolve = resolve; });
+      _csvPauseResolve = null;
+    }
 
     // ── Abort check: stop BEFORE sending this row ──
     if (_csvAborted) {
