@@ -538,6 +538,65 @@
     </div>
   </div>
 
+  <!-- ─── SECTION G: Documents ─── -->
+  <div class="form-section mb-5">
+    <div class="form-section-header" style="background:#7c3aed">
+      <i data-lucide="paperclip" class="w-4 h-4"></i>
+      <span>7. เอกสารแนบ (PDF / รูปภาพ)</span>
+    </div>
+    <div class="form-section-body">
+      <!-- datalist for labels -->
+      <datalist id="docLabelList">
+        <option value="สำเนาบัตรประชาชน">
+        <option value="สำเนาทะเบียนบ้าน">
+        <option value="ผลการเรียน (Transcript)">
+        <option value="ใบสมัครทุนการศึกษา">
+        <option value="ใบรับรองจากสถานศึกษา">
+        <option value="รูปถ่าย">
+        <option value="เอกสารสมัครมหาวิทยาลัย">
+        <option value="รายงานประจำเดือน">
+        <option value="อื่นๆ">
+      </datalist>
+
+      <!-- Drop zone -->
+      <div id="docDropZone"
+           class="border-2 border-dashed border-purple-200 rounded-xl p-5 bg-purple-50 text-center mb-4 transition"
+           ondragover="event.preventDefault(); this.classList.add('border-purple-500','bg-purple-100')"
+           ondragleave="this.classList.remove('border-purple-500','bg-purple-100')"
+           ondrop="docHandleDrop(event)">
+        <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-300 mx-auto mb-2"></i>
+        <p class="text-sm text-purple-700 font-semibold mb-1">ลากวางไฟล์ที่นี่ หรือกดเลือกไฟล์</p>
+        <p class="text-xs text-gray-400 mb-3">รองรับ PDF, JPG, PNG, WEBP — สูงสุด 5 MB ต่อไฟล์</p>
+        <label class="btn btn-sm cursor-pointer inline-flex items-center gap-2" style="background:#7c3aed;color:white;border-color:#7c3aed">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เลือกไฟล์
+          <input type="file" id="f_docFiles" accept="image/*,.pdf" multiple class="hidden" onchange="docAddFiles(event)">
+        </label>
+      </div>
+
+      <!-- Pending uploads -->
+      <div id="docPendingWrap" class="hidden mb-4">
+        <p class="text-xs font-bold text-amber-700 mb-2 flex items-center gap-1.5">
+          <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+          รอการอัปโหลด — จะอัปโหลดอัตโนมัติหลังกด "บันทึกข้อมูล"
+        </p>
+        <div id="docPendingList" class="space-y-2"></div>
+      </div>
+
+      <!-- Existing docs (edit mode) -->
+      <div id="docExistingWrap" class="hidden">
+        <div class="flex items-center gap-2 mb-2">
+          <p class="text-xs font-bold text-green-700 flex items-center gap-1.5">
+            <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
+            เอกสารที่บันทึกแล้ว
+          </p>
+          <span id="docExistingLoading" class="text-xs text-gray-400">(กำลังโหลด...)</span>
+        </div>
+        <div id="docExistingList" class="space-y-2"></div>
+        <p id="docExistingEmpty" class="hidden text-xs text-gray-400 italic">ยังไม่มีเอกสารแนบ</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Submit Buttons -->
   <div class="flex flex-col-reverse md:flex-row justify-end gap-3 pb-6">
     <a href="students.html" class="btn btn-secondary">
@@ -825,6 +884,8 @@ function fillForm(d) {
     document.getElementById('f_picUrl').value = d.ProfilePicURL;
     document.getElementById('imgPreview').src = d.ProfilePicURL;
   }
+  // Load existing documents from Drive (edit mode)
+  if (d.StipNo) loadExistingDocs(d.StipNo);
   lucide.createIcons();
 }
 
@@ -1023,6 +1084,177 @@ function validateIDCard(el) {
   document.getElementById('idcardErr').classList.toggle('hidden', ok);
 }
 
+// ── Document attachments ───────────────────────────────────────────
+let _docFiles    = [];  // [{file, label}]
+let _existingDocs = []; // [{fileId, name, url, mimeType, size, createdAt}]
+
+function _docIcon(mimeType) {
+  if (mimeType === 'application/pdf') return '📄';
+  if ((mimeType||'').startsWith('image/')) return '🖼️';
+  return '📎';
+}
+function _docFmtSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function docAddFiles(event) {
+  const files = Array.from(event.target.files || []);
+  files.forEach(f => { _docFiles.push({ file: f, label: '' }); });
+  event.target.value = ''; // reset so same file can be re-selected
+  docRenderPending();
+}
+function docHandleDrop(event) {
+  event.preventDefault();
+  document.getElementById('docDropZone').classList.remove('border-purple-500','bg-purple-100');
+  const files = Array.from(event.dataTransfer.files || []);
+  const allowed = ['application/pdf','image/jpeg','image/png','image/webp'];
+  files.forEach(f => {
+    if (allowed.includes(f.type) || f.name.endsWith('.pdf')) {
+      _docFiles.push({ file: f, label: '' });
+    }
+  });
+  docRenderPending();
+}
+function docSetLabel(idx, val) {
+  if (_docFiles[idx]) _docFiles[idx].label = val;
+}
+function docRemovePending(idx) {
+  _docFiles.splice(idx, 1);
+  docRenderPending();
+}
+function docRenderPending() {
+  const wrap = document.getElementById('docPendingWrap');
+  const list = document.getElementById('docPendingList');
+  if (!_docFiles.length) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  list.innerHTML = _docFiles.map((item, idx) => `
+    <div class="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-2">
+      <span class="text-lg flex-shrink-0">${_docIcon(item.file.type)}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-medium text-gray-700 truncate">${item.file.name}</p>
+        <p class="text-xs text-gray-400">${_docFmtSize(item.file.size)}</p>
+      </div>
+      <input type="text" list="docLabelList" placeholder="ชื่อเอกสาร (ไม่บังคับ)"
+        value="${item.label.replace(/"/g,'&quot;')}"
+        onchange="docSetLabel(${idx}, this.value)"
+        class="border rounded px-2 py-1 text-xs w-44 focus:outline-none focus:ring-2 focus:ring-purple-300">
+      <button type="button" onclick="docRemovePending(${idx})" title="ลบออก"
+        class="text-red-400 hover:text-red-600 transition flex-shrink-0">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>`).join('');
+  lucide.createIcons();
+}
+
+async function loadExistingDocs(stipNo) {
+  const wrap    = document.getElementById('docExistingWrap');
+  const loading = document.getElementById('docExistingLoading');
+  const empty   = document.getElementById('docExistingEmpty');
+  wrap.classList.remove('hidden');
+  if (loading) loading.textContent = '(กำลังโหลด...)';
+  if (empty) empty.classList.add('hidden');
+  try {
+    const res = await API.getStudentDocs(stipNo);
+    _existingDocs = (res.status === 'success') ? (res.data || []) : [];
+    docRenderExisting();
+    if (loading) loading.textContent = _existingDocs.length > 0 ? `(${_existingDocs.length} ไฟล์)` : '';
+    if (empty) empty.classList.toggle('hidden', _existingDocs.length > 0);
+  } catch(e) {
+    if (loading) loading.textContent = '(โหลดไม่สำเร็จ)';
+  }
+}
+function docRenderExisting() {
+  const list = document.getElementById('docExistingList');
+  if (!list) return;
+  list.innerHTML = _existingDocs.map((doc, idx) => `
+    <div class="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-2" id="docEx_${idx}">
+      <span class="text-lg flex-shrink-0">${_docIcon(doc.mimeType)}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-medium text-gray-700 truncate">${doc.name}</p>
+        <p class="text-xs text-gray-400">${_docFmtSize(doc.size)}${doc.createdAt ? ' • ' + doc.createdAt : ''}</p>
+      </div>
+      <a href="${doc.url}" target="_blank"
+        class="text-xs px-2 py-1 rounded border border-blue-200 text-blue-600 hover:bg-blue-50 transition flex-shrink-0">
+        <i data-lucide="external-link" class="w-3 h-3 inline"></i> เปิด
+      </a>
+      <button type="button" onclick="docDeleteExisting('${doc.fileId}', ${idx})" title="ลบออกจาก Drive"
+        class="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 transition flex-shrink-0">
+        <i data-lucide="trash-2" class="w-3 h-3 inline"></i>
+      </button>
+    </div>`).join('');
+  lucide.createIcons();
+}
+async function docDeleteExisting(fileId, idx) {
+  const cf = await Swal.fire({ title:'ลบเอกสาร?', text:'ไฟล์จะถูกย้ายไปถังขยะใน Google Drive', icon:'warning',
+    showCancelButton:true, confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#dc2626' });
+  if (!cf.isConfirmed) return;
+  showLoader(true, 'กำลังลบ...');
+  const res = await API.deleteFile(fileId);
+  showLoader(false);
+  if (res.status === 'success') {
+    _existingDocs.splice(idx, 1);
+    docRenderExisting();
+    const empty = document.getElementById('docExistingEmpty');
+    if (empty) empty.classList.toggle('hidden', _existingDocs.length > 0);
+    const loadingEl = document.getElementById('docExistingLoading');
+    if (loadingEl) loadingEl.textContent = _existingDocs.length > 0 ? `(${_existingDocs.length} ไฟล์)` : '';
+  } else {
+    Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+  }
+}
+
+function _fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      // Strip the data URL prefix (data:...;base64,)
+      const b64 = e.target.result.split(',')[1];
+      resolve(b64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function _sanitizeFilename(s) {
+  return s.replace(/[^a-zA-Z0-9ก-๙._\- ]/g, '_').replace(/\s+/g, '_').substring(0, 80);
+}
+
+async function uploadPendingDocs(stipNo, institution) {
+  if (!_docFiles.length) return;
+  const total = _docFiles.length;
+  let ok = 0, fail = 0;
+  showLoader(true, `กำลังอัปโหลดเอกสาร 0/${total}...`);
+  for (let i = 0; i < _docFiles.length; i++) {
+    const {file, label} = _docFiles[i];
+    showLoader(true, `กำลังอัปโหลด ${i+1}/${total}: ${file.name}`);
+    try {
+      const base64 = await _fileToBase64(file);
+      const safeName = label
+        ? `${stipNo}_${_sanitizeFilename(label)}_${_sanitizeFilename(file.name)}`
+        : `${stipNo}_${_sanitizeFilename(file.name)}`;
+      const res = await API.uploadDocument(base64, file.type, safeName, institution, stipNo);
+      if (res.status === 'success') ok++;
+      else {
+        fail++;
+        console.warn('Upload failed:', file.name, res.message);
+      }
+    } catch(e) {
+      fail++;
+      console.warn('Upload error:', file.name, e);
+    }
+  }
+  showLoader(false);
+  _docFiles = [];
+  docRenderPending();
+  if (fail > 0) {
+    Swal.fire({ title: `อัปโหลด ${ok}/${total} สำเร็จ`, text: `${fail} ไฟล์ไม่สำเร็จ`, icon:'warning', timer:4000, showConfirmButton:false });
+  }
+  // Result (ok/fail) is returned via the caller; any success toast is shown there
+}
+
 function previewImg(e) {
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
@@ -1110,12 +1342,17 @@ async function saveStudent() {
     const result = isEdit ? await API.updateStudent(data) : await API.saveStudent(data);
     showLoader(false);
     if (result.status === 'success') {
+      const finalStipNo = result.stipNo || data.StipNo;
+      // Upload any pending documents
+      if (_docFiles.length > 0) {
+        await uploadPendingDocs(finalStipNo, data.Institution || 'Other');
+      }
       await Swal.fire({
         title: t('success'),
-        html: `${isEdit ? t('updated') : t('saved')}<br><b>Stip No.: ${result.stipNo || data.StipNo}</b>`,
+        html: `${isEdit ? t('updated') : t('saved')}<br><b>Stip No.: ${finalStipNo}</b>`,
         icon: 'success', confirmButtonColor: '#1e3a8a'
       });
-      window.location.href = `student-profile.html?stipNo=${encodeURIComponent(result.stipNo||data.StipNo)}`;
+      window.location.href = `student-profile.html?stipNo=${encodeURIComponent(finalStipNo)}`;
     } else {
       Swal.fire(t('error'), result.message, 'error');
     }

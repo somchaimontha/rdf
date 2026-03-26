@@ -36,6 +36,7 @@ const API = {
   async clearSession(username)     { return apiPost({ action: 'clearSession', username }); },
   async uploadPhoto(base64, mimeType, filename, institution)              { return apiPost({ action: 'uploadPhoto',    base64, mimeType, filename, institution }); },
   async uploadDocument(base64, mimeType, filename, institution, stipNo)  { return apiPost({ action: 'uploadDocument', base64, mimeType, filename, institution, stipNo }); },
+  async getStudentDocs(stipNo)                                           { return apiGet({ action: 'getStudentDocs', stipNo }); },
   async deletePhoto(fileId)   { return apiPost({ action: 'deletePhoto', fileId }); },
   async deleteFile(fileId)    { return apiPost({ action: 'deleteFile',  fileId }); },
   async countBlankRows()      { return apiGet({ action: 'countBlankRows' }); },
