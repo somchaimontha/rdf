@@ -2,9 +2,28 @@
  * RDF Scholarship Management System — Backend API
  * Google Apps Script Web App
  * Copy this entire file into your Apps Script editor and Deploy as Web App.
+ *
+ * ⚠️ FIRST TIME SETUP — วิธีขอสิทธิ์ครั้งแรก:
+ *   1. เปิด Script Editor → เลือกฟังก์ชัน  authorizeAll  จาก dropdown
+ *   2. กดปุ่ม ▶ Run
+ *   3. กด "Review Permissions" → เลือกบัญชี Google → Allow
+ *   4. Deploy → New Deployment (หรือ Manage Deployments → Deploy new version)
  */
 
 const db = SpreadsheetApp.getActiveSpreadsheet();
+
+/**
+ * Run this function ONCE from the Script Editor to grant all required permissions.
+ * ▶ Run → authorizeAll → Review Permissions → Allow
+ */
+function authorizeAll() {
+  // Touch each service so GAS requests all scopes at once
+  SpreadsheetApp.getActiveSpreadsheet();
+  DriveApp.getRootFolder();
+  PropertiesService.getScriptProperties();
+  UrlFetchApp.fetch('https://www.google.com', { muteHttpExceptions: true });
+  Logger.log('✅ Authorization granted for all services: Spreadsheet, Drive, UrlFetch, Properties');
+}
 
 // ─────────────────────────────────────────────
 // ROUTING
