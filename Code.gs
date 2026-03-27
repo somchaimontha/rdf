@@ -49,7 +49,8 @@ function doPost(e) {
     else if (action === 'deleteAdmin')  result = deleteAdmin(body.username, body.reqUser);
     else if (action === 'saveSetting')  result = saveSetting(body.key, body.values, body.reqUser);
     else if (action === 'saveApiKey')   result = saveApiKey(body.key, body.reqUser);
-    else if (action === 'parseOCRText') result = parseOCRText(body.ocrText);
+    else if (action === 'parseOCRText')     result = parseOCRText(body.ocrText);
+    else if (action === 'parseDocumentAI') result = parseDocumentAI(body.base64, body.mimeType);
     else if (action === 'clearSession') result = clearSession(body.username);
     else if (action === 'uploadPhoto')    result = uploadPhoto(body.base64, body.mimeType, body.filename, body.institution);
     else if (action === 'uploadDocument') result = uploadDocument(body.base64, body.mimeType, body.filename, body.institution, body.stipNo);
@@ -765,6 +766,84 @@ function parseOCRText(ocrText) {
       return { status:'success', data: parsed };
     }
     const errMsg = body?.error?.message || 'AI response format unexpected.';
+    return { status:'error', message: errMsg };
+  } catch(e) {
+    return { status:'error', message: e.toString() };
+  }
+}
+
+// ─────────────────────────────────────────────
+// AI DOCUMENT PARSE — Gemini Vision (image + PDF)
+// Sends an image or PDF (base64) to Gemini 1.5 Flash and extracts student info
+// ─────────────────────────────────────────────
+function parseDocumentAI(base64Data, mimeType) {
+  if (!base64Data) return { status:'error', message:'ไม่มีข้อมูลไฟล์' };
+  const props  = PropertiesService.getScriptProperties();
+  const apiKey = props.getProperty('GEMINI_API_KEY');
+  if (!apiKey)  return { status:'error', message:'ยังไม่ได้ตั้งค่า Gemini API Key — ไปที่ Settings → API Keys' };
+
+  // Gemini 1.5 Flash supports images (jpg/png/webp) and PDFs as inline base64
+  const supported = ['image/jpeg','image/png','image/webp','image/gif','application/pdf'];
+  if (!supported.includes(mimeType))
+    return { status:'error', message:'รองรับเฉพาะ JPG, PNG, WEBP, PDF เท่านั้น' };
+
+  // Cap base64 size: 20 MB decoded ≈ 26.7 MB base64
+  if (base64Data.length > 27000000)
+    return { status:'error', message:'ไฟล์ใหญ่เกินไป (สูงสุด 20 MB)' };
+
+  const prompt =
+    'วิเคราะห์เอกสารนี้และสกัดข้อมูลนักเรียน/นักศึกษา ตอบกลับเป็น JSON เท่านั้น ไม่มีคำอธิบาย\n' +
+    'fields ที่ต้องการ (ใส่ null ถ้าไม่พบ):\n' +
+    '{\n' +
+    '  "title": "คำนำหน้าไทย (นาย/นางสาว/นาง/เด็กชาย/เด็กหญิง)",\n' +
+    '  "firstName": "ชื่อไทย",\n' +
+    '  "lastName": "นามสกุลไทย",\n' +
+    '  "engFirstName": "ชื่ออังกฤษ",\n' +
+    '  "engLastName": "นามสกุลอังกฤษ",\n' +
+    '  "idCard": "เลขบัตรประชาชน 13 หลัก ไม่มีขีด",\n' +
+    '  "birthYear": "ปีเกิด ค.ศ. เช่น 2000",\n' +
+    '  "studentId": "รหัสนักเรียน/นักศึกษา",\n' +
+    '  "schoolName": "ชื่อโรงเรียน/สถานศึกษา",\n' +
+    '  "institution": "MBS หรือ VC หรือ UNI หรือ OTHER",\n' +
+    '  "currentLevel": "ระดับชั้น เช่น ม.1 ม.4 ปวช.1 ปวส.2 ปี1",\n' +
+    '  "major": "สาขาวิชา/แผนการเรียน",\n' +
+    '  "faculty": "คณะ (สำหรับมหาวิทยาลัย)",\n' +
+    '  "uniName": "ชื่อมหาวิทยาลัย",\n' +
+    '  "entryYear": "ปีที่เข้าเรียน ค.ศ.",\n' +
+    '  "scholarshipYear": "ปีที่รับทุน ค.ศ.",\n' +
+    '  "phone": "เบอร์โทรศัพท์",\n' +
+    '  "village": "ที่อยู่บ้าน",\n' +
+    '  "province": "จังหวัด",\n' +
+    '  "nationality": "สัญชาติ",\n' +
+    '  "religion": "ศาสนา"\n' +
+    '}';
+
+  try {
+    const url  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+    const resp = UrlFetchApp.fetch(url, {
+      method:  'POST',
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({
+        contents: [{ parts: [
+          { text: prompt },
+          { inlineData: { mimeType: mimeType, data: base64Data } }
+        ]}],
+        generationConfig: { temperature: 0, maxOutputTokens: 1024 }
+      }),
+      muteHttpExceptions: true
+    });
+    const body = JSON.parse(resp.getContentText());
+    const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      const jsonText = text.trim().replace(/^```json\n?|```$/g,'').trim();
+      const parsed   = JSON.parse(jsonText);
+      // Remove null values, convert numeric strings
+      Object.keys(parsed).forEach(k => {
+        if (parsed[k] === null || parsed[k] === '' || parsed[k] === 'null') delete parsed[k];
+      });
+      return { status:'success', data: parsed };
+    }
+    const errMsg = body?.error?.message || 'AI ไม่ตอบสนอง';
     return { status:'error', message: errMsg };
   } catch(e) {
     return { status:'error', message: e.toString() };
