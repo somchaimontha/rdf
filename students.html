@@ -274,7 +274,7 @@
       <!-- Group view -->
       <div id="dupGroupView" class="hidden">
         <!-- Summary stats bar -->
-        <div id="dupStatBar" class="hidden flex flex-wrap gap-2 mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs">
+        <div id="dupStatBar" class="hidden flex-wrap gap-2 mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs" style="display:none">
           <span class="flex items-center gap-1 font-semibold text-gray-600">
             <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600"></i>
             ตรวจสอบแล้ว <b id="statScanned" class="text-amber-800 mx-0.5">—</b> นักเรียน
@@ -707,7 +707,7 @@ function _dupShowStats(scanned, byReason, total) {
   sv('statTotal',   total);
   sv('statScannedNone', scanned);
   const bar = document.getElementById('dupStatBar');
-  if (bar) { bar.classList.remove('hidden'); lucide.createIcons(); }
+  if (bar) { bar.style.display = 'flex'; lucide.createIcons(); }
 }
 
 async function openDupModal() {
@@ -717,7 +717,7 @@ async function openDupModal() {
   _showDupState('scanning');
   document.getElementById('dupModalSubtitle').textContent = 'กำลังวิเคราะห์...';
   document.getElementById('dupProgressBar').style.width = '0%';
-  document.getElementById('dupStatBar').classList.add('hidden');
+  document.getElementById('dupStatBar').style.display = 'none';
 
   // Use loaded student count as the "total" hint for the progress animation
   const knownTotal = allStudents.length || null;
@@ -777,9 +777,10 @@ function closeDupModal() {
 }
 
 function _showDupState(state) {
-  ['scanning','none','group','done'].forEach(s => {
-    document.getElementById('dup' + s.charAt(0).toUpperCase() + s.slice(1))
-      .classList.toggle('hidden', s !== state);
+  const ID_MAP = { scanning:'dupScanning', none:'dupNone', group:'dupGroupView', done:'dupDone' };
+  Object.entries(ID_MAP).forEach(([s, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', s !== state);
   });
 }
 
