@@ -1676,18 +1676,38 @@ async function _docScanRunFile(file) {
     return;
   }
   try {
-    document.getElementById('docScanStatusText').textContent = 'กำลังส่งให้ AI วิเคราะห์...';
+    const statusTxt = document.getElementById('docScanStatusText');
+    statusTxt.textContent = 'กำลังอ่านไฟล์...';
     const base64 = await _fileToBase64(file);
-    const res = await API.parseDocumentAI(base64, file.type);
-    statusEl.classList.add('hidden');
-    if (res.status === 'success' && res.data && Object.keys(res.data).length > 0) {
-      _docScanData = res.data;
-      _renderDocScanResult(res.data);
-    } else {
+    // Start elapsed-time counter so user knows it's still working
+    let _elapsed = 0;
+    const _counter = setInterval(() => {
+      _elapsed++;
+      statusTxt.textContent = `กำลังส่งให้ AI วิเคราะห์... (${_elapsed}s)`;
+    }, 1000);
+    statusTxt.textContent = 'กำลังส่งให้ AI วิเคราะห์... (0s)';
+    const _aiTimeout = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error('หมดเวลา (90s) — GAS หรือ Gemini ไม่ตอบสนอง กรุณาลองใหม่')), 90000)
+    );
+    try {
+      const res = await Promise.race([API.parseDocumentAI(base64, file.type), _aiTimeout]);
+      clearInterval(_counter);
+      statusEl.classList.add('hidden');
+      if (res.status === 'success' && res.data && Object.keys(res.data).length > 0) {
+        _docScanData = res.data;
+        _renderDocScanResult(res.data);
+      } else {
+        document.getElementById('docScanResult').innerHTML =
+          `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+            <b>AI ไม่พบข้อมูล</b> — ${res.message || 'ลองใช้ไฟล์รูปภาพที่ชัดเจนกว่านี้'}
+           </div>`;
+        document.getElementById('docScanResult').classList.remove('hidden');
+      }
+    } catch(e) {
+      clearInterval(_counter);
+      statusEl.classList.add('hidden');
       document.getElementById('docScanResult').innerHTML =
-        `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-          <b>AI ไม่พบข้อมูล</b> — ${res.message || 'ลองใช้ไฟล์รูปภาพที่ชัดเจนกว่านี้'}
-         </div>`;
+        `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">เกิดข้อผิดพลาด: ${e.message}</div>`;
       document.getElementById('docScanResult').classList.remove('hidden');
     }
   } catch(e) {
