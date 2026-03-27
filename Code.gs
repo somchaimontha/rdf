@@ -897,26 +897,58 @@ const ALLOWED_PHOTO_TYPES    = ['image/jpeg', 'image/png', 'image/webp'];
 const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
 /**
- * Get or create a named sub-folder inside a parent folder.
- * Reuses existing folder to avoid duplicates.
+ * ONE-TIME SETUP — run this ONCE from the GAS editor (not as web app).
+ * Creates the Photos/Documents sub-folder structure and stores folder IDs
+ * in Script Properties so the web app never needs createFolder permission.
+ *
+ * Run from GAS editor: open this file → click Run → select setupDriveFolders
  */
-function _getOrCreateFolder(parentFolderId, name) {
-  const parent = DriveApp.getFolderById(parentFolderId);
-  const iter   = parent.getFoldersByName(name);
-  if (iter.hasNext()) return iter.next();
-  return parent.createFolder(name);
+function setupDriveFolders() {
+  const props = PropertiesService.getScriptProperties();
+  const root  = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+
+  function getOrCreate(parent, name) {
+    const iter = parent.getFoldersByName(name);
+    return iter.hasNext() ? iter.next() : parent.createFolder(name);
+  }
+
+  const photosFolder = getOrCreate(root, 'Photos');
+  const docsFolder   = getOrCreate(root, 'Documents');
+
+  const keys = {};
+  ['MBS','VC','UNI'].forEach(inst => {
+    keys['drive_photos_' + inst]    = getOrCreate(photosFolder, inst).getId();
+    keys['drive_documents_' + inst] = getOrCreate(docsFolder,   inst).getId();
+  });
+  keys['drive_photos_Other']    = photosFolder.getId();
+  keys['drive_documents_Other'] = docsFolder.getId();
+
+  props.setProperties(keys);
+  Logger.log('✅ Drive folders set up successfully:');
+  Object.entries(keys).forEach(([k,v]) => Logger.log('  ' + k + ' = ' + v));
 }
 
 /**
  * Resolve the correct sub-folder for a given type ('Photos'/'Documents')
- * and institution ('MBS'/'VC'/'UNI').  Creates folders on first use.
+ * and institution ('MBS'/'VC'/'UNI').
+ * Reads folder ID from Script Properties (set by setupDriveFolders).
+ * Does NOT call createFolder — safe to use in web app context.
  */
 function _resolveFolder(type, institution) {
   const validTypes = ['Photos', 'Documents'];
   const validInst  = ['MBS', 'VC', 'UNI'];
-  const typeFolder = _getOrCreateFolder(DRIVE_FOLDER_ID, validTypes.includes(type) ? type : 'Photos');
-  const instName   = validInst.includes(institution) ? institution : 'Other';
-  return _getOrCreateFolder(typeFolder.getId(), instName);
+  const t    = validTypes.includes(type) ? type : 'Photos';
+  const inst = validInst.includes(institution) ? institution : 'Other';
+  const key  = 'drive_' + t.toLowerCase() + '_' + inst;
+
+  const folderId = PropertiesService.getScriptProperties().getProperty(key);
+  if (!folderId) {
+    throw new Error(
+      'ยังไม่ได้ตั้งค่าโฟลเดอร์ Drive — กรุณาเรียก setupDriveFolders() ใน GAS editor ก่อน\n' +
+      '(Missing property: ' + key + ')'
+    );
+  }
+  return DriveApp.getFolderById(folderId);
 }
 
 /**
