@@ -49,6 +49,7 @@ function doGet(e) {
     else if (action === 'getApiKeyStatus')    result = getApiKeyStatus();
     else if (action === 'getActiveSessions')  result = getActiveSessions();
     else if (action === 'getStudentDocs')     result = getStudentDocs(e.parameter.stipNo);
+    else if (action === 'findDuplicates')     result = findDuplicates();
     else result = { status: 'error', message: 'Invalid action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -76,6 +77,7 @@ function doPost(e) {
     else if (action === 'deletePhoto')    result = deletePhoto(body.fileId);
     else if (action === 'deleteFile')     result = deleteFile(body.fileId);
     else if (action === 'cleanBlankRows') result = cleanBlankStipNoRows(body.reqUser);
+    else if (action === 'mergeStudents')  result = mergeStudents(body.primaryStipNo, body.mergeStipNo, body.reqUser);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -1036,6 +1038,168 @@ function getStudentDocs(stipNo) {
   } catch(e) {
     return { status:'error', message: e.toString() };
   }
+}
+
+// ─────────────────────────────────────────────
+// DUPLICATE DETECTION & MERGE
+// ─────────────────────────────────────────────
+
+/**
+ * Scan all students and return groups of potential duplicates.
+ * Checks: IDCard (high confidence), Thai name, English name (medium confidence).
+ * Each group contains the matching students + the reason + confidence level.
+ */
+function findDuplicates() {
+  const sheet = db.getSheetByName('Students');
+  if (!sheet) return { status:'error', message:'Students sheet not found.' };
+
+  const data = sheet.getDataRange().getDisplayValues();
+  const headers = data[0];
+  const col = {};
+  headers.forEach((h, i) => col[h] = i);
+  const _c = (row, name) =>
+    (col[name] !== undefined && row[col[name]] !== undefined) ? row[col[name]].toString().trim() : '';
+
+  // Build flat student list (only rows with StipNo)
+  const students = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const stipNo = _c(row, 'StipNo');
+    if (!stipNo) continue;
+    students.push({
+      stipNo,
+      idCard:       _c(row, 'IDCard'),
+      title:        _c(row, 'Title'),
+      firstName:    _c(row, 'FirstName'),
+      lastName:     _c(row, 'LastName'),
+      engFirstName: _c(row, 'EngFirstName'),
+      engLastName:  _c(row, 'EngLastName'),
+      birthYear:    _c(row, 'BirthYear'),
+      institution:  _c(row, 'Institution'),
+      level:        _c(row, 'CurrentLevel'),
+      status:       _c(row, 'Status'),
+      phone:        _c(row, 'Phone1'),
+      createdAt:    _c(row, 'CreatedAt')
+    });
+  }
+
+  const groups  = [];
+  const seenKeys = new Set(); // prevent reporting the same pair twice
+
+  function _addGroup(reason, confidence, matchValue, group) {
+    if (group.length < 2) return;
+    const key = group.map(s => s.stipNo).sort().join('||');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    groups.push({ reason, confidence, matchValue, students: group });
+  }
+
+  // ── 1. IDCard duplicates (strongest signal) ──────────────────
+  const idCardMap = {};
+  students.forEach(s => {
+    if (s.idCard && s.idCard.length >= 13) {
+      if (!idCardMap[s.idCard]) idCardMap[s.idCard] = [];
+      idCardMap[s.idCard].push(s);
+    }
+  });
+  Object.entries(idCardMap).forEach(([idCard, grp]) => {
+    _addGroup('IDCard', 'high', idCard, grp);
+  });
+
+  // ── 2. Thai name duplicates ────────────────────────────────────
+  const thaiMap = {};
+  students.forEach(s => {
+    if (s.firstName && s.lastName) {
+      const k = s.firstName.toLowerCase() + '_' + s.lastName.toLowerCase();
+      if (!thaiMap[k]) thaiMap[k] = [];
+      thaiMap[k].push(s);
+    }
+  });
+  Object.entries(thaiMap).forEach(([k, grp]) => {
+    const [fn, ln] = k.split('_');
+    _addGroup('ThaiName', 'medium', fn + ' ' + ln, grp);
+  });
+
+  // ── 3. English name duplicates ─────────────────────────────────
+  const engMap = {};
+  students.forEach(s => {
+    if (s.engFirstName && s.engLastName) {
+      const k = s.engFirstName.toLowerCase() + '_' + s.engLastName.toLowerCase();
+      if (!engMap[k]) engMap[k] = [];
+      engMap[k].push(s);
+    }
+  });
+  Object.entries(engMap).forEach(([k, grp]) => {
+    const [fn, ln] = k.split('_');
+    _addGroup('EngName', 'medium', fn + ' ' + ln, grp);
+  });
+
+  // Sort: high confidence first, then medium
+  groups.sort((a, b) => {
+    if (a.confidence === b.confidence) return 0;
+    return a.confidence === 'high' ? -1 : 1;
+  });
+
+  return { status:'success', total: groups.length, groups };
+}
+
+/**
+ * Merge two student records: copy all non-empty fields from mergeStipNo
+ * into primaryStipNo (primary's values win), then delete the duplicate row.
+ */
+function mergeStudents(primaryStipNo, mergeStipNo, reqUser) {
+  if (!primaryStipNo || !mergeStipNo)
+    return { status:'error', message:'Both StipNos are required.' };
+  if (primaryStipNo === mergeStipNo)
+    return { status:'error', message:'ไม่สามารถผสานข้อมูลกับตัวเองได้' };
+
+  const sheet = db.getSheetByName('Students');
+  if (!sheet) return { status:'error', message:'Students sheet not found.' };
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+
+  let primaryRowIdx = -1, mergeRowIdx = -1;
+  let primaryRow = null, mergeRow = null;
+
+  for (let i = 1; i < data.length; i++) {
+    const sn = (data[i][0] || '').toString().trim();
+    if (sn === primaryStipNo) { primaryRowIdx = i + 1; primaryRow = data[i]; }
+    if (sn === mergeStipNo)   { mergeRowIdx   = i + 1; mergeRow   = data[i]; }
+    if (primaryRow && mergeRow) break;
+  }
+
+  if (!primaryRow) return { status:'error', message:'ไม่พบข้อมูลหลัก: ' + primaryStipNo };
+  if (!mergeRow)   return { status:'error', message:'ไม่พบข้อมูลที่จะผสาน: ' + mergeStipNo };
+
+  const _IMMUTABLE = ['StipNo', 'CreatedAt'];
+  const now = new Date().toLocaleString('en-GB');
+
+  // Build merged row: primary value wins; fill blanks from merge record
+  const mergedRow = headers.map((h, j) => {
+    if (_IMMUTABLE.includes(h))       return primaryRow[j];
+    if (h === 'UpdatedAt')            return now;
+    const pVal = primaryRow[j] !== undefined ? primaryRow[j].toString().trim() : '';
+    const mVal = mergeRow[j]   !== undefined ? mergeRow[j].toString().trim()   : '';
+    return pVal !== '' ? primaryRow[j] : (mVal !== '' ? mergeRow[j] : '');
+  });
+
+  // Write merged data to primary row
+  const TEXT_FIELDS_LOCAL = ['StipNo','IDCard','Phone1','Phone2','StudentID',
+    'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth'];
+  const range = sheet.getRange(primaryRowIdx, 1, 1, headers.length);
+  range.setNumberFormats([headers.map(h => TEXT_FIELDS_LOCAL.includes(h) ? '@' : '')]);
+  range.setValues([mergedRow]);
+
+  // Delete duplicate row — adjust index if merge row was before primary
+  const adjustedMergeIdx = mergeRowIdx > primaryRowIdx ? mergeRowIdx : mergeRowIdx;
+  sheet.deleteRow(adjustedMergeIdx);
+
+  logAction(reqUser || 'Admin', 'MERGE_STUDENTS',
+    'ผสาน ' + mergeStipNo + ' → ' + primaryStipNo + ' (ลบ ' + mergeStipNo + ')');
+
+  return { status:'success', message: mergeStipNo + ' ผสานเข้า ' + primaryStipNo + ' สำเร็จ',
+           primaryStipNo, mergeStipNo };
 }
 
 function getLogs(limit) {
