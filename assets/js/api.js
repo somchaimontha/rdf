@@ -46,6 +46,9 @@ const API = {
   async mergeStudents(primaryStipNo, mergeStipNo) {
     return apiPost({ action: 'mergeStudents', primaryStipNo, mergeStipNo, reqUser: (getUser()||{}).username||'Admin' });
   },
+  async mergeStudentRows(primaryRowIdx, mergeRowIdx) {
+    return apiPost({ action: 'mergeStudentRows', primaryRowIdx, mergeRowIdx, reqUser: (getUser()||{}).username||'Admin' });
+  },
 };
 
 /* ── Shared Loader ── */

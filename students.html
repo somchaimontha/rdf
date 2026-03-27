@@ -620,7 +620,7 @@ if ((user||{}).role === 'SuperAdmin' || (user||{}).role === 'Admin') {
 // ── Duplicate Checker ──────────────────────────────────────────
 let _dupGroups   = [];
 let _dupIdx      = 0;          // current group index (only unresolved)
-let _dupPrimary  = null;       // stipNo of selected primary
+let _dupPrimary  = -1;         // index (0,1,2…) within current group's students array
 let _dupMerged   = 0;
 let _dupSkipped  = 0;
 
@@ -628,12 +628,14 @@ let _dupScanTimer  = null;
 let _dupScanStart  = 0;
 
 // Steps: [label, barWidth, activeStep(1-4), stepLabel]
+// Extended to 40s — GAS can have cold-start delays up to ~30s
 const _DUP_STEPS = [
-  { bar:8,  step:1, label:'กำลังโหลดข้อมูลจากฐานข้อมูล...', t:0    },
-  { bar:30, step:2, label:'กำลังตรวจสอบเลขบัตรประชาชน...',  t:2000 },
-  { bar:55, step:3, label:'กำลังตรวจสอบชื่อ-นามสกุลภาษาไทย...', t:5000 },
-  { bar:78, step:4, label:'กำลังตรวจสอบชื่อภาษาอังกฤษ...',  t:9000 },
-  { bar:92, step:4, label:'กำลังจัดกลุ่มและสรุปผล...',       t:13000 }
+  { bar:8,  step:1, label:'กำลังโหลดข้อมูลจากฐานข้อมูล...', t:0     },
+  { bar:25, step:1, label:'กำลังโหลดข้อมูลจากฐานข้อมูล...', t:4000  },
+  { bar:40, step:2, label:'กำลังตรวจสอบเลขบัตรประชาชน...',  t:10000 },
+  { bar:58, step:3, label:'กำลังตรวจสอบชื่อ-นามสกุลภาษาไทย...', t:18000 },
+  { bar:74, step:4, label:'กำลังตรวจสอบชื่อภาษาอังกฤษ...',  t:27000 },
+  { bar:88, step:4, label:'กำลังจัดกลุ่มและสรุปผล...',       t:35000 }
 ];
 
 function _dupStartScanAnim(totalKnown) {
@@ -713,7 +715,7 @@ function _dupShowStats(scanned, byReason, total) {
 async function openDupModal() {
   document.getElementById('dupModal').classList.remove('hidden');
   lucide.createIcons();
-  _dupGroups = []; _dupIdx = 0; _dupMerged = 0; _dupSkipped = 0; _dupPrimary = null;
+  _dupGroups = []; _dupIdx = 0; _dupMerged = 0; _dupSkipped = 0; _dupPrimary = -1;
   _showDupState('scanning');
   document.getElementById('dupModalSubtitle').textContent = 'กำลังวิเคราะห์...';
   document.getElementById('dupProgressBar').style.width = '0%';
@@ -724,7 +726,11 @@ async function openDupModal() {
   _dupStartScanAnim(knownTotal);
 
   try {
-    const res = await API.findDuplicates();
+    // 90-second hard timeout — GAS cold-start can be slow, but should never exceed this
+    const timeout = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error('หมดเวลาเชื่อมต่อ (90 วินาที) — GAS ไม่ตอบสนอง โปรดลองอีกครั้ง')), 90000)
+    );
+    const res = await Promise.race([API.findDuplicates(), timeout]);
     _dupStopScanAnim();
 
     if (res.status !== 'success') {
@@ -766,8 +772,16 @@ async function openDupModal() {
     }
   } catch(e) {
     _dupStopScanAnim();
-    closeDupModal();
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    _showDupState('scanning');  // keep modal open so user can retry
+    document.getElementById('dupScanLabel').textContent = 'เกิดข้อผิดพลาด — กดปิดแล้วลองใหม่';
+    document.getElementById('dupScanBar').style.width   = '0%';
+    Swal.fire({
+      icon: 'error',
+      title: 'ตรวจสอบไม่สำเร็จ',
+      text: e.message || 'เชื่อมต่อ GAS ไม่ได้',
+      confirmButtonText: 'ปิด',
+      confirmButtonColor: '#b45309'
+    }).then(() => closeDupModal());
   }
 }
 
@@ -817,60 +831,81 @@ function _renderDupGroup() {
     : g.matchValue;
   mvEl.textContent = 'ตรงกัน: ' + mv;
 
-  // Determine default primary (student with lowest/oldest StipNo)
-  if (!_dupPrimary || !g.students.find(s => s.stipNo === _dupPrimary)) {
-    _dupPrimary = g.students[0].stipNo;
+  // Normalize _rowIdx to integer for safe API calls
+  g.students.forEach(s => { s._rowIdx = parseInt(s._rowIdx) || 0; });
+
+  // _dupPrimary = index (0-based) within g.students[].
+  // Reset if out of range for this group.
+  if (_dupPrimary < 0 || _dupPrimary >= g.students.length) {
+    // Pick the record with the most filled fields
+    let bestIdx = 0, bestScore = -1;
+    g.students.forEach((s, i) => {
+      const score = [s.idCard, s.firstName, s.lastName, s.birthYear, s.phone, s.institution, s.level]
+        .filter(v => v && v.toString().trim()).length;
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    });
+    _dupPrimary = bestIdx;
   }
 
-  // Render student cards
+  // Render student cards — isPrimary keyed by array index (no type issues)
   const cards = document.getElementById('dupCards');
-  cards.innerHTML = g.students.map(s => {
-    const isPrimary = s.stipNo === _dupPrimary;
-    const statusColors = { Active:'#16a34a', Graduated:'#2563eb', Inactive:'#6b7280',
-                           Resigned:'#dc2626', Continued:'#7c3aed' };
-    const sColor = statusColors[s.status] || '#6b7280';
-    const borderStyle = isPrimary
-      ? 'border:2px solid #b45309;box-shadow:0 0 0 3px #fef3c7'
-      : 'border:2px solid #e5e7eb';
+  const STATUS_COLORS = { Active:'#16a34a', Graduated:'#2563eb', Inactive:'#6b7280',
+                          Resigned:'#dc2626', Continued:'#7c3aed' };
+  cards.innerHTML = g.students.map((s, arrayIdx) => {
+    const isPrimary = arrayIdx === _dupPrimary;
+    const sColor    = STATUS_COLORS[s.status] || '#6b7280';
+    const cardStyle = isPrimary
+      ? 'border:2px solid #b45309;box-shadow:0 0 0 3px #fef3c7;background:#fffbeb'
+      : 'border:2px solid #e5e7eb;background:#fff;cursor:pointer';
+    const badgeStyle = isPrimary
+      ? 'background:#b45309;color:#fff'
+      : 'background:#f3f4f6;color:#374151';
+    // Score = number of filled fields (show data completeness)
+    const score = [s.idCard, s.firstName, s.lastName, s.birthYear, s.phone, s.institution, s.level]
+      .filter(v => v && v.trim()).length;
     return `
-    <div class="rounded-xl p-3 cursor-pointer transition" style="${borderStyle}"
-         onclick="dupSelectPrimary('${s.stipNo}')">
+    <div class="rounded-xl p-3 transition select-none" style="${cardStyle}"
+         onclick="dupSelectPrimary(${arrayIdx})" title="${isPrimary ? 'ข้อมูลหลัก (จะถูกเก็บไว้)' : 'คลิกเพื่อเลือกเป็นข้อมูลหลัก'}">
       <div class="flex items-start justify-between mb-2">
-        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded"
-          style="${isPrimary ? 'background:#b45309;color:#fff' : 'background:#f3f4f6;color:#374151'}"
-        >${isPrimary ? '★ ข้อมูลหลัก' : 'กดเพื่อเลือก'}</span>
-        <span class="text-xs font-bold" style="color:${sColor}">${s.status||'—'}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded" style="${badgeStyle}">
+          ${isPrimary ? '★ ข้อมูลหลัก' : '○ คลิกเพื่อเลือก'}
+        </span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-semibold" style="color:${sColor}">${s.status||'—'}</span>
+          <span class="text-xs text-gray-300" title="ความสมบูรณ์ของข้อมูล">${score}/7</span>
+        </div>
       </div>
-      <p class="font-bold text-sm text-gray-800 mb-0.5">${s.stipNo}</p>
-      <p class="text-sm font-semibold text-gray-700">${(s.title||'')+' '+(s.firstName||'')+' '+(s.lastName||'')}</p>
-      ${s.engFirstName ? `<p class="text-xs text-gray-400">${s.engFirstName} ${s.engLastName}</p>` : ''}
-      <div class="mt-2 space-y-0.5 text-xs text-gray-500">
-        <div><b>สถาบัน:</b> ${s.institution||'—'} &nbsp;|&nbsp; <b>ระดับ:</b> ${s.level||'—'}</div>
-        <div><b>ปีเกิด:</b> ${s.birthYear||'—'} &nbsp;|&nbsp; <b>โทร:</b> ${s.phone||'—'}</div>
-        ${s.idCard ? `<div><b>บัตร:</b> ${s.idCard.substring(0,3)+'-'+s.idCard.substring(3,9)+'-'+s.idCard.substring(9)}</div>` : ''}
+      <p class="font-bold text-xs text-amber-700 mb-0.5 font-mono">StipNo: ${s.stipNo} <span class="text-gray-300 font-normal">(row ${s._rowIdx})</span></p>
+      <p class="text-sm font-semibold text-gray-800">${[s.title,s.firstName,s.lastName].filter(Boolean).join(' ') || '—'}</p>
+      ${s.engFirstName ? `<p class="text-xs text-gray-400">${s.engFirstName} ${s.engLastName||''}</p>` : ''}
+      <div class="mt-2 pt-2 border-t border-gray-100 space-y-0.5 text-xs text-gray-500">
+        <div><b>สถาบัน:</b> ${s.institution||'—'} | <b>ระดับ:</b> ${s.level||'—'}</div>
+        <div><b>ปีเกิด:</b> ${s.birthYear||'—'} | <b>โทร:</b> ${s.phone||'—'}</div>
+        ${s.idCard ? `<div class="font-mono text-blue-600"><b>บัตร:</b> ${s.idCard.substring(0,3)}-${s.idCard.substring(3,9)}-${s.idCard.substring(9)}</div>` : '<div class="text-red-300">บัตร: ไม่มีข้อมูล</div>'}
         <div class="text-gray-300"><b>สร้าง:</b> ${s.createdAt||'—'}</div>
       </div>
+      ${isPrimary ? '<div class="mt-2 text-xs text-amber-700 font-semibold text-center">✓ จะเก็บระเบียนนี้ไว้</div>' : ''}
     </div>`;
   }).join('');
   lucide.createIcons();
 }
 
-function dupSelectPrimary(stipNo) {
-  _dupPrimary = stipNo;
+function dupSelectPrimary(arrayIdx) {
+  _dupPrimary = parseInt(arrayIdx); // array index 0,1,2… always a simple integer
   _renderDupGroup();
 }
 
 function dupPrev() {
-  if (_dupIdx > 0) { _dupIdx--; _dupPrimary = null; _renderDupGroup(); }
+  if (_dupIdx > 0) { _dupIdx--; _dupPrimary = -1; _renderDupGroup(); }
 }
 function dupNext() {
-  if (_dupIdx < _dupGroups.length - 1) { _dupIdx++; _dupPrimary = null; _renderDupGroup(); }
+  if (_dupIdx < _dupGroups.length - 1) { _dupIdx++; _dupPrimary = -1; _renderDupGroup(); }
 }
 
 function dupSkip() {
   _dupSkipped++;
   if (_dupIdx < _dupGroups.length - 1) {
-    _dupIdx++; _dupPrimary = null; _renderDupGroup();
+    _dupIdx++; _dupPrimary = -1; _renderDupGroup();
   } else {
     _showDupDone();
   }
@@ -878,19 +913,26 @@ function dupSkip() {
 
 async function dupMerge() {
   const g = _dupGroups[_dupIdx];
-  if (!g || !_dupPrimary) return;
+  // _dupPrimary is a 0-based array index
+  if (!g || _dupPrimary < 0 || _dupPrimary >= g.students.length) {
+    Swal.fire('แจ้งเตือน', 'กรุณาเลือกข้อมูลหลักก่อน (คลิกที่การ์ด)', 'warning');
+    return;
+  }
 
-  // Collect all non-primary StipNos in this group
-  const toMerge = g.students.filter(s => s.stipNo !== _dupPrimary).map(s => s.stipNo);
+  const primaryRec = g.students[_dupPrimary];
+  // Collect all students at OTHER array indices
+  const toMerge = g.students.filter((s, i) => i !== _dupPrimary);
   if (!toMerge.length) return;
 
-  // Confirm
-  const primaryName = (g.students.find(s => s.stipNo === _dupPrimary) || {});
+  // Build confirm dialog info
+  const primaryLabel = `[แถว ${primaryRec._rowIdx}] ${primaryRec.stipNo||'?'} — ${((primaryRec.title||'')+' '+(primaryRec.firstName||'')+' '+(primaryRec.lastName||'')).trim()}`;
+  const mergeLabels  = toMerge.map(s => `[แถว ${s._rowIdx}] ${s.stipNo||'?'} — ${((s.title||'')+' '+(s.firstName||'')+' '+(s.lastName||'')).trim()}`);
+
   const cf = await Swal.fire({
     title: 'ยืนยันการผสาน',
-    html: `<div class="text-left text-sm space-y-1">
-      <p>ข้อมูลหลัก: <b class="text-amber-800">${_dupPrimary}</b> — ${(primaryName.title||'')+' '+(primaryName.firstName||'')+' '+(primaryName.lastName||'')}</p>
-      <p>ลบออก: <b class="text-red-600">${toMerge.join(', ')}</b></p>
+    html: `<div class="text-left text-sm space-y-2">
+      <p>ข้อมูลหลัก (เก็บไว้):<br><b class="text-amber-800">${primaryLabel}</b></p>
+      <p>ลบออก (${mergeLabels.length} รายการ):<br>${mergeLabels.map(l=>`<b class="text-red-600">${l}</b>`).join('<br>')}</p>
       <p class="text-gray-400 text-xs mt-2">ข้อมูลที่ขาดหายในข้อมูลหลักจะถูกเติมจากระเบียนที่ลบ</p>
     </div>`,
     icon: 'warning', showCancelButton: true,
@@ -902,11 +944,13 @@ async function dupMerge() {
   showLoader(true, 'กำลังผสานข้อมูล...');
   try {
     let allOk = true;
-    for (const mStipNo of toMerge) {
-      const res = await API.mergeStudents(_dupPrimary, mStipNo);
+    // Sort descending by rowIdx — delete higher rows first so lower indices don't shift
+    const sortedMerge = [...toMerge].sort((a, b) => b._rowIdx - a._rowIdx);
+    for (const rec of sortedMerge) {
+      const res = await API.mergeStudentRows(primaryRec._rowIdx, rec._rowIdx);
       if (res.status !== 'success') {
         showLoader(false);
-        Swal.fire('ผสานไม่สำเร็จ', res.message, 'error');
+        Swal.fire('ผสานไม่สำเร็จ', res.message || 'เกิดข้อผิดพลาด', 'error');
         allOk = false; break;
       }
     }
@@ -914,25 +958,27 @@ async function dupMerge() {
     if (!allOk) return;
 
     _dupMerged++;
-    // Remove merged group from array
+    // Track deleted row indices to clean up other groups
+    const deletedRowIdxs = new Set(toMerge.map(s => s._rowIdx));
+
+    // Remove this merged group
     _dupGroups.splice(_dupIdx, 1);
-    // Also remove other groups that reference any of the deleted stipNos
-    const deletedStipNos = new Set(toMerge);
+    // Remove other groups that still reference any of the now-deleted rows
     for (let i = _dupGroups.length - 1; i >= 0; i--) {
-      if (_dupGroups[i].students.some(s => deletedStipNos.has(s.stipNo))) {
+      if (_dupGroups[i].students.some(s => deletedRowIdxs.has(s._rowIdx))) {
         _dupGroups.splice(i, 1);
         if (i < _dupIdx) _dupIdx--;
       }
     }
 
     Swal.fire({ toast:true, position:'top-end', icon:'success',
-      title:`ผสานสำเร็จ: ${toMerge.join(', ')} → ${_dupPrimary}`, timer:3000, showConfirmButton:false });
+      title:`ผสานสำเร็จ ${toMerge.length} ระเบียน → ${primaryRec.stipNo||'แถว '+primaryRec._rowIdx}`, timer:3000, showConfirmButton:false });
 
     if (_dupGroups.length === 0) {
       _showDupDone();
     } else {
       if (_dupIdx >= _dupGroups.length) _dupIdx = _dupGroups.length - 1;
-      _dupPrimary = null;
+      _dupPrimary = -1;
       document.getElementById('dupModalSubtitle').textContent = `เหลือ ${_dupGroups.length} กลุ่ม`;
       _renderDupGroup();
     }
