@@ -231,7 +231,8 @@ function getStudentsData() {
 // ─────────────────────────────────────────────
 // Fields that must be stored/returned as plain text (preserve leading zeros)
 const TEXT_FIELDS = ['StipNo','IDCard','Phone1','Phone2','StudentID',
-  'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth'];
+  'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth','BirthYear',
+  'ScholarshipYear','EntryYear'];
 
 function getStudentByStipNo(stipNo) {
   const sheet = db.getSheetByName('Students');
@@ -1220,7 +1221,8 @@ function mergeStudents(primaryStipNo, mergeStipNo, reqUser) {
 
   // Write merged data to primary row
   const TEXT_FIELDS_LOCAL = ['StipNo','IDCard','Phone1','Phone2','StudentID',
-    'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth'];
+    'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth','BirthYear',
+    'ScholarshipYear','EntryYear'];
   const range = sheet.getRange(primaryRowIdx, 1, 1, headers.length);
   range.setNumberFormats([headers.map(h => TEXT_FIELDS_LOCAL.includes(h) ? '@' : '')]);
   range.setValues([mergedRow]);
@@ -1266,7 +1268,8 @@ function mergeStudentRows(primaryRowIdx, mergeRowIdx, reqUser) {
   const _IMMUTABLE = ['StipNo', 'CreatedAt'];
   const now = new Date().toLocaleString('en-GB');
   const TEXT_FIELDS_LOCAL = ['StipNo','IDCard','Phone1','Phone2','StudentID',
-    'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth'];
+    'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth','BirthYear',
+    'ScholarshipYear','EntryYear'];
 
   // Merge: primary wins; fill blanks from merge row
   const mergedRow = headers.map((h, j) => {

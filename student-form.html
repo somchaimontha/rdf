@@ -1433,7 +1433,13 @@ async function saveStudent() {
       Swal.fire({ toast:true, position:'top-end', icon:'warning', title:`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}% — ข้อมูลยังไม่ครบ`, timer:3000, showConfirmButton:false });
     }
 
-    const result = isEdit ? await API.updateStudent(data) : await API.saveStudent(data);
+    const _saveTimeout = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error('หมดเวลา (60s) — GAS ไม่ตอบสนอง กรุณาลองใหม่')), 60000)
+    );
+    const result = await Promise.race([
+      isEdit ? API.updateStudent(data) : API.saveStudent(data),
+      _saveTimeout
+    ]);
     showLoader(false);
     if (result.status === 'success') {
       const finalStipNo = result.stipNo || data.StipNo;
