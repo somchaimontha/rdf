@@ -909,7 +909,10 @@ if (editStipNo) {
 async function loadStudentForEdit(stipNo) {
   showLoader(true, t('loading'));
   try {
-    const result = await API.getStudent(stipNo);
+    const _loadTimeout = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error('หมดเวลา (30s) — GAS ไม่ตอบสนอง กรุณารีเฟรชหน้า')), 30000)
+    );
+    const result = await Promise.race([API.getStudent(stipNo), _loadTimeout]);
     showLoader(false);
     if (result.status !== 'success') {
       Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
@@ -918,7 +921,8 @@ async function loadStudentForEdit(stipNo) {
     fillForm(result.data);
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error'), t('network_error'), 'error');
+    Swal.fire(t('error'), e.message || t('network_error'), 'error')
+      .then(() => window.location.href = 'students.html');
   }
 }
 
