@@ -392,7 +392,9 @@ function updateStudentData(d) {
     const updatedRow = headers.map((h, j) => {
       if (h === 'StipNo' || h === 'CreatedAt') return data[i][j]; // immutable fields
       if (h === 'UpdatedAt') return now;
-      // Only overwrite if incoming value is defined (allows partial updates)
+      // Only overwrite if incoming value is defined (allows partial updates).
+      // CSV import uses _csvToData which omits empty fields entirely (d[h] = undefined),
+      // so existing data is preserved. Form saves always include the field explicitly.
       return (d[h] !== undefined && d[h] !== null) ? d[h] : data[i][j];
     });
     const range = sheet.getRange(i + 1, 1, 1, headers.length);

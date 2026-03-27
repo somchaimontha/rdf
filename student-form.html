@@ -2041,28 +2041,34 @@ function _validateRow(r) {
   return issues; // [] = valid
 }
 function _csvRenderModal() {
-  const tot = _csvRows.length;
+  const tot        = _csvRows.length;
+  const newCnt     = _csvRows.filter(r=>r._dup.type==='new').length;
+  const updateCnt  = _csvRows.filter(r=>r._dup.type==='update').length;
   const dupCnt     = _csvRows.filter(r=>r._dup.type==='dup').length;
   const warnCnt    = _csvRows.filter(r=>r._dup.type==='warn').length;
   const infoCnt    = _csvRows.filter(r=>r._dup.type==='info').length;
-  const newCnt     = tot - dupCnt - warnCnt - infoCnt;
   const invalidCnt = _csvRows.filter(r=>r._issues && r._issues.length>0).length;
   document.getElementById('csvSummaryLine').textContent =
-    `พบ ${tot} แถว — ใหม่ ${newCnt} | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}` +
+    `พบ ${tot} แถว — ใหม่ ${newCnt}` +
+    (updateCnt?` | อัปเดต ${updateCnt}`:'') +
+    ` | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}` +
     (infoCnt?` | ชื่อพ้อง ${infoCnt}`:'') +
     (invalidCnt?` | ⚠ ข้อมูลไม่ครบ ${invalidCnt}`:'');
   document.getElementById('csvStatRow').innerHTML = `
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full border border-green-200">
       <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span> ใหม่ <b>${newCnt}</b>
     </span>
+    ${updateCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 rounded-full border border-blue-300">
+      <span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span> 🔄 อัปเดต <b>${updateCnt}</b>
+    </span>`:''}
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 rounded-full border border-yellow-200">
-      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> อาจซ้ำ (ชื่อ-นามสกุลตรงกัน) <b>${warnCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> อาจซ้ำ <b>${warnCnt}</b>
     </span>
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 rounded-full border border-red-200">
-      <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span> บัตรซ้ำ (เลขบัตรตรงกัน) <b>${dupCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span> บัตรซ้ำ <b>${dupCnt}</b>
     </span>
-    ${infoCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 rounded-full border border-blue-200">
-      <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span> ชื่อพ้อง <b>${infoCnt}</b>
+    ${infoCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-full border border-indigo-200">
+      <span class="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0"></span> ชื่อพ้อง <b>${infoCnt}</b>
     </span>`:''}
     ${invalidCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 rounded-full border border-amber-300">
       <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span> ข้อมูลไม่ครบ <b>${invalidCnt}</b>
@@ -2369,8 +2375,12 @@ async function csvImportSelected() {
     row._importResult = 'pending';
     csvRenderTable();
     try {
+      // 60-second timeout per row — prevents the loop hanging if GAS is slow
+      const _rowTimeout = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error('หมดเวลา (60s) — GAS ไม่ตอบสนอง')), 60000)
+      );
       // Always use saveStudent — backend auto-updates if StipNo already exists
-      let res = await API.saveStudent(_csvToData(row));
+      let res = await Promise.race([API.saveStudent(_csvToData(row)), _rowTimeout]);
       if (res.status==='success') {
         ok++;
         row._importResult = 'ok';
@@ -2700,12 +2710,14 @@ async function _crmSaveAndImport(idx) {
 
   r._importResult = 'pending';
   try {
+    const _t60 = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (60s)')), 60000));
     const isStipDup = r._dup.type === 'dup' && r._dup.canUpdate;
-    let res = isStipDup
-      ? await API.updateStudent(_csvToData(r))
-      : await API.saveStudent(_csvToData(r));
+    let res = await Promise.race([
+      isStipDup ? API.updateStudent(_csvToData(r)) : API.saveStudent(_csvToData(r)),
+      _t60
+    ]);
     if (res.status !== 'success' && res.duplicate) {
-      res = await API.updateStudent(_csvToData(r));
+      res = await Promise.race([API.updateStudent(_csvToData(r)), _t60]);
       if (res.status === 'success') res._wasUpdated = true;
     }
     if (res.status === 'success') {
@@ -2794,12 +2806,14 @@ async function _crmRetryAll() {
 
     r._importResult = 'pending';
     try {
+      const _t60r = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (60s)')), 60000));
       const isStipDup = r._dup.type === 'dup' && r._dup.canUpdate;
-      let res = isStipDup
-        ? await API.updateStudent(_csvToData(r))
-        : await API.saveStudent(_csvToData(r));
+      let res = await Promise.race([
+        isStipDup ? API.updateStudent(_csvToData(r)) : API.saveStudent(_csvToData(r)),
+        _t60r
+      ]);
       if (res.status !== 'success' && res.duplicate) {
-        res = await API.updateStudent(_csvToData(r));
+        res = await Promise.race([API.updateStudent(_csvToData(r)), _t60r]);
         if (res.status === 'success') res._wasUpdated = true;
       }
       if (res.status === 'success') {
@@ -3022,13 +3036,17 @@ const CSV_DB_FIELDS = [
 function _csvToData(r) {
   const u = getUser();
   const obj = {};
-  // Use explicit undefined check — r[f] || '' would drop falsy values like "0"
+  // Only include non-empty values — omitting a field means "keep existing value"
+  // in updateStudentData (d[h] === undefined → preserve the sheet cell).
+  // This prevents empty CSV cells from erasing existing data like BirthYear.
   CSV_DB_FIELDS.forEach(f => {
-    obj[f] = (r[f] !== undefined && r[f] !== null) ? String(r[f]).trim() : '';
+    const v = (r[f] !== undefined && r[f] !== null) ? String(r[f]).trim() : '';
+    if (v !== '') obj[f] = v;
   });
+  // Status default for new rows
   if (!obj.Status) obj.Status = 'Active';
-  // Ensure StipNo is preserved even if it's a plain number string
-  if (r.StipNo !== undefined && r.StipNo !== null && r.StipNo !== '') {
+  // Always include StipNo (even numeric strings) so GAS can locate the record
+  if (r.StipNo !== undefined && r.StipNo !== null && String(r.StipNo).trim() !== '') {
     obj.StipNo = String(r.StipNo).trim();
   }
   obj.SavedBy = u ? u.name : 'CSV Import';
