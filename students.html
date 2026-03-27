@@ -223,21 +223,69 @@
     <!-- Body -->
     <div id="dupBody" class="p-4 overflow-y-auto flex-1">
       <!-- Scanning state -->
-      <div id="dupScanning" class="text-center py-10">
-        <svg class="animate-spin w-8 h-8 text-amber-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-        </svg>
-        <p class="text-sm text-gray-500">กำลังวิเคราะห์ข้อมูลทั้งหมด...</p>
+      <div id="dupScanning" class="py-6">
+        <!-- Step indicators -->
+        <div class="flex justify-center gap-3 mb-5 flex-wrap">
+          <div id="dss1" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition"
+               style="background:#fef3c7;color:#78350f">
+            <svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span id="dss1Text">โหลดข้อมูล...</span>
+          </div>
+          <div id="dss2" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+               style="background:#f3f4f6;color:#9ca3af">
+            <span>ตรวจ IDCard</span>
+          </div>
+          <div id="dss3" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+               style="background:#f3f4f6;color:#9ca3af">
+            <span>ตรวจชื่อไทย</span>
+          </div>
+          <div id="dss4" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+               style="background:#f3f4f6;color:#9ca3af">
+            <span>ตรวจชื่ออังกฤษ</span>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div class="bg-amber-100 rounded-full h-3 mb-3 overflow-hidden">
+          <div id="dupScanBar" class="h-3 rounded-full transition-all duration-500"
+               style="background:linear-gradient(90deg,#f59e0b,#b45309);width:5%"></div>
+        </div>
+        <!-- Counters row -->
+        <div class="flex justify-between text-xs text-gray-400 mb-4 px-1">
+          <span>ตรวจสอบ <b id="dupScanCount" class="text-amber-700">0</b> รายการ จาก <b id="dupScanTotal" class="text-gray-600">—</b></span>
+          <span>เวลาที่ใช้ <b id="dupScanElapsed" class="text-gray-500">0</b> วินาที</span>
+        </div>
+        <!-- Current action label -->
+        <p id="dupScanLabel" class="text-center text-sm font-semibold text-amber-700 mb-1">กำลังโหลดข้อมูลจากฐานข้อมูล...</p>
+        <p class="text-center text-xs text-gray-400">GAS อาจใช้เวลา 5–15 วินาที ขึ้นอยู่กับจำนวนข้อมูล</p>
       </div>
       <!-- No duplicates -->
-      <div id="dupNone" class="hidden text-center py-10">
-        <i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-3"></i>
-        <p class="font-bold text-green-700 text-base">ไม่พบข้อมูลซ้ำซ้อน</p>
-        <p class="text-sm text-gray-400 mt-1">ข้อมูลในฐานข้อมูลสะอาด ไม่มีรายการที่ซ้ำกัน</p>
+      <div id="dupNone" class="hidden text-center py-8">
+        <i data-lucide="check-circle-2" class="w-14 h-14 text-green-400 mx-auto mb-3"></i>
+        <p class="font-bold text-green-700 text-base mb-1">ไม่พบข้อมูลซ้ำซ้อน</p>
+        <p class="text-sm text-gray-400 mb-4">ข้อมูลในฐานข้อมูลสะอาด ไม่มีรายการที่ซ้ำกัน</p>
+        <div class="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 font-semibold">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          ตรวจสอบแล้ว <span id="statScannedNone" class="font-bold mx-0.5">—</span> นักเรียน · ผ่านทุกรายการ ✓
+        </div>
       </div>
       <!-- Group view -->
       <div id="dupGroupView" class="hidden">
+        <!-- Summary stats bar -->
+        <div id="dupStatBar" class="hidden flex flex-wrap gap-2 mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs">
+          <span class="flex items-center gap-1 font-semibold text-gray-600">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600"></i>
+            ตรวจสอบแล้ว <b id="statScanned" class="text-amber-800 mx-0.5">—</b> นักเรียน
+          </span>
+          <span class="text-gray-300">|</span>
+          <span class="font-semibold text-red-600">🪪 IDCard ซ้ำ: <b id="statIDCard">0</b></span>
+          <span class="font-semibold text-amber-600">🇹🇭 ชื่อไทยซ้ำ: <b id="statThai">0</b></span>
+          <span class="font-semibold text-blue-600">🔤 ชื่ออังกฤษซ้ำ: <b id="statEng">0</b></span>
+          <span class="text-gray-300">|</span>
+          <span class="font-bold text-amber-800">รวม <b id="statTotal">0</b> กลุ่ม</span>
+        </div>
         <!-- Group counter nav -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
@@ -576,6 +624,92 @@ let _dupPrimary  = null;       // stipNo of selected primary
 let _dupMerged   = 0;
 let _dupSkipped  = 0;
 
+let _dupScanTimer  = null;
+let _dupScanStart  = 0;
+
+// Steps: [label, barWidth, activeStep(1-4), stepLabel]
+const _DUP_STEPS = [
+  { bar:8,  step:1, label:'กำลังโหลดข้อมูลจากฐานข้อมูล...', t:0    },
+  { bar:30, step:2, label:'กำลังตรวจสอบเลขบัตรประชาชน...',  t:2000 },
+  { bar:55, step:3, label:'กำลังตรวจสอบชื่อ-นามสกุลภาษาไทย...', t:5000 },
+  { bar:78, step:4, label:'กำลังตรวจสอบชื่อภาษาอังกฤษ...',  t:9000 },
+  { bar:92, step:4, label:'กำลังจัดกลุ่มและสรุปผล...',       t:13000 }
+];
+
+function _dupStartScanAnim(totalKnown) {
+  _dupScanStart = Date.now();
+  // Reset scan UI
+  document.getElementById('dupScanBar').style.width = '5%';
+  document.getElementById('dupScanCount').textContent = '0';
+  document.getElementById('dupScanTotal').textContent = totalKnown ? totalKnown : '...';
+  document.getElementById('dupScanElapsed').textContent = '0';
+  document.getElementById('dupScanLabel').textContent = 'กำลังโหลดข้อมูลจากฐานข้อมูล...';
+  _dupResetSteps();
+
+  // Elapsed time ticker
+  _dupScanTimer = setInterval(() => {
+    const elapsed = Math.round((Date.now() - _dupScanStart) / 1000);
+    document.getElementById('dupScanElapsed').textContent = elapsed;
+
+    // Animate progress bar through steps based on elapsed time
+    for (let i = _DUP_STEPS.length - 1; i >= 0; i--) {
+      if (elapsed * 1000 >= _DUP_STEPS[i].t) {
+        document.getElementById('dupScanBar').style.width = _DUP_STEPS[i].bar + '%';
+        document.getElementById('dupScanLabel').textContent = _DUP_STEPS[i].label;
+        _dupSetActiveStep(_DUP_STEPS[i].step);
+        // Simulate count increment (rough estimate)
+        if (totalKnown && _DUP_STEPS[i].bar < 90) {
+          const pct = _DUP_STEPS[i].bar / 90;
+          document.getElementById('dupScanCount').textContent = Math.round(totalKnown * pct);
+        }
+        break;
+      }
+    }
+  }, 500);
+}
+
+function _dupStopScanAnim() {
+  if (_dupScanTimer) { clearInterval(_dupScanTimer); _dupScanTimer = null; }
+}
+
+function _dupResetSteps() {
+  [1,2,3,4].forEach(n => {
+    const el = document.getElementById('dss' + n);
+    if (!el) return;
+    if (n === 1) {
+      el.style.cssText = 'background:#fef3c7;color:#78350f';
+      el.querySelector('svg') && (el.querySelector('svg').style.display = 'inline');
+    } else {
+      el.style.cssText = 'background:#f3f4f6;color:#9ca3af';
+    }
+  });
+}
+function _dupSetActiveStep(active) {
+  [1,2,3,4].forEach(n => {
+    const el = document.getElementById('dss' + n);
+    if (!el) return;
+    if (n < active) {
+      el.style.cssText = 'background:#d1fae5;color:#065f46';
+    } else if (n === active) {
+      el.style.cssText = 'background:#fef3c7;color:#78350f';
+    } else {
+      el.style.cssText = 'background:#f3f4f6;color:#9ca3af';
+    }
+  });
+}
+
+function _dupShowStats(scanned, byReason, total) {
+  const sv = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  sv('statScanned', scanned);
+  sv('statIDCard',  byReason.IDCard  || 0);
+  sv('statThai',    byReason.ThaiName || 0);
+  sv('statEng',     byReason.EngName  || 0);
+  sv('statTotal',   total);
+  sv('statScannedNone', scanned);
+  const bar = document.getElementById('dupStatBar');
+  if (bar) { bar.classList.remove('hidden'); lucide.createIcons(); }
+}
+
 async function openDupModal() {
   document.getElementById('dupModal').classList.remove('hidden');
   lucide.createIcons();
@@ -583,29 +717,62 @@ async function openDupModal() {
   _showDupState('scanning');
   document.getElementById('dupModalSubtitle').textContent = 'กำลังวิเคราะห์...';
   document.getElementById('dupProgressBar').style.width = '0%';
+  document.getElementById('dupStatBar').classList.add('hidden');
+
+  // Use loaded student count as the "total" hint for the progress animation
+  const knownTotal = allStudents.length || null;
+  _dupStartScanAnim(knownTotal);
+
   try {
     const res = await API.findDuplicates();
+    _dupStopScanAnim();
+
     if (res.status !== 'success') {
       Swal.fire('ข้อผิดพลาด', res.message, 'error');
       closeDupModal(); return;
     }
+
+    // Finish progress bar
+    document.getElementById('dupScanBar').style.width = '100%';
+    document.getElementById('dupScanLabel').textContent = 'วิเคราะห์เสร็จสิ้น ✓';
+    _dupSetActiveStep(5);
+    if (knownTotal) {
+      document.getElementById('dupScanCount').textContent = res.scanned || knownTotal;
+      document.getElementById('dupScanTotal').textContent = res.scanned || knownTotal;
+    }
+    const elapsed = Math.round((Date.now() - _dupScanStart) / 1000);
+    document.getElementById('dupScanElapsed').textContent = elapsed;
+
+    // Brief pause so user can see "100%" before switching view
+    await new Promise(r => setTimeout(r, 600));
+
     _dupGroups = res.groups || [];
+    const scanned = res.scanned || allStudents.length;
+    const byReason = res.byReason || {};
+
     if (_dupGroups.length === 0) {
       _showDupState('none');
-      document.getElementById('dupModalSubtitle').textContent = 'ไม่พบข้อมูลซ้ำซ้อน';
+      document.getElementById('dupModalSubtitle').textContent =
+        `ตรวจสอบ ${scanned} นักเรียน · ไม่พบซ้ำ`;
+      document.getElementById('statScannedNone').textContent = scanned;
+      lucide.createIcons();
     } else {
-      document.getElementById('dupModalSubtitle').textContent = `พบ ${_dupGroups.length} กลุ่มที่ต้องตรวจสอบ`;
+      document.getElementById('dupModalSubtitle').textContent =
+        `ตรวจสอบ ${scanned} นักเรียน · พบ ${_dupGroups.length} กลุ่มซ้ำ`;
+      _dupShowStats(scanned, byReason, _dupGroups.length);
       _dupIdx = 0;
       _renderDupGroup();
       _showDupState('group');
     }
   } catch(e) {
+    _dupStopScanAnim();
     closeDupModal();
     Swal.fire('ข้อผิดพลาด', e.message, 'error');
   }
 }
 
 function closeDupModal() {
+  _dupStopScanAnim();
   document.getElementById('dupModal').classList.add('hidden');
 }
 
