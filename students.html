@@ -60,6 +60,12 @@
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         <span data-t="refresh">รีเฟรช</span>
       </button>
+      <button id="dupCheckBtn" onclick="openDupModal()" class="btn btn-sm hidden"
+        style="background:#f59e0b;color:#fff;border-color:#f59e0b"
+        title="ตรวจสอบและผสานข้อมูลที่ซ้ำซ้อน">
+        <i data-lucide="git-merge" class="w-4 h-4"></i>
+        <span>ตรวจสอบซ้ำ</span>
+      </button>
       <a href="student-form.html" class="btn btn-primary btn-sm">
         <i data-lucide="user-plus" class="w-4 h-4"></i>
         <span data-t="addStudent">เพิ่มนักเรียนใหม่</span>
@@ -193,6 +199,92 @@
     <span id="dbStatusText">กำลังตรวจสอบ...</span>
   </div>
 </footer>
+
+<!-- ─── Duplicate Checker Modal ─── -->
+<div id="dupModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6"
+     style="background:rgba(0,0,0,0.75)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:92vh">
+    <!-- Header -->
+    <div class="rounded-t-2xl p-4 flex justify-between items-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff">
+      <div>
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i data-lucide="git-merge" class="w-5 h-5"></i>
+          ตรวจสอบข้อมูลซ้ำซ้อน
+        </h3>
+        <p id="dupModalSubtitle" class="text-xs opacity-80 mt-0.5">กำลังวิเคราะห์...</p>
+      </div>
+      <button onclick="closeDupModal()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
+    </div>
+    <!-- Progress bar -->
+    <div id="dupProgress" class="h-1 bg-amber-100 flex-shrink-0">
+      <div id="dupProgressBar" class="h-1 bg-amber-500 transition-all" style="width:0%"></div>
+    </div>
+    <!-- Body -->
+    <div id="dupBody" class="p-4 overflow-y-auto flex-1">
+      <!-- Scanning state -->
+      <div id="dupScanning" class="text-center py-10">
+        <svg class="animate-spin w-8 h-8 text-amber-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <p class="text-sm text-gray-500">กำลังวิเคราะห์ข้อมูลทั้งหมด...</p>
+      </div>
+      <!-- No duplicates -->
+      <div id="dupNone" class="hidden text-center py-10">
+        <i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-3"></i>
+        <p class="font-bold text-green-700 text-base">ไม่พบข้อมูลซ้ำซ้อน</p>
+        <p class="text-sm text-gray-400 mt-1">ข้อมูลในฐานข้อมูลสะอาด ไม่มีรายการที่ซ้ำกัน</p>
+      </div>
+      <!-- Group view -->
+      <div id="dupGroupView" class="hidden">
+        <!-- Group counter nav -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span id="dupGroupBadge" class="text-xs font-bold px-2.5 py-1 rounded-full"
+                  style="background:#fef3c7;color:#92400e"></span>
+            <span id="dupReasonBadge" class="text-xs font-bold px-2.5 py-1 rounded-full"></span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="dupPrev()" id="dupPrevBtn"
+              class="btn btn-secondary btn-sm py-1 px-2 disabled:opacity-40" disabled>
+              <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+            </button>
+            <span id="dupNavLabel" class="text-xs font-bold text-gray-600 w-14 text-center"></span>
+            <button onclick="dupNext()" id="dupNextBtn"
+              class="btn btn-secondary btn-sm py-1 px-2 disabled:opacity-40">
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Match value -->
+        <div id="dupMatchValue" class="text-xs text-center text-gray-500 mb-3 font-mono bg-gray-50 rounded-lg py-1.5 px-3"></div>
+        <!-- Cards -->
+        <div id="dupCards" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4"></div>
+        <!-- Action row -->
+        <div class="flex justify-between items-center pt-3 border-t">
+          <button onclick="dupSkip()" class="btn btn-secondary btn-sm text-gray-500">
+            <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i> ข้ามกลุ่มนี้
+          </button>
+          <button onclick="dupMerge()" id="dupMergeBtn"
+            class="btn btn-sm font-bold"
+            style="background:#b45309;color:#fff;border-color:#b45309">
+            <i data-lucide="git-merge" class="w-3.5 h-3.5"></i> ผสานข้อมูล
+          </button>
+        </div>
+      </div>
+      <!-- Done (all processed) -->
+      <div id="dupDone" class="hidden text-center py-10">
+        <i data-lucide="check-circle-2" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
+        <p class="font-bold text-blue-700 text-base" id="dupDoneMsg">ตรวจสอบครบทุกกลุ่มแล้ว</p>
+        <p class="text-sm text-gray-400 mt-1" id="dupDoneDetail"></p>
+        <button onclick="closeDupModal(); loadStudents();" class="btn btn-primary btn-sm mt-4">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> รีเฟรชรายชื่อ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="assets/js/config.js"></script>
 <script src="assets/js/i18n.js"></script>
@@ -470,6 +562,228 @@ async function confirmDelete(stipNo) {
 }
 
 document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+// Show dup-check button for Admin roles only
+if ((user||{}).role === 'SuperAdmin' || (user||{}).role === 'Admin') {
+  const btn = document.getElementById('dupCheckBtn');
+  if (btn) btn.classList.remove('hidden');
+}
+
+// ── Duplicate Checker ──────────────────────────────────────────
+let _dupGroups   = [];
+let _dupIdx      = 0;          // current group index (only unresolved)
+let _dupPrimary  = null;       // stipNo of selected primary
+let _dupMerged   = 0;
+let _dupSkipped  = 0;
+
+async function openDupModal() {
+  document.getElementById('dupModal').classList.remove('hidden');
+  lucide.createIcons();
+  _dupGroups = []; _dupIdx = 0; _dupMerged = 0; _dupSkipped = 0; _dupPrimary = null;
+  _showDupState('scanning');
+  document.getElementById('dupModalSubtitle').textContent = 'กำลังวิเคราะห์...';
+  document.getElementById('dupProgressBar').style.width = '0%';
+  try {
+    const res = await API.findDuplicates();
+    if (res.status !== 'success') {
+      Swal.fire('ข้อผิดพลาด', res.message, 'error');
+      closeDupModal(); return;
+    }
+    _dupGroups = res.groups || [];
+    if (_dupGroups.length === 0) {
+      _showDupState('none');
+      document.getElementById('dupModalSubtitle').textContent = 'ไม่พบข้อมูลซ้ำซ้อน';
+    } else {
+      document.getElementById('dupModalSubtitle').textContent = `พบ ${_dupGroups.length} กลุ่มที่ต้องตรวจสอบ`;
+      _dupIdx = 0;
+      _renderDupGroup();
+      _showDupState('group');
+    }
+  } catch(e) {
+    closeDupModal();
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+  }
+}
+
+function closeDupModal() {
+  document.getElementById('dupModal').classList.add('hidden');
+}
+
+function _showDupState(state) {
+  ['scanning','none','group','done'].forEach(s => {
+    document.getElementById('dup' + s.charAt(0).toUpperCase() + s.slice(1))
+      .classList.toggle('hidden', s !== state);
+  });
+}
+
+function _dupReasonLabel(reason, confidence) {
+  const labels = { IDCard:'เลขบัตรประชาชนซ้ำ', ThaiName:'ชื่อไทยซ้ำ', EngName:'ชื่ออังกฤษซ้ำ' };
+  const colors  = { high:'background:#fee2e2;color:#991b1b', medium:'background:#fef3c7;color:#92400e' };
+  return { label: labels[reason] || reason, style: colors[confidence] || colors.medium };
+}
+
+function _renderDupGroup() {
+  const g = _dupGroups[_dupIdx];
+  if (!g) return;
+
+  const total = _dupGroups.length;
+  // Progress
+  document.getElementById('dupProgressBar').style.width = Math.round((_dupIdx / total) * 100) + '%';
+
+  // Nav labels
+  document.getElementById('dupGroupBadge').textContent = `กลุ่มที่ ${_dupIdx + 1}`;
+  document.getElementById('dupNavLabel').textContent   = `${_dupIdx + 1} / ${total}`;
+  document.getElementById('dupPrevBtn').disabled = _dupIdx === 0;
+  document.getElementById('dupNextBtn').disabled = _dupIdx === total - 1;
+
+  // Reason badge
+  const { label: rLabel, style: rStyle } = _dupReasonLabel(g.reason, g.confidence);
+  const reasonEl = document.getElementById('dupReasonBadge');
+  reasonEl.textContent = rLabel;
+  reasonEl.setAttribute('style', rStyle + ';border-radius:9999px;padding:2px 10px;font-size:11px;font-weight:700');
+
+  // Match value
+  const mvEl = document.getElementById('dupMatchValue');
+  const mv = g.reason === 'IDCard'
+    ? g.matchValue.substring(0,3) + '─────────' + g.matchValue.slice(-2) + ' (' + g.matchValue + ')'
+    : g.matchValue;
+  mvEl.textContent = 'ตรงกัน: ' + mv;
+
+  // Determine default primary (student with lowest/oldest StipNo)
+  if (!_dupPrimary || !g.students.find(s => s.stipNo === _dupPrimary)) {
+    _dupPrimary = g.students[0].stipNo;
+  }
+
+  // Render student cards
+  const cards = document.getElementById('dupCards');
+  cards.innerHTML = g.students.map(s => {
+    const isPrimary = s.stipNo === _dupPrimary;
+    const statusColors = { Active:'#16a34a', Graduated:'#2563eb', Inactive:'#6b7280',
+                           Resigned:'#dc2626', Continued:'#7c3aed' };
+    const sColor = statusColors[s.status] || '#6b7280';
+    const borderStyle = isPrimary
+      ? 'border:2px solid #b45309;box-shadow:0 0 0 3px #fef3c7'
+      : 'border:2px solid #e5e7eb';
+    return `
+    <div class="rounded-xl p-3 cursor-pointer transition" style="${borderStyle}"
+         onclick="dupSelectPrimary('${s.stipNo}')">
+      <div class="flex items-start justify-between mb-2">
+        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded"
+          style="${isPrimary ? 'background:#b45309;color:#fff' : 'background:#f3f4f6;color:#374151'}"
+        >${isPrimary ? '★ ข้อมูลหลัก' : 'กดเพื่อเลือก'}</span>
+        <span class="text-xs font-bold" style="color:${sColor}">${s.status||'—'}</span>
+      </div>
+      <p class="font-bold text-sm text-gray-800 mb-0.5">${s.stipNo}</p>
+      <p class="text-sm font-semibold text-gray-700">${(s.title||'')+' '+(s.firstName||'')+' '+(s.lastName||'')}</p>
+      ${s.engFirstName ? `<p class="text-xs text-gray-400">${s.engFirstName} ${s.engLastName}</p>` : ''}
+      <div class="mt-2 space-y-0.5 text-xs text-gray-500">
+        <div><b>สถาบัน:</b> ${s.institution||'—'} &nbsp;|&nbsp; <b>ระดับ:</b> ${s.level||'—'}</div>
+        <div><b>ปีเกิด:</b> ${s.birthYear||'—'} &nbsp;|&nbsp; <b>โทร:</b> ${s.phone||'—'}</div>
+        ${s.idCard ? `<div><b>บัตร:</b> ${s.idCard.substring(0,3)+'-'+s.idCard.substring(3,9)+'-'+s.idCard.substring(9)}</div>` : ''}
+        <div class="text-gray-300"><b>สร้าง:</b> ${s.createdAt||'—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function dupSelectPrimary(stipNo) {
+  _dupPrimary = stipNo;
+  _renderDupGroup();
+}
+
+function dupPrev() {
+  if (_dupIdx > 0) { _dupIdx--; _dupPrimary = null; _renderDupGroup(); }
+}
+function dupNext() {
+  if (_dupIdx < _dupGroups.length - 1) { _dupIdx++; _dupPrimary = null; _renderDupGroup(); }
+}
+
+function dupSkip() {
+  _dupSkipped++;
+  if (_dupIdx < _dupGroups.length - 1) {
+    _dupIdx++; _dupPrimary = null; _renderDupGroup();
+  } else {
+    _showDupDone();
+  }
+}
+
+async function dupMerge() {
+  const g = _dupGroups[_dupIdx];
+  if (!g || !_dupPrimary) return;
+
+  // Collect all non-primary StipNos in this group
+  const toMerge = g.students.filter(s => s.stipNo !== _dupPrimary).map(s => s.stipNo);
+  if (!toMerge.length) return;
+
+  // Confirm
+  const primaryName = (g.students.find(s => s.stipNo === _dupPrimary) || {});
+  const cf = await Swal.fire({
+    title: 'ยืนยันการผสาน',
+    html: `<div class="text-left text-sm space-y-1">
+      <p>ข้อมูลหลัก: <b class="text-amber-800">${_dupPrimary}</b> — ${(primaryName.title||'')+' '+(primaryName.firstName||'')+' '+(primaryName.lastName||'')}</p>
+      <p>ลบออก: <b class="text-red-600">${toMerge.join(', ')}</b></p>
+      <p class="text-gray-400 text-xs mt-2">ข้อมูลที่ขาดหายในข้อมูลหลักจะถูกเติมจากระเบียนที่ลบ</p>
+    </div>`,
+    icon: 'warning', showCancelButton: true,
+    confirmButtonText: 'ผสานและลบ', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#b45309'
+  });
+  if (!cf.isConfirmed) return;
+
+  showLoader(true, 'กำลังผสานข้อมูล...');
+  try {
+    let allOk = true;
+    for (const mStipNo of toMerge) {
+      const res = await API.mergeStudents(_dupPrimary, mStipNo);
+      if (res.status !== 'success') {
+        showLoader(false);
+        Swal.fire('ผสานไม่สำเร็จ', res.message, 'error');
+        allOk = false; break;
+      }
+    }
+    showLoader(false);
+    if (!allOk) return;
+
+    _dupMerged++;
+    // Remove merged group from array
+    _dupGroups.splice(_dupIdx, 1);
+    // Also remove other groups that reference any of the deleted stipNos
+    const deletedStipNos = new Set(toMerge);
+    for (let i = _dupGroups.length - 1; i >= 0; i--) {
+      if (_dupGroups[i].students.some(s => deletedStipNos.has(s.stipNo))) {
+        _dupGroups.splice(i, 1);
+        if (i < _dupIdx) _dupIdx--;
+      }
+    }
+
+    Swal.fire({ toast:true, position:'top-end', icon:'success',
+      title:`ผสานสำเร็จ: ${toMerge.join(', ')} → ${_dupPrimary}`, timer:3000, showConfirmButton:false });
+
+    if (_dupGroups.length === 0) {
+      _showDupDone();
+    } else {
+      if (_dupIdx >= _dupGroups.length) _dupIdx = _dupGroups.length - 1;
+      _dupPrimary = null;
+      document.getElementById('dupModalSubtitle').textContent = `เหลือ ${_dupGroups.length} กลุ่ม`;
+      _renderDupGroup();
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+  }
+}
+
+function _showDupDone() {
+  _showDupState('done');
+  document.getElementById('dupProgressBar').style.width = '100%';
+  document.getElementById('dupDoneMsg').textContent =
+    _dupMerged > 0 ? `ผสานสำเร็จ ${_dupMerged} กลุ่ม` : 'ตรวจสอบครบทุกกลุ่มแล้ว';
+  document.getElementById('dupDoneDetail').textContent =
+    `ผสาน ${_dupMerged} กลุ่ม · ข้าม ${_dupSkipped} กลุ่ม`;
+  lucide.createIcons();
+}
+
 loadStudents();
 initDBStatus();
 </script>

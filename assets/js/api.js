@@ -42,6 +42,10 @@ const API = {
   async deleteFile(fileId)    { return apiPost({ action: 'deleteFile',  fileId }); },
   async countBlankRows()      { return apiGet({ action: 'countBlankRows' }); },
   async cleanBlankRows()      { return apiPost({ action: 'cleanBlankRows', reqUser: (getUser()||{}).username||'Admin' }); },
+  async findDuplicates()      { return apiGet({ action: 'findDuplicates' }); },
+  async mergeStudents(primaryStipNo, mergeStipNo) {
+    return apiPost({ action: 'mergeStudents', primaryStipNo, mergeStipNo, reqUser: (getUser()||{}).username||'Admin' });
+  },
 };
 
 /* ── Shared Loader ── */
