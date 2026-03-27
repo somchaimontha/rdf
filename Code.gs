@@ -1140,7 +1140,17 @@ function findDuplicates() {
     return a.confidence === 'high' ? -1 : 1;
   });
 
-  return { status:'success', total: groups.length, groups };
+  // Count by type for summary stats
+  const byReason = { IDCard:0, ThaiName:0, EngName:0 };
+  groups.forEach(g => { if (byReason[g.reason] !== undefined) byReason[g.reason]++; });
+
+  return {
+    status:  'success',
+    total:   groups.length,
+    scanned: students.length,          // total students checked
+    byReason,                          // breakdown by match type
+    groups
+  };
 }
 
 /**
