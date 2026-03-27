@@ -1036,7 +1036,8 @@ async function submitAdminForm() {
   try {
     const payload = { Username:uname, FirstName:fname, LastName:lname, Role:role, Status:status };
     if (pass) payload.Password = pass;
-    const r = await API.saveAdmin(payload);
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
+    const r = await Promise.race([API.saveAdmin(payload), _t]);
     btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> บันทึก';
     if (r.status === 'success') {
       document.getElementById('adminModal').classList.add('hidden');
@@ -1369,7 +1370,8 @@ async function saveMajors(key) {
   if (!settingKey) return;
   try {
     showLoader(true, 'กำลังบันทึก...');
-    const r = await API.saveSetting(settingKey, majorsState[key]);
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
+    const r = await Promise.race([API.saveSetting(settingKey, majorsState[key]), _t]);
     showLoader(false);
     if (r.status === 'success') {
       if (key === 'MBS' || key === 'VC') { if (!RDF.MAJORS) RDF.MAJORS={}; RDF.MAJORS[key]=[...majorsState[key]]; }
@@ -1412,7 +1414,8 @@ async function saveGeminiKey() {
   btn.disabled = true;
   try {
     showLoader(true, 'กำลังบันทึก...');
-    const r = await API.saveApiKey(key);
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
+    const r = await Promise.race([API.saveApiKey(key), _t]);
     showLoader(false);
     btn.disabled = false;
     if (r.status === 'success') {
