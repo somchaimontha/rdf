@@ -1462,22 +1462,23 @@ async function saveStudent() {
     }
 
     // ── Upload profile photo to Drive first (so URL is in the save payload) ──
+    let _photoErrMsg = '';
     if (_photoFile) {
+      showLoader(true, 'กำลังอัปโหลดรูปโปรไฟล์...');
       try {
-        showLoader(true, 'กำลังอัปโหลดรูปโปรไฟล์...');
         const _pb64 = await _fileToBase64(_photoFile);
         const _safeName = (data.StipNo || 'new') + '_photo_' + Date.now() + '.' + (_photoFile.name.split('.').pop() || 'jpg');
-        const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา photo upload')), 30000));
+        const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา photo upload (30s)')), 30000));
         const _pr = await Promise.race([API.uploadPhoto(_pb64, _photoFile.type, _safeName, data.Institution || 'Other'), _pt]);
         if (_pr.status === 'success') {
           data.ProfilePicURL = _pr.url;
           document.getElementById('f_profilePicUrl').value = _pr.url;
-          _photoFile = null; // uploaded — clear pending
+          _photoFile = null;
         } else {
-          Swal.fire({ toast:true, position:'top-end', icon:'warning', title:'อัปโหลดรูปไม่สำเร็จ: ' + (_pr.message||''), timer:3000, showConfirmButton:false });
+          _photoErrMsg = _pr.message || 'ไม่ทราบสาเหตุ';
         }
       } catch(pe) {
-        Swal.fire({ toast:true, position:'top-end', icon:'warning', title:'อัปโหลดรูปไม่สำเร็จ: ' + pe.message, timer:3000, showConfirmButton:false });
+        _photoErrMsg = pe.message;
       }
       showLoader(true, t('saving'));
     }
@@ -1497,18 +1498,22 @@ async function saveStudent() {
       if (_docFiles.length > 0) {
         await uploadPendingDocs(finalStipNo, data.Institution || 'Other');
       }
+      // Build success message — include photo error if any
+      const _photoWarn = _photoErrMsg
+        ? `<div class="mt-2 p-2 rounded text-xs text-left" style="background:#fef3c7;color:#92400e">⚠️ รูปโปรไฟล์อัปโหลดไม่สำเร็จ: ${_photoErrMsg}<br><span class="text-xs opacity-75">กรุณาเปิดหน้าแก้ไขแล้วอัปโหลดรูปใหม่</span></div>`
+        : '';
       await Swal.fire({
         title: t('success'),
-        html: `${isEdit ? t('updated') : t('saved')}<br><b>Stip No.: ${finalStipNo}</b>`,
+        html: `${isEdit ? t('updated') : t('saved')}<br><b>Stip No.: ${finalStipNo}</b>${_photoWarn}`,
         icon: 'success', confirmButtonColor: '#1e3a8a'
       });
       window.location.href = `student-profile.html?stipNo=${encodeURIComponent(finalStipNo)}`;
     } else {
-      // Show which field/message caused the failure
       const _errDetail = result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ';
+      const _photoWarn = _photoErrMsg ? `<br><span class="text-xs text-yellow-600">⚠️ รูปโปรไฟล์: ${_photoErrMsg}</span>` : '';
       Swal.fire({
         title: t('error'),
-        html: `<div class="text-left text-sm"><b>สาเหตุ:</b> ${_errDetail}</div>`,
+        html: `<div class="text-left text-sm"><b>สาเหตุ:</b> ${_errDetail}${_photoWarn}</div>`,
         icon: 'error'
       });
     }
