@@ -772,7 +772,7 @@ function parseOCRText(ocrText) {
     'ถ้าหาไม่พบให้ใส่ null\nOCR text:\n' + ocrText.substring(0, 2000);
 
   try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
     const resp = UrlFetchApp.fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -844,7 +844,7 @@ function parseDocumentAI(base64Data, mimeType) {
     '}';
 
   try {
-    const url  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+    const url  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
     const resp = UrlFetchApp.fetch(url, {
       method:  'POST',
       headers: { 'content-type': 'application/json' },
