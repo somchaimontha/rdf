@@ -77,7 +77,8 @@ function doPost(e) {
     else if (action === 'deletePhoto')    result = deletePhoto(body.fileId);
     else if (action === 'deleteFile')     result = deleteFile(body.fileId);
     else if (action === 'cleanBlankRows') result = cleanBlankStipNoRows(body.reqUser);
-    else if (action === 'mergeStudents')  result = mergeStudents(body.primaryStipNo, body.mergeStipNo, body.reqUser);
+    else if (action === 'mergeStudents')     result = mergeStudents(body.primaryStipNo, body.mergeStipNo, body.reqUser);
+    else if (action === 'mergeStudentRows')  result = mergeStudentRows(body.primaryRowIdx, body.mergeRowIdx, body.reqUser);
     else result = { status: 'error', message: 'Invalid POST action: ' + action };
   } catch (error) {
     result = { status: 'error', message: error.toString() };
@@ -1053,12 +1054,22 @@ function findDuplicates() {
   const sheet = db.getSheetByName('Students');
   if (!sheet) return { status:'error', message:'Students sheet not found.' };
 
-  const data = sheet.getDataRange().getDisplayValues();
-  const headers = data[0];
+  // Use getValues() (raw) instead of getDisplayValues() — significantly faster
+  // as it skips cell formatting for every value in the sheet.
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => h.toString().trim());
   const col = {};
   headers.forEach((h, i) => col[h] = i);
-  const _c = (row, name) =>
-    (col[name] !== undefined && row[col[name]] !== undefined) ? row[col[name]].toString().trim() : '';
+  const _c = (row, name) => {
+    if (col[name] === undefined || row[col[name]] === undefined) return '';
+    const v = row[col[name]];
+    if (v === null || v === '') return '';
+    // getValues() returns Date objects for date cells — format to readable string
+    if (v instanceof Date) {
+      return Utilities.formatDate(v, 'Asia/Bangkok', 'dd/MM/yyyy HH:mm');
+    }
+    return v.toString().trim();
+  };
 
   // Build flat student list (only rows with StipNo)
   const students = [];
@@ -1068,6 +1079,7 @@ function findDuplicates() {
     if (!stipNo) continue;
     students.push({
       stipNo,
+      _rowIdx:      i + 1,          // 1-based sheet row — unique even when StipNo duplicates
       idCard:       _c(row, 'IDCard'),
       title:        _c(row, 'Title'),
       firstName:    _c(row, 'FirstName'),
@@ -1088,11 +1100,23 @@ function findDuplicates() {
 
   function _addGroup(reason, confidence, matchValue, group) {
     if (group.length < 2) return;
-    const key = group.map(s => s.stipNo).sort().join('||');
+    // Key by _rowIdx (always unique per row) — prevents deduplication errors
+    // when multiple students share the same StipNo (duplicate-StipNo scenario).
+    const key = group.map(s => s._rowIdx).sort(function(a,b){return a-b;}).join('||');
     if (seenKeys.has(key)) return;
     seenKeys.add(key);
     groups.push({ reason, confidence, matchValue, students: group });
   }
+
+  // ── 0. StipNo duplicates (critical — same record saved multiple times) ──
+  const stipNoMap = {};
+  students.forEach(s => {
+    if (!stipNoMap[s.stipNo]) stipNoMap[s.stipNo] = [];
+    stipNoMap[s.stipNo].push(s);
+  });
+  Object.entries(stipNoMap).forEach(([sn, grp]) => {
+    _addGroup('StipNo', 'critical', sn, grp);
+  });
 
   // ── 1. IDCard duplicates (strongest signal) ──────────────────
   const idCardMap = {};
@@ -1134,14 +1158,12 @@ function findDuplicates() {
     _addGroup('EngName', 'medium', fn + ' ' + ln, grp);
   });
 
-  // Sort: high confidence first, then medium
-  groups.sort((a, b) => {
-    if (a.confidence === b.confidence) return 0;
-    return a.confidence === 'high' ? -1 : 1;
-  });
+  // Sort: critical → high → medium
+  const ORDER = { critical:0, high:1, medium:2 };
+  groups.sort((a, b) => (ORDER[a.confidence]||9) - (ORDER[b.confidence]||9));
 
   // Count by type for summary stats
-  const byReason = { IDCard:0, ThaiName:0, EngName:0 };
+  const byReason = { StipNo:0, IDCard:0, ThaiName:0, EngName:0 };
   groups.forEach(g => { if (byReason[g.reason] !== undefined) byReason[g.reason]++; });
 
   return {
@@ -1210,6 +1232,62 @@ function mergeStudents(primaryStipNo, mergeStipNo, reqUser) {
 
   return { status:'success', message: mergeStipNo + ' ผสานเข้า ' + primaryStipNo + ' สำเร็จ',
            primaryStipNo, mergeStipNo };
+}
+
+/**
+ * Merge two student rows by their 1-based sheet row indices.
+ * Works even when both rows have identical StipNo.
+ * Primary row wins on non-empty fields; merge row is deleted.
+ */
+function mergeStudentRows(primaryRowIdx, mergeRowIdx, reqUser) {
+  primaryRowIdx = parseInt(primaryRowIdx);
+  mergeRowIdx   = parseInt(mergeRowIdx);
+  if (!primaryRowIdx || !mergeRowIdx)
+    return { status:'error', message:'Row indices required.' };
+  if (primaryRowIdx === mergeRowIdx)
+    return { status:'error', message:'ไม่สามารถผสานแถวกับตัวเองได้' };
+
+  const sheet = db.getSheetByName('Students');
+  if (!sheet) return { status:'error', message:'Students sheet not found.' };
+
+  const lastRow = sheet.getLastRow();
+  if (primaryRowIdx > lastRow || mergeRowIdx > lastRow)
+    return { status:'error', message:'Row index out of range.' };
+
+  const headers    = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const primaryRow = sheet.getRange(primaryRowIdx, 1, 1, headers.length).getValues()[0];
+  const mergeRow   = sheet.getRange(mergeRowIdx,   1, 1, headers.length).getValues()[0];
+
+  const primaryStipNo = (primaryRow[0] || '').toString().trim();
+  const mergeStipNo   = (mergeRow[0]   || '').toString().trim();
+
+  const _IMMUTABLE = ['StipNo', 'CreatedAt'];
+  const now = new Date().toLocaleString('en-GB');
+  const TEXT_FIELDS_LOCAL = ['StipNo','IDCard','Phone1','Phone2','StudentID',
+    'Parent1_IDCard','Parent2_IDCard','BirthDay','BirthMonth'];
+
+  // Merge: primary wins; fill blanks from merge row
+  const mergedRow = headers.map((h, j) => {
+    if (_IMMUTABLE.includes(h)) return primaryRow[j];
+    if (h === 'UpdatedAt')      return now;
+    const pVal = primaryRow[j] !== undefined ? primaryRow[j].toString().trim() : '';
+    const mVal = mergeRow[j]   !== undefined ? mergeRow[j].toString().trim()   : '';
+    return pVal !== '' ? primaryRow[j] : (mVal !== '' ? mergeRow[j] : '');
+  });
+
+  // Write merged data to primary row
+  const range = sheet.getRange(primaryRowIdx, 1, 1, headers.length);
+  range.setNumberFormats([headers.map(h => TEXT_FIELDS_LOCAL.includes(h) ? '@' : '')]);
+  range.setValues([mergedRow]);
+
+  // Delete merge row — if it's above primary, primary index shifts; but we already wrote, so safe
+  sheet.deleteRow(mergeRowIdx);
+
+  logAction(reqUser || 'Admin', 'MERGE_STUDENT_ROWS',
+    'ผสาน row ' + mergeRowIdx + ' (' + mergeStipNo + ') → row ' + primaryRowIdx + ' (' + primaryStipNo + ')');
+
+  return { status:'success', primaryStipNo, mergeStipNo,
+           message: 'ผสานสำเร็จ: row ' + mergeRowIdx + ' → row ' + primaryRowIdx };
 }
 
 function getLogs(limit) {
