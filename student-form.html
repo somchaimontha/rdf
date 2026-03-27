@@ -1166,6 +1166,7 @@ function validateIDCard(el) {
 // ── Document attachments ───────────────────────────────────────────
 let _docFiles    = [];  // [{file, label}]
 let _existingDocs = []; // [{fileId, name, url, mimeType, size, createdAt}]
+let _photoFile   = null; // pending profile photo File object (not yet uploaded)
 
 function _docIcon(mimeType) {
   if (mimeType === 'application/pdf') return '📄';
@@ -1355,8 +1356,9 @@ async function uploadPendingDocs(stipNo, institution) {
 
 function previewImg(e) {
   const f = e.target.files[0]; if (!f) return;
+  _photoFile = f; // store for upload during save
   const r = new FileReader();
-  r.onload = ev => { document.getElementById('imgPreview').src = ev.target.result; document.getElementById('f_profilePicUrl').value = ''; };
+  r.onload = ev => { document.getElementById('imgPreview').src = ev.target.result; };
   r.readAsDataURL(f);
 }
 
@@ -1437,6 +1439,50 @@ async function saveStudent() {
       Swal.fire({ toast:true, position:'top-end', icon:'warning', title:`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}% — ข้อมูลยังไม่ครบ`, timer:3000, showConfirmButton:false });
     }
 
+    // ── Warn if optional-but-important fields are empty ──
+    const _emptyWarnings = [];
+    if (!data.EntryTerm) _emptyWarnings.push('ภาคการศึกษา (Entry Term)');
+    if (!data.Weight)    _emptyWarnings.push('น้ำหนัก (Weight)');
+    if (!data.Height)    _emptyWarnings.push('ส่วนสูง (Height)');
+    if (!_photoFile && !data.ProfilePicURL) _emptyWarnings.push('รูปโปรไฟล์ (Profile Photo)');
+    if (_emptyWarnings.length > 0) {
+      showLoader(false);
+      const _warnHtml = _emptyWarnings.map(w =>
+        `<div class="flex items-center gap-2 py-0.5"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;display:inline-block"></span><span class="text-sm">${w}</span></div>`
+      ).join('');
+      const _warnRes = await Swal.fire({
+        title: 'ข้อมูลยังไม่ครบ',
+        html: `<div class="text-left mb-2 text-sm text-gray-500">ฟิลด์ต่อไปนี้ยังว่างอยู่:</div><div class="text-left">${_warnHtml}</div>`,
+        icon: 'warning', showCancelButton: true,
+        confirmButtonText: 'บันทึกต่อ (ข้าม)', cancelButtonText: 'กลับไปกรอก',
+        confirmButtonColor: '#f59e0b',
+      });
+      if (!_warnRes.isConfirmed) return;
+      showLoader(true, t('saving'));
+    }
+
+    // ── Upload profile photo to Drive first (so URL is in the save payload) ──
+    if (_photoFile) {
+      try {
+        showLoader(true, 'กำลังอัปโหลดรูปโปรไฟล์...');
+        const _pb64 = await _fileToBase64(_photoFile);
+        const _safeName = (data.StipNo || 'new') + '_photo_' + Date.now() + '.' + (_photoFile.name.split('.').pop() || 'jpg');
+        const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา photo upload')), 30000));
+        const _pr = await Promise.race([API.uploadPhoto(_pb64, _photoFile.type, _safeName, data.Institution || 'Other'), _pt]);
+        if (_pr.status === 'success') {
+          data.ProfilePicURL = _pr.url;
+          document.getElementById('f_profilePicUrl').value = _pr.url;
+          _photoFile = null; // uploaded — clear pending
+        } else {
+          Swal.fire({ toast:true, position:'top-end', icon:'warning', title:'อัปโหลดรูปไม่สำเร็จ: ' + (_pr.message||''), timer:3000, showConfirmButton:false });
+        }
+      } catch(pe) {
+        Swal.fire({ toast:true, position:'top-end', icon:'warning', title:'อัปโหลดรูปไม่สำเร็จ: ' + pe.message, timer:3000, showConfirmButton:false });
+      }
+      showLoader(true, t('saving'));
+    }
+
+    // ── Save student data ──
     const _saveTimeout = new Promise((_, rej) =>
       setTimeout(() => rej(new Error('หมดเวลา (60s) — GAS ไม่ตอบสนอง กรุณาลองใหม่')), 60000)
     );
@@ -1458,11 +1504,21 @@ async function saveStudent() {
       });
       window.location.href = `student-profile.html?stipNo=${encodeURIComponent(finalStipNo)}`;
     } else {
-      Swal.fire(t('error'), result.message, 'error');
+      // Show which field/message caused the failure
+      const _errDetail = result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ';
+      Swal.fire({
+        title: t('error'),
+        html: `<div class="text-left text-sm"><b>สาเหตุ:</b> ${_errDetail}</div>`,
+        icon: 'error'
+      });
     }
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error'), t('network_error') + ': ' + e.message, 'error');
+    Swal.fire({
+      title: t('error'),
+      html: `<div class="text-left text-sm"><b>ข้อผิดพลาด:</b> ${e.message}<br><span class="text-gray-400 text-xs">หากเกิดซ้ำ — รอ GAS ตื่น (cold start) แล้วลองใหม่</span></div>`,
+      icon: 'error'
+    });
   }
 }
 
