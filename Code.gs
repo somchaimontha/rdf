@@ -288,7 +288,7 @@ function getStudentByStipNo(stipNo) {
   if (!sheet) return { status:'error', message:'Students sheet not found.' };
   // Use getDisplayValues() to preserve text-formatted cells (leading zeros)
   const data = sheet.getDataRange().getDisplayValues();
-  const headers = data[0];
+  const headers = data[0].map(h => h.toString().trim());
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0].toString() === stipNo.toString()) {
@@ -310,7 +310,7 @@ function saveStudentData(d) {
   if (!sheet) return { status:'error', message:'Students sheet not found.' };
 
   const allData = sheet.getDataRange().getValues();
-  const headers = allData[0];
+  const headers = allData[0].map(h => h.toString().trim());
   const col = {};
   headers.forEach((h, i) => col[h] = i);
 
@@ -426,7 +426,7 @@ function updateStudentData(d) {
   if (!d.StipNo) return { status:'error', message:'StipNo required for update.' };
 
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
+  const headers = data[0].map(h => h.toString().trim());
   const col = {};
   headers.forEach((h, i) => col[h] = i);
 
