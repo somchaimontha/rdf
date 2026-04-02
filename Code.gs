@@ -978,18 +978,14 @@ function setupDriveFolders() {
 }
 
 /**
- * Resolve the correct sub-folder for a given type ('Photos'/'Documents')
- * and institution ('MBS'/'VC'/'UNI').
- * Reads folder ID from Script Properties (set by setupDriveFolders).
- * Does NOT call createFolder — safe to use in web app context.
+ * Resolve folder ID from Script Properties (set by setupDriveFolders).
  */
-function _resolveFolder(type, institution) {
+function _resolveFolderId(type, institution) {
   const validTypes = ['Photos', 'Documents'];
   const validInst  = ['MBS', 'VC', 'UNI'];
   const t    = validTypes.includes(type) ? type : 'Photos';
   const inst = validInst.includes(institution) ? institution : 'Other';
   const key  = 'drive_' + t.toLowerCase() + '_' + inst;
-
   const folderId = PropertiesService.getScriptProperties().getProperty(key);
   if (!folderId) {
     throw new Error(
@@ -997,12 +993,61 @@ function _resolveFolder(type, institution) {
       '(Missing property: ' + key + ')'
     );
   }
-  return DriveApp.getFolderById(folderId);
+  return folderId;
+}
+
+/**
+ * Upload file to Drive using REST API via UrlFetchApp (no DriveApp needed).
+ * Uses multipart/related upload with base64 content.
+ * Returns fileId of the created file.
+ */
+function _driveUpload(base64Data, mimeType, filename, folderId) {
+  const token    = ScriptApp.getOAuthToken();
+  const boundary = 'rdf_' + Date.now();
+  const metadata = JSON.stringify({ name: filename, parents: [folderId] });
+
+  // Build multipart body: metadata JSON + base64 file content
+  const body =
+    '--' + boundary + '\r\n' +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    metadata + '\r\n' +
+    '--' + boundary + '\r\n' +
+    'Content-Type: ' + mimeType + '\r\n' +
+    'Content-Transfer-Encoding: base64\r\n\r\n' +
+    base64Data + '\r\n' +
+    '--' + boundary + '--';
+
+  const resp = UrlFetchApp.fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    {
+      method:  'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type':  'multipart/related; boundary=' + boundary
+      },
+      payload:           Utilities.newBlob(body).getBytes(),
+      muteHttpExceptions: true
+    }
+  );
+  const result = JSON.parse(resp.getContentText());
+  if (!result.id) throw new Error('Drive upload failed: ' + resp.getContentText());
+
+  // Set public sharing (anyone with link → view)
+  UrlFetchApp.fetch(
+    'https://www.googleapis.com/drive/v3/files/' + result.id + '/permissions',
+    {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      payload: JSON.stringify({ role: 'reader', type: 'anyone' }),
+      muteHttpExceptions: true
+    }
+  );
+  return result.id;
 }
 
 /**
  * Upload a profile photo to Drive → Photos/<institution>/<filename>
- * Params: base64Data (string), mimeType, filename, institution ('MBS'|'VC'|'UNI')
+ * Uses Drive REST API (no DriveApp) — works in web app context.
  * Returns: { status, url, fileId, path }
  */
 function uploadPhoto(base64Data, mimeType, filename, institution) {
@@ -1011,24 +1056,21 @@ function uploadPhoto(base64Data, mimeType, filename, institution) {
   if (!filename)   filename = 'photo_' + Date.now() + '.jpg';
   institution = institution || 'Other';
 
-  // Type check
   if (!ALLOWED_PHOTO_TYPES.includes(mimeType))
     return { status:'error', message:'ประเภทไฟล์ไม่รองรับ — รองรับ JPG, PNG, WEBP เท่านั้น' };
-  // Size check (base64 → approx decoded bytes = length × 0.75)
   const approxBytes = Math.round(base64Data.length * 0.75);
   if (approxBytes > PHOTO_MAX_BYTES)
     return { status:'error', message:'รูปภาพใหญ่เกิน 1 MB — กรุณาบีบอัดก่อนอัปโหลด (approx ' + Math.round(approxBytes/1024) + ' KB)' };
 
   try {
-    const folder  = _resolveFolder('Photos', institution);
-    const decoded = Utilities.base64Decode(base64Data);
-    const blob    = Utilities.newBlob(decoded, mimeType, filename);
-    const file    = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    const fileId = file.getId();
-    const url    = 'https://drive.google.com/uc?export=view&id=' + fileId;
-    const path   = 'Photos/' + institution + '/' + filename;
-    return { status:'success', url, fileId, path };
+    const folderId = _resolveFolderId('Photos', institution);
+    const fileId   = _driveUpload(base64Data, mimeType, filename, folderId);
+    return {
+      status: 'success',
+      url:    'https://drive.google.com/uc?export=view&id=' + fileId,
+      fileId,
+      path:   'Photos/' + institution + '/' + filename
+    };
   } catch(e) {
     return { status:'error', message: e.toString() };
   }
@@ -1036,7 +1078,7 @@ function uploadPhoto(base64Data, mimeType, filename, institution) {
 
 /**
  * Upload a document to Drive → Documents/<institution>/<filename>
- * Params: base64Data (string), mimeType, filename, institution, stipNo
+ * Uses Drive REST API (no DriveApp) — works in web app context.
  * Returns: { status, url, fileId, path }
  */
 function uploadDocument(base64Data, mimeType, filename, institution, stipNo) {
@@ -1045,37 +1087,42 @@ function uploadDocument(base64Data, mimeType, filename, institution, stipNo) {
   if (!filename)   filename = (stipNo ? stipNo + '_' : '') + 'doc_' + Date.now();
   institution = institution || 'Other';
 
-  // Type check
   if (!ALLOWED_DOCUMENT_TYPES.includes(mimeType))
     return { status:'error', message:'ประเภทไฟล์ไม่รองรับ — รองรับ PDF, JPG, PNG เท่านั้น' };
-  // Size check
   const approxBytes = Math.round(base64Data.length * 0.75);
   if (approxBytes > DOCUMENT_MAX_BYTES)
     return { status:'error', message:'ไฟล์ใหญ่เกิน 5 MB (' + Math.round(approxBytes/1024/1024*10)/10 + ' MB)' };
 
   try {
-    const folder  = _resolveFolder('Documents', institution);
-    const decoded = Utilities.base64Decode(base64Data);
-    const blob    = Utilities.newBlob(decoded, mimeType, filename);
-    const file    = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    const fileId = file.getId();
-    const url    = 'https://drive.google.com/file/d/' + fileId + '/view';
-    const path   = 'Documents/' + institution + '/' + filename;
-    return { status:'success', url, fileId, path };
+    const folderId = _resolveFolderId('Documents', institution);
+    const fileId   = _driveUpload(base64Data, mimeType, filename, folderId);
+    return {
+      status: 'success',
+      url:    'https://drive.google.com/file/d/' + fileId + '/view',
+      fileId,
+      path:   'Documents/' + institution + '/' + filename
+    };
   } catch(e) {
     return { status:'error', message: e.toString() };
   }
 }
 
 /**
- * Move a Drive file to trash (soft-delete).
- * Works for both photos and documents.
+ * Move a Drive file to trash via REST API (no DriveApp).
  */
 function deleteFile(fileId) {
   if (!fileId) return { status:'error', message:'No file ID provided.' };
   try {
-    DriveApp.getFileById(fileId).setTrashed(true);
+    const token = ScriptApp.getOAuthToken();
+    UrlFetchApp.fetch(
+      'https://www.googleapis.com/drive/v3/files/' + fileId,
+      {
+        method:  'PATCH',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        payload: JSON.stringify({ trashed: true }),
+        muteHttpExceptions: true
+      }
+    );
     return { status:'success' };
   } catch(e) {
     return { status:'error', message: e.toString() };
@@ -1086,39 +1133,48 @@ function deleteFile(fileId) {
 function deletePhoto(fileId) { return deleteFile(fileId); }
 
 /**
- * List uploaded documents for a student in Drive → Documents/<inst>/
- * Matches files whose name starts with "<stipNo>_"
+ * List uploaded documents for a student via Drive REST API (no DriveApp).
+ * Searches all document sub-folders for files starting with "<stipNo>_".
  * Returns: { status, data: [{fileId, name, url, mimeType, size, createdAt}] }
  */
 function getStudentDocs(stipNo) {
   if (!stipNo) return { status:'error', message:'No stipNo provided.' };
-  const validInst = ['MBS','VC','UNI','Other'];
-  const results = [];
   try {
-    const root = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    const docIter = root.getFoldersByName('Documents');
-    if (!docIter.hasNext()) return { status:'success', data:[] };
-    const docFolder = docIter.next();
-    for (const inst of validInst) {
-      const instIter = docFolder.getFoldersByName(inst);
-      if (!instIter.hasNext()) continue;
-      const instFolder = instIter.next();
-      const files = instFolder.getFiles();
-      while (files.hasNext()) {
-        const f = files.next();
-        const name = f.getName();
-        if (name.startsWith(stipNo + '_')) {
+    const token = ScriptApp.getOAuthToken();
+    const props = PropertiesService.getScriptProperties();
+    const results = [];
+
+    ['MBS','VC','UNI','Other'].forEach(inst => {
+      const folderId = props.getProperty('drive_documents_' + inst);
+      if (!folderId) return;
+
+      // Search for files in this folder whose name starts with stipNo_
+      const q = encodeURIComponent(
+        '"' + folderId + '" in parents and name contains "' + stipNo + '_" and trashed = false'
+      );
+      const resp = UrlFetchApp.fetch(
+        'https://www.googleapis.com/drive/v3/files?q=' + q +
+        '&fields=files(id,name,mimeType,size,createdTime)&pageSize=50',
+        {
+          headers: { 'Authorization': 'Bearer ' + token },
+          muteHttpExceptions: true
+        }
+      );
+      const data = JSON.parse(resp.getContentText());
+      (data.files || []).forEach(f => {
+        if (f.name.startsWith(stipNo + '_')) {
           results.push({
-            fileId:    f.getId(),
-            name:      name,
-            url:       'https://drive.google.com/file/d/' + f.getId() + '/view',
-            mimeType:  f.getMimeType(),
-            size:      f.getSize(),
-            createdAt: Utilities.formatDate(f.getDateCreated(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm')
+            fileId:    f.id,
+            name:      f.name,
+            url:       'https://drive.google.com/file/d/' + f.id + '/view',
+            mimeType:  f.mimeType,
+            size:      parseInt(f.size) || 0,
+            createdAt: f.createdTime ? f.createdTime.replace('T',' ').substring(0,16) : ''
           });
         }
-      }
-    }
+      });
+    });
+
     return { status:'success', data: results };
   } catch(e) {
     return { status:'error', message: e.toString() };
