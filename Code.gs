@@ -25,6 +25,55 @@ function authorizeAll() {
   Logger.log('✅ Authorization granted for all services: Spreadsheet, Drive, UrlFetch, Properties');
 }
 
+/**
+ * Add any missing columns to the Students sheet WITHOUT touching existing data.
+ * Run this ONCE from GAS editor when new columns are needed.
+ * Safe to run multiple times — only adds columns that don't exist yet.
+ */
+function patchStudentsColumns() {
+  const REQUIRED_COLUMNS = [
+    'StipNo','IDCard','BirthYear','BirthMonth','BirthDay','StudentID','Status',
+    'Institution','OtherInstitution','CurrentLevel','ScholarshipYear',
+    'EntryYear','EntryTerm','Major','Department','OldSchool',
+    'UniName','UniDuration','UniProvince','UniFaculty','UniMajor',
+    'Title','FirstName','LastName','HasNoSurname',
+    'EngTitle','EngFirstName','EngLastName',
+    'Nickname','Sex','Nationality','Religion',
+    'Talent','Weight','Height','BloodType','Disease',
+    'Phone1','Phone2',
+    'Village','HouseNo','Moo','Tambon','Amphoe','Province',
+    'ParentStatus','ParentStatusOther',
+    'Parent1_IDCard','Parent1_Title','Parent1_FirstName','Parent1_LastName',
+    'Parent2_IDCard','Parent2_Title','Parent2_FirstName','Parent2_LastName',
+    'ProfilePicURL','Remarks','CreatedAt','UpdatedAt'
+  ];
+
+  const sheet = db.getSheetByName('Students');
+  if (!sheet) { Logger.log('❌ Students sheet not found'); return; }
+
+  const lastCol = sheet.getLastColumn();
+  const headers = lastCol > 0
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => h.toString().trim())
+    : [];
+
+  const missing = REQUIRED_COLUMNS.filter(c => !headers.includes(c));
+  if (missing.length === 0) {
+    Logger.log('✅ All columns already exist — nothing to add.');
+    return;
+  }
+
+  missing.forEach((colName, i) => {
+    const newCol = lastCol + i + 1;
+    const cell = sheet.getRange(1, newCol);
+    cell.setValue(colName);
+    cell.setFontWeight('bold');
+    cell.setBackground('#1e3a8a');
+    cell.setFontColor('#ffffff');
+  });
+
+  Logger.log('✅ Added ' + missing.length + ' missing column(s): ' + missing.join(', '));
+}
+
 // ─────────────────────────────────────────────
 // ROUTING
 // ─────────────────────────────────────────────
