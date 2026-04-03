@@ -1,2 +1,5 @@
 api rdfdatasheet/
 .DS_Store
+Code.gs
+appsscript.json
+databasesetup.gs
