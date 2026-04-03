@@ -237,13 +237,13 @@ async function loadProfile() {
 
 function renderProfile(d) {
   const lang = LANG;
-  const picUrl = d.ProfilePicURL ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent((d.FirstName||'?')+' '+(d.LastName||''))}&background=1e3a8a&color=fff&size=128&bold=true`;
+  const _picFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent((d.FirstName||'?')+' '+(d.LastName||''))}&background=1e3a8a&color=fff&size=128&bold=true`;
+  const picUrl = d.ProfilePicURL ? driveImgUrl(d.ProfilePicURL, 'w400') : _picFallback;
 
   // Hero
   const pic = document.getElementById('profilePic');
   pic.src = picUrl;
-  pic.onerror = () => pic.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.FirstName||'?')}&background=1e3a8a&color=fff&size=128`;
+  pic.onerror = () => { pic.onerror = null; pic.src = _picFallback; };
   document.getElementById('profileStipNo').textContent = `Stip No. ${d.StipNo||'—'}`;
   document.getElementById('profileName').textContent = `${d.Title||''}${d.FirstName||''} ${d.LastName||''}`;
   const engName = [d.EngTitle,d.EngFirstName,d.EngLastName].filter(Boolean).join(' ');
