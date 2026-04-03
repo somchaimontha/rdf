@@ -455,7 +455,8 @@ function renderTable() {
 
   pageData.forEach(s => {
     const _avatarName = encodeURIComponent(((s.fname||s.engFname||'?')+' '+(s.lname||s.engLname||'')).trim());
-    const picUrl = s.pic || `https://ui-avatars.com/api/?name=${_avatarName}&background=1e3a8a&color=fff&size=80&bold=true`;
+    const _picFallback = `https://ui-avatars.com/api/?name=${_avatarName}&background=1e3a8a&color=fff&size=80&bold=true`;
+    const picUrl = s.pic ? driveImgUrl(s.pic, 'w80') : _picFallback;
     const statusLabel = LANG === 'en' ? (RDF.STATUS_LABELS_EN[s.status]||s.status) : (RDF.STATUS_LABELS_TH[s.status]||s.status);
     const statusColor = RDF.STATUS_COLORS[s.status] || 'badge-gray';
     const instColor   = RDF.INST_COLORS[s.institution] || '#64748b';
@@ -471,7 +472,7 @@ function renderTable() {
       <td>
         <div class="flex items-center gap-3">
           <img src="${picUrl}" class="w-9 h-9 rounded-full border border-gray-200 object-cover flex-shrink-0"
-               onerror="this.src='https://ui-avatars.com/api/?name=${_avatarName}&background=1e3a8a&color=fff&size=80&bold=true'">
+               onerror="this.onerror=null;this.src='${_picFallback}'">
           <div>
             <div class="font-bold text-gray-800 leading-snug" style="font-size:13.5px">${s.name||'—'}</div>
             ${(() => {

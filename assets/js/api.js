@@ -1,5 +1,23 @@
 /* ── RDF API Calls ── */
 
+/* ── Drive image URL normalizer ── */
+function driveImgUrl(url, sz) {
+  if (!url) return '';
+  sz = sz || 'w400';
+  // Already a thumbnail URL — just update sz
+  if (url.includes('drive.google.com/thumbnail')) {
+    return url.replace(/[?&]sz=[^&]*/g, '').replace(/\?$/, '') + (url.includes('?') ? '&sz=' + sz : '?sz=' + sz);
+  }
+  // Extract file ID from any Drive URL format
+  const m = url.match(/\/d\/([^/?#&]+)/) || url.match(/[?&]id=([^&]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=${sz}`;
+  return url; // Not a Drive URL — return as-is
+}
+
+function avatarUrl(name, size) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=1e3a8a&color=fff&bold=true&size=${size || 64}`;
+}
+
 async function apiGet(params) {
   const url = RDF.GAS_URL + '?' + new URLSearchParams(params).toString();
   const res = await fetch(url);

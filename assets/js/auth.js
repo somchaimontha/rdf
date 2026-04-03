@@ -27,7 +27,11 @@ function renderNavUser(user) {
   const pic = document.getElementById('navAvatar');
   const name = document.getElementById('navUserName');
   const role = document.getElementById('navUserRole');
-  if (pic) pic.src = user.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1e3a8a&color=fff&bold=true&size=64`;
+  if (pic) {
+    const _fallback = avatarUrl(user.name, 64);
+    pic.src = user.pic ? driveImgUrl(user.pic, 'w64') : _fallback;
+    pic.onerror = () => { pic.onerror = null; pic.src = _fallback; };
+  }
   if (name) name.textContent = user.name;
   if (role) role.textContent = user.role;
   const logoutBtn = document.getElementById('btnLogout');

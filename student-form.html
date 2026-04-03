@@ -961,7 +961,12 @@ function fillForm(d) {
   if (d.ProfilePicURL) {
     document.getElementById('f_profilePicUrl').value = d.ProfilePicURL;
     document.getElementById('f_picUrl').value = d.ProfilePicURL;
-    document.getElementById('imgPreview').src = d.ProfilePicURL;
+    const _prevImg = document.getElementById('imgPreview');
+    _prevImg.src = driveImgUrl(d.ProfilePicURL, 'w200');
+    _prevImg.onerror = () => { _prevImg.onerror = null; _prevImg.src = d.ProfilePicURL; };
+    // Change upload label to "เปลี่ยนรูปภาพ" when photo already exists
+    const _uploadLabel = document.querySelector('label[data-t="uploadPhoto"]');
+    if (_uploadLabel) _uploadLabel.textContent = 'เปลี่ยนรูปภาพ';
   }
   // Load existing documents from Drive (edit mode)
   if (d.StipNo) loadExistingDocs(d.StipNo);
