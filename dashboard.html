@@ -61,6 +61,9 @@
     </div>
   </div>
 
+  <!-- System Notice Banner (loaded dynamically) -->
+  <div id="systemNoticeBanner" class="hidden mb-4 fade-in-up"></div>
+
   <!-- Stats -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card fade-in-up delay-1" onclick="window.location.href='students.html?inst=MBS'">
@@ -293,6 +296,35 @@ if (user) {
   renderNavUser(user);
   document.getElementById('welcomeName').textContent = user.name;
   loadStats();
+  loadSystemNotice();
+}
+
+async function loadSystemNotice() {
+  try {
+    const r = await API.getSystemSettings();
+    if (r.status !== 'success' || !r.data) return;
+    const n = r.data['SYSTEM_NOTICE'];
+    if (!n || !n.active || !n.text) return;
+    const styles = {
+      info:    { bg:'#eff6ff', color:'#1d4ed8', border:'#bfdbfe', icon:'info' },
+      warning: { bg:'#fffbeb', color:'#92400e', border:'#fde68a', icon:'alert-triangle' },
+      success: { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0', icon:'check-circle' },
+      danger:  { bg:'#fef2f2', color:'#dc2626', border:'#fecaca', icon:'alert-circle' },
+    };
+    const st = styles[n.type] || styles.info;
+    const banner = document.getElementById('systemNoticeBanner');
+    banner.innerHTML = `
+      <div class="flex items-start gap-3 px-4 py-3 rounded-xl border" style="background:${st.bg};border-color:${st.border};color:${st.color}">
+        <i data-lucide="${st.icon}" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+        <p class="text-sm font-semibold flex-1">${n.text}</p>
+        <button onclick="this.closest('#systemNoticeBanner').classList.add('hidden')"
+                class="opacity-50 hover:opacity-100 transition flex-shrink-0" style="color:${st.color}">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>`;
+    banner.classList.remove('hidden');
+    lucide.createIcons();
+  } catch(e) {}
 }
 function showUserProfile() {
   const u = getUser();
