@@ -214,6 +214,9 @@
     <button class="s-tab" id="tabMajors" onclick="switchTab('majors')">
       <i data-lucide="book-open" class="w-4 h-4"></i> สาขาวิชา
     </button>
+    <button class="s-tab" id="tabGeneral" onclick="switchTab('general')">
+      <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> ตั้งค่าทั่วไป
+    </button>
     <button class="s-tab" id="tabLogs" onclick="switchTab('logs')">
       <i data-lucide="scroll-text" class="w-4 h-4"></i> ประวัติการใช้งาน
     </button>
@@ -411,6 +414,74 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PANEL: GENERAL SETTINGS
+  ════════════════════════════════════════════ -->
+  <div id="panelGeneral" class="hidden">
+
+    <!-- StipNo Prefix Card -->
+    <div class="card fade-in-up mb-5">
+      <div class="card-header" style="background:#1e3a8a">
+        <i data-lucide="hash" class="w-4 h-4"></i> อักษรนำหน้าหมายเลขนักเรียนทุน (StipNo Prefix)
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4">กำหนดอักษรนำหน้าหมายเลขทุนของแต่ละสถาบัน • หากปิดใช้งาน ระบบจะออกหมายเลขเป็นตัวเลขล้วนๆ แทน (เช่น 001, 002)</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="stipPrefixRows">
+          <div class="text-center text-gray-400 py-6 col-span-full text-sm">กำลังโหลด...</div>
+        </div>
+        <div class="flex justify-end mt-4 pt-3 border-t border-gray-100">
+          <button onclick="saveStipPrefixes()" class="btn btn-primary btn-sm">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกการตั้งค่า StipNo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Notice Card -->
+    <div class="card fade-in-up delay-1">
+      <div class="card-header" style="background:#7c3aed">
+        <i data-lucide="megaphone" class="w-4 h-4"></i> ข้อความแจ้งเตือนระบบ
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4">แสดงแบนเนอร์ข้อความที่หน้า Dashboard — ใช้แจ้งข่าวสาร, กำหนดการ, หรือแจ้งเตือนผู้ใช้ทุกคน</p>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-xs font-semibold text-gray-600">สถานะ:</span>
+          <button type="button" onclick="toggleNoticeActive()" class="flex items-center gap-2 focus:outline-none">
+            <div style="position:relative;width:42px;height:24px">
+              <div id="noticeToggleTrack" style="width:42px;height:24px;border-radius:12px;background:#e2e8f0;transition:background .2s"></div>
+              <div id="noticeToggleThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:white;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s"></div>
+            </div>
+            <span id="noticeActiveLabel" class="text-sm font-semibold text-gray-400">ปิดใช้งาน</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div class="md:col-span-2">
+            <label class="field-label">ข้อความ</label>
+            <textarea id="noticeText" class="field-input" rows="3"
+              placeholder="เช่น: ระบบจะปิดปรับปรุงในวันที่ 5 เม.ย. 2568 เวลา 22:00 น."
+              style="resize:vertical" oninput="updateNoticePreview()"></textarea>
+          </div>
+          <div>
+            <label class="field-label">ประเภท (สี)</label>
+            <select id="noticeType" class="field-select" onchange="updateNoticePreview()">
+              <option value="info">ℹ️ ข้อมูล (น้ำเงิน)</option>
+              <option value="warning">⚠️ คำเตือน (เหลือง)</option>
+              <option value="success">✅ ข่าวดี (เขียว)</option>
+              <option value="danger">🚨 ด่วน (แดง)</option>
+            </select>
+            <div id="noticePreviewBox" class="mt-3 p-3 rounded-lg text-xs font-semibold hidden"></div>
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <button onclick="saveSystemNotice()" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #ddd6fe">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกข้อความ
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -861,7 +932,7 @@ if (user) {
 // ─────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────
-const ALL_TABS = ['admins','majors','logs','apikeys','sessions','roles'];
+const ALL_TABS = ['admins','majors','general','logs','apikeys','sessions','roles'];
 
 function switchTab(tab) {
   ALL_TABS.forEach(t => {
@@ -879,6 +950,7 @@ function switchTab(tab) {
   if (tab === 'apikeys')                  loadApiKeyStatus();
   if (tab === 'sessions')                 loadActiveSessions();
   if (tab === 'roles')                    buildPermMatrix();
+  if (tab === 'general')                  loadGeneralSettings();
 }
 
 // ─────────────────────────────────────────────
@@ -1547,6 +1619,185 @@ function buildPermMatrix() {
     </tr>`;
   }).join('');
   lucide.createIcons();
+}
+
+// ─────────────────────────────────────────────
+// GENERAL SETTINGS (StipNo Prefix + System Notice)
+// ─────────────────────────────────────────────
+const STIP_INST = [
+  { key:'MBS',   label:'MBS',   color:'#1d4ed8', bg:'#eff6ff', def:'MBS_', desc:'Maesariang Boripat Suksa' },
+  { key:'VC',    label:'VC',    color:'#ea580c', bg:'#fff7ed', def:'VC_',  desc:'Vocational College' },
+  { key:'UNI',   label:'UNI',   color:'#7c3aed', bg:'#faf5ff', def:'UNI_', desc:'University' },
+  { key:'OTHER', label:'OTHER', color:'#64748b', bg:'#f8fafc', def:'OTH_', desc:'สถาบันอื่นๆ' },
+];
+
+let stipPrefixState = {};
+let noticeState = { active: false, text: '', type: 'info' };
+let generalLoaded = false;
+
+async function loadGeneralSettings() {
+  if (generalLoaded) { renderStipRows(); renderNoticeForm(); return; }
+  try {
+    const r = await API.getSystemSettings();
+    if (r.status === 'success' && r.data) {
+      STIP_INST.forEach(inst => {
+        const saved = r.data['STIP_PREFIX_' + inst.key];
+        stipPrefixState[inst.key] = (saved && typeof saved === 'object')
+          ? { enabled: saved.enabled !== false, prefix: saved.prefix || inst.def }
+          : { enabled: true, prefix: inst.def };
+      });
+      const n = r.data['SYSTEM_NOTICE'];
+      if (n && typeof n === 'object') noticeState = { active: !!n.active, text: n.text || '', type: n.type || 'info' };
+    } else {
+      STIP_INST.forEach(inst => { stipPrefixState[inst.key] = { enabled: true, prefix: inst.def }; });
+    }
+  } catch(e) {
+    STIP_INST.forEach(inst => { stipPrefixState[inst.key] = { enabled: true, prefix: inst.def }; });
+  }
+  generalLoaded = true;
+  renderStipRows();
+  renderNoticeForm();
+}
+
+function renderStipRows() {
+  const container = document.getElementById('stipPrefixRows');
+  if (!container) return;
+  container.innerHTML = STIP_INST.map(inst => {
+    const s = stipPrefixState[inst.key] || { enabled: true, prefix: inst.def };
+    const preview = s.enabled ? (s.prefix + '001') : '001';
+    return `
+    <div class="rounded-xl border-2 p-4 transition-all" id="stipCard_${inst.key}"
+         style="border-color:${s.enabled ? inst.color+'50' : '#e2e8f0'};background:${s.enabled ? inst.bg : '#f8fafc'}">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="font-bold text-sm" style="color:${inst.color}">${inst.label}</span>
+          <span class="text-xs text-gray-400 ml-1.5">${inst.desc}</span>
+        </div>
+        <button type="button" onclick="toggleStipPrefix('${inst.key}')" class="flex items-center gap-1.5 focus:outline-none">
+          <div style="position:relative;width:40px;height:22px">
+            <div id="stipTrack_${inst.key}" style="width:40px;height:22px;border-radius:11px;background:${s.enabled ? inst.color : '#cbd5e1'};transition:background .2s"></div>
+            <div id="stipThumb_${inst.key}" style="position:absolute;top:2px;left:${s.enabled ? '20px' : '2px'};width:18px;height:18px;background:white;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s"></div>
+          </div>
+          <span id="stipLabel_${inst.key}" class="text-xs font-bold" style="color:${s.enabled ? inst.color : '#94a3b8'}">${s.enabled ? 'เปิด' : 'ปิด'}</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs text-gray-500 font-semibold whitespace-nowrap">อักษรนำหน้า</span>
+        <input type="text" id="stipInput_${inst.key}" value="${s.prefix}" maxlength="12"
+               class="field-input text-sm font-mono" style="max-width:110px"
+               placeholder="${inst.def}" oninput="updateStipPreview('${inst.key}')"
+               ${!s.enabled ? 'disabled style="opacity:.4;pointer-events:none"' : ''}>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs text-gray-400">ตัวอย่าง:</span>
+        <code id="stipPreview_${inst.key}" class="px-2 py-0.5 rounded text-xs font-bold"
+              style="background:${s.enabled ? inst.color+'18' : '#f1f5f9'};color:${s.enabled ? inst.color : '#94a3b8'}">${preview}</code>
+      </div>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function toggleStipPrefix(key) {
+  if (!stipPrefixState[key]) return;
+  stipPrefixState[key].enabled = !stipPrefixState[key].enabled;
+  const inst = STIP_INST.find(i => i.key === key);
+  const s = stipPrefixState[key];
+  document.getElementById('stipTrack_' + key).style.background = s.enabled ? inst.color : '#cbd5e1';
+  document.getElementById('stipThumb_' + key).style.left = s.enabled ? '20px' : '2px';
+  const lbl = document.getElementById('stipLabel_' + key);
+  lbl.textContent = s.enabled ? 'เปิด' : 'ปิด'; lbl.style.color = s.enabled ? inst.color : '#94a3b8';
+  const inp = document.getElementById('stipInput_' + key);
+  if (inp) { inp.disabled = !s.enabled; inp.style.opacity = s.enabled ? '1' : '.4'; }
+  const card = document.getElementById('stipCard_' + key);
+  card.style.borderColor = s.enabled ? inst.color + '50' : '#e2e8f0';
+  card.style.background  = s.enabled ? inst.bg : '#f8fafc';
+  updateStipPreview(key);
+}
+
+function updateStipPreview(key) {
+  const s = stipPrefixState[key];
+  const inst = STIP_INST.find(i => i.key === key);
+  const inp = document.getElementById('stipInput_' + key);
+  if (inp) s.prefix = inp.value;
+  const prev = document.getElementById('stipPreview_' + key);
+  if (!prev) return;
+  prev.textContent = s.enabled ? (s.prefix + '001') : '001';
+  prev.style.color = s.enabled ? inst.color : '#94a3b8';
+  prev.style.background = s.enabled ? inst.color + '18' : '#f1f5f9';
+}
+
+async function saveStipPrefixes() {
+  STIP_INST.forEach(inst => {
+    const inp = document.getElementById('stipInput_' + inst.key);
+    if (inp) stipPrefixState[inst.key].prefix = inp.value.trim() || inst.def;
+  });
+  try {
+    showLoader(true, 'กำลังบันทึก...');
+    await Promise.all(STIP_INST.map(inst => {
+      const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
+      return Promise.race([API.saveSetting('STIP_PREFIX_' + inst.key, stipPrefixState[inst.key]), _t]);
+    }));
+    showLoader(false);
+    Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'การตั้งค่าหมายเลขทุนอัปเดตแล้ว', timer:2000, showConfirmButton:false });
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+}
+
+function renderNoticeForm() {
+  const txt  = document.getElementById('noticeText');
+  const type = document.getElementById('noticeType');
+  if (txt)  txt.value  = noticeState.text || '';
+  if (type) type.value = noticeState.type || 'info';
+  _updateNoticeToggle(noticeState.active);
+  updateNoticePreview();
+}
+
+function toggleNoticeActive() {
+  noticeState.active = !noticeState.active;
+  _updateNoticeToggle(noticeState.active);
+}
+
+function _updateNoticeToggle(active) {
+  const track = document.getElementById('noticeToggleTrack');
+  const thumb = document.getElementById('noticeToggleThumb');
+  const lbl   = document.getElementById('noticeActiveLabel');
+  if (track) track.style.background = active ? '#7c3aed' : '#e2e8f0';
+  if (thumb) thumb.style.left = active ? '21px' : '3px';
+  if (lbl)   { lbl.textContent = active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'; lbl.style.color = active ? '#7c3aed' : '#94a3b8'; }
+}
+
+function updateNoticePreview() {
+  const box  = document.getElementById('noticePreviewBox');
+  const txt  = document.getElementById('noticeText');
+  const type = document.getElementById('noticeType');
+  if (!box) return;
+  const text = txt?.value?.trim();
+  if (!text) { box.classList.add('hidden'); return; }
+  const styles = {
+    info:    'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe',
+    warning: 'background:#fffbeb;color:#92400e;border:1px solid #fde68a',
+    success: 'background:#f0fdf4;color:#166534;border:1px solid #bbf7d0',
+    danger:  'background:#fef2f2;color:#dc2626;border:1px solid #fecaca',
+  };
+  box.style.cssText = styles[type?.value || 'info'] || styles.info;
+  box.textContent = text;
+  box.classList.remove('hidden');
+}
+
+async function saveSystemNotice() {
+  const text   = document.getElementById('noticeText')?.value?.trim() || '';
+  const type   = document.getElementById('noticeType')?.value || 'info';
+  const active = noticeState.active;
+  noticeState = { active, text, type };
+  try {
+    showLoader(true, 'กำลังบันทึก...');
+    const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
+    const res = await Promise.race([API.saveSetting('SYSTEM_NOTICE', noticeState), _t]);
+    showLoader(false);
+    if (res.status === 'success') {
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
+    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
 }
 
 // ─────────────────────────────────────────────
