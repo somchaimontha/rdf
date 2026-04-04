@@ -5,22 +5,156 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ประวัตินักเรียน — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-/* Print styles */
-@media print {
-  .no-print { display: none !important; }
-  .rdf-nav, .rdf-footer, #loader { display: none !important; }
-  body { background: white; font-family: 'Open Sans', 'Sarabun', sans-serif; }
-  .print-header { display: block !important; }
-  .print-footer { display: block !important; }
-  .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
-  @page { size: A4; margin: 1.5cm; }
-}
+/* ── Screen: hide print layout ── */
+#printLayout { display: none; }
 .print-header, .print-footer { display: none; }
+
+/* ── Print: show document layout only ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .no-print, .rdf-nav, .rdf-footer, #loader, #profileContent,
+  main > .flex, .print-header, .print-footer { display: none !important; }
+  body { background: white !important; margin: 0; padding: 0;
+         font-family: 'Sarabun', 'TH Sarabun New', 'Tahoma', sans-serif !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  #printLayout { display: block !important; }
+  @page { size: A4 portrait; margin: 1.5cm 2cm 2cm; }
+}
+
+/* ══════════════════════════════════════
+   OFFICIAL DOCUMENT PRINT STYLES
+══════════════════════════════════════ */
+#printLayout {
+  font-family: 'Sarabun', 'TH Sarabun New', 'Tahoma', sans-serif;
+  font-size: 13.5pt;
+  color: #0f172a;
+  line-height: 1.55;
+  background: white;
+}
+
+/* Top color bar */
+.doc-top-bar {
+  height: 7pt;
+  background: linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 50%, #3b82f6 100%);
+  margin-bottom: 14pt;
+}
+
+/* Letterhead */
+.doc-letterhead {
+  display: flex;
+  align-items: center;
+  gap: 16pt;
+  padding-bottom: 10pt;
+  border-bottom: 2pt solid #1e3a8a;
+  margin-bottom: 12pt;
+}
+.doc-logo { width: 68pt; height: 68pt; object-fit: contain; flex-shrink: 0; }
+.doc-org-th {
+  font-size: 15pt; font-weight: 800; color: #1e3a8a; letter-spacing: 0.2pt;
+}
+.doc-org-en { font-size: 9.5pt; color: #475569; margin-top: 1pt; }
+.doc-title-th {
+  font-size: 13.5pt; font-weight: 700; color: #0f172a;
+  margin-top: 5pt; letter-spacing: 2pt; text-decoration: underline;
+  text-underline-offset: 3pt;
+}
+.doc-title-en { font-size: 9pt; color: #64748b; letter-spacing: 0.3pt; }
+.doc-docno {
+  margin-left: auto; text-align: right; font-size: 9pt; color: #64748b; flex-shrink: 0;
+}
+.doc-docno strong { font-size: 10pt; color: #1e3a8a; display: block; }
+
+/* Name / Photo hero block */
+.doc-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 14pt;
+  margin-bottom: 12pt;
+  padding: 10pt 14pt;
+  background: #f8faff;
+  border: 1pt solid #bfdbfe;
+  border-left: 5pt solid #1e3a8a;
+  border-radius: 4pt;
+}
+.doc-hero-info { flex: 1; }
+.doc-hero-stipno { font-size: 9pt; color: #1d4ed8; font-weight: 700; margin-bottom: 3pt; }
+.doc-hero-name-th { font-size: 20pt; font-weight: 800; color: #0f172a; line-height: 1.15; }
+.doc-hero-name-en { font-size: 12pt; color: #475569; margin-top: 2pt; }
+.doc-hero-badges { display: flex; gap: 6pt; flex-wrap: wrap; margin-top: 7pt; }
+.doc-badge {
+  display: inline-block; padding: 2pt 8pt; border-radius: 3pt;
+  font-size: 9pt; font-weight: 700; border: 0.8pt solid;
+}
+.doc-photo {
+  width: 88pt; height: 110pt;
+  object-fit: cover;
+  border: 1.5pt solid #cbd5e1;
+  border-radius: 3pt;
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+
+/* Section */
+.doc-section { margin-bottom: 9pt; break-inside: avoid; }
+.doc-section-title {
+  display: flex; align-items: center; gap: 5pt;
+  font-size: 10.5pt; font-weight: 800; color: white;
+  padding: 3.5pt 10pt;
+  background: #1e3a8a;
+  border-radius: 2pt 2pt 0 0;
+}
+.doc-section-num {
+  width: 17pt; height: 17pt; border-radius: 50%;
+  background: rgba(255,255,255,.22);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9pt; font-weight: 800; flex-shrink: 0;
+}
+
+/* Info table — 4-column grid: lbl | val | lbl | val */
+.doc-info-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 11.5pt;
+  border: 0.8pt solid #cbd5e1;
+}
+.doc-info-table td {
+  padding: 3.5pt 8pt;
+  vertical-align: top;
+  border: 0.5pt solid #d1d9e6;
+}
+.doc-info-table .lbl {
+  background: #eef2f9; color: #374151; font-weight: 700;
+  white-space: nowrap; width: 85pt;
+}
+.doc-info-table .val { color: #111827; }
+.doc-info-table tr:nth-child(even) .val { background: #fafbff; }
+.doc-info-table .full-val { color: #111827; }
+
+/* Signature block */
+.doc-signatures {
+  display: flex; justify-content: space-around; text-align: center;
+  font-size: 10pt; margin-top: 18pt; padding-top: 10pt;
+  border-top: 1pt solid #9ca3af;
+}
+.sig-unit { flex: 1; padding: 0 6pt; }
+.sig-line { border-top: 0.8pt solid #374151; margin: 26pt 12pt 4pt; }
+.sig-role { font-weight: 700; font-size: 10.5pt; color: #0f172a; }
+.sig-name-slot { font-size: 9pt; color: #9ca3af; margin-top: 2pt; }
+.sig-date-slot { font-size: 9pt; color: #9ca3af; }
+
+/* Doc footer */
+.doc-footer-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8pt; padding-top: 6pt;
+  border-top: 0.5pt solid #cbd5e1;
+  font-size: 9pt; color: #6b7280;
+}
 </style>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
@@ -183,6 +317,127 @@
       <div class="card-body text-xs text-gray-500" id="editHistory">—</div>
     </div>
   </div>
+
+  <!-- ══════════════════════════════════════════════
+       OFFICIAL PRINT DOCUMENT (hidden on screen)
+  ══════════════════════════════════════════════ -->
+  <div id="printLayout">
+
+    <!-- Color bar -->
+    <div class="doc-top-bar"></div>
+
+    <!-- Letterhead -->
+    <div class="doc-letterhead">
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png"
+           alt="RDF" class="doc-logo">
+      <div style="flex:1">
+        <div class="doc-org-th">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</div>
+        <div class="doc-org-en">THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND</div>
+        <div class="doc-title-th">ทะเบียนประวัตินักเรียนทุนการศึกษา</div>
+        <div class="doc-title-en">SCHOLARSHIP STUDENT REGISTRATION RECORD</div>
+      </div>
+      <div class="doc-docno">
+        <strong id="pDocStipNo">—</strong>
+        <span id="pDocDate">—</span>
+      </div>
+    </div>
+
+    <!-- Name / Photo hero -->
+    <div class="doc-hero">
+      <div class="doc-hero-info">
+        <div class="doc-hero-stipno" id="pStipNo"></div>
+        <div class="doc-hero-name-th" id="pNameTh"></div>
+        <div class="doc-hero-name-en" id="pNameEn"></div>
+        <div class="doc-hero-badges" id="pBadges"></div>
+      </div>
+      <img class="doc-photo" id="pPhoto" src="" alt="รูปถ่าย">
+    </div>
+
+    <!-- Section 1: Personal -->
+    <div class="doc-section">
+      <div class="doc-section-title" style="background:#1e3a8a">
+        <div class="doc-section-num">1</div>
+        <span>ข้อมูลส่วนตัว &nbsp;—&nbsp; Personal Information</span>
+      </div>
+      <table class="doc-info-table" id="pPersonal"></table>
+    </div>
+
+    <!-- Section 2: Academic -->
+    <div class="doc-section">
+      <div class="doc-section-title" style="background:#1d4ed8">
+        <div class="doc-section-num">2</div>
+        <span>ข้อมูลการศึกษา &nbsp;—&nbsp; Academic Information</span>
+      </div>
+      <table class="doc-info-table" id="pAcademic"></table>
+    </div>
+
+    <!-- Section 3: Contact -->
+    <div class="doc-section">
+      <div class="doc-section-title" style="background:#0d9488">
+        <div class="doc-section-num">3</div>
+        <span>ที่อยู่และข้อมูลติดต่อ &nbsp;—&nbsp; Contact Information</span>
+      </div>
+      <table class="doc-info-table" id="pContact"></table>
+    </div>
+
+    <!-- Section 4: Family -->
+    <div class="doc-section">
+      <div class="doc-section-title" style="background:#4f46e5">
+        <div class="doc-section-num">4</div>
+        <span>ข้อมูลครอบครัว &nbsp;—&nbsp; Family Information</span>
+      </div>
+      <table class="doc-info-table" id="pFamily"></table>
+    </div>
+
+    <!-- Section 5: University (conditional) -->
+    <div id="pUniSection" class="doc-section" style="display:none">
+      <div class="doc-section-title" style="background:#7c3aed">
+        <div class="doc-section-num">5</div>
+        <span>ข้อมูลมหาวิทยาลัย &nbsp;—&nbsp; University Information</span>
+      </div>
+      <table class="doc-info-table" id="pUni"></table>
+    </div>
+
+    <!-- Remarks (conditional) -->
+    <div id="pRemarksSection" class="doc-section" style="display:none">
+      <div class="doc-section-title" style="background:#475569">
+        <div class="doc-section-num" id="pRemarksNum">5</div>
+        <span>หมายเหตุ &nbsp;—&nbsp; Remarks</span>
+      </div>
+      <div style="padding:6pt 10pt;border:0.8pt solid #cbd5e1;font-size:11.5pt;background:#fafafa" id="pRemarks"></div>
+    </div>
+
+    <!-- Signature Block -->
+    <div class="doc-signatures">
+      <div class="sig-unit">
+        <div class="sig-line"></div>
+        <div class="sig-role">ผู้บันทึกข้อมูล</div>
+        <div class="sig-name-slot">(................................................)</div>
+        <div class="sig-date-slot">วันที่ ............/............/............</div>
+      </div>
+      <div class="sig-unit">
+        <div class="sig-line"></div>
+        <div class="sig-role">ผู้ตรวจสอบข้อมูล</div>
+        <div class="sig-name-slot">(................................................)</div>
+        <div class="sig-date-slot">วันที่ ............/............/............</div>
+      </div>
+      <div class="sig-unit">
+        <div class="sig-line"></div>
+        <div class="sig-role">ผู้อนุมัติ</div>
+        <div class="sig-name-slot">(................................................)</div>
+        <div class="sig-date-slot">วันที่ ............/............/............</div>
+      </div>
+    </div>
+
+    <!-- Document Footer -->
+    <div class="doc-footer-bar">
+      <span>พิมพ์เมื่อ: <strong id="pPrintDate"></strong></span>
+      <span style="color:#1e3a8a;font-weight:700">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</span>
+      <span id="pFooterStipNo"></span>
+    </div>
+
+  </div><!-- end #printLayout -->
+
 </main>
 
 <footer class="rdf-footer no-print">
@@ -436,6 +691,9 @@ function renderProfile(d) {
     });
   }, 80));
 
+  // Populate official print document
+  renderPrintLayout(d);
+
   lucide.createIcons();
 }
 
@@ -527,12 +785,141 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
 initDBStatus();
 
 function printProfile() {
-  // Set print date
   const now = new Date();
-  const dateStr = now.toLocaleDateString(LANG==='th'?'th-TH':'en-GB',
-    { day:'numeric', month:'long', year:'numeric' });
-  document.getElementById('printDateLine').textContent = `${t('printDate')} ${dateStr}`;
+  const dateStr = now.toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('printDateLine').textContent = `พิมพ์เมื่อ ${dateStr}`;
+  const pDate = document.getElementById('pPrintDate');
+  if (pDate) pDate.textContent = dateStr;
+  const pDocDate = document.getElementById('pDocDate');
+  if (pDocDate) pDocDate.textContent = `วันที่พิมพ์: ${dateStr}`;
   window.print();
+}
+
+// ─────────────────────────────────────────────
+// OFFICIAL PRINT DOCUMENT RENDERER
+// ─────────────────────────────────────────────
+function renderPrintLayout(d) {
+  const _s = v => (v || '').toString().trim();
+
+  // Photo
+  const _picFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent((_s(d.FirstName)||'?')+' '+_s(d.LastName))}&background=1e3a8a&color=fff&size=200&bold=true`;
+  const pPhoto = document.getElementById('pPhoto');
+  if (pPhoto) {
+    pPhoto.src = d.ProfilePicURL ? driveImgUrl(d.ProfilePicURL, 'w200') : _picFallback;
+    pPhoto.onerror = () => { pPhoto.onerror = null; pPhoto.src = _picFallback; };
+  }
+
+  // Header doc ref
+  const docStipNo = document.getElementById('pDocStipNo');
+  if (docStipNo) docStipNo.textContent = `หมายเลขทุน: ${d.StipNo||'—'}`;
+  const footStipNo = document.getElementById('pFooterStipNo');
+  if (footStipNo) footStipNo.textContent = `เลขทุน: ${d.StipNo||'—'}`;
+
+  // Name block
+  document.getElementById('pStipNo').textContent = `หมายเลขทุน: ${d.StipNo||'—'}`;
+  document.getElementById('pNameTh').textContent = `${_s(d.Title)}${_s(d.FirstName)} ${_s(d.LastName)}`;
+  const engName = [d.EngTitle, d.EngFirstName, d.EngLastName].filter(Boolean).join(' ');
+  document.getElementById('pNameEn').textContent = engName || '';
+
+  // Status badges
+  const st = d.Status || 'Active';
+  const stLabel = RDF.STATUS_LABELS_TH[st] || st;
+  const stColors = { Active:'#16a34a', Graduated:'#7c3aed', Suspended:'#d97706', Resigned:'#dc2626', Incomplete:'#dc2626', University:'#1d4ed8', Other:'#64748b' };
+  const sc = stColors[st] || '#64748b';
+  document.getElementById('pBadges').innerHTML = `
+    <span class="doc-badge" style="color:${sc};border-color:${sc};background:${sc}18">${stLabel}</span>
+    <span class="doc-badge" style="color:#1e3a8a;border-color:#bfdbfe;background:#eff6ff">${instLabel(d.Institution)}</span>
+    ${d.CurrentLevel ? `<span class="doc-badge" style="color:#374151;border-color:#e2e8f0;background:#f8fafc">${d.CurrentLevel}</span>` : ''}
+    ${d.ScholarshipYear ? `<span class="doc-badge" style="color:#92400e;border-color:#fde68a;background:#fffbeb">ปีทุน พ.ศ. ${parseInt(d.ScholarshipYear)+543}</span>` : ''}`;
+
+  // ── Section 1: Personal ──────────────────────
+  const mNames = RDF.MONTHS_TH;
+  let dobStr = '—';
+  if (d.BirthYear) {
+    const dPart = d.BirthDay   ? `${d.BirthDay} ` : '';
+    const mPart = d.BirthMonth ? `${mNames[parseInt(d.BirthMonth)-1]} ` : '';
+    const be    = parseInt(d.BirthYear) + 543;
+    const age   = calcAgeFromDOB(d.BirthYear, d.BirthMonth, d.BirthDay);
+    dobStr = `${dPart}${mPart}พ.ศ. ${be}${age !== null ? ` (อายุ ${age} ปี)` : ''}`;
+  }
+  _fillDocTable('pPersonal', [
+    ['เลขบัตรประชาชน', fmtIDCard(d.IDCard)||'—',   'ชื่อเล่น',          _s(d.Nickname)||'—'],
+    ['วันเดือนปีเกิด',  dobStr,                     'สัญชาติ',           _s(d.Nationality)||'—'],
+    ['เพศ',             _s(d.Sex)||'—',             'ศาสนา',             _s(d.Religion)||'—'],
+    ['น้ำหนัก',        (_s(d.Weight)||'—')+' กก.', 'ส่วนสูง',           (_s(d.Height)||'—')+' ซม.'],
+    ['หมู่เลือด',       _s(d.BloodType)||'—',       'โรคประจำตัว',       _s(d.Disease)||'ไม่มี'],
+    ['ความสามารถพิเศษ', _s(d.Talent)||'—',          '', ''],
+  ]);
+
+  // ── Section 2: Academic ──────────────────────
+  const beYear  = d.ScholarshipYear ? `พ.ศ. ${parseInt(d.ScholarshipYear)+543} (ค.ศ. ${d.ScholarshipYear})` : '—';
+  const beEntry = d.EntryYear       ? `พ.ศ. ${parseInt(d.EntryYear)+543} (ค.ศ. ${d.EntryYear})` : '—';
+  _fillDocTable('pAcademic', [
+    ['สถานที่ศึกษา',    instLabel(d.Institution),   'ระดับชั้นปัจจุบัน', _s(d.CurrentLevel)||'—'],
+    ['รหัสนักเรียน',   _s(d.StudentID)||'—',        'ปีที่ได้รับทุน',    beYear],
+    ['ปีที่เข้าเรียน', beEntry,                      'ภาคการศึกษา',      _s(d.EntryTerm)||'—'],
+    ['สาขาวิชา/แผนการเรียน', _s(d.Major)||'—',      'แผนกวิชา',          _s(d.Department)||'—'],
+    ['สถานศึกษาเดิม',  _s(d.OldSchool)||'—',        '', ''],
+  ]);
+
+  // ── Section 3: Contact ──────────────────────
+  const addrParts = [
+    d.HouseNo ? `เลขที่ ${d.HouseNo}` : '',
+    d.Moo     ? `หมู่ ${d.Moo}`       : '',
+    _s(d.Village), _s(d.Tambon), _s(d.Amphoe), _s(d.Province)
+  ].filter(Boolean);
+  const addr = addrParts.join(' ') || '—';
+  _fillDocTable('pContact', [
+    ['โทรศัพท์ 1', fmtPhone(d.Phone1)||'—', 'โทรศัพท์ 2', d.Phone2 ? fmtPhone(d.Phone2) : '—'],
+    ['ที่อยู่ปัจจุบัน', addr, '', ''],
+  ]);
+
+  // ── Section 4: Family ──────────────────────
+  const fName = [d.Parent1_Title, d.Parent1_FirstName, d.Parent1_LastName].filter(Boolean).join(' ') || '—';
+  const mName = [d.Parent2_Title, d.Parent2_FirstName, d.Parent2_LastName].filter(Boolean).join(' ') || '—';
+  _fillDocTable('pFamily', [
+    ['สถานภาพบิดา-มารดา', (_s(d.ParentStatus)||'—') + (d.ParentStatusOther ? ` (${d.ParentStatusOther})` : ''), '', ''],
+    ['ชื่อบิดา',           fName,                                                   'เลขบัตรฯ บิดา', d.Parent1_IDCard ? fmtIDCard(d.Parent1_IDCard) : '—'],
+    ['ชื่อมารดา/ผู้ปกครอง', mName,                                                 'เลขบัตรฯ มารดา', d.Parent2_IDCard ? fmtIDCard(d.Parent2_IDCard) : '—'],
+  ]);
+
+  // ── Section 5: University (conditional) ────
+  let secCounter = 5;
+  if (d.UniName) {
+    document.getElementById('pUniSection').style.display = '';
+    _fillDocTable('pUni', [
+      ['มหาวิทยาลัย',      _s(d.UniName),     'จังหวัดที่ตั้ง',    _s(d.UniProvince)||'—'],
+      ['คณะ',              _s(d.UniFaculty)||'—', 'สาขาวิชา',       _s(d.UniMajor)||'—'],
+      ['ระยะเวลาหลักสูตร', (_s(d.UniDuration)||'—')+' ปี', '', ''],
+    ]);
+    secCounter = 6;
+  }
+
+  // ── Remarks (conditional) ──────────────────
+  if (d.Remarks) {
+    document.getElementById('pRemarksSection').style.display = '';
+    document.getElementById('pRemarksNum').textContent = secCounter;
+    document.getElementById('pRemarks').textContent = d.Remarks;
+  }
+}
+
+function _fillDocTable(id, rows) {
+  const tbl = document.getElementById(id);
+  if (!tbl) return;
+  tbl.innerHTML = rows.map(([l1, v1, l2, v2]) => {
+    if (!l2) {
+      return `<tr>
+        <td class="lbl" style="width:95pt">${l1}</td>
+        <td class="full-val" colspan="3">${v1 || '—'}</td>
+      </tr>`;
+    }
+    return `<tr>
+      <td class="lbl" style="width:95pt">${l1}</td>
+      <td class="val">${v1 || '—'}</td>
+      <td class="lbl" style="width:95pt">${l2}</td>
+      <td class="val">${v2 || '—'}</td>
+    </tr>`;
+  }).join('');
 }
 </script>
 </body>
