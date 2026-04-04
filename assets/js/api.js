@@ -141,7 +141,7 @@ function initDBStatus() {
 
 /* ── Check if student has "ทุนต่อ" (continued scholarship) ── */
 function isContinuedScholarship(student) {
-  const stipNo = student.stipNo || '';
-  const inst   = student.institution || '';
+  const stipNo = student.StipNo || student.stipNo || '';
+  const inst   = student.Institution || student.institution || '';
   return inst === 'UNI' && (stipNo.startsWith('MBS_') || stipNo.startsWith('VC_'));
 }

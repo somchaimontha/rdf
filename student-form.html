@@ -244,6 +244,16 @@
           <label class="field-label"><span data-t="oldSchool">สถานศึกษาเดิม (ก่อนรับทุน)</span></label>
           <input type="text" id="f_oldSchool" class="field-input" placeholder="ชื่อโรงเรียนเดิม">
         </div>
+        <div>
+          <label class="field-label">วุฒิการศึกษาล่าสุดที่สำเร็จการศึกษา</label>
+          <select id="f_lastEducation" class="field-select">
+            <option value="">-- ยังไม่ได้เลือก --</option>
+            <option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น (ม.3)</option>
+            <option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย (ม.6)</option>
+            <option value="ประกาศนียบัตรวิชาชีพ (ปวช.)">ประกาศนียบัตรวิชาชีพ (ปวช.)</option>
+            <option value="ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)">ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)</option>
+          </select>
+        </div>
       </div>
 
       <!-- University sub-section -->
@@ -938,6 +948,7 @@ function fillForm(d) {
   sv('f_scholarshipYear', d.ScholarshipYear); sv('f_entryYear', d.EntryYear);
   sv('f_entryTerm', d.EntryTerm); sv('f_major', d.Major);
   sv('f_department', d.Department); sv('f_oldSchool', d.OldSchool);
+  sv('f_lastEducation', d.LastEducation);
   sv('f_otherInst', d.OtherInstitution);
   sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration);
   sv('f_uniProvince', d.UniProvince); sv('f_uniFaculty', d.UniFaculty); sv('f_uniMajor', d.UniMajor);
@@ -1389,6 +1400,7 @@ function collectForm() {
     ScholarshipYear: get('f_scholarshipYear'), EntryYear: get('f_entryYear'),
     EntryTerm: get('f_entryTerm'), Major: get('f_major'),
     Department: get('f_department'), OldSchool: get('f_oldSchool'),
+    LastEducation: get('f_lastEducation'),
     UniName: get('f_uniName'), UniDuration: get('f_uniDuration'),
     UniProvince: get('f_uniProvince'), UniFaculty: get('f_uniFaculty'), UniMajor: get('f_uniMajor'),
     Title: get('f_title'), FirstName: get('f_fname'), LastName: get('f_lname'),
@@ -3109,7 +3121,7 @@ const CSV_DB_FIELDS = [
   'StipNo','IDCard','BirthYear','BirthMonth','BirthDay','StudentID','Status',
   // Academic
   'Institution','OtherInstitution','CurrentLevel','ScholarshipYear',
-  'EntryYear','EntryTerm','Major','Department','OldSchool',
+  'EntryYear','EntryTerm','Major','Department','OldSchool','LastEducation',
   // University
   'UniName','UniDuration','UniProvince','UniFaculty','UniMajor',
   // Personal

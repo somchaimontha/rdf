@@ -537,6 +537,7 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
     [lang==='th'?'สาขาวิชา':'Major',                  d.Major],
     [lang==='th'?'แผนกวิชา':'Department',             d.Department],
     [lang==='th'?'สถานศึกษาเดิม':'Previous School',   d.OldSchool],
+    [lang==='th'?'วุฒิการศึกษาล่าสุด':'Last Qualification', d.LastEducation],
   ]);
 
   // Personal
@@ -716,22 +717,30 @@ function renderEduPath(d, lang) {
   const isVC  = inst === 'VC' || stipNo.startsWith('VC_');
   const isMBS = inst === 'MBS' || stipNo.startsWith('MBS_');
   const isUNI = inst === 'UNI';
-  const isCont = isContinuedScholarship(d); // VC_ or MBS_ in UNI
+  const isCont = isContinuedScholarship(d);
 
   if (!isVC && !isMBS && !isCont) { card.classList.add('hidden'); return; }
 
   card.classList.remove('hidden');
 
+  // Steps pre-completed based on LastEducation (before scholarship)
+  const _lastEduDone = {
+    'มัธยมศึกษาตอนปลาย':                   ['ม.4','ม.5','ม.6'],
+    'ประกาศนียบัตรวิชาชีพ (ปวช.)':          ['ปวช.1','ปวช.2','ปวช.3'],
+    'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)': ['ปวช.1','ปวช.2','ปวช.3','ปวส.1','ปวส.2'],
+  };
+  const preDone = _lastEduDone[d.LastEducation] || [];
+
   // Build path steps
   const steps = [];
-  const label = lang === 'en';
 
   if (isMBS || stipNo.startsWith('MBS_')) {
     const mbsLevels = ['มัธยมศึกษาปีที่ 4', 'มัธยมศึกษาปีที่ 5', 'มัธยมศึกษาปีที่ 6'];
     mbsLevels.forEach((l, i) => {
+      const sl = `ม.${i+4}`;
       const isActive = inst === 'MBS' && level === l;
-      const isDone   = (inst !== 'MBS') || mbsLevels.indexOf(level) > i;
-      steps.push({ label: l, shortLabel: `ม.${i+4}`, done: isDone, active: isActive, color: '#1d4ed8' });
+      const isDone   = preDone.includes(sl) || (inst !== 'MBS') || mbsLevels.indexOf(level) > i;
+      steps.push({ label: l, shortLabel: sl, done: isDone && !isActive, active: isActive, color: '#1d4ed8' });
     });
   }
   if (isVC || stipNo.startsWith('VC_')) {
@@ -744,8 +753,8 @@ function renderEduPath(d, lang) {
     ];
     pqLevels.forEach(lv => {
       const isActive = inst === 'VC' && level === lv.label;
-      const isDone   = (inst !== 'VC') || pqLevels.findIndex(x => x.label === level) > pqLevels.indexOf(lv);
-      steps.push({ label: lv.label, shortLabel: lv.short, done: isDone, active: isActive, color: lv.color });
+      const isDone   = preDone.includes(lv.short) || (inst !== 'VC') || pqLevels.findIndex(x => x.label === level) > pqLevels.indexOf(lv);
+      steps.push({ label: lv.label, shortLabel: lv.short, done: isDone && !isActive, active: isActive, color: lv.color });
     });
   }
   if (isUNI || isCont) {
@@ -753,7 +762,7 @@ function renderEduPath(d, lang) {
     uniYears.forEach((l, i) => {
       const isActive = inst === 'UNI' && level === l;
       const isDone   = inst === 'UNI' && (uniYears.indexOf(level) > i || status === 'Graduated');
-      steps.push({ label: l, shortLabel: `ปี ${i+1}`, done: isDone, active: isActive, color: '#7c3aed' });
+      steps.push({ label: l, shortLabel: `ปี ${i+1}`, done: isDone && !isActive, active: isActive, color: '#7c3aed' });
     });
   }
 
@@ -772,8 +781,15 @@ function renderEduPath(d, lang) {
           </div>`).join('')}
       </div>
     </div>
+    ${d.LastEducation ? `<div class="mt-2 text-xs border-t pt-2 flex items-center gap-1.5 flex-wrap">
+      <span class="text-gray-400">${lang==='en'?'Prior qualification:':'วุฒิก่อนรับทุน:'}</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-weight:700">
+        <svg style="width:10px;height:10px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        ${d.LastEducation}
+      </span>
+    </div>` : ''}
     ${d.UniName ? `<div class="mt-2 text-xs text-gray-500 border-t pt-2"><span class="font-semibold text-purple-700">มหาวิทยาลัย:</span> ${d.UniName}${d.UniFaculty?` — ${d.UniFaculty}`:''}${d.UniMajor?` / ${d.UniMajor}`:''}</div>` : ''}
-    <p class="text-xs text-gray-400 mt-2">${label?'Education path based on current data':'เส้นทางการศึกษาตามข้อมูลในระบบ'}</p>`;
+    <p class="text-xs text-gray-400 mt-2">${lang==='en'?'Education path based on current data':'เส้นทางการศึกษาตามข้อมูลในระบบ'}</p>`;
   lucide.createIcons();
 }
 
@@ -906,6 +922,7 @@ function renderPrintLayout(d, sigBlock, printTitle, printLayout) {
     ['ปีที่เข้าเรียน', beEntry,                      'ภาคการศึกษา',      _s(d.EntryTerm)||'—'],
     ['สาขาวิชา/แผนการเรียน', _s(d.Major)||'—',      'แผนกวิชา',          _s(d.Department)||'—'],
     ['สถานศึกษาเดิม',  _s(d.OldSchool)||'—',        '', ''],
+    ['วุฒิการศึกษาล่าสุด', _s(d.LastEducation)||'—', '', ''],
   ]);
 
   // ── Section 3: Contact ──────────────────────
