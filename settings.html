@@ -536,6 +536,59 @@
       </div>
     </div>
 
+    <!-- Print Layout Card -->
+    <div class="card fade-in-up delay-2 mb-5">
+      <div class="card-header" style="background:#334155">
+        <i data-lucide="sliders" class="w-4 h-4"></i> ขนาดและระยะห่างในเอกสาร (Print Layout)
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4">ปรับขนาดกราฟิก ตัวอักษร และระยะห่างทุก Element ในแบบฟอร์มพิมพ์ประวัตินักเรียน</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+
+          <!-- หน้ากระดาษ -->
+          <div class="mb-4">
+            <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#1e3a8a">
+              <i data-lucide="layout" class="w-3.5 h-3.5"></i> หน้ากระดาษ &amp; ทั่วไป
+            </div>
+            <div id="plGroup_page"></div>
+          </div>
+
+          <!-- กราฟิก -->
+          <div class="mb-4">
+            <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#7c3aed">
+              <i data-lucide="image" class="w-3.5 h-3.5"></i> กราฟิก
+            </div>
+            <div id="plGroup_graphic"></div>
+          </div>
+
+          <!-- ตัวอักษร -->
+          <div class="mb-4">
+            <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#0d9488">
+              <i data-lucide="type" class="w-3.5 h-3.5"></i> ตัวอักษร
+            </div>
+            <div id="plGroup_font"></div>
+          </div>
+
+          <!-- ระยะห่าง -->
+          <div class="mb-4">
+            <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#ea580c">
+              <i data-lucide="move" class="w-3.5 h-3.5"></i> ระยะห่าง (Spacing)
+            </div>
+            <div id="plGroup_spacing"></div>
+          </div>
+
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+          <button onclick="resetPrintLayout()" class="btn btn-secondary btn-sm text-xs">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset ค่าเริ่มต้น
+          </button>
+          <button onclick="savePrintLayout()" class="btn btn-sm" style="background:#334155;color:#fff">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก Layout
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Signature Block Card -->
     <div class="card fade-in-up delay-2">
       <div class="card-header" style="background:#0d9488">
@@ -1708,6 +1761,41 @@ const STIP_INST = [
 
 let stipPrefixState = {};
 let noticeState = { active: false, text: '', type: 'info' };
+const PRINT_LAYOUT_DEFAULTS = {
+  pageMarginTB: 1,    pageMarginLR: 1.5,  lineHeight: 1.35,
+  logoSize: 40,       photoW: 60,         photoH: 76,
+  topBarH: 3,         topBarMargin: 5,
+  heroNameSize: 18,   orgTitleSize: 13,   tableFont: 11,    sectionTitleSize: 11,
+  cellPadV: 2,        cellPadH: 5,        sectionGap: 5,    sigLineGap: 18,
+};
+const PRINT_LAYOUT_FIELDS = {
+  page: [
+    { key:'pageMarginTB',    label:'Margin บน/ล่าง',      unit:'cm', min:0.5, max:3,   step:0.1 },
+    { key:'pageMarginLR',    label:'Margin ซ้าย/ขวา',     unit:'cm', min:0.5, max:3,   step:0.1 },
+    { key:'lineHeight',      label:'Line Height',          unit:'',   min:1.0, max:2.0, step:0.05 },
+  ],
+  graphic: [
+    { key:'logoSize',        label:'โลโก้',                unit:'pt', min:20,  max:90,  step:1 },
+    { key:'photoW',          label:'รูปถ่าย กว้าง',        unit:'pt', min:30,  max:120, step:1 },
+    { key:'photoH',          label:'รูปถ่าย สูง',          unit:'pt', min:40,  max:150, step:1 },
+    { key:'topBarH',         label:'แถบสีบน สูง',          unit:'pt', min:0,   max:12,  step:0.5 },
+    { key:'topBarMargin',    label:'แถบสีบน ระยะล่าง',     unit:'pt', min:0,   max:20,  step:1 },
+  ],
+  font: [
+    { key:'heroNameSize',    label:'ชื่อนักเรียน',         unit:'pt', min:12,  max:32,  step:1 },
+    { key:'orgTitleSize',    label:'ชื่อองค์กร/หัวข้อ',    unit:'pt', min:8,   max:24,  step:1 },
+    { key:'tableFont',       label:'ตาราง',                unit:'pt', min:7,   max:18,  step:1 },
+    { key:'sectionTitleSize',label:'หัวข้อหมวด',           unit:'pt', min:7,   max:18,  step:1 },
+  ],
+  spacing: [
+    { key:'cellPadV',        label:'Padding เซลล์ บน/ล่าง',unit:'pt', min:0,   max:12,  step:0.5 },
+    { key:'cellPadH',        label:'Padding เซลล์ ซ้าย/ขวา',unit:'pt',min:0,   max:16,  step:0.5 },
+    { key:'sectionGap',      label:'ระยะห่างระหว่างหมวด',  unit:'pt', min:0,   max:20,  step:1 },
+    { key:'sigLineGap',      label:'ระยะเส้นลายเซ็น',      unit:'pt', min:8,   max:50,  step:1 },
+  ],
+};
+let printLayoutState = { ...PRINT_LAYOUT_DEFAULTS };
+
 let printTitleState = {
   orgTh:    'มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย',
   orgEn:    'THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND',
@@ -1738,6 +1826,8 @@ async function loadGeneralSettings() {
       if (Array.isArray(sig) && sig.length > 0) sigBlockState = sig;
       const pt = r.data['PRINT_TITLE'];
       if (pt && typeof pt === 'object') printTitleState = { ...printTitleState, ...pt };
+      const pl = r.data['PRINT_LAYOUT'];
+      if (pl && typeof pl === 'object') printLayoutState = { ...PRINT_LAYOUT_DEFAULTS, ...pl };
     } else {
       STIP_INST.forEach(inst => { stipPrefixState[inst.key] = { enabled: true, prefix: inst.def }; });
     }
@@ -1749,6 +1839,7 @@ async function loadGeneralSettings() {
   renderNoticeForm();
   renderSigEditor();
   renderPrintTitleForm();
+  renderPrintLayoutForm();
 }
 
 function renderStipRows() {
@@ -1888,6 +1979,62 @@ async function saveSystemNotice() {
     showLoader(false);
     if (res.status === 'success') {
       Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
+    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+}
+
+// ─────────────────────────────────────────────
+// PRINT LAYOUT
+// ─────────────────────────────────────────────
+function _plRow(f, state) {
+  const val = state[f.key] ?? PRINT_LAYOUT_DEFAULTS[f.key];
+  const isDefault = val == PRINT_LAYOUT_DEFAULTS[f.key];
+  return `<div class="flex items-center justify-between py-1.5 border-b border-gray-50">
+    <span class="text-xs text-gray-600 flex-1 pr-2">${f.label}</span>
+    <div class="flex items-center gap-1.5 flex-shrink-0">
+      <input type="number" id="pl_${f.key}" value="${val}" min="${f.min}" max="${f.max}" step="${f.step}"
+             class="text-right text-sm font-mono border rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-400 transition"
+             style="width:68px;border-color:${isDefault?'#e2e8f0':'#fb923c'};background:${isDefault?'#fff':'#fff7ed'}"
+             oninput="_plUpdate('${f.key}',this)">
+      <span class="text-xs text-gray-400 w-5 text-left flex-shrink-0">${f.unit}</span>
+    </div>
+  </div>`;
+}
+
+function renderPrintLayoutForm() {
+  ['page','graphic','font','spacing'].forEach(grp => {
+    const el = document.getElementById('plGroup_' + grp);
+    if (!el) return;
+    el.innerHTML = (PRINT_LAYOUT_FIELDS[grp] || []).map(f => _plRow(f, printLayoutState)).join('');
+  });
+}
+
+function _plUpdate(key, input) {
+  printLayoutState[key] = parseFloat(input.value);
+  const isDefault = printLayoutState[key] == PRINT_LAYOUT_DEFAULTS[key];
+  input.style.borderColor = isDefault ? '#e2e8f0' : '#fb923c';
+  input.style.background  = isDefault ? '#fff'    : '#fff7ed';
+}
+
+function resetPrintLayout() {
+  printLayoutState = { ...PRINT_LAYOUT_DEFAULTS };
+  renderPrintLayoutForm();
+}
+
+async function savePrintLayout() {
+  // Read all current input values
+  Object.keys(PRINT_LAYOUT_DEFAULTS).forEach(key => {
+    const el = document.getElementById('pl_' + key);
+    if (el) printLayoutState[key] = parseFloat(el.value);
+  });
+  try {
+    showLoader(true, 'กำลังบันทึก...');
+    const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
+    const res = await Promise.race([API.saveSetting('PRINT_LAYOUT', printLayoutState), _t]);
+    showLoader(false);
+    if (res.status === 'success') {
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'ขนาดเอกสารอัปเดตแล้ว', timer:2000, showConfirmButton:false });
+      renderPrintLayoutForm(); // refresh highlight states
     } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
   } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
 }
