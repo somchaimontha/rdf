@@ -339,10 +339,10 @@
       <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png"
            alt="RDF" class="doc-logo">
       <div style="flex:1">
-        <div class="doc-org-th">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</div>
-        <div class="doc-org-en">THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND</div>
-        <div class="doc-title-th">ทะเบียนประวัตินักเรียนทุนการศึกษา</div>
-        <div class="doc-title-en">SCHOLARSHIP STUDENT REGISTRATION RECORD</div>
+        <div class="doc-org-th" id="pOrgTh">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</div>
+        <div class="doc-org-en" id="pOrgEn">THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND</div>
+        <div class="doc-title-th" id="pTitleTh">ทะเบียนประวัตินักเรียนทุนการศึกษา</div>
+        <div class="doc-title-en" id="pTitleEn">SCHOLARSHIP STUDENT REGISTRATION RECORD</div>
       </div>
       <div class="doc-docno">
         <strong id="pDocStipNo">—</strong>
@@ -480,11 +480,12 @@ async function loadProfile() {
       Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
       return;
     }
-    let sigBlock = null;
+    let sigBlock = null, printTitle = null;
     if (settingsResult.status === 'success' && settingsResult.data) {
-      sigBlock = settingsResult.data['SIGNATURE_BLOCK'] || null;
+      sigBlock    = settingsResult.data['SIGNATURE_BLOCK'] || null;
+      printTitle  = settingsResult.data['PRINT_TITLE']     || null;
     }
-    renderProfile(result.data, sigBlock);
+    renderProfile(result.data, sigBlock, printTitle);
     if (autoPrint) setTimeout(printProfile, 600);
   } catch(e) {
     showLoader(false);
@@ -492,7 +493,7 @@ async function loadProfile() {
   }
 }
 
-function renderProfile(d, sigBlock) {
+function renderProfile(d, sigBlock, printTitle) {
   const lang = LANG;
   const _picFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent((d.FirstName||'?')+' '+(d.LastName||''))}&background=1e3a8a&color=fff&size=128&bold=true`;
   const picUrl = d.ProfilePicURL ? driveImgUrl(d.ProfilePicURL, 'w400') : _picFallback;
@@ -694,7 +695,7 @@ function renderProfile(d, sigBlock) {
   }, 80));
 
   // Populate official print document
-  renderPrintLayout(d, sigBlock);
+  renderPrintLayout(d, sigBlock, printTitle);
 
   lucide.createIcons();
 }
@@ -800,8 +801,17 @@ function printProfile() {
 // ─────────────────────────────────────────────
 // OFFICIAL PRINT DOCUMENT RENDERER
 // ─────────────────────────────────────────────
-function renderPrintLayout(d, sigBlock) {
+function renderPrintLayout(d, sigBlock, printTitle) {
   const _s = v => (v || '').toString().trim();
+
+  // Apply configurable print title
+  if (printTitle && typeof printTitle === 'object') {
+    const _txt = (id, val, fallback) => { const el = document.getElementById(id); if (el) el.textContent = val || fallback; };
+    _txt('pOrgTh',   printTitle.orgTh,   'มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย');
+    _txt('pOrgEn',   printTitle.orgEn,   'THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND');
+    _txt('pTitleTh', printTitle.titleTh, 'ทะเบียนประวัตินักเรียนทุนการศึกษา');
+    _txt('pTitleEn', printTitle.titleEn, 'SCHOLARSHIP STUDENT REGISTRATION RECORD');
+  }
 
   // Photo
   const _picFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent((_s(d.FirstName)||'?')+' '+_s(d.LastName))}&background=1e3a8a&color=fff&size=200&bold=true`;

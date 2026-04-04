@@ -482,6 +482,60 @@
       </div>
     </div>
 
+    <!-- Print Form Title Card -->
+    <div class="card fade-in-up delay-2 mb-5">
+      <div class="card-header" style="background:#0f172a">
+        <i data-lucide="file-text" class="w-4 h-4"></i> ชื่อแบบฟอร์มการพิมพ์ (Print Form Title)
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4">ข้อความที่แสดงในหัวเอกสารเมื่อพิมพ์ประวัตินักเรียน</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="field-label">ชื่อองค์กร (ภาษาไทย)</label>
+            <input type="text" id="ptOrgTh" class="field-input"
+              placeholder="มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย"
+              oninput="updatePrintTitlePreview()">
+          </div>
+          <div>
+            <label class="field-label">ชื่อองค์กร (English)</label>
+            <input type="text" id="ptOrgEn" class="field-input"
+              placeholder="THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND"
+              oninput="updatePrintTitlePreview()">
+          </div>
+          <div>
+            <label class="field-label">ชื่อแบบฟอร์ม / หัวข้อหลัก (ภาษาไทย)</label>
+            <input type="text" id="ptTitleTh" class="field-input"
+              placeholder="ทะเบียนประวัตินักเรียนทุนการศึกษา"
+              oninput="updatePrintTitlePreview()">
+          </div>
+          <div>
+            <label class="field-label">หัวข้อย่อย (English)</label>
+            <input type="text" id="ptTitleEn" class="field-input"
+              placeholder="SCHOLARSHIP STUDENT REGISTRATION RECORD"
+              oninput="updatePrintTitlePreview()">
+          </div>
+        </div>
+        <!-- Live Preview -->
+        <div id="ptPreview" class="rounded-lg p-3 mb-3 hidden" style="border:1px solid #e2e8f0;background:#f8faff">
+          <div class="flex items-center gap-2">
+            <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png"
+                 alt="RDF" style="width:32px;height:32px;object-fit:contain;flex-shrink:0">
+            <div style="flex:1;border-left:3px solid #1e3a8a;padding-left:8px">
+              <div id="ptPreviewOrgTh" class="font-bold text-sm" style="color:#1e3a8a"></div>
+              <div id="ptPreviewOrgEn" class="text-xs text-gray-400"></div>
+              <div id="ptPreviewTitleTh" class="font-bold text-xs mt-0.5 underline" style="color:#0f172a"></div>
+              <div id="ptPreviewTitleEn" class="text-xs text-gray-400"></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end pt-2 border-t border-gray-100">
+          <button onclick="savePrintTitle()" class="btn btn-sm" style="background:#0f172a;color:#fff">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกชื่อแบบฟอร์ม
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Signature Block Card -->
     <div class="card fade-in-up delay-2">
       <div class="card-header" style="background:#0d9488">
@@ -1654,6 +1708,12 @@ const STIP_INST = [
 
 let stipPrefixState = {};
 let noticeState = { active: false, text: '', type: 'info' };
+let printTitleState = {
+  orgTh:    'มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย',
+  orgEn:    'THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND',
+  titleTh:  'ทะเบียนประวัตินักเรียนทุนการศึกษา',
+  titleEn:  'SCHOLARSHIP STUDENT REGISTRATION RECORD',
+};
 let sigBlockState = [
   { role: 'ผู้บันทึกข้อมูล',  name: '', position: '' },
   { role: 'ผู้ตรวจสอบข้อมูล', name: '', position: '' },
@@ -1676,6 +1736,8 @@ async function loadGeneralSettings() {
       if (n && typeof n === 'object') noticeState = { active: !!n.active, text: n.text || '', type: n.type || 'info' };
       const sig = r.data['SIGNATURE_BLOCK'];
       if (Array.isArray(sig) && sig.length > 0) sigBlockState = sig;
+      const pt = r.data['PRINT_TITLE'];
+      if (pt && typeof pt === 'object') printTitleState = { ...printTitleState, ...pt };
     } else {
       STIP_INST.forEach(inst => { stipPrefixState[inst.key] = { enabled: true, prefix: inst.def }; });
     }
@@ -1686,6 +1748,7 @@ async function loadGeneralSettings() {
   renderStipRows();
   renderNoticeForm();
   renderSigEditor();
+  renderPrintTitleForm();
 }
 
 function renderStipRows() {
@@ -1825,6 +1888,51 @@ async function saveSystemNotice() {
     showLoader(false);
     if (res.status === 'success') {
       Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
+    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+}
+
+// ─────────────────────────────────────────────
+// PRINT FORM TITLE
+// ─────────────────────────────────────────────
+function renderPrintTitleForm() {
+  const _set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  _set('ptOrgTh',   printTitleState.orgTh);
+  _set('ptOrgEn',   printTitleState.orgEn);
+  _set('ptTitleTh', printTitleState.titleTh);
+  _set('ptTitleEn', printTitleState.titleEn);
+  updatePrintTitlePreview();
+}
+
+function updatePrintTitlePreview() {
+  const orgTh   = document.getElementById('ptOrgTh')?.value.trim();
+  const orgEn   = document.getElementById('ptOrgEn')?.value.trim();
+  const titleTh = document.getElementById('ptTitleTh')?.value.trim();
+  const titleEn = document.getElementById('ptTitleEn')?.value.trim();
+  const preview = document.getElementById('ptPreview');
+  if (!preview) return;
+  if (!orgTh && !titleTh) { preview.classList.add('hidden'); return; }
+  preview.classList.remove('hidden');
+  document.getElementById('ptPreviewOrgTh').textContent   = orgTh   || '';
+  document.getElementById('ptPreviewOrgEn').textContent   = orgEn   || '';
+  document.getElementById('ptPreviewTitleTh').textContent = titleTh || '';
+  document.getElementById('ptPreviewTitleEn').textContent = titleEn || '';
+}
+
+async function savePrintTitle() {
+  printTitleState = {
+    orgTh:   document.getElementById('ptOrgTh')?.value.trim()   || printTitleState.orgTh,
+    orgEn:   document.getElementById('ptOrgEn')?.value.trim()   || printTitleState.orgEn,
+    titleTh: document.getElementById('ptTitleTh')?.value.trim() || printTitleState.titleTh,
+    titleEn: document.getElementById('ptTitleEn')?.value.trim() || printTitleState.titleEn,
+  };
+  try {
+    showLoader(true, 'กำลังบันทึก...');
+    const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
+    const res = await Promise.race([API.saveSetting('PRINT_TITLE', printTitleState), _t]);
+    showLoader(false);
+    if (res.status === 'success') {
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'ชื่อแบบฟอร์มการพิมพ์อัปเดตแล้ว', timer:2000, showConfirmButton:false });
     } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
   } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
 }
