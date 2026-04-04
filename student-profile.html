@@ -480,12 +480,13 @@ async function loadProfile() {
       Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
       return;
     }
-    let sigBlock = null, printTitle = null;
+    let sigBlock = null, printTitle = null, printLayout = null;
     if (settingsResult.status === 'success' && settingsResult.data) {
       sigBlock    = settingsResult.data['SIGNATURE_BLOCK'] || null;
       printTitle  = settingsResult.data['PRINT_TITLE']     || null;
+      printLayout = settingsResult.data['PRINT_LAYOUT']    || null;
     }
-    renderProfile(result.data, sigBlock, printTitle);
+    renderProfile(result.data, sigBlock, printTitle, printLayout);
     if (autoPrint) setTimeout(printProfile, 600);
   } catch(e) {
     showLoader(false);
@@ -493,7 +494,7 @@ async function loadProfile() {
   }
 }
 
-function renderProfile(d, sigBlock, printTitle) {
+function renderProfile(d, sigBlock, printTitle, printLayout) {
   const lang = LANG;
   const _picFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent((d.FirstName||'?')+' '+(d.LastName||''))}&background=1e3a8a&color=fff&size=128&bold=true`;
   const picUrl = d.ProfilePicURL ? driveImgUrl(d.ProfilePicURL, 'w400') : _picFallback;
@@ -695,7 +696,7 @@ function renderProfile(d, sigBlock, printTitle) {
   }, 80));
 
   // Populate official print document
-  renderPrintLayout(d, sigBlock, printTitle);
+  renderPrintLayout(d, sigBlock, printTitle, printLayout);
 
   lucide.createIcons();
 }
@@ -801,8 +802,41 @@ function printProfile() {
 // ─────────────────────────────────────────────
 // OFFICIAL PRINT DOCUMENT RENDERER
 // ─────────────────────────────────────────────
-function renderPrintLayout(d, sigBlock, printTitle) {
+const _PL_DEF = {
+  pageMarginTB:1, pageMarginLR:1.5, lineHeight:1.35,
+  logoSize:40, photoW:60, photoH:76, topBarH:3, topBarMargin:5,
+  heroNameSize:18, orgTitleSize:13, tableFont:11, sectionTitleSize:11,
+  cellPadV:2, cellPadH:5, sectionGap:5, sigLineGap:18,
+};
+
+function _applyPrintLayout(pl) {
+  const v = k => (pl && pl[k] != null) ? pl[k] : _PL_DEF[k];
+  let el = document.getElementById('_plOverride');
+  if (!el) { el = document.createElement('style'); el.id = '_plOverride'; document.head.appendChild(el); }
+  el.textContent = `
+    @page { size: A4 portrait; margin: ${v('pageMarginTB')}cm ${v('pageMarginLR')}cm; }
+    #printLayout { line-height: ${v('lineHeight')}; }
+    .doc-top-bar { height: ${v('topBarH')}pt; margin-bottom: ${v('topBarMargin')}pt; }
+    .doc-logo { width: ${v('logoSize')}pt; height: ${v('logoSize')}pt; }
+    .doc-photo { width: ${v('photoW')}pt; height: ${v('photoH')}pt; }
+    .doc-hero-name-th { font-size: ${v('heroNameSize')}pt; }
+    .doc-org-th, .doc-title-th { font-size: ${v('orgTitleSize')}pt; }
+    .doc-info-table { font-size: ${v('tableFont')}pt; }
+    .doc-info-table td { padding: ${v('cellPadV')}pt ${v('cellPadH')}pt; }
+    .doc-section-title { font-size: ${v('sectionTitleSize')}pt; }
+    .doc-sections-grid { gap: ${v('sectionGap')}pt; margin-bottom: ${v('sectionGap')}pt; }
+    .doc-section { margin-bottom: ${v('sectionGap')}pt; }
+    .doc-letterhead { gap: ${v('sectionGap')}pt; padding-bottom: ${v('sectionGap')}pt; margin-bottom: ${v('sectionGap')}pt; }
+    .doc-hero { margin-bottom: ${v('sectionGap')}pt; }
+    .sig-line { margin: ${v('sigLineGap')}pt 8pt 3pt; }
+  `;
+}
+
+function renderPrintLayout(d, sigBlock, printTitle, printLayout) {
   const _s = v => (v || '').toString().trim();
+
+  // Apply configurable print layout (CSS overrides)
+  _applyPrintLayout(printLayout);
 
   // Apply configurable print title
   if (printTitle && typeof printTitle === 'object') {
