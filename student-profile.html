@@ -708,84 +708,169 @@ function renderEduPath(d, lang) {
   const body = document.getElementById('eduPathBody');
   if (!card || !body) return;
 
-  const inst   = d.Institution || '';
-  const stipNo = d.StipNo || '';
-  const level  = d.CurrentLevel || '';
-  const status = d.Status || '';
+  const inst    = d.Institution || '';
+  const stipNo  = d.StipNo || '';
+  const level   = d.CurrentLevel || '';
+  const status  = d.Status || '';
+  const lastEdu = d.LastEducation || '';
+  const isCont  = isContinuedScholarship(d);
 
-  // Determine if we should show the path
-  const isVC  = inst === 'VC' || stipNo.startsWith('VC_');
-  const isMBS = inst === 'MBS' || stipNo.startsWith('MBS_');
-  const isUNI = inst === 'UNI';
-  const isCont = isContinuedScholarship(d);
+  // ── Normalize level string for matching (strip parenthetical suffixes) ──
+  const normLv = s => s ? s.replace(/\s*\([^)]*\)\s*/g, '').trim() : '';
+  const matchLv = (stored, stepLabel) => {
+    if (!stored) return false;
+    return stored === stepLabel || normLv(stored) === normLv(stepLabel);
+  };
 
-  if (!isVC && !isMBS && !isCont) { card.classList.add('hidden'); return; }
+  // ── Segment definitions (all possible stages) ──
+  const uniYears = parseInt(d.UniDuration) || 4;
+  const SEGS = {
+    lower_sec: {
+      steps: [
+        { short:'ม.1', label:'มัธยมศึกษาปีที่ 1 (Grade 7)' },
+        { short:'ม.2', label:'มัธยมศึกษาปีที่ 2 (Grade 8)' },
+        { short:'ม.3', label:'มัธยมศึกษาปีที่ 3 (Grade 9)' },
+      ],
+      color: '#16a34a'
+    },
+    upper_sec: {
+      steps: [
+        { short:'ม.4', label:'มัธยมศึกษาปีที่ 4 (Grade 10)' },
+        { short:'ม.5', label:'มัธยมศึกษาปีที่ 5 (Grade 11)' },
+        { short:'ม.6', label:'มัธยมศึกษาปีที่ 6 (Grade 12)' },
+      ],
+      color: '#1d4ed8'
+    },
+    pvc: {
+      steps: [
+        { short:'ปวช.1', label:'ปวช. ชั้นปีที่ 1' },
+        { short:'ปวช.2', label:'ปวช. ชั้นปีที่ 2' },
+        { short:'ปวช.3', label:'ปวช. ชั้นปีที่ 3' },
+      ],
+      color: '#ea580c'
+    },
+    pvs: {
+      steps: [
+        { short:'ปวส.1', label:'ปวส. ชั้นปีที่ 1' },
+        { short:'ปวส.2', label:'ปวส. ชั้นปีที่ 2' },
+      ],
+      color: '#dc2626'
+    },
+    uni: {
+      steps: Array.from({ length: Math.max(1, Math.min(uniYears, 6)) }, (_, i) => ({
+        short: `ปี ${i+1}`, label: `ชั้นปีที่ ${i+1}`
+      })),
+      color: '#7c3aed'
+    }
+  };
+  const SEG_ORDER = ['lower_sec','upper_sec','pvc','pvs','uni'];
 
+  // ── Map LastEducation → segments fully completed before scholarship ──
+  const preDone = new Set();
+  if      (lastEdu === 'มัธยมศึกษาตอนต้น')                        preDone.add('lower_sec');
+  else if (lastEdu === 'มัธยมศึกษาตอนปลาย')                       preDone.add('upper_sec');
+  else if (lastEdu === 'ประกาศนียบัตรวิชาชีพ (ปวช.)')              preDone.add('pvc');
+  else if (lastEdu === 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)')  { preDone.add('pvc'); preDone.add('pvs'); }
+
+  // ── Determine current active segment + active step index ──
+  let curSegId   = null;
+  let curStepIdx = -1;
+  const graduated = (status === 'Graduated');
+
+  if (inst === 'MBS') {
+    // ม.1-3 → lower_sec segment, ม.4-6 → upper_sec segment
+    const inLower = SEGS.lower_sec.steps.some(s => matchLv(level, s.label));
+    if (inLower) {
+      curSegId   = 'lower_sec';
+      curStepIdx = SEGS.lower_sec.steps.findIndex(s => matchLv(level, s.label));
+      if (curStepIdx < 0) curStepIdx = 0;
+    } else {
+      curSegId   = 'upper_sec';
+      curStepIdx = SEGS.upper_sec.steps.findIndex(s => matchLv(level, s.label));
+      if (curStepIdx < 0) curStepIdx = 0;
+    }
+  } else if (inst === 'VC') {
+    if (level.includes('ปวส.')) {
+      curSegId   = 'pvs';
+      curStepIdx = SEGS.pvs.steps.findIndex(s => matchLv(level, s.label));
+      if (curStepIdx < 0) curStepIdx = 0;
+      preDone.add('pvc'); // must have finished ปวช. before ปวส.
+    } else {
+      curSegId   = 'pvc';
+      curStepIdx = SEGS.pvc.steps.findIndex(s => matchLv(level, s.label));
+      if (curStepIdx < 0) curStepIdx = 0;
+    }
+  } else if (inst === 'UNI') {
+    curSegId   = 'uni';
+    curStepIdx = SEGS.uni.steps.findIndex(s => matchLv(level, s.label));
+    if (curStepIdx < 0) curStepIdx = 0;
+    // Continued scholarship: add the origin institution segment as pre-done
+    if (isCont) {
+      if (stipNo.startsWith('MBS_'))      preDone.add('upper_sec');
+      else if (stipNo.startsWith('VC_'))  preDone.add('pvc');
+    }
+  }
+
+  // ── Collect segments to show (pre-done + current) ──
+  const toShow = SEG_ORDER.filter(id => preDone.has(id) || id === curSegId);
+  if (toShow.length === 0) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
-  // Steps pre-completed based on LastEducation (before scholarship)
-  const _lastEduDone = {
-    'มัธยมศึกษาตอนปลาย':                   ['ม.4','ม.5','ม.6'],
-    'ประกาศนียบัตรวิชาชีพ (ปวช.)':          ['ปวช.1','ปวช.2','ปวช.3'],
-    'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)': ['ปวช.1','ปวช.2','ปวช.3','ปวส.1','ปวส.2'],
-  };
-  const preDone = _lastEduDone[d.LastEducation] || [];
-
-  // Build path steps
+  // ── Build flat step list ──
   const steps = [];
+  toShow.forEach(segId => {
+    const seg    = SEGS[segId];
+    const isPre  = preDone.has(segId) && segId !== curSegId;
+    const isCur  = segId === curSegId;
 
-  if (isMBS || stipNo.startsWith('MBS_')) {
-    const mbsLevels = ['มัธยมศึกษาปีที่ 4', 'มัธยมศึกษาปีที่ 5', 'มัธยมศึกษาปีที่ 6'];
-    mbsLevels.forEach((l, i) => {
-      const sl = `ม.${i+4}`;
-      const isActive = inst === 'MBS' && level === l;
-      const isDone   = preDone.includes(sl) || (inst !== 'MBS') || mbsLevels.indexOf(level) > i;
-      steps.push({ label: l, shortLabel: sl, done: isDone && !isActive, active: isActive, color: '#1d4ed8' });
+    seg.steps.forEach((step, idx) => {
+      let done = false, active = false;
+      if (isPre) {
+        done = true;
+      } else if (isCur) {
+        if (graduated) {
+          done = true;
+        } else if (idx < curStepIdx) {
+          done = true;
+        } else if (idx === curStepIdx) {
+          active = true;
+        }
+        // else: future (pending)
+      } else {
+        // segment that is both preDone AND curSegId (overlap) — treat as graduated
+        done = true;
+      }
+      steps.push({ short: step.short, done, active, color: seg.color });
     });
-  }
-  if (isVC || stipNo.startsWith('VC_')) {
-    const pqLevels = [
-      { label:'ปวช. ชั้นปีที่ 1', short:'ปวช.1', color:'#ea580c' },
-      { label:'ปวช. ชั้นปีที่ 2', short:'ปวช.2', color:'#ea580c' },
-      { label:'ปวช. ชั้นปีที่ 3', short:'ปวช.3', color:'#ea580c' },
-      { label:'ปวส. ชั้นปีที่ 1', short:'ปวส.1', color:'#dc2626' },
-      { label:'ปวส. ชั้นปีที่ 2', short:'ปวส.2', color:'#dc2626' },
-    ];
-    pqLevels.forEach(lv => {
-      const isActive = inst === 'VC' && level === lv.label;
-      const isDone   = preDone.includes(lv.short) || (inst !== 'VC') || pqLevels.findIndex(x => x.label === level) > pqLevels.indexOf(lv);
-      steps.push({ label: lv.label, shortLabel: lv.short, done: isDone && !isActive, active: isActive, color: lv.color });
-    });
-  }
-  if (isUNI || isCont) {
-    const uniYears = ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4'];
-    uniYears.forEach((l, i) => {
-      const isActive = inst === 'UNI' && level === l;
-      const isDone   = inst === 'UNI' && (uniYears.indexOf(level) > i || status === 'Graduated');
-      steps.push({ label: l, shortLabel: `ปี ${i+1}`, done: isDone && !isActive, active: isActive, color: '#7c3aed' });
-    });
-  }
+  });
 
+  // ── Render HTML ──
   body.innerHTML = `
     <div class="overflow-x-auto pb-2">
       <div class="flex items-center gap-0 min-w-max py-2">
-        ${steps.map((s, i) => `
+        ${steps.map((s, i) => {
+          const next = steps[i+1];
+          const connColor = next && (next.done || next.active) ? next.color : '#e5e7eb';
+          return `
           <div class="flex items-center">
             <div class="flex flex-col items-center">
               <div style="width:32px;height:32px;border-radius:50%;border:2px solid ${s.active||s.done?s.color:'#d1d5db'};background:${s.done?s.color:s.active?s.color:'#fff'};display:flex;align-items:center;justify-content:center;transition:all .3s">
-                ${s.done ? `<i data-lucide="check" style="width:14px;height:14px;color:#fff"></i>` : s.active ? `<span style="width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block"></span>` : `<span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;display:inline-block"></span>`}
+                ${s.done   ? `<i data-lucide="check" style="width:14px;height:14px;color:#fff"></i>`
+                : s.active ? `<span style="width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block"></span>`
+                           : `<span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;display:inline-block"></span>`}
               </div>
-              <span class="text-xs mt-1 font-semibold text-center" style="color:${s.active||s.done?s.color:'#9ca3af'};font-size:10px;max-width:54px;word-break:break-all">${s.shortLabel}</span>
+              <span style="font-size:10px;margin-top:4px;font-weight:700;color:${s.active||s.done?s.color:'#9ca3af'};max-width:52px;text-align:center;word-break:break-all">${s.short}</span>
             </div>
-            ${i < steps.length-1 ? `<div style="width:24px;height:2px;margin-bottom:18px;background:${steps[i+1].done||steps[i+1].active?steps[i+1].color:'#e5e7eb'};transition:background .3s"></div>` : ''}
-          </div>`).join('')}
+            ${i < steps.length-1 ? `<div style="width:24px;height:2px;margin-bottom:18px;background:${connColor};transition:background .3s"></div>` : ''}
+          </div>`;
+        }).join('')}
       </div>
     </div>
-    ${d.LastEducation ? `<div class="mt-2 text-xs border-t pt-2 flex items-center gap-1.5 flex-wrap">
+    ${lastEdu ? `<div class="mt-2 text-xs border-t pt-2 flex items-center gap-1.5 flex-wrap">
       <span class="text-gray-400">${lang==='en'?'Prior qualification:':'วุฒิก่อนรับทุน:'}</span>
       <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-weight:700">
         <svg style="width:10px;height:10px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        ${d.LastEducation}
+        ${lastEdu}
       </span>
     </div>` : ''}
     ${d.UniName ? `<div class="mt-2 text-xs text-gray-500 border-t pt-2"><span class="font-semibold text-purple-700">มหาวิทยาลัย:</span> ${d.UniName}${d.UniFaculty?` — ${d.UniFaculty}`:''}${d.UniMajor?` / ${d.UniMajor}`:''}</div>` : ''}

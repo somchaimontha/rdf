@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grade Promotion & Graduation — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+.promo-group-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px; border-radius:10px 10px 0 0; font-weight:700; font-size:14px;
+}
+.promo-table { width:100%; border-collapse:collapse; font-size:13px; }
+.promo-table thead tr { background:#f8faff; border-bottom:2px solid #e5e7eb; }
+.promo-table th { padding:8px 10px; text-align:left; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.5px; color:#6b7280; white-space:nowrap; }
+.promo-table td { padding:7px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.promo-table tr:last-child td { border-bottom:none; }
+.promo-table tr:hover td { background:#fafbff; }
+.promo-table tr.excluded td { opacity:.45; }
+.action-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
+  border-radius:20px; font-size:11px; font-weight:700; }
+.act-promote    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+.act-graduate   { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+.act-uni        { background:#faf5ff; color:#7c3aed; border:1px solid #ddd6fe; }
+.act-hold       { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+.act-suspend    { background:#fef9c3; color:#a16207; border:1px solid #fde68a; }
+.act-resign     { background:#fff1f2; color:#be123c; border:1px solid #fecdd3; }
+.act-skip       { background:#f9fafb; color:#6b7280; border:1px solid #e5e7eb; }
+.uni-sch-badge  { display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
+  border-radius:12px; font-size:10px; font-weight:700; }
+.sch-yes     { background:#f0fdf4; color:#16a34a; }
+.sch-no      { background:#fff1f2; color:#be123c; }
+.sch-pending { background:#fef9c3; color:#a16207; }
+.sch-none    { background:#f9fafb; color:#9ca3af; }
+.promo-action-select { border:1.5px solid #e5e7eb; border-radius:8px; padding:4px 8px;
+  font-size:12px; font-weight:600; background:#fff; cursor:pointer; outline:none; }
+.promo-action-select:focus { border-color:#1d4ed8; }
+.sticky-toolbar { position:sticky; top:0; z-index:30; background:#fff;
+  border-bottom:1px solid #e5e7eb; padding:10px 0; margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.group-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  overflow:hidden; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.inst-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; display:inline-block; }
+.notes-input { border:1px solid #e5e7eb; border-radius:6px; padding:3px 7px;
+  font-size:11px; width:100%; min-width:90px; outline:none; }
+.notes-input:focus { border-color:#7c3aed; }
+.uni-detail-row { background:#faf5ff; border-top:1px solid #ede9fe; padding:10px 16px; }
+</style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">Loading...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav no-print">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1>Dr. Robert Dyckerhoff Foundation</h1>
+          <p>Scholarship Management System</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <div id="navUserWrap" class="hidden nav-user">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+        <div class="hide-mobile">
+          <div id="navUserName" class="nav-user-name">—</div>
+          <div id="navUserRole" class="nav-user-role">—</div>
+        </div>
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+  <!-- Back link -->
+  <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit">
+    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Dashboard
+  </a>
+
+  <!-- Page header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+    <div>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <i data-lucide="trophy" class="w-5 h-5" style="color:#16a34a"></i>
+        Grade Promotion &amp; Graduation
+      </h2>
+      <p class="text-xs text-gray-400 mt-0.5">Promote students by group, record graduations, and manage university scholarship continuation.</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="loadPage()" class="btn btn-secondary btn-sm">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reload
+      </button>
+      <a href="settings.html" onclick="localStorage.setItem('settingsTab','promotion')" class="btn btn-secondary btn-sm">
+        <i data-lucide="settings" class="w-4 h-4"></i> Promotion Settings
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══ STICKY TOOLBAR ═══ -->
+  <div class="sticky-toolbar">
+    <div class="container" style="padding-top:0;padding-bottom:0">
+      <div class="flex flex-wrap gap-3 items-center justify-between">
+        <!-- Left: filters -->
+        <div class="flex flex-wrap gap-2 items-center">
+          <div class="search-wrap">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <input type="text" id="promoSearch" class="field-input search-input" placeholder="Search by name or ID..."
+              style="width:190px" oninput="filterGroups()">
+          </div>
+          <select id="promoInstFilter" class="field-select" onchange="filterGroups()" style="width:120px">
+            <option value="">All Institutions</option>
+            <option value="MBS">MBS</option>
+            <option value="VC">VC</option>
+            <option value="UNI">University</option>
+            <option value="OTHER">Other</option>
+          </select>
+          <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <input type="checkbox" id="chkHideEmpty" onchange="filterGroups()" class="rounded">
+            Hide empty groups
+          </label>
+        </div>
+        <!-- Right: date + apply -->
+        <div class="flex flex-wrap gap-2 items-center">
+          <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-gray-400"></i>
+            <label class="text-xs font-semibold text-gray-500">Promotion Date</label>
+            <input type="date" id="promotionDate" class="border-0 bg-transparent text-sm font-semibold outline-none" style="min-width:130px">
+          </div>
+          <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+            <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-gray-400"></i>
+            <label class="text-xs font-semibold text-gray-500">Academic Year</label>
+            <input type="text" id="academicYear" class="border-0 bg-transparent text-sm font-semibold outline-none" style="width:90px" placeholder="2024-2025">
+          </div>
+          <button onclick="applyAllChanges()" id="btnApplyAll"
+            class="btn btn-sm font-bold" style="background:#16a34a;color:#fff;border:none;min-width:140px">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            Apply All Changes
+          </button>
+        </div>
+      </div>
+      <!-- Stats bar -->
+      <div id="promoStats" class="flex gap-4 mt-2 text-xs text-gray-400 flex-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="flex flex-wrap gap-2 mb-4 text-xs">
+    <span class="action-badge act-promote"><i data-lucide="arrow-up" style="width:10px;height:10px"></i> Promote</span>
+    <span class="action-badge act-graduate"><i data-lucide="graduation-cap" style="width:10px;height:10px"></i> Graduate</span>
+    <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> Continue to University</span>
+    <span class="action-badge act-hold"><i data-lucide="pause-circle" style="width:10px;height:10px"></i> Hold / Repeat Year</span>
+    <span class="action-badge act-suspend"><i data-lucide="clock" style="width:10px;height:10px"></i> Suspend</span>
+    <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> Resign</span>
+    <span class="action-badge act-skip"><i data-lucide="minus" style="width:10px;height:10px"></i> No Change</span>
+  </div>
+
+  <!-- Groups container -->
+  <div id="groupsContainer">
+    <div class="text-center text-gray-400 py-16">
+      <i data-lucide="loader-circle" class="w-8 h-8 mx-auto mb-3 opacity-40"></i>
+      <p>Loading students...</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="rdf-footer no-print">
+  <span>RDF Scholarship Management System</span>
+  <span id="footerYear"></span>
+</footer>
+
+<!-- Scripts -->
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let ALL_GROUPS    = [];   // raw data from backend
+let PROMO_RULES   = {};   // { "MBS||Level": { nextLevel, completion } }
+let SETTINGS      = {};   // system settings
+let ROW_DECISIONS = {};   // stipNo → { action, nextLevel, uniScholarship, notes, uniName, uniDuration, uniFaculty, uniMajor, uniProvince }
+
+const INST_COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#64748b' };
+const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb' };
+
+// Level options for each institution
+const LEVEL_OPTIONS = {
+  MBS: [
+    'มัธยมศึกษาปีที่ 1 (Grade 7)','มัธยมศึกษาปีที่ 2 (Grade 8)','มัธยมศึกษาปีที่ 3 (Grade 9)',
+    'มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)',
+  ],
+  VC:  ['ปวช. ชั้นปีที่ 1','ปวช. ชั้นปีที่ 2','ปวช. ชั้นปีที่ 3','ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'],
+  UNI: ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4','ชั้นปีที่ 5','ชั้นปีที่ 6'],
+  OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','อื่นๆ'],
+};
+
+// Default level progression
+const DEFAULT_RULES = [
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 1 (Grade 7)',  to:'มัธยมศึกษาปีที่ 2 (Grade 8)',  completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 2 (Grade 8)',  to:'มัธยมศึกษาปีที่ 3 (Grade 9)',  completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 3 (Grade 9)',  to:'มัธยมศึกษาปีที่ 4 (Grade 10)', completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 4 (Grade 10)', to:'มัธยมศึกษาปีที่ 5 (Grade 11)', completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 5 (Grade 11)', to:'มัธยมศึกษาปีที่ 6 (Grade 12)', completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 6 (Grade 12)', to:'—',                             completion:'graduate' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 1',             to:'ปวช. ชั้นปีที่ 2',             completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 2',             to:'ปวช. ชั้นปีที่ 3',             completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 3',             to:'ปวส. ชั้นปีที่ 1',             completion:'promote' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 1',             to:'ปวส. ชั้นปีที่ 2',             completion:'promote' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 2',             to:'—',                             completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 1',                  to:'ชั้นปีที่ 2',                  completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 2',                  to:'ชั้นปีที่ 3',                  completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 3',                  to:'ชั้นปีที่ 4',                  completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 4',                  to:'—',                             completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 5',                  to:'—',                             completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 6',                  to:'—',                             completion:'graduate' },
+];
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+async function loadPage() {
+  showLoader(true, 'Loading students...');
+  try {
+    // Load settings & students in parallel
+    const [settRes, studRes] = await Promise.all([
+      API.getSystemSettings(),
+      API.get('getStudentsForPromotion'),
+    ]);
+
+    SETTINGS = (settRes.data || {});
+    const ps = SETTINGS.promotionSettings || {};
+
+    // Set toolbar defaults from saved settings
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('promotionDate').value = ps.promotionDate || today;
+    document.getElementById('academicYear').value  = ps.academicYear  || '';
+
+    // Build rules lookup
+    const rules = ps.levelRules || DEFAULT_RULES;
+    PROMO_RULES = {};
+    rules.forEach(r => { PROMO_RULES[r.inst + '||' + r.from] = r; });
+
+    if (studRes.status !== 'success')
+      throw new Error(studRes.message || 'Failed to load students');
+
+    ALL_GROUPS = studRes.groups || [];
+
+    // Initialise default decisions for every student
+    ALL_GROUPS.forEach(g => {
+      g.students.forEach(s => {
+        if (!ROW_DECISIONS[s.StipNo]) {
+          const rule  = PROMO_RULES[g.institution + '||' + g.level];
+          const defTo = rule ? rule.to : '';
+          const comp  = rule ? rule.completion : 'promote';
+          ROW_DECISIONS[s.StipNo] = {
+            action:       comp === 'graduate' ? 'graduate' : 'promote',
+            nextLevel:    comp === 'promote' ? defTo : '',
+            uniScholarship: s.UniScholarship || (SETTINGS.promotionSettings?.uniDefaultStatus || 'Pending'),
+            notes:        s.PromotionNotes || '',
+            uniName:'', uniDuration:'', uniFaculty:'', uniMajor:'', uniProvince:'',
+          };
+        }
+      });
+    });
+
+    showLoader(false);
+    renderGroups();
+    updateStats();
+  } catch(e) {
+    showLoader(false);
+    document.getElementById('groupsContainer').innerHTML =
+      `<div class="card p-8 text-center text-red-500"><i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-2"></i><p>${e.message}</p></div>`;
+    lucide.createIcons();
+  }
+}
+
+// ─────────────────────────────────────────────
+// RENDER GROUPS
+// ─────────────────────────────────────────────
+function renderGroups() {
+  const container = document.getElementById('groupsContainer');
+  const search    = (document.getElementById('promoSearch').value || '').toLowerCase();
+  const instFlt   = document.getElementById('promoInstFilter').value;
+  const hideEmpty = document.getElementById('chkHideEmpty').checked;
+
+  let html = '';
+  let shown = 0;
+
+  // Sort groups: MBS first, then VC, then UNI, then OTHER; within each by level order
+  const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const sorted = [...ALL_GROUPS].sort((a, b) => {
+    const io = (instOrder[a.institution] ?? 9) - (instOrder[b.institution] ?? 9);
+    if (io !== 0) return io;
+    return (LEVEL_OPTIONS[a.institution] || []).indexOf(a.level) -
+           (LEVEL_OPTIONS[b.institution] || []).indexOf(b.level);
+  });
+
+  sorted.forEach(g => {
+    if (instFlt && g.institution !== instFlt) return;
+
+    // Filter students by search
+    const filtered = search
+      ? g.students.filter(s => {
+          const name = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
+                        s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
+          return name.includes(search);
+        })
+      : g.students;
+
+    if (hideEmpty && filtered.length === 0) return;
+
+    const color = INST_COLORS[g.institution] || '#64748b';
+    const bg    = INST_BG[g.institution]    || '#f9fafb';
+    const gKey  = g.institution + '||' + g.level;
+    const rule  = PROMO_RULES[gKey];
+    const nextLevelDefault = rule ? rule.to : '—';
+    const isGraduateLevel  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
+
+    shown++;
+    html += `
+    <div class="group-card" id="group_${CSS.escape(gKey)}">
+      <div class="promo-group-header" style="background:${bg};border-bottom:2px solid ${color}20">
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-sm" style="color:${color}">${g.institution}</span>
+          <span class="text-gray-700">— ${g.level}</span>
+          <span class="text-xs text-gray-400 font-normal">${filtered.length} student${filtered.length!==1?'s':''}</span>
+          ${isGraduateLevel ? `<span class="action-badge act-graduate" style="font-size:10px">Final Level</span>` : ''}
+        </div>
+        <div class="flex gap-2 items-center">
+          <button onclick="promoteAllInGroup('${g.institution}','${g.level}')"
+            class="btn btn-sm text-xs font-bold" style="background:${color}15;color:${color};border:1.5px solid ${color}40">
+            <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> Promote All
+          </button>
+          <button onclick="toggleGroup('${g.institution}','${g.level}')"
+            class="btn btn-secondary btn-sm text-xs" style="padding:4px 8px">
+            <i data-lucide="chevron-up" class="w-3.5 h-3.5" id="chevron_${CSS.escape(gKey)}"></i>
+          </button>
+        </div>
+      </div>
+      <div id="body_${CSS.escape(gKey)}">
+        ${filtered.length === 0
+          ? `<p class="text-center text-gray-400 text-xs py-4">No students match the current filter.</p>`
+          : `<div class="overflow-x-auto">
+              <table class="promo-table">
+                <thead>
+                  <tr>
+                    <th style="width:32px">
+                      <input type="checkbox" title="Select all" onchange="selectAllInGroup('${g.institution}','${g.level}',this.checked)"
+                        class="rounded">
+                    </th>
+                    <th style="width:36px"></th>
+                    <th>Name</th>
+                    <th style="width:90px">StipNo</th>
+                    <th style="width:80px">Status</th>
+                    <th style="width:155px">Action</th>
+                    <th style="width:220px">Next Level / Details</th>
+                    <th style="width:110px">Uni Scholarship</th>
+                    <th style="width:120px">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${filtered.map(s => renderStudentRow(s, g.institution, g.level, nextLevelDefault, isGraduateLevel)).join('')}
+                </tbody>
+              </table>
+            </div>`}
+      </div>
+    </div>`;
+  });
+
+  if (shown === 0) {
+    html = `<div class="text-center text-gray-400 py-16">
+      <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
+      <p class="font-semibold">No groups found</p>
+      <p class="text-xs mt-1">Adjust filters or reload the page.</p>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+  lucide.createIcons();
+}
+
+function renderStudentRow(s, inst, level, nextLevelDefault, isGraduateLevel) {
+  const dec = ROW_DECISIONS[s.StipNo] || {};
+  const act = dec.action || (isGraduateLevel ? 'graduate' : 'promote');
+  const excluded = act === 'skip';
+
+  const photoSrc = s.ProfilePicURL
+    ? s.ProfilePicURL.replace(/\/file\/d\/([^/]+)\/.*/, '/thumbnail?id=$1&sz=w40')
+    : 'https://via.placeholder.com/36x36?text=?';
+
+  const name = ((s.Title || '') + (s.FirstName || '') + ' ' + (s.LastName || '')).trim()
+    || ((s.EngFirstName || '') + ' ' + (s.EngLastName || '')).trim() || s.StipNo;
+
+  const statusBadge = {
+    Active:'badge-green', Suspended:'badge-orange', University:'badge-blue'
+  }[s.Status] || 'badge-gray';
+
+  // Build level selector options
+  const levelOpts = (() => {
+    const allLvls = LEVEL_OPTIONS[inst] || [];
+    let opts = allLvls.map(l => `<option value="${l}" ${dec.nextLevel===l?'selected':''}>${l}</option>`).join('');
+    // Add UNI option if MBS/VC final year
+    if (['MBS','VC'].includes(inst)) {
+      opts += `<option value="__UNI__" ${dec.nextLevel==='__UNI__'?'selected':''}>→ Continue to University</option>`;
+    }
+    return opts;
+  })();
+
+  // Scholarship badge
+  const schBadge = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
+  const schLabel = dec.uniScholarship || '—';
+
+  return `
+  <tr id="row_${s.StipNo}" class="${excluded ? 'excluded' : ''}">
+    <td>
+      <input type="checkbox" class="rounded group-check" data-stipno="${s.StipNo}"
+        ${excluded ? '' : 'checked'} onchange="onRowCheck('${s.StipNo}',this.checked)">
+    </td>
+    <td>
+      <img src="${photoSrc}" class="w-8 h-8 rounded-full object-cover border border-gray-200"
+        onerror="this.src='https://via.placeholder.com/32x32?text=?'">
+    </td>
+    <td>
+      <div class="font-semibold text-gray-800 text-xs leading-tight">${name}</div>
+      ${s.Major ? `<div class="text-gray-400" style="font-size:10px">${s.Major}</div>` : ''}
+    </td>
+    <td class="text-xs font-mono text-gray-500">${s.StipNo}</td>
+    <td><span class="badge ${statusBadge}" style="font-size:10px">${s.Status || 'Active'}</span></td>
+    <td>
+      <select class="promo-action-select w-full" onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)"
+        id="act_${s.StipNo}">
+        <option value="promote"   ${act==='promote'  ?'selected':''}>⬆ Promote</option>
+        <option value="graduate"  ${act==='graduate' ?'selected':''}>🎓 Graduate</option>
+        ${['MBS','VC'].includes(inst) ? `<option value="uni" ${act==='uni'?'selected':''}>🏛 Graduate + Cont. Uni (RDF)</option>` : ''}
+        ${['MBS','VC'].includes(inst) ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 Graduate + Uni (Own)</option>` : ''}
+        <option value="hold"      ${act==='hold'     ?'selected':''}>⏸ Hold / Repeat Year</option>
+        <option value="suspend"   ${act==='suspend'  ?'selected':''}>⚠ Suspend</option>
+        <option value="resign"    ${act==='resign'   ?'selected':''}>✕ Resign</option>
+        <option value="skip"      ${act==='skip'     ?'selected':''}>— No Change</option>
+      </select>
+    </td>
+    <td id="detail_${s.StipNo}">
+      ${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}
+    </td>
+    <td>
+      ${['uni','uni_own'].includes(act)
+        ? `<select class="promo-action-select text-xs" onchange="setDec('${s.StipNo}','uniScholarship',this.value)">
+            <option value="Yes"     ${dec.uniScholarship==='Yes'    ?'selected':''}>✓ Yes</option>
+            <option value="No"      ${dec.uniScholarship==='No'     ?'selected':''}>✗ No</option>
+            <option value="Pending" ${dec.uniScholarship==='Pending'?'selected':''}>⏳ Pending</option>
+           </select>`
+        : `<span class="uni-sch-badge ${schBadge}">${schLabel}</span>`}
+    </td>
+    <td>
+      <input type="text" class="notes-input" placeholder="Notes..."
+        value="${(dec.notes||'').replace(/"/g,'&quot;')}"
+        onchange="setDec('${s.StipNo}','notes',this.value)">
+    </td>
+  </tr>
+  ${['uni','uni_own'].includes(act) ? renderUniDetailRow(s.StipNo, dec) : ''}`;
+}
+
+function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
+  if (act === 'promote') {
+    return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">
+      ${levelOpts}
+    </select>`;
+  }
+  if (act === 'graduate') {
+    return `<span class="text-xs text-green-600 font-semibold">Status → Graduated</span>`;
+  }
+  if (act === 'uni') {
+    return `<span class="text-xs text-purple-600 font-semibold">→ UNI Yr.1 (RDF Scholarship)</span>`;
+  }
+  if (act === 'uni_own') {
+    return `<span class="text-xs text-purple-400 font-semibold">→ University (own)</span>`;
+  }
+  if (act === 'hold') {
+    return `<span class="text-xs text-orange-500 font-semibold">Stay at ${level}</span>`;
+  }
+  if (act === 'suspend') {
+    return `<span class="text-xs text-yellow-600 font-semibold">Status → Suspended</span>`;
+  }
+  if (act === 'resign') {
+    return `<span class="text-xs text-red-500 font-semibold">Status → Resigned</span>`;
+  }
+  return `<span class="text-xs text-gray-400">—</span>`;
+}
+
+function renderUniDetailRow(stipNo, dec) {
+  return `
+  <tr id="unirow_${stipNo}" style="background:#faf5ff;border-top:none">
+    <td></td><td></td>
+    <td colspan="7" class="py-2 px-3">
+      <div class="flex flex-wrap gap-2 items-center">
+        <span class="text-xs font-bold text-purple-700 flex items-center gap-1">
+          <i data-lucide="building-2" class="w-3 h-3"></i> University Details
+        </span>
+        <input type="text" class="notes-input" style="width:160px" placeholder="University name"
+          value="${dec.uniName||''}" onchange="setDec('${stipNo}','uniName',this.value)">
+        <input type="text" class="notes-input" style="width:120px" placeholder="Faculty"
+          value="${dec.uniFaculty||''}" onchange="setDec('${stipNo}','uniFaculty',this.value)">
+        <input type="text" class="notes-input" style="width:120px" placeholder="Major / Program"
+          value="${dec.uniMajor||''}" onchange="setDec('${stipNo}','uniMajor',this.value)">
+        <input type="text" class="notes-input" style="width:90px" placeholder="Province"
+          value="${dec.uniProvince||''}" onchange="setDec('${stipNo}','uniProvince',this.value)">
+        <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniDuration',this.value)" style="width:80px">
+          <option value="">Duration</option>
+          ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${dec.uniDuration==n?'selected':''}>${n} yr</option>`).join('')}
+        </select>
+      </div>
+    </td>
+  </tr>`;
+}
+
+// ─────────────────────────────────────────────
+// DECISION HELPERS
+// ─────────────────────────────────────────────
+function setDec(stipNo, field, val) {
+  if (!ROW_DECISIONS[stipNo]) ROW_DECISIONS[stipNo] = {};
+  ROW_DECISIONS[stipNo][field] = val;
+}
+
+function onActionChange(stipNo, inst, level, newAct) {
+  if (!ROW_DECISIONS[stipNo]) ROW_DECISIONS[stipNo] = {};
+  const dec = ROW_DECISIONS[stipNo];
+  dec.action = newAct;
+
+  // Auto-fill nextLevel from rules
+  if (newAct === 'promote') {
+    const rule = PROMO_RULES[inst + '||' + level];
+    dec.nextLevel = rule ? rule.to : '';
+  } else {
+    dec.nextLevel = '';
+  }
+
+  // Update detail cell
+  const detCell = document.getElementById('detail_' + stipNo);
+  if (detCell) {
+    const levelOpts = (LEVEL_OPTIONS[inst] || [])
+      .map(l => `<option value="${l}" ${dec.nextLevel===l?'selected':''}>${l}</option>`).join('');
+    detCell.innerHTML = renderDetailCell(stipNo, inst, level, newAct, dec, levelOpts);
+  }
+
+  // Toggle UNI detail row
+  const existUniRow = document.getElementById('unirow_' + stipNo);
+  const mainRow     = document.getElementById('row_'    + stipNo);
+  const isUni = ['uni','uni_own'].includes(newAct);
+
+  if (isUni && !existUniRow) {
+    // Insert UNI detail row after main row
+    if (mainRow) mainRow.insertAdjacentHTML('afterend', renderUniDetailRow(stipNo, dec));
+  } else if (!isUni && existUniRow) {
+    existUniRow.remove();
+  }
+
+  // Update scholarship cell
+  const schCell = mainRow?.cells[7];
+  if (schCell) {
+    if (isUni) {
+      const schVal = dec.uniScholarship || 'Pending';
+      schCell.innerHTML = `<select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniScholarship',this.value)">
+        <option value="Yes"     ${schVal==='Yes'    ?'selected':''}>✓ Yes</option>
+        <option value="No"      ${schVal==='No'     ?'selected':''}>✗ No</option>
+        <option value="Pending" ${schVal==='Pending'?'selected':''}>⏳ Pending</option>
+      </select>`;
+    } else {
+      const schLabel = dec.uniScholarship || '—';
+      const schBadge = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
+      schCell.innerHTML = `<span class="uni-sch-badge ${schBadge}">${schLabel}</span>`;
+    }
+  }
+
+  // Excluded row styling
+  if (mainRow) mainRow.classList.toggle('excluded', newAct === 'skip');
+  const chk = mainRow?.querySelector('.group-check');
+  if (chk) chk.checked = newAct !== 'skip';
+
+  lucide.createIcons();
+  updateStats();
+}
+
+function onRowCheck(stipNo, checked) {
+  if (!checked) {
+    setDec(stipNo, 'action', 'skip');
+    const actSel = document.getElementById('act_' + stipNo);
+    if (actSel) actSel.value = 'skip';
+    document.getElementById('row_' + stipNo)?.classList.add('excluded');
+  } else {
+    // Restore to 'promote' if was 'skip'
+    if ((ROW_DECISIONS[stipNo] || {}).action === 'skip') {
+      setDec(stipNo, 'action', 'promote');
+      const actSel = document.getElementById('act_' + stipNo);
+      if (actSel) actSel.value = 'promote';
+      document.getElementById('row_' + stipNo)?.classList.remove('excluded');
+    }
+  }
+  updateStats();
+}
+
+function promoteAllInGroup(inst, level) {
+  const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
+  if (!group) return;
+  const rule = PROMO_RULES[inst + '||' + level];
+  const defAction = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni') ? 'graduate' : 'promote';
+  const defNext   = defAction === 'promote' ? (rule ? rule.to : '') : '';
+  group.students.forEach(s => {
+    if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
+    ROW_DECISIONS[s.StipNo].action    = defAction;
+    ROW_DECISIONS[s.StipNo].nextLevel = defNext;
+  });
+  // Re-render just this group
+  renderGroups();
+}
+
+function selectAllInGroup(inst, level, checked) {
+  const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
+  if (!group) return;
+  group.students.forEach(s => {
+    onRowCheck(s.StipNo, checked);
+    const actSel = document.getElementById('act_' + s.StipNo);
+    if (actSel && !checked) actSel.value = 'skip';
+  });
+}
+
+// ─────────────────────────────────────────────
+// FILTER / TOGGLE
+// ─────────────────────────────────────────────
+function filterGroups() { renderGroups(); }
+
+function toggleGroup(inst, level) {
+  const gKey   = inst + '||' + level;
+  const body   = document.getElementById('body_'    + CSS.escape(gKey));
+  const chev   = document.getElementById('chevron_' + CSS.escape(gKey));
+  if (!body) return;
+  const hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (chev) {
+    chev.setAttribute('data-lucide', hidden ? 'chevron-up' : 'chevron-down');
+    lucide.createIcons();
+  }
+}
+
+// ─────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────
+function updateStats() {
+  const counts = { promote:0, graduate:0, uni:0, uni_own:0, hold:0, suspend:0, resign:0, skip:0 };
+  Object.values(ROW_DECISIONS).forEach(d => { counts[d.action] = (counts[d.action]||0) + 1; });
+  const bar = document.getElementById('promoStats');
+  if (!bar) return;
+  const parts = [
+    counts.promote   ? `<span>⬆ Promote: <b>${counts.promote}</b></span>`   : '',
+    counts.graduate  ? `<span>🎓 Graduate: <b>${counts.graduate}</b></span>` : '',
+    (counts.uni+counts.uni_own) ? `<span>🏛 → Uni: <b>${counts.uni+counts.uni_own}</b></span>` : '',
+    counts.hold      ? `<span>⏸ Hold: <b>${counts.hold}</b></span>`         : '',
+    counts.suspend   ? `<span>⚠ Suspend: <b>${counts.suspend}</b></span>`   : '',
+    counts.resign    ? `<span>✕ Resign: <b>${counts.resign}</b></span>`     : '',
+    counts.skip      ? `<span>— Skip: <b>${counts.skip}</b></span>`         : '',
+  ].filter(Boolean);
+  bar.innerHTML = parts.join('<span class="mx-1 text-gray-200">|</span>');
+}
+
+// ─────────────────────────────────────────────
+// APPLY ALL CHANGES
+// ─────────────────────────────────────────────
+async function applyAllChanges() {
+  const active = Object.entries(ROW_DECISIONS).filter(([, d]) => d.action !== 'skip');
+  if (active.length === 0) {
+    return Swal.fire('Nothing to Apply', 'All students are set to "No Change".', 'info');
+  }
+
+  // Build summary for confirmation
+  const counts = { promote:0, graduate:0, uni:0, uni_own:0, hold:0, suspend:0, resign:0 };
+  active.forEach(([, d]) => counts[d.action] = (counts[d.action]||0) + 1);
+  const summaryLines = [
+    counts.promote  ? `<b>${counts.promote}</b> students will be promoted to next level` : '',
+    counts.graduate ? `<b>${counts.graduate}</b> students will be marked as Graduated` : '',
+    counts.uni      ? `<b>${counts.uni}</b> students will continue to University (RDF scholarship)` : '',
+    counts.uni_own  ? `<b>${counts.uni_own}</b> students will go to University (own expense)` : '',
+    counts.hold     ? `<b>${counts.hold}</b> students will hold / repeat current year` : '',
+    counts.suspend  ? `<b>${counts.suspend}</b> students will be suspended` : '',
+    counts.resign   ? `<b>${counts.resign}</b> students will resign from scholarship` : '',
+  ].filter(Boolean);
+
+  const promoDate = document.getElementById('promotionDate').value;
+  const { isConfirmed } = await Swal.fire({
+    icon: 'question',
+    title: 'Confirm Promotion',
+    html: `<div class="text-left text-sm space-y-1.5">${summaryLines.map(l=>`<div>• ${l}</div>`).join('')}</div>
+           <div class="mt-3 text-xs text-gray-400">Effective date: <b>${promoDate || 'today'}</b></div>`,
+    showCancelButton: true,
+    confirmButtonText: 'Apply Changes',
+    confirmButtonColor: '#16a34a',
+    cancelButtonText: 'Cancel',
+  });
+  if (!isConfirmed) return;
+
+  // Build promotion payloads
+  const promotions = [];
+  const user = (getUser() || {}).username || 'admin';
+
+  active.forEach(([stipNo, dec]) => {
+    const payload = { StipNo: stipNo };
+
+    switch (dec.action) {
+      case 'promote':
+        payload.NewLevel = dec.nextLevel;
+        break;
+      case 'graduate':
+        payload.NewStatus = 'Graduated';
+        break;
+      case 'uni':
+        payload.NewInstitution = 'UNI';
+        payload.NewLevel       = 'ชั้นปีที่ 1';
+        payload.NewStatus      = 'Active';
+        payload.UniScholarship = dec.uniScholarship || 'Yes';
+        if (dec.uniName)     payload.UniName     = dec.uniName;
+        if (dec.uniFaculty)  payload.UniFaculty  = dec.uniFaculty;
+        if (dec.uniMajor)    payload.UniMajor    = dec.uniMajor;
+        if (dec.uniProvince) payload.UniProvince = dec.uniProvince;
+        if (dec.uniDuration) payload.UniDuration = dec.uniDuration;
+        // Set LastEducation based on original institution
+        {
+          const origGroup = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+          if (origGroup?.institution === 'MBS') payload.LastEducation = 'มัธยมศึกษาตอนปลาย';
+          else if (origGroup?.institution === 'VC') {
+            payload.LastEducation = origGroup.level.includes('ปวส.')
+              ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)'
+              : 'ประกาศนียบัตรวิชาชีพ (ปวช.)';
+          }
+        }
+        break;
+      case 'uni_own':
+        payload.NewStatus      = 'University';
+        payload.UniScholarship = 'No';
+        if (dec.uniName)     payload.UniName     = dec.uniName;
+        if (dec.uniFaculty)  payload.UniFaculty  = dec.uniFaculty;
+        if (dec.uniMajor)    payload.UniMajor    = dec.uniMajor;
+        if (dec.uniProvince) payload.UniProvince = dec.uniProvince;
+        if (dec.uniDuration) payload.UniDuration = dec.uniDuration;
+        break;
+      case 'hold':
+        // No level/status change; just write notes if any
+        break;
+      case 'suspend':
+        payload.NewStatus = 'Suspended';
+        break;
+      case 'resign':
+        payload.NewStatus = 'Resigned';
+        break;
+    }
+
+    if (dec.notes !== undefined) payload.PromotionNotes = dec.notes;
+    if (dec.uniScholarship !== undefined && dec.action !== 'uni' && dec.action !== 'uni_own')
+      payload.UniScholarship = dec.uniScholarship;
+
+    promotions.push(payload);
+  });
+
+  // Remove hold entries that have nothing to update (except notes)
+  const meaningfulPromotions = promotions.filter(p =>
+    p.NewLevel || p.NewStatus || p.NewInstitution ||
+    p.UniScholarship !== undefined || p.PromotionNotes !== undefined
+  );
+
+  if (meaningfulPromotions.length === 0) {
+    return Swal.fire('Nothing to Save', 'No actual changes to apply.', 'info');
+  }
+
+  showLoader(true, `Applying ${meaningfulPromotions.length} changes...`);
+  try {
+    const res = await API.post('promoteStudents', {
+      promotions: meaningfulPromotions,
+      reqUser: user,
+      promotionDate: promoDate,
+    });
+    showLoader(false);
+    if (res.status === 'success') {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Promotion Applied',
+        html: `<b>${res.success}</b> students updated successfully.${res.errors?.length ? `<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>` : ''}`,
+        confirmButtonColor: '#16a34a',
+      });
+      // Reset decisions & reload
+      ROW_DECISIONS = {};
+      loadPage();
+    } else {
+      Swal.fire('Error', res.message || 'Promotion failed.', 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire('Error', e.message || 'Network error.', 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// API HELPERS
+// ─────────────────────────────────────────────
+API.get = async function(action, params) {
+  const qs = new URLSearchParams({ action, ...(params||{}) });
+  const res = await fetch(RDF.GAS_URL + '?' + qs);
+  return res.json();
+};
+API.post = async function(action, body) {
+  const res = await fetch(RDF.GAS_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action, ...body }),
+  });
+  return res.json();
+};
+
+// ─────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+// Auth guard — admin only
+(function() {
+  const u = requireAuth('index.html');
+  if (!u) return;
+  if (u.role === 'Student') { window.location.href = 'dashboard.html'; return; }
+  renderNavUser(u);
+  loadPage();
+})();
+initDBStatus();
+
+// Check if settings.html set a tab preference
+if (localStorage.getItem('settingsTab') === 'promotion') {
+  localStorage.removeItem('settingsTab');
+}
+</script>
+</body>
+</html>

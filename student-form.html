@@ -245,14 +245,15 @@
           <input type="text" id="f_oldSchool" class="field-input" placeholder="ชื่อโรงเรียนเดิม">
         </div>
         <div>
-          <label class="field-label">วุฒิการศึกษาล่าสุดที่สำเร็จการศึกษา</label>
+          <label class="field-label">วุฒิการศึกษาล่าสุดก่อนรับทุน (ใช้กำหนดเส้นทางการศึกษา)</label>
           <select id="f_lastEducation" class="field-select">
             <option value="">-- ยังไม่ได้เลือก --</option>
-            <option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น (ม.3)</option>
-            <option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย (ม.6)</option>
-            <option value="ประกาศนียบัตรวิชาชีพ (ปวช.)">ประกาศนียบัตรวิชาชีพ (ปวช.)</option>
-            <option value="ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)">ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)</option>
+            <option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น — จบ ม.3</option>
+            <option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย — จบ ม.6</option>
+            <option value="ประกาศนียบัตรวิชาชีพ (ปวช.)">ประกาศนียบัตรวิชาชีพ — จบ ปวช.</option>
+            <option value="ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)">ประกาศนียบัตรวิชาชีพชั้นสูง — จบ ปวส.</option>
           </select>
+          <p class="text-xs text-blue-500 mt-1">เส้นทางการศึกษาในโปรไฟล์จะแสดงตามวุฒินี้</p>
         </div>
       </div>
 
@@ -1003,10 +1004,13 @@ function onInstitutionChange() {
   document.getElementById('f_otherInst').required = false;
 
   const levels = {
-    MBS: ['มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)'],
+    MBS: [
+      'มัธยมศึกษาปีที่ 1 (Grade 7)','มัธยมศึกษาปีที่ 2 (Grade 8)','มัธยมศึกษาปีที่ 3 (Grade 9)',
+      'มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)'
+    ],
     VC:  ['ปวช. ชั้นปีที่ 1','ปวช. ชั้นปีที่ 2','ปวช. ชั้นปีที่ 3','ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'],
-    UNI: ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4','ชั้นปีที่ 5'],
-    OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','อื่นๆ']
+    UNI: ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4','ชั้นปีที่ 5','ชั้นปีที่ 6'],
+    OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','ปีที่ 6','อื่นๆ']
   };
   (levels[inst]||[]).forEach(l => {
     const o = document.createElement('option'); o.value = l; o.textContent = l; lvl.appendChild(o);
@@ -1867,11 +1871,15 @@ function docScanApply() {
     }
   }
   if (d.currentLevel) {
-    // Try to set the level select; if not found as an option, skip
     const lvlEl = document.getElementById('f_level');
     if (lvlEl) {
-      const opts = Array.from(lvlEl.options).map(o => o.value);
-      if (opts.includes(d.currentLevel)) lvlEl.value = d.currentLevel;
+      const normLv = s => s ? s.replace(/\s*\([^)]*\)\s*/g, '').trim() : '';
+      const dNorm  = normLv(d.currentLevel);
+      // Exact match first, then normalized match (handles old data without Grade suffix)
+      const opts = Array.from(lvlEl.options);
+      const match = opts.find(o => o.value === d.currentLevel)
+                 || opts.find(o => normLv(o.value) === dNorm);
+      if (match) lvlEl.value = match.value;
     }
   }
   sv('f_studentId', d.studentId);
@@ -3173,7 +3181,7 @@ function downloadMiniTemplate() {
   const headers = [...CSV_MINI_FIELDS];
   const ex = [
     'MBS_001','1234567890123','2000','Active',
-    'MBS','มัธยมศึกษาปีที่ 4','2023','2023',
+    'MBS','มัธยมศึกษาปีที่ 4 (Grade 10)','2023','2023',
     'นาย','สมชาย','ใจดี',
     'Somchai','Jaidee','0812345678'
   ];
@@ -3196,7 +3204,7 @@ function downloadTemplate() {
     // Identification
     'MBS_001','1234567890123','2000','1','15','ST001','Active',
     // Academic
-    'MBS','','มัธยมศึกษาปีที่ 4','2023','2023','1','วิทยาศาสตร์-คณิตศาสตร์','','โรงเรียนเดิม',
+    'MBS','','มัธยมศึกษาปีที่ 4 (Grade 10)','2023','2023','1','วิทยาศาสตร์-คณิตศาสตร์','','โรงเรียนเดิม','มัธยมศึกษาตอนต้น',
     // University (ว่างถ้าไม่ใช่ UNI)
     '','','','','',
     // Personal

@@ -229,6 +229,9 @@
     <button class="s-tab" id="tabRoles" onclick="switchTab('roles')">
       <i data-lucide="shield" class="w-4 h-4"></i> สิทธิ์ผู้ใช้
     </button>
+    <button class="s-tab" id="tabPromotion" onclick="switchTab('promotion')">
+      <i data-lucide="trophy" class="w-4 h-4"></i> Grade Promotion
+    </button>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -957,6 +960,112 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       PANEL: GRADE PROMOTION SETTINGS
+  ════════════════════════════════════════════ -->
+  <div id="panelPromotion" class="hidden">
+
+    <!-- Schedule Card -->
+    <div class="card mb-4 fade-in-up">
+      <div class="card-header flex items-center justify-between">
+        <span class="font-bold text-gray-700 flex items-center gap-2">
+          <i data-lucide="calendar-check" class="w-4 h-4" style="color:#16a34a"></i>
+          Promotion Schedule
+        </span>
+        <button onclick="savePromotionSettings()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> Save Settings
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="field-label">Promotion Date</label>
+            <input type="date" id="ps_promotionDate" class="field-input">
+            <p class="text-xs text-gray-400 mt-1">Default effective date for grade promotions</p>
+          </div>
+          <div>
+            <label class="field-label">Academic Year</label>
+            <input type="text" id="ps_academicYear" class="field-input" placeholder="e.g. 2024-2025">
+          </div>
+          <div>
+            <label class="field-label">University Scholarship Policy</label>
+            <select id="ps_uniPolicy" class="field-select">
+              <option value="manual">Manual Review per Student</option>
+              <option value="auto">Auto-Grant to All Eligible</option>
+              <option value="none">No Continuation Scholarship</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">University Scholarship Application Deadline</label>
+            <input type="date" id="ps_uniDeadline" class="field-input">
+          </div>
+          <div>
+            <label class="field-label">Default UniScholarship Status</label>
+            <select id="ps_uniDefaultStatus" class="field-select">
+              <option value="Pending">Pending (requires review)</option>
+              <option value="Yes">Yes (auto-approve all)</option>
+              <option value="No">No (requires separate application)</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700 w-full">
+              <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1"></i>
+              Changes here apply as defaults. Individual overrides are set on the Promotion page.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Progression Rules -->
+    <div class="card mb-4 fade-in-up delay-1">
+      <div class="card-header flex items-center justify-between">
+        <span class="font-bold text-gray-700 flex items-center gap-2">
+          <i data-lucide="git-branch" class="w-4 h-4" style="color:#1d4ed8"></i>
+          Level Progression Rules
+        </span>
+        <div class="flex gap-2">
+          <button onclick="resetPromotionRules()" class="btn btn-secondary btn-sm text-xs">
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset to Default
+          </button>
+        </div>
+      </div>
+      <div class="card-body overflow-x-auto">
+        <table class="w-full text-sm" id="promotionRulesTable">
+          <thead>
+            <tr class="border-b border-gray-100">
+              <th class="py-2 px-3 text-left text-gray-500 font-semibold">Institution</th>
+              <th class="py-2 px-3 text-left text-gray-500 font-semibold">Current Level</th>
+              <th class="py-2 px-3 text-left text-gray-500 font-semibold">Default Next Level</th>
+              <th class="py-2 px-3 text-left text-gray-500 font-semibold">Action at Completion</th>
+            </tr>
+          </thead>
+          <tbody id="promotionRulesBody">
+            <tr><td colspan="4" class="text-center text-gray-400 py-6 text-xs">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Info card -->
+    <div class="card fade-in-up delay-2" style="border-left:4px solid #7c3aed">
+      <div class="card-body py-4">
+        <p class="font-semibold text-purple-800 mb-2 flex items-center gap-2 text-sm">
+          <i data-lucide="info" class="w-4 h-4"></i> How Promotion Works
+        </p>
+        <ul class="text-xs text-gray-600 space-y-1.5 list-disc ml-4">
+          <li>Go to <a href="promotion.html" class="text-blue-600 underline font-semibold">Grade Promotion &amp; Graduation</a> to apply promotions for all students in bulk.</li>
+          <li>Each student can be individually promoted, graduated, held, suspended, or set to continue at university.</li>
+          <li>Students who <b>Graduate + Continue to University</b> with RDF scholarship keep their original StipNo (e.g. MBS_001) and are moved to Institution = UNI.</li>
+          <li>Students who graduate WITHOUT a university scholarship get Status = <b>Graduated</b>.</li>
+          <li>Students who go to university independently (no RDF scholarship) get Status = <b>University</b>.</li>
+          <li>UniScholarship field tracks: <b>Yes</b> / <b>No</b> / <b>Pending</b> per student.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
 </main>
 
 <!-- ═══════════════════════════════════════════
@@ -1060,7 +1169,7 @@ if (user) {
 // ─────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────
-const ALL_TABS = ['admins','majors','general','logs','apikeys','sessions','roles'];
+const ALL_TABS = ['admins','majors','general','logs','apikeys','sessions','roles','promotion'];
 
 function switchTab(tab) {
   ALL_TABS.forEach(t => {
@@ -1073,10 +1182,11 @@ function switchTab(tab) {
   document.getElementById('tab'   + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
   lucide.createIcons();
 
-  if (tab === 'overview' && !chartsBuilt) loadOverview();
-  if (tab === 'logs'     && !logsLoaded)  loadLogs();
-  if (tab === 'apikeys')                  loadApiKeyStatus();
-  if (tab === 'sessions')                 loadActiveSessions();
+  if (tab === 'overview'   && !chartsBuilt) loadOverview();
+  if (tab === 'logs'       && !logsLoaded)  loadLogs();
+  if (tab === 'apikeys')                    loadApiKeyStatus();
+  if (tab === 'sessions')                   loadActiveSessions();
+  if (tab === 'promotion')                  loadPromotionSettings();
   if (tab === 'roles')                    buildPermMatrix();
   if (tab === 'general')                  loadGeneralSettings();
 }
@@ -2138,6 +2248,103 @@ async function saveSignatureBlock() {
       Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'ข้อมูลผู้ลงนามอัปเดตแล้ว', timer:2000, showConfirmButton:false });
     } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
   } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+}
+
+// ─────────────────────────────────────────────
+// GRADE PROMOTION SETTINGS
+// ─────────────────────────────────────────────
+const DEFAULT_PROMO_RULES = [
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 1 (Grade 7)',   to:'มัธยมศึกษาปีที่ 2 (Grade 8)',   completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 2 (Grade 8)',   to:'มัธยมศึกษาปีที่ 3 (Grade 9)',   completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 3 (Grade 9)',   to:'มัธยมศึกษาปีที่ 4 (Grade 10)',  completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 4 (Grade 10)',  to:'มัธยมศึกษาปีที่ 5 (Grade 11)',  completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 5 (Grade 11)',  to:'มัธยมศึกษาปีที่ 6 (Grade 12)',  completion:'promote' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 6 (Grade 12)',  to:'—',                              completion:'graduate' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 1',              to:'ปวช. ชั้นปีที่ 2',              completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 2',              to:'ปวช. ชั้นปีที่ 3',              completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 3',              to:'ปวส. ชั้นปีที่ 1',              completion:'promote' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 1',              to:'ปวส. ชั้นปีที่ 2',              completion:'promote' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 2',              to:'—',                              completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 1',                   to:'ชั้นปีที่ 2',                   completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 2',                   to:'ชั้นปีที่ 3',                   completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 3',                   to:'ชั้นปีที่ 4',                   completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 4',                   to:'—',                              completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 5',                   to:'—',                              completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 6',                   to:'—',                              completion:'graduate' },
+];
+
+let _promoSettings = null;
+
+async function loadPromotionSettings() {
+  try {
+    const res = await API.getSystemSettings();
+    const s = res.data || {};
+    _promoSettings = s;
+    const ps = s.promotionSettings || {};
+    const el = id => document.getElementById(id);
+    if (el('ps_promotionDate'))    el('ps_promotionDate').value    = ps.promotionDate    || '';
+    if (el('ps_academicYear'))     el('ps_academicYear').value     = ps.academicYear     || '';
+    if (el('ps_uniPolicy'))        el('ps_uniPolicy').value        = ps.uniPolicy        || 'manual';
+    if (el('ps_uniDeadline'))      el('ps_uniDeadline').value      = ps.uniDeadline      || '';
+    if (el('ps_uniDefaultStatus')) el('ps_uniDefaultStatus').value = ps.uniDefaultStatus || 'Pending';
+    renderPromotionRules(ps.levelRules || DEFAULT_PROMO_RULES);
+  } catch(e) { console.warn('loadPromotionSettings:', e); }
+}
+
+function renderPromotionRules(rules) {
+  const tbody = document.getElementById('promotionRulesBody');
+  if (!tbody) return;
+  const COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed' };
+  tbody.innerHTML = rules.map((r, i) => `
+    <tr class="border-b border-gray-50 hover:bg-gray-50">
+      <td class="py-2 px-3">
+        <span class="font-bold text-xs px-2 py-0.5 rounded" style="background:${COLORS[r.inst]||'#64748b'}20;color:${COLORS[r.inst]||'#64748b'}">${r.inst}</span>
+      </td>
+      <td class="py-2 px-3 text-sm text-gray-700">${r.from}</td>
+      <td class="py-2 px-3">
+        <input class="field-input text-xs py-1" style="min-width:180px" value="${r.to}"
+          oninput="updatePromoRule(${i},'to',this.value)">
+      </td>
+      <td class="py-2 px-3">
+        <select class="field-select text-xs py-1" onchange="updatePromoRule(${i},'completion',this.value)">
+          <option value="promote" ${r.completion==='promote'?'selected':''}>Promote to Next Level</option>
+          <option value="graduate" ${r.completion==='graduate'?'selected':''}>Graduate</option>
+          <option value="graduate_uni" ${r.completion==='graduate_uni'?'selected':''}>Graduate + Eligible for University</option>
+        </select>
+      </td>
+    </tr>`).join('');
+}
+
+let _editableRules = null;
+function updatePromoRule(idx, field, val) {
+  if (!_editableRules) _editableRules = DEFAULT_PROMO_RULES.map(r => ({...r}));
+  _editableRules[idx][field] = val;
+}
+
+function resetPromotionRules() {
+  _editableRules = DEFAULT_PROMO_RULES.map(r => ({...r}));
+  renderPromotionRules(_editableRules);
+}
+
+async function savePromotionSettings() {
+  const el = id => document.getElementById(id);
+  const rules = _editableRules || DEFAULT_PROMO_RULES;
+  const settings = {
+    promotionDate:    el('ps_promotionDate')?.value    || '',
+    academicYear:     el('ps_academicYear')?.value     || '',
+    uniPolicy:        el('ps_uniPolicy')?.value        || 'manual',
+    uniDeadline:      el('ps_uniDeadline')?.value      || '',
+    uniDefaultStatus: el('ps_uniDefaultStatus')?.value || 'Pending',
+    levelRules:       rules,
+  };
+  try {
+    showLoader(true, 'Saving...');
+    const res = await API.saveSetting('promotionSettings', settings, SESSION.username);
+    showLoader(false);
+    if (res.status === 'success') {
+      Swal.fire({ icon:'success', title:'Saved', text:'Promotion settings updated.', timer:2000, showConfirmButton:false });
+    } else { Swal.fire('Error', res.message || 'Save failed', 'error'); }
+  } catch(e) { showLoader(false); Swal.fire('Error','Cannot save settings','error'); }
 }
 
 // ─────────────────────────────────────────────

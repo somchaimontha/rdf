@@ -67,6 +67,13 @@ const API = {
   async mergeStudentRows(primaryRowIdx, mergeRowIdx) {
     return apiPost({ action: 'mergeStudentRows', primaryRowIdx, mergeRowIdx, reqUser: (getUser()||{}).username||'Admin' });
   },
+  async getStudentsForPromotion() { return apiGet({ action: 'getStudentsForPromotion' }); },
+  async promoteStudents(promotions, reqUser, promotionDate) {
+    return apiPost({ action: 'promoteStudents', promotions, reqUser, promotionDate });
+  },
+  // Generic helpers for pages that call API.get / API.post directly
+  async get(action, params) { return apiGet({ action, ...(params||{}) }); },
+  async post(action, body)  { return apiPost({ action, ...body }); },
 };
 
 /* ── Shared Loader ── */
