@@ -25,7 +25,7 @@
          font-family: 'Sarabun', 'TH Sarabun New', 'Tahoma', sans-serif !important; }
   main { padding: 0 !important; max-width: none !important; }
   #printLayout { display: block !important; }
-  @page { size: A4 portrait; margin: 1.5cm 2cm 2cm; }
+  @page { size: A4 portrait; margin: 1.2cm 1.8cm; }
 }
 
 /* ══════════════════════════════════════
@@ -33,67 +33,65 @@
 ══════════════════════════════════════ */
 #printLayout {
   font-family: 'Sarabun', 'TH Sarabun New', 'Tahoma', sans-serif;
-  font-size: 13.5pt;
+  font-size: 16pt;
   color: #0f172a;
-  line-height: 1.55;
+  line-height: 1.45;
   background: white;
 }
 
-/* Top color bar */
+/* Top color bar — thin decorative strip */
 .doc-top-bar {
-  height: 7pt;
+  height: 4pt;
   background: linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 50%, #3b82f6 100%);
-  margin-bottom: 14pt;
+  margin-bottom: 7pt;
 }
 
 /* Letterhead */
 .doc-letterhead {
   display: flex;
   align-items: center;
-  gap: 16pt;
-  padding-bottom: 10pt;
+  gap: 10pt;
+  padding-bottom: 7pt;
   border-bottom: 2pt solid #1e3a8a;
-  margin-bottom: 12pt;
+  margin-bottom: 7pt;
 }
-.doc-logo { width: 68pt; height: 68pt; object-fit: contain; flex-shrink: 0; }
-.doc-org-th {
-  font-size: 15pt; font-weight: 800; color: #1e3a8a; letter-spacing: 0.2pt;
-}
-.doc-org-en { font-size: 9.5pt; color: #475569; margin-top: 1pt; }
+.doc-logo { width: 52pt; height: 52pt; object-fit: contain; flex-shrink: 0; }
+.doc-org-th { font-size: 16pt; font-weight: 800; color: #1e3a8a; }
+.doc-org-en { font-size: 11pt; color: #475569; margin-top: 1pt; }
 .doc-title-th {
-  font-size: 13.5pt; font-weight: 700; color: #0f172a;
-  margin-top: 5pt; letter-spacing: 2pt; text-decoration: underline;
+  font-size: 16pt; font-weight: 700; color: #0f172a;
+  margin-top: 3pt; letter-spacing: 1pt; text-decoration: underline;
   text-underline-offset: 3pt;
 }
-.doc-title-en { font-size: 9pt; color: #64748b; letter-spacing: 0.3pt; }
+.doc-title-en { font-size: 11pt; color: #64748b; }
 .doc-docno {
-  margin-left: auto; text-align: right; font-size: 9pt; color: #64748b; flex-shrink: 0;
+  margin-left: auto; text-align: right; font-size: 11pt; color: #64748b; flex-shrink: 0;
 }
-.doc-docno strong { font-size: 10pt; color: #1e3a8a; display: block; }
+.doc-docno strong { font-size: 13pt; color: #1e3a8a; display: block; }
 
 /* Name / Photo hero block */
 .doc-hero {
   display: flex;
   align-items: flex-start;
-  gap: 14pt;
-  margin-bottom: 12pt;
-  padding: 10pt 14pt;
+  gap: 12pt;
+  margin-bottom: 8pt;
+  padding: 7pt 12pt;
   background: #f8faff;
   border: 1pt solid #bfdbfe;
   border-left: 5pt solid #1e3a8a;
-  border-radius: 4pt;
+  border-radius: 3pt;
 }
 .doc-hero-info { flex: 1; }
-.doc-hero-stipno { font-size: 9pt; color: #1d4ed8; font-weight: 700; margin-bottom: 3pt; }
-.doc-hero-name-th { font-size: 20pt; font-weight: 800; color: #0f172a; line-height: 1.15; }
-.doc-hero-name-en { font-size: 12pt; color: #475569; margin-top: 2pt; }
-.doc-hero-badges { display: flex; gap: 6pt; flex-wrap: wrap; margin-top: 7pt; }
+.doc-hero-stipno { font-size: 11pt; color: #1d4ed8; font-weight: 700; margin-bottom: 2pt; }
+.doc-hero-name-th { font-size: 22pt; font-weight: 800; color: #0f172a; line-height: 1.1; }
+.doc-hero-name-en { font-size: 14pt; color: #475569; margin-top: 2pt; }
+.doc-hero-badges { display: flex; gap: 5pt; flex-wrap: wrap; margin-top: 4pt; }
 .doc-badge {
-  display: inline-block; padding: 2pt 8pt; border-radius: 3pt;
-  font-size: 9pt; font-weight: 700; border: 0.8pt solid;
+  display: inline-block; padding: 1.5pt 7pt; border-radius: 3pt;
+  font-size: 11pt; font-weight: 700; border: 0.8pt solid;
 }
 .doc-photo {
-  width: 88pt; height: 110pt;
+  width: 78pt; height: 98pt;
   object-fit: cover;
   border: 1.5pt solid #cbd5e1;
   border-radius: 3pt;
@@ -101,59 +99,69 @@
   background: #f1f5f9;
 }
 
+/* 2-column section grid */
+.doc-sections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7pt;
+  margin-bottom: 7pt;
+}
+.doc-sections-grid .doc-section { margin-bottom: 0; }
+
 /* Section */
-.doc-section { margin-bottom: 9pt; break-inside: avoid; }
+.doc-section { margin-bottom: 7pt; break-inside: avoid; }
 .doc-section-title {
-  display: flex; align-items: center; gap: 5pt;
-  font-size: 10.5pt; font-weight: 800; color: white;
-  padding: 3.5pt 10pt;
+  display: flex; align-items: center; gap: 4pt;
+  font-size: 13pt; font-weight: 800; color: white;
+  padding: 3pt 8pt;
   background: #1e3a8a;
   border-radius: 2pt 2pt 0 0;
 }
 .doc-section-num {
-  width: 17pt; height: 17pt; border-radius: 50%;
+  width: 18pt; height: 18pt; border-radius: 50%;
   background: rgba(255,255,255,.22);
   display: flex; align-items: center; justify-content: center;
-  font-size: 9pt; font-weight: 800; flex-shrink: 0;
+  font-size: 10pt; font-weight: 800; flex-shrink: 0;
 }
 
-/* Info table — 4-column grid: lbl | val | lbl | val */
+/* Info table — 2-column: lbl | val */
 .doc-info-table {
   width: 100%; border-collapse: collapse;
-  font-size: 11.5pt;
+  font-size: 14pt;
   border: 0.8pt solid #cbd5e1;
 }
 .doc-info-table td {
-  padding: 3.5pt 8pt;
+  padding: 2.5pt 6pt;
   vertical-align: top;
   border: 0.5pt solid #d1d9e6;
 }
 .doc-info-table .lbl {
   background: #eef2f9; color: #374151; font-weight: 700;
-  white-space: nowrap; width: 85pt;
+  white-space: nowrap; width: 36%;
 }
 .doc-info-table .val { color: #111827; }
 .doc-info-table tr:nth-child(even) .val { background: #fafbff; }
-.doc-info-table .full-val { color: #111827; }
 
 /* Signature block */
 .doc-signatures {
   display: flex; justify-content: space-around; text-align: center;
-  font-size: 10pt; margin-top: 18pt; padding-top: 10pt;
+  font-size: 13pt; margin-top: 14pt; padding-top: 8pt;
   border-top: 1pt solid #9ca3af;
+  break-inside: avoid;
 }
-.sig-unit { flex: 1; padding: 0 6pt; }
-.sig-line { border-top: 0.8pt solid #374151; margin: 26pt 12pt 4pt; }
-.sig-role { font-weight: 700; font-size: 10.5pt; color: #0f172a; }
-.sig-name-slot { font-size: 9pt; color: #9ca3af; margin-top: 2pt; }
-.sig-date-slot { font-size: 9pt; color: #9ca3af; }
+.sig-unit { flex: 1; padding: 0 4pt; }
+.sig-line { border-top: 0.8pt solid #374151; margin: 24pt 10pt 4pt; }
+.sig-role { font-weight: 700; font-size: 13pt; color: #0f172a; }
+.sig-name-slot { font-size: 12pt; color: #374151; margin-top: 2pt; }
+.sig-pos-slot  { font-size: 11pt; color: #64748b; margin-top: 1pt; }
+.sig-date-slot { font-size: 11pt; color: #9ca3af; }
 
 /* Doc footer */
 .doc-footer-bar {
   display: flex; justify-content: space-between; align-items: center;
-  margin-top: 8pt; padding-top: 6pt;
+  margin-top: 6pt; padding-top: 5pt;
   border-top: 0.5pt solid #cbd5e1;
-  font-size: 9pt; color: #6b7280;
+  font-size: 11pt; color: #6b7280;
 }
 </style>
 </head>
@@ -353,43 +361,49 @@
       <img class="doc-photo" id="pPhoto" src="" alt="รูปถ่าย">
     </div>
 
-    <!-- Section 1: Personal -->
-    <div class="doc-section">
-      <div class="doc-section-title" style="background:#1e3a8a">
-        <div class="doc-section-num">1</div>
-        <span>ข้อมูลส่วนตัว &nbsp;—&nbsp; Personal Information</span>
+    <!-- Sections 1+2 side by side -->
+    <div class="doc-sections-grid">
+      <!-- Section 1: Personal -->
+      <div class="doc-section">
+        <div class="doc-section-title" style="background:#1e3a8a">
+          <div class="doc-section-num">1</div>
+          <span>ข้อมูลส่วนตัว</span>
+        </div>
+        <table class="doc-info-table" id="pPersonal"></table>
       </div>
-      <table class="doc-info-table" id="pPersonal"></table>
+
+      <!-- Section 2: Academic -->
+      <div class="doc-section">
+        <div class="doc-section-title" style="background:#1d4ed8">
+          <div class="doc-section-num">2</div>
+          <span>ข้อมูลการศึกษา</span>
+        </div>
+        <table class="doc-info-table" id="pAcademic"></table>
+      </div>
     </div>
 
-    <!-- Section 2: Academic -->
-    <div class="doc-section">
-      <div class="doc-section-title" style="background:#1d4ed8">
-        <div class="doc-section-num">2</div>
-        <span>ข้อมูลการศึกษา &nbsp;—&nbsp; Academic Information</span>
+    <!-- Sections 3+4 side by side -->
+    <div class="doc-sections-grid">
+      <!-- Section 3: Contact -->
+      <div class="doc-section">
+        <div class="doc-section-title" style="background:#0d9488">
+          <div class="doc-section-num">3</div>
+          <span>ที่อยู่และติดต่อ</span>
+        </div>
+        <table class="doc-info-table" id="pContact"></table>
       </div>
-      <table class="doc-info-table" id="pAcademic"></table>
+
+      <!-- Section 4: Family -->
+      <div class="doc-section">
+        <div class="doc-section-title" style="background:#4f46e5">
+          <div class="doc-section-num">4</div>
+          <span>ข้อมูลครอบครัว</span>
+        </div>
+        <table class="doc-info-table" id="pFamily"></table>
+      </div>
     </div>
 
-    <!-- Section 3: Contact -->
-    <div class="doc-section">
-      <div class="doc-section-title" style="background:#0d9488">
-        <div class="doc-section-num">3</div>
-        <span>ที่อยู่และข้อมูลติดต่อ &nbsp;—&nbsp; Contact Information</span>
-      </div>
-      <table class="doc-info-table" id="pContact"></table>
-    </div>
-
-    <!-- Section 4: Family -->
-    <div class="doc-section">
-      <div class="doc-section-title" style="background:#4f46e5">
-        <div class="doc-section-num">4</div>
-        <span>ข้อมูลครอบครัว &nbsp;—&nbsp; Family Information</span>
-      </div>
-      <table class="doc-info-table" id="pFamily"></table>
-    </div>
-
-    <!-- Section 5: University (conditional) -->
+    <!-- Section 5: University (conditional, full-width) -->
     <div id="pUniSection" class="doc-section" style="display:none">
       <div class="doc-section-title" style="background:#7c3aed">
         <div class="doc-section-num">5</div>
@@ -398,36 +412,17 @@
       <table class="doc-info-table" id="pUni"></table>
     </div>
 
-    <!-- Remarks (conditional) -->
+    <!-- Remarks (conditional, full-width) -->
     <div id="pRemarksSection" class="doc-section" style="display:none">
       <div class="doc-section-title" style="background:#475569">
         <div class="doc-section-num" id="pRemarksNum">5</div>
         <span>หมายเหตุ &nbsp;—&nbsp; Remarks</span>
       </div>
-      <div style="padding:6pt 10pt;border:0.8pt solid #cbd5e1;font-size:11.5pt;background:#fafafa" id="pRemarks"></div>
+      <div style="padding:5pt 9pt;border:0.8pt solid #cbd5e1;font-size:14pt;background:#fafafa" id="pRemarks"></div>
     </div>
 
-    <!-- Signature Block -->
-    <div class="doc-signatures">
-      <div class="sig-unit">
-        <div class="sig-line"></div>
-        <div class="sig-role">ผู้บันทึกข้อมูล</div>
-        <div class="sig-name-slot">(................................................)</div>
-        <div class="sig-date-slot">วันที่ ............/............/............</div>
-      </div>
-      <div class="sig-unit">
-        <div class="sig-line"></div>
-        <div class="sig-role">ผู้ตรวจสอบข้อมูล</div>
-        <div class="sig-name-slot">(................................................)</div>
-        <div class="sig-date-slot">วันที่ ............/............/............</div>
-      </div>
-      <div class="sig-unit">
-        <div class="sig-line"></div>
-        <div class="sig-role">ผู้อนุมัติ</div>
-        <div class="sig-name-slot">(................................................)</div>
-        <div class="sig-date-slot">วันที่ ............/............/............</div>
-      </div>
-    </div>
+    <!-- Signature Block (dynamic from settings) -->
+    <div id="pSignatures"></div>
 
     <!-- Document Footer -->
     <div class="doc-footer-bar">
@@ -476,13 +471,20 @@ if (!stipNo) {
 async function loadProfile() {
   showLoader(true, t('loading'));
   try {
-    const result = await API.getStudent(stipNo);
+    const [result, settingsResult] = await Promise.all([
+      API.getStudent(stipNo),
+      API.getSystemSettings().catch(() => ({ status: 'error' }))
+    ]);
     showLoader(false);
     if (result.status !== 'success') {
       Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
       return;
     }
-    renderProfile(result.data);
+    let sigBlock = null;
+    if (settingsResult.status === 'success' && settingsResult.data) {
+      sigBlock = settingsResult.data['SIGNATURE_BLOCK'] || null;
+    }
+    renderProfile(result.data, sigBlock);
     if (autoPrint) setTimeout(printProfile, 600);
   } catch(e) {
     showLoader(false);
@@ -490,7 +492,7 @@ async function loadProfile() {
   }
 }
 
-function renderProfile(d) {
+function renderProfile(d, sigBlock) {
   const lang = LANG;
   const _picFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent((d.FirstName||'?')+' '+(d.LastName||''))}&background=1e3a8a&color=fff&size=128&bold=true`;
   const picUrl = d.ProfilePicURL ? driveImgUrl(d.ProfilePicURL, 'w400') : _picFallback;
@@ -692,7 +694,7 @@ function renderProfile(d) {
   }, 80));
 
   // Populate official print document
-  renderPrintLayout(d);
+  renderPrintLayout(d, sigBlock);
 
   lucide.createIcons();
 }
@@ -798,7 +800,7 @@ function printProfile() {
 // ─────────────────────────────────────────────
 // OFFICIAL PRINT DOCUMENT RENDERER
 // ─────────────────────────────────────────────
-function renderPrintLayout(d) {
+function renderPrintLayout(d, sigBlock) {
   const _s = v => (v || '').toString().trim();
 
   // Photo
@@ -901,25 +903,47 @@ function renderPrintLayout(d) {
     document.getElementById('pRemarksNum').textContent = secCounter;
     document.getElementById('pRemarks').textContent = d.Remarks;
   }
+
+  // ── Signature block ─────────────────────────
+  _renderSigBlock(sigBlock);
+}
+
+function _renderSigBlock(sigBlock) {
+  const container = document.getElementById('pSignatures');
+  if (!container) return;
+
+  // Default 3 slots if no config
+  const DEFAULT_SLOTS = [
+    { role: 'ผู้บันทึกข้อมูล',  name: '', position: '' },
+    { role: 'ผู้ตรวจสอบข้อมูล', name: '', position: '' },
+    { role: 'ผู้อนุมัติ',        name: '', position: '' },
+  ];
+  const slots = (Array.isArray(sigBlock) && sigBlock.length > 0) ? sigBlock : DEFAULT_SLOTS;
+
+  container.innerHTML = `<div class="doc-signatures">${
+    slots.map(s => `
+      <div class="sig-unit">
+        <div class="sig-line"></div>
+        <div class="sig-role">${s.role || '—'}</div>
+        <div class="sig-name-slot">${s.name ? `(${s.name})` : '(................................................)'}</div>
+        ${s.position ? `<div class="sig-pos-slot">${s.position}</div>` : ''}
+        <div class="sig-date-slot">วันที่ ............/............/............</div>
+      </div>`).join('')
+  }</div>`;
 }
 
 function _fillDocTable(id, rows) {
   const tbl = document.getElementById(id);
   if (!tbl) return;
-  tbl.innerHTML = rows.map(([l1, v1, l2, v2]) => {
-    if (!l2) {
-      return `<tr>
-        <td class="lbl" style="width:95pt">${l1}</td>
-        <td class="full-val" colspan="3">${v1 || '—'}</td>
-      </tr>`;
-    }
-    return `<tr>
-      <td class="lbl" style="width:95pt">${l1}</td>
-      <td class="val">${v1 || '—'}</td>
-      <td class="lbl" style="width:95pt">${l2}</td>
-      <td class="val">${v2 || '—'}</td>
-    </tr>`;
-  }).join('');
+  // Flatten 4-col rows [l1,v1,l2,v2] into 2-col rows [lbl,val]
+  const flat = [];
+  rows.forEach(([l1, v1, l2, v2]) => {
+    if (l1 !== undefined && l1 !== '') flat.push([l1, v1]);
+    if (l2 && l2 !== '') flat.push([l2, v2]);
+  });
+  tbl.innerHTML = flat.map(([lbl, val]) =>
+    `<tr><td class="lbl">${lbl}</td><td class="val">${val || '—'}</td></tr>`
+  ).join('');
 }
 </script>
 </body>
