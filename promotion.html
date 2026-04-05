@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grade Promotion & Graduation — RDF</title>
+<title>เลื่อนชั้น / จบการศึกษา — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
+/* ── Table ── */
 .promo-group-header {
   display:flex; align-items:center; justify-content:space-between;
   padding:10px 16px; border-radius:10px 10px 0 0; font-weight:700; font-size:14px;
@@ -21,7 +23,8 @@
 .promo-table td { padding:7px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
 .promo-table tr:last-child td { border-bottom:none; }
 .promo-table tr:hover td { background:#fafbff; }
-.promo-table tr.excluded td { opacity:.45; }
+.promo-table tr.excluded td { opacity:.4; }
+/* ── Badges ── */
 .action-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
   border-radius:20px; font-size:11px; font-weight:700; }
 .act-promote    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
@@ -37,24 +40,41 @@
 .sch-no      { background:#fff1f2; color:#be123c; }
 .sch-pending { background:#fef9c3; color:#a16207; }
 .sch-none    { background:#f9fafb; color:#9ca3af; }
+/* ── Controls ── */
 .promo-action-select { border:1.5px solid #e5e7eb; border-radius:8px; padding:4px 8px;
   font-size:12px; font-weight:600; background:#fff; cursor:pointer; outline:none; }
 .promo-action-select:focus { border-color:#1d4ed8; }
+.notes-input { border:1px solid #e5e7eb; border-radius:6px; padding:3px 7px;
+  font-size:11px; width:100%; min-width:90px; outline:none; }
+.notes-input:focus { border-color:#7c3aed; }
+/* ── Toolbar ── */
 .sticky-toolbar { position:sticky; top:0; z-index:30; background:#fff;
   border-bottom:1px solid #e5e7eb; padding:10px 0; margin-bottom:16px;
   box-shadow:0 2px 8px rgba(0,0,0,.06); }
 .group-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
   overflow:hidden; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
-.inst-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; display:inline-block; }
-.notes-input { border:1px solid #e5e7eb; border-radius:6px; padding:3px 7px;
-  font-size:11px; width:100%; min-width:90px; outline:none; }
-.notes-input:focus { border-color:#7c3aed; }
-.uni-detail-row { background:#faf5ff; border-top:1px solid #ede9fe; padding:10px 16px; }
+/* ── Avatar ── */
+.student-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover;
+  border:1.5px solid #e5e7eb; flex-shrink:0; display:block; }
+/* ── Print / PDF ── */
+@media print {
+  .no-print, .rdf-nav, .rdf-footer, #loader, .sticky-toolbar,
+  .page-header, .legend-bar, .promo-group-header button,
+  .promo-table td:first-child, .promo-table th:first-child,
+  .promo-action-select, .notes-input { display:none !important; }
+  body { background:#fff !important; font-family:'Sarabun','TH Sarabun New',sans-serif; }
+  .group-card { border:1px solid #ccc !important; break-inside:avoid; margin-bottom:8px; }
+  .print-only { display:block !important; }
+  #printReportHeader { display:block !important; }
+  @page { size:A4; margin:1.5cm; }
+}
+.print-only { display:none; }
+#printReportHeader { display:none; }
 </style>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">Loading...</p></div>
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText" data-t="loading">กำลังโหลด...</p></div>
 
 <!-- Navbar -->
 <nav class="rdf-nav no-print">
@@ -62,13 +82,14 @@
     <a href="dashboard.html" class="nav-brand">
       <div class="text-right hide-mobile">
         <div class="nav-title">
-          <h1>Dr. Robert Dyckerhoff Foundation</h1>
-          <p>Scholarship Management System</p>
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
         </div>
       </div>
       <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
     </a>
     <div class="nav-right">
+      <button class="lang-btn" onclick="promoToggleLang()" id="langBtn">EN</button>
       <div id="navUserWrap" class="hidden nav-user">
         <img id="navAvatar" src="" alt="User" class="nav-avatar">
         <div class="hide-mobile">
@@ -83,44 +104,69 @@
   </div>
 </nav>
 
+<!-- Print Header (visible only when printing) -->
+<div id="printReportHeader" style="font-family:'Sarabun',sans-serif;padding:0 0 12px;border-bottom:2px solid #1e3a8a;margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" style="height:48px;object-fit:contain">
+    <div>
+      <div id="prh_org" style="font-size:14pt;font-weight:800;color:#1e3a8a"></div>
+      <div id="prh_title" style="font-size:13pt;font-weight:700;color:#0f172a;margin-top:2px"></div>
+    </div>
+    <div style="margin-left:auto;text-align:right;font-size:9pt;color:#64748b">
+      <div id="prh_date"></div>
+      <div id="prh_acad"></div>
+      <div id="prh_by"></div>
+    </div>
+  </div>
+</div>
+
 <main class="container main-content">
   <!-- Back link -->
-  <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit">
-    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Dashboard
+  <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit no-print page-header">
+    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+    <span data-t="promoBackDash">กลับหน้าหลัก</span>
   </a>
 
   <!-- Page header -->
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3 no-print page-header">
     <div>
       <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
         <i data-lucide="trophy" class="w-5 h-5" style="color:#16a34a"></i>
-        Grade Promotion &amp; Graduation
+        <span data-t="promoTitle">เลื่อนชั้น / จบการศึกษา</span>
       </h2>
-      <p class="text-xs text-gray-400 mt-0.5">Promote students by group, record graduations, and manage university scholarship continuation.</p>
+      <p class="text-xs text-gray-400 mt-0.5" data-t="promoSubtitle">เลื่อนชั้นนักเรียนเป็นกลุ่ม บันทึกการจบการศึกษา และจัดการทุนต่อมหาวิทยาลัย</p>
     </div>
     <div class="flex gap-2 flex-wrap">
       <button onclick="loadPage()" class="btn btn-secondary btn-sm">
-        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reload
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        <span data-t="promoReload">โหลดใหม่</span>
+      </button>
+      <button onclick="openExportModal()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span data-t="promoExportReport">ออกรายงาน</span>
       </button>
       <a href="settings.html" onclick="localStorage.setItem('settingsTab','promotion')" class="btn btn-secondary btn-sm">
-        <i data-lucide="settings" class="w-4 h-4"></i> Promotion Settings
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        <span data-t="promoSettings">ตั้งค่าเลื่อนชั้น</span>
       </a>
     </div>
   </div>
 
   <!-- ═══ STICKY TOOLBAR ═══ -->
-  <div class="sticky-toolbar">
+  <div class="sticky-toolbar no-print">
     <div class="container" style="padding-top:0;padding-bottom:0">
       <div class="flex flex-wrap gap-3 items-center justify-between">
         <!-- Left: filters -->
         <div class="flex flex-wrap gap-2 items-center">
           <div class="search-wrap">
             <i data-lucide="search" class="w-4 h-4"></i>
-            <input type="text" id="promoSearch" class="field-input search-input" placeholder="Search by name or ID..."
+            <input type="text" id="promoSearch" class="field-input search-input"
+              data-t-attr="placeholder" data-t="promoSearch"
+              placeholder="ค้นหาชื่อหรือรหัส..."
               style="width:190px" oninput="filterGroups()">
           </div>
-          <select id="promoInstFilter" class="field-select" onchange="filterGroups()" style="width:120px">
-            <option value="">All Institutions</option>
+          <select id="promoInstFilter" class="field-select" onchange="filterGroups()" style="width:135px">
+            <option value="" data-t="promoAllInst">ทุกสถานศึกษา</option>
             <option value="MBS">MBS</option>
             <option value="VC">VC</option>
             <option value="UNI">University</option>
@@ -128,25 +174,25 @@
           </select>
           <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
             <input type="checkbox" id="chkHideEmpty" onchange="filterGroups()" class="rounded">
-            Hide empty groups
+            <span data-t="promoHideEmpty">ซ่อนกลุ่มว่าง</span>
           </label>
         </div>
         <!-- Right: date + apply -->
         <div class="flex flex-wrap gap-2 items-center">
           <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
             <i data-lucide="calendar" class="w-3.5 h-3.5 text-gray-400"></i>
-            <label class="text-xs font-semibold text-gray-500">Promotion Date</label>
+            <label class="text-xs font-semibold text-gray-500" data-t="promoDateLabel">วันที่เลื่อนชั้น</label>
             <input type="date" id="promotionDate" class="border-0 bg-transparent text-sm font-semibold outline-none" style="min-width:130px">
           </div>
           <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
             <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-gray-400"></i>
-            <label class="text-xs font-semibold text-gray-500">Academic Year</label>
+            <label class="text-xs font-semibold text-gray-500" data-t="promoAcadYear">ปีการศึกษา</label>
             <input type="text" id="academicYear" class="border-0 bg-transparent text-sm font-semibold outline-none" style="width:90px" placeholder="2024-2025">
           </div>
           <button onclick="applyAllChanges()" id="btnApplyAll"
-            class="btn btn-sm font-bold" style="background:#16a34a;color:#fff;border:none;min-width:140px">
+            class="btn btn-sm font-bold" style="background:#16a34a;color:#fff;border:none;min-width:160px">
             <i data-lucide="check-circle" class="w-4 h-4"></i>
-            Apply All Changes
+            <span data-t="promoApplyAll">บันทึกการเปลี่ยนแปลง</span>
           </button>
         </div>
       </div>
@@ -156,25 +202,97 @@
   </div>
 
   <!-- Legend -->
-  <div class="flex flex-wrap gap-2 mb-4 text-xs">
-    <span class="action-badge act-promote"><i data-lucide="arrow-up" style="width:10px;height:10px"></i> Promote</span>
-    <span class="action-badge act-graduate"><i data-lucide="graduation-cap" style="width:10px;height:10px"></i> Graduate</span>
-    <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> Continue to University</span>
-    <span class="action-badge act-hold"><i data-lucide="pause-circle" style="width:10px;height:10px"></i> Hold / Repeat Year</span>
-    <span class="action-badge act-suspend"><i data-lucide="clock" style="width:10px;height:10px"></i> Suspend</span>
-    <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> Resign</span>
-    <span class="action-badge act-skip"><i data-lucide="minus" style="width:10px;height:10px"></i> No Change</span>
+  <div class="flex flex-wrap gap-2 mb-4 text-xs no-print legend-bar">
+    <span class="action-badge act-promote"><i data-lucide="arrow-up" style="width:10px;height:10px"></i> <span data-t="promoActPromote">เลื่อนชั้น</span></span>
+    <span class="action-badge act-graduate"><i data-lucide="graduation-cap" style="width:10px;height:10px"></i> <span data-t="promoActGraduate">จบการศึกษา</span></span>
+    <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> <span data-t="promoActUni">จบ + ต่อม. (ทุน RDF)</span></span>
+    <span class="action-badge act-hold"><i data-lucide="pause-circle" style="width:10px;height:10px"></i> <span data-t="promoActHold">ซ้ำชั้น</span></span>
+    <span class="action-badge act-suspend"><i data-lucide="clock" style="width:10px;height:10px"></i> <span data-t="promoActSuspend">พักการเรียน</span></span>
+    <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> <span data-t="promoActResign">ลาออก</span></span>
+    <span class="action-badge act-skip"><i data-lucide="minus" style="width:10px;height:10px"></i> <span data-t="promoActSkip">ไม่เปลี่ยน</span></span>
   </div>
 
   <!-- Groups container -->
   <div id="groupsContainer">
     <div class="text-center text-gray-400 py-16">
       <i data-lucide="loader-circle" class="w-8 h-8 mx-auto mb-3 opacity-40"></i>
-      <p>Loading students...</p>
+      <p data-t="loading">กำลังโหลด...</p>
     </div>
   </div>
 
 </main>
+
+<!-- ═══ EXPORT MODAL ═══ -->
+<div id="exportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,.45)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#1e3a8a">
+      <h3 class="font-bold text-white flex items-center gap-2 text-base">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span data-t="exportTitle">ออกรายงาน</span>
+      </h3>
+      <button onclick="closeExportModal()" class="text-white opacity-70 hover:opacity-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4" style="max-height:70vh;overflow-y:auto">
+      <!-- Group selection -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold text-gray-600 uppercase tracking-wide" data-t="exportSelectGroups">เลือกกลุ่ม / รายชื่อ</label>
+          <div class="flex gap-2">
+            <button onclick="exportSelectAll(true)"  class="text-xs text-blue-600 hover:underline" data-t="exportSelectAll">เลือกทั้งหมด</button>
+            <span class="text-gray-300">|</span>
+            <button onclick="exportSelectAll(false)" class="text-xs text-gray-400 hover:underline" data-t="exportDeselectAll">ยกเลิกทั้งหมด</button>
+          </div>
+        </div>
+        <div id="exportGroupList" class="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100" style="max-height:220px;overflow-y:auto"></div>
+      </div>
+      <!-- Format -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold text-gray-600 uppercase tracking-wide block mb-2" data-t="exportFormat">รูปแบบไฟล์</label>
+          <div class="flex gap-2">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="radio" name="exportFmt" value="excel" checked class="accent-green-600"> Excel
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="radio" name="exportFmt" value="pdf"> PDF
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600 uppercase tracking-wide block mb-2" data-t="exportLang">ภาษารายงาน</label>
+          <div class="flex gap-2">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="radio" name="exportLangOpt" value="th" checked class="accent-blue-600"> ไทย
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input type="radio" name="exportLangOpt" value="en"> English
+            </label>
+          </div>
+        </div>
+      </div>
+      <!-- Options -->
+      <div class="flex gap-4 flex-wrap">
+        <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+          <input type="checkbox" id="expOnlyChanged" class="rounded" checked>
+          <span id="expOnlyChangedLabel">เฉพาะที่มีการเปลี่ยนแปลง</span>
+        </label>
+        <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+          <input type="checkbox" id="expIncludeSkip" class="rounded">
+          <span id="expIncludeSkipLabel">รวมรายการ "ไม่เปลี่ยน"</span>
+        </label>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 px-5 py-4 border-t bg-gray-50">
+      <button onclick="closeExportModal()" class="btn btn-secondary btn-sm" data-t="exportCancel">ยกเลิก</button>
+      <button onclick="doExport()" class="btn btn-sm font-bold" style="background:#16a34a;color:#fff;border:none">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span data-t="exportGenerate">สร้างรายงาน</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <footer class="rdf-footer no-print">
   <span>RDF Scholarship Management System</span>
@@ -190,15 +308,14 @@
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
-let ALL_GROUPS    = [];   // raw data from backend
-let PROMO_RULES   = {};   // { "MBS||Level": { nextLevel, completion } }
-let SETTINGS      = {};   // system settings
-let ROW_DECISIONS = {};   // stipNo → { action, nextLevel, uniScholarship, notes, uniName, uniDuration, uniFaculty, uniMajor, uniProvince }
+let ALL_GROUPS    = [];
+let PROMO_RULES   = {};
+let SETTINGS      = {};
+let ROW_DECISIONS = {};
 
 const INST_COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#64748b' };
 const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb' };
 
-// Level options for each institution
 const LEVEL_OPTIONS = {
   MBS: [
     'มัธยมศึกษาปีที่ 1 (Grade 7)','มัธยมศึกษาปีที่ 2 (Grade 8)','มัธยมศึกษาปีที่ 3 (Grade 9)',
@@ -209,7 +326,6 @@ const LEVEL_OPTIONS = {
   OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','อื่นๆ'],
 };
 
-// Default level progression
 const DEFAULT_RULES = [
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 1 (Grade 7)',  to:'มัธยมศึกษาปีที่ 2 (Grade 8)',  completion:'promote' },
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 2 (Grade 8)',  to:'มัธยมศึกษาปีที่ 3 (Grade 9)',  completion:'promote' },
@@ -217,61 +333,97 @@ const DEFAULT_RULES = [
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 4 (Grade 10)', to:'มัธยมศึกษาปีที่ 5 (Grade 11)', completion:'promote' },
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 5 (Grade 11)', to:'มัธยมศึกษาปีที่ 6 (Grade 12)', completion:'promote' },
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 6 (Grade 12)', to:'—',                             completion:'graduate' },
-  { inst:'VC',  from:'ปวช. ชั้นปีที่ 1',             to:'ปวช. ชั้นปีที่ 2',             completion:'promote' },
-  { inst:'VC',  from:'ปวช. ชั้นปีที่ 2',             to:'ปวช. ชั้นปีที่ 3',             completion:'promote' },
-  { inst:'VC',  from:'ปวช. ชั้นปีที่ 3',             to:'ปวส. ชั้นปีที่ 1',             completion:'promote' },
-  { inst:'VC',  from:'ปวส. ชั้นปีที่ 1',             to:'ปวส. ชั้นปีที่ 2',             completion:'promote' },
-  { inst:'VC',  from:'ปวส. ชั้นปีที่ 2',             to:'—',                             completion:'graduate' },
-  { inst:'UNI', from:'ชั้นปีที่ 1',                  to:'ชั้นปีที่ 2',                  completion:'promote' },
-  { inst:'UNI', from:'ชั้นปีที่ 2',                  to:'ชั้นปีที่ 3',                  completion:'promote' },
-  { inst:'UNI', from:'ชั้นปีที่ 3',                  to:'ชั้นปีที่ 4',                  completion:'promote' },
-  { inst:'UNI', from:'ชั้นปีที่ 4',                  to:'—',                             completion:'graduate' },
-  { inst:'UNI', from:'ชั้นปีที่ 5',                  to:'—',                             completion:'graduate' },
-  { inst:'UNI', from:'ชั้นปีที่ 6',                  to:'—',                             completion:'graduate' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 1', to:'ปวช. ชั้นปีที่ 2', completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 2', to:'ปวช. ชั้นปีที่ 3', completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 3', to:'ปวส. ชั้นปีที่ 1', completion:'promote' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 1', to:'ปวส. ชั้นปีที่ 2', completion:'promote' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 2', to:'—',                 completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 1', to:'ชั้นปีที่ 2', completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 2', to:'ชั้นปีที่ 3', completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 3', to:'ชั้นปีที่ 4', completion:'promote' },
+  { inst:'UNI', from:'ชั้นปีที่ 4', to:'—',           completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 5', to:'—',           completion:'graduate' },
+  { inst:'UNI', from:'ชั้นปีที่ 6', to:'—',           completion:'graduate' },
 ];
 
 // ─────────────────────────────────────────────
-// INIT
+// AVATAR HELPER — no external placeholder service
+// ─────────────────────────────────────────────
+const AVATAR_COLORS = ['#1d4ed8','#16a34a','#ea580c','#7c3aed','#0891b2','#be185d','#b45309','#0f766e'];
+function makeInitialsAvatar(name, size) {
+  const s = size || 36;
+  const words = (name || '?').replace(/[^\u0E00-\u0E7Fa-zA-Z]/g,' ').trim().split(/\s+/).filter(Boolean);
+  const initials = words.length >= 2
+    ? (words[0][0] + words[words.length-1][0]).toUpperCase()
+    : (name||'?')[0].toUpperCase();
+  const color = AVATAR_COLORS[((name||'?').charCodeAt(0) || 0) % AVATAR_COLORS.length];
+  const fs = Math.round(s * 0.38);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}"><circle cx="${s/2}" cy="${s/2}" r="${s/2}" fill="${color}"/><text x="${s/2}" y="${s/2}" text-anchor="middle" dominant-baseline="central" font-family="Sarabun,Arial,sans-serif" font-size="${fs}px" font-weight="700" fill="#fff">${initials}</text></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function studentAvatarSrc(s) {
+  if (s.ProfilePicURL && s.ProfilePicURL.trim()) {
+    return driveImgUrl(s.ProfilePicURL, 'w60');
+  }
+  const name = ((s.EngFirstName||'') + ' ' + (s.EngLastName||'') + ' ' + (s.FirstName||'')).trim() || s.StipNo || '?';
+  return makeInitialsAvatar(name, 36);
+}
+
+// ─────────────────────────────────────────────
+// BILINGUAL
+// ─────────────────────────────────────────────
+function promoToggleLang() {
+  setLang(LANG === 'th' ? 'en' : 'th');
+  if (ALL_GROUPS.length > 0) renderGroups();
+  updateStats();
+  updateExportLabels();
+}
+
+function updateExportLabels() {
+  const onlyChg = document.getElementById('expOnlyChangedLabel');
+  const inclSkip = document.getElementById('expIncludeSkipLabel');
+  if (onlyChg)  onlyChg.textContent  = LANG === 'th' ? 'เฉพาะที่มีการเปลี่ยนแปลง' : 'Changed rows only';
+  if (inclSkip) inclSkip.textContent = LANG === 'th' ? 'รวมรายการ "ไม่เปลี่ยน"' : 'Include "No Change" rows';
+}
+
+// ─────────────────────────────────────────────
+// LOAD DATA
 // ─────────────────────────────────────────────
 async function loadPage() {
-  showLoader(true, 'Loading students...');
+  showLoader(true, t('loading'));
   try {
-    // Load settings & students in parallel
     const [settRes, studRes] = await Promise.all([
       API.getSystemSettings(),
       API.get('getStudentsForPromotion'),
     ]);
 
-    SETTINGS = (settRes.data || {});
+    SETTINGS = settRes.data || {};
     const ps = SETTINGS.promotionSettings || {};
 
-    // Set toolbar defaults from saved settings
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('promotionDate').value = ps.promotionDate || today;
     document.getElementById('academicYear').value  = ps.academicYear  || '';
 
-    // Build rules lookup
     const rules = ps.levelRules || DEFAULT_RULES;
     PROMO_RULES = {};
     rules.forEach(r => { PROMO_RULES[r.inst + '||' + r.from] = r; });
 
-    if (studRes.status !== 'success')
-      throw new Error(studRes.message || 'Failed to load students');
+    if (studRes.status !== 'success') throw new Error(studRes.message || t('promoLoadError'));
 
     ALL_GROUPS = studRes.groups || [];
 
-    // Initialise default decisions for every student
     ALL_GROUPS.forEach(g => {
       g.students.forEach(s => {
         if (!ROW_DECISIONS[s.StipNo]) {
-          const rule  = PROMO_RULES[g.institution + '||' + g.level];
+          const rule = PROMO_RULES[g.institution + '||' + g.level];
           const defTo = rule ? rule.to : '';
           const comp  = rule ? rule.completion : 'promote';
           ROW_DECISIONS[s.StipNo] = {
-            action:       comp === 'graduate' ? 'graduate' : 'promote',
-            nextLevel:    comp === 'promote' ? defTo : '',
-            uniScholarship: s.UniScholarship || (SETTINGS.promotionSettings?.uniDefaultStatus || 'Pending'),
-            notes:        s.PromotionNotes || '',
+            action:        comp === 'graduate' ? 'graduate' : 'promote',
+            nextLevel:     comp === 'promote' ? defTo : '',
+            uniScholarship: s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
+            notes:         s.PromotionNotes || '',
             uniName:'', uniDuration:'', uniFaculty:'', uniMajor:'', uniProvince:'',
           };
         }
@@ -298,10 +450,6 @@ function renderGroups() {
   const instFlt   = document.getElementById('promoInstFilter').value;
   const hideEmpty = document.getElementById('chkHideEmpty').checked;
 
-  let html = '';
-  let shown = 0;
-
-  // Sort groups: MBS first, then VC, then UNI, then OTHER; within each by level order
   const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const sorted = [...ALL_GROUPS].sort((a, b) => {
     const io = (instOrder[a.institution] ?? 9) - (instOrder[b.institution] ?? 9);
@@ -310,41 +458,42 @@ function renderGroups() {
            (LEVEL_OPTIONS[b.institution] || []).indexOf(b.level);
   });
 
+  let html = '';
+  let shown = 0;
+
   sorted.forEach(g => {
     if (instFlt && g.institution !== instFlt) return;
-
-    // Filter students by search
     const filtered = search
       ? g.students.filter(s => {
-          const name = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
-                        s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
-          return name.includes(search);
+          const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
+                     s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
+          return n.includes(search);
         })
       : g.students;
-
     if (hideEmpty && filtered.length === 0) return;
 
     const color = INST_COLORS[g.institution] || '#64748b';
     const bg    = INST_BG[g.institution]    || '#f9fafb';
     const gKey  = g.institution + '||' + g.level;
     const rule  = PROMO_RULES[gKey];
-    const nextLevelDefault = rule ? rule.to : '—';
-    const isGraduateLevel  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
+    const nextDefault   = rule ? rule.to : '—';
+    const isGradLevel   = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
+    const countLabel    = filtered.length + ' ' + t('promoStudents');
 
     shown++;
     html += `
     <div class="group-card" id="group_${CSS.escape(gKey)}">
       <div class="promo-group-header" style="background:${bg};border-bottom:2px solid ${color}20">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
           <span class="font-bold text-sm" style="color:${color}">${g.institution}</span>
           <span class="text-gray-700">— ${g.level}</span>
-          <span class="text-xs text-gray-400 font-normal">${filtered.length} student${filtered.length!==1?'s':''}</span>
-          ${isGraduateLevel ? `<span class="action-badge act-graduate" style="font-size:10px">Final Level</span>` : ''}
+          <span class="text-xs text-gray-400 font-normal">${countLabel}</span>
+          ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
         </div>
-        <div class="flex gap-2 items-center">
+        <div class="flex gap-2 items-center no-print">
           <button onclick="promoteAllInGroup('${g.institution}','${g.level}')"
             class="btn btn-sm text-xs font-bold" style="background:${color}15;color:${color};border:1.5px solid ${color}40">
-            <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> Promote All
+            <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> ${t('promoPromoteAll')}
           </button>
           <button onclick="toggleGroup('${g.institution}','${g.level}')"
             class="btn btn-secondary btn-sm text-xs" style="padding:4px 8px">
@@ -354,30 +503,8 @@ function renderGroups() {
       </div>
       <div id="body_${CSS.escape(gKey)}">
         ${filtered.length === 0
-          ? `<p class="text-center text-gray-400 text-xs py-4">No students match the current filter.</p>`
-          : `<div class="overflow-x-auto">
-              <table class="promo-table">
-                <thead>
-                  <tr>
-                    <th style="width:32px">
-                      <input type="checkbox" title="Select all" onchange="selectAllInGroup('${g.institution}','${g.level}',this.checked)"
-                        class="rounded">
-                    </th>
-                    <th style="width:36px"></th>
-                    <th>Name</th>
-                    <th style="width:90px">StipNo</th>
-                    <th style="width:80px">Status</th>
-                    <th style="width:155px">Action</th>
-                    <th style="width:220px">Next Level / Details</th>
-                    <th style="width:110px">Uni Scholarship</th>
-                    <th style="width:120px">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${filtered.map(s => renderStudentRow(s, g.institution, g.level, nextLevelDefault, isGraduateLevel)).join('')}
-                </tbody>
-              </table>
-            </div>`}
+          ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
+          : renderGroupTable(g.institution, g.level, filtered, nextDefault, isGradLevel)}
       </div>
     </div>`;
   });
@@ -385,8 +512,8 @@ function renderGroups() {
   if (shown === 0) {
     html = `<div class="text-center text-gray-400 py-16">
       <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
-      <p class="font-semibold">No groups found</p>
-      <p class="text-xs mt-1">Adjust filters or reload the page.</p>
+      <p class="font-semibold">${t('noData')}</p>
+      <p class="text-xs mt-1">${t('noDataHint')}</p>
     </div>`;
   }
 
@@ -394,134 +521,151 @@ function renderGroups() {
   lucide.createIcons();
 }
 
-function renderStudentRow(s, inst, level, nextLevelDefault, isGraduateLevel) {
+function renderGroupTable(inst, level, students, nextDefault, isGradLevel) {
+  const rows = students.map(s => renderStudentRow(s, inst, level, nextDefault, isGradLevel)).join('');
+  return `<div class="overflow-x-auto">
+    <table class="promo-table">
+      <thead><tr>
+        <th style="width:32px" class="no-print">
+          <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}',this.checked)" class="rounded">
+        </th>
+        <th style="width:36px"></th>
+        <th>${t('promoColName')}</th>
+        <th style="width:90px">${t('promoColStipNo')}</th>
+        <th style="width:80px">${t('promoColStatus')}</th>
+        <th style="width:160px" class="no-print">${t('promoColAction')}</th>
+        <th style="width:220px">${t('promoColNext')}</th>
+        <th style="width:115px">${t('promoColUniSch')}</th>
+        <th style="width:120px">${t('promoColNotes')}</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
   const dec = ROW_DECISIONS[s.StipNo] || {};
-  const act = dec.action || (isGraduateLevel ? 'graduate' : 'promote');
-  const excluded = act === 'skip';
+  const act = dec.action || (isGradLevel ? 'graduate' : 'promote');
 
-  const photoSrc = s.ProfilePicURL
-    ? s.ProfilePicURL.replace(/\/file\/d\/([^/]+)\/.*/, '/thumbnail?id=$1&sz=w40')
-    : 'https://via.placeholder.com/36x36?text=?';
+  // Names
+  const thaiName = ((s.Title||'') + (s.FirstName||'') + ' ' + (s.LastName||'')).trim();
+  const engName  = ((s.EngFirstName||'') + ' ' + (s.EngLastName||'')).trim();
 
-  const name = ((s.Title || '') + (s.FirstName || '') + ' ' + (s.LastName || '')).trim()
-    || ((s.EngFirstName || '') + ' ' + (s.EngLastName || '')).trim() || s.StipNo;
+  // Photo — no external placeholder; use Drive thumbnail or local avatar
+  const photoName = thaiName || engName || s.StipNo;
+  const photoFallback = makeInitialsAvatar(photoName, 36);
+  const photoSrc = s.ProfilePicURL && s.ProfilePicURL.trim()
+    ? driveImgUrl(s.ProfilePicURL, 'w60') : photoFallback;
 
-  const statusBadge = {
-    Active:'badge-green', Suspended:'badge-orange', University:'badge-blue'
-  }[s.Status] || 'badge-gray';
+  // Status badge
+  const statusBadge = { Active:'badge-green', Suspended:'badge-orange', University:'badge-blue' }[s.Status] || 'badge-gray';
+  const statusLabel  = t('status' + s.Status) || s.Status || 'Active';
 
-  // Build level selector options
-  const levelOpts = (() => {
-    const allLvls = LEVEL_OPTIONS[inst] || [];
-    let opts = allLvls.map(l => `<option value="${l}" ${dec.nextLevel===l?'selected':''}>${l}</option>`).join('');
-    // Add UNI option if MBS/VC final year
-    if (['MBS','VC'].includes(inst)) {
-      opts += `<option value="__UNI__" ${dec.nextLevel==='__UNI__'?'selected':''}>→ Continue to University</option>`;
-    }
-    return opts;
-  })();
+  // Level selector
+  const levelOpts = buildLevelOpts(inst, dec.nextLevel);
 
-  // Scholarship badge
-  const schBadge = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
-  const schLabel = dec.uniScholarship || '—';
+  // Uni scholarship badge
+  const schCls   = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
+  const schLabel = { Yes: t('promoSchYes'), No: t('promoSchNo'), Pending: t('promoSchPending') }[dec.uniScholarship] || '—';
+
+  // Action options HTML
+  const actionSel = `<select class="promo-action-select w-full" id="act_${s.StipNo}"
+    onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)">
+    <option value="promote"  ${act==='promote' ?'selected':''}>⬆ ${t('promoActPromote')}</option>
+    <option value="graduate" ${act==='graduate'?'selected':''}>🎓 ${t('promoActGraduate')}</option>
+    ${['MBS','VC'].includes(inst) ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
+    ${['MBS','VC'].includes(inst) ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
+    <option value="hold"    ${act==='hold'   ?'selected':''}>⏸ ${t('promoActHold')}</option>
+    <option value="suspend" ${act==='suspend'?'selected':''}>⚠ ${t('promoActSuspend')}</option>
+    <option value="resign"  ${act==='resign' ?'selected':''}>✕ ${t('promoActResign')}</option>
+    <option value="skip"    ${act==='skip'   ?'selected':''}>— ${t('promoActSkip')}</option>
+  </select>`;
+
+  // Uni scholarship cell
+  const isUniAct = ['uni','uni_own'].includes(act);
+  const schCell = isUniAct
+    ? `<select class="promo-action-select text-xs" onchange="setDec('${s.StipNo}','uniScholarship',this.value)">
+        <option value="Yes"     ${dec.uniScholarship==='Yes'    ?'selected':''}>✓ ${t('promoSchYes')}</option>
+        <option value="No"      ${dec.uniScholarship==='No'     ?'selected':''}>✗ ${t('promoSchNo')}</option>
+        <option value="Pending" ${dec.uniScholarship==='Pending'?'selected':''}>⏳ ${t('promoSchPending')}</option>
+      </select>`
+    : `<span class="uni-sch-badge ${schCls}">${schLabel}</span>`;
+
+  const uniRowHTML = isUniAct ? renderUniDetailRow(s.StipNo, dec) : '';
 
   return `
-  <tr id="row_${s.StipNo}" class="${excluded ? 'excluded' : ''}">
-    <td>
+  <tr id="row_${s.StipNo}" class="${act==='skip'?'excluded':''}">
+    <td class="no-print">
       <input type="checkbox" class="rounded group-check" data-stipno="${s.StipNo}"
-        ${excluded ? '' : 'checked'} onchange="onRowCheck('${s.StipNo}',this.checked)">
+        ${act!=='skip'?'checked':''} onchange="onRowCheck('${s.StipNo}',this.checked)">
     </td>
     <td>
-      <img src="${photoSrc}" class="w-8 h-8 rounded-full object-cover border border-gray-200"
-        onerror="this.src='https://via.placeholder.com/32x32?text=?'">
+      <img src="${photoSrc}"
+        class="student-avatar"
+        data-fallback="${photoFallback}"
+        onerror="this.onerror=null;this.src=this.dataset.fallback"
+        alt="">
     </td>
     <td>
-      <div class="font-semibold text-gray-800 text-xs leading-tight">${name}</div>
+      <div class="font-semibold text-gray-800 text-xs leading-tight">${thaiName || '—'}</div>
+      ${engName ? `<div class="text-gray-400" style="font-size:10px">${engName}</div>` : ''}
       ${s.Major ? `<div class="text-gray-400" style="font-size:10px">${s.Major}</div>` : ''}
     </td>
     <td class="text-xs font-mono text-gray-500">${s.StipNo}</td>
-    <td><span class="badge ${statusBadge}" style="font-size:10px">${s.Status || 'Active'}</span></td>
+    <td><span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></td>
+    <td class="no-print">${actionSel}</td>
+    <td id="detail_${s.StipNo}">${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}</td>
+    <td>${schCell}</td>
     <td>
-      <select class="promo-action-select w-full" onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)"
-        id="act_${s.StipNo}">
-        <option value="promote"   ${act==='promote'  ?'selected':''}>⬆ Promote</option>
-        <option value="graduate"  ${act==='graduate' ?'selected':''}>🎓 Graduate</option>
-        ${['MBS','VC'].includes(inst) ? `<option value="uni" ${act==='uni'?'selected':''}>🏛 Graduate + Cont. Uni (RDF)</option>` : ''}
-        ${['MBS','VC'].includes(inst) ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 Graduate + Uni (Own)</option>` : ''}
-        <option value="hold"      ${act==='hold'     ?'selected':''}>⏸ Hold / Repeat Year</option>
-        <option value="suspend"   ${act==='suspend'  ?'selected':''}>⚠ Suspend</option>
-        <option value="resign"    ${act==='resign'   ?'selected':''}>✕ Resign</option>
-        <option value="skip"      ${act==='skip'     ?'selected':''}>— No Change</option>
-      </select>
-    </td>
-    <td id="detail_${s.StipNo}">
-      ${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}
-    </td>
-    <td>
-      ${['uni','uni_own'].includes(act)
-        ? `<select class="promo-action-select text-xs" onchange="setDec('${s.StipNo}','uniScholarship',this.value)">
-            <option value="Yes"     ${dec.uniScholarship==='Yes'    ?'selected':''}>✓ Yes</option>
-            <option value="No"      ${dec.uniScholarship==='No'     ?'selected':''}>✗ No</option>
-            <option value="Pending" ${dec.uniScholarship==='Pending'?'selected':''}>⏳ Pending</option>
-           </select>`
-        : `<span class="uni-sch-badge ${schBadge}">${schLabel}</span>`}
-    </td>
-    <td>
-      <input type="text" class="notes-input" placeholder="Notes..."
+      <input type="text" class="notes-input"
+        placeholder="${LANG==='th'?'หมายเหตุ...':'Notes...'}"
         value="${(dec.notes||'').replace(/"/g,'&quot;')}"
         onchange="setDec('${s.StipNo}','notes',this.value)">
     </td>
   </tr>
-  ${['uni','uni_own'].includes(act) ? renderUniDetailRow(s.StipNo, dec) : ''}`;
+  ${uniRowHTML}`;
+}
+
+function buildLevelOpts(inst, selected) {
+  const all = LEVEL_OPTIONS[inst] || [];
+  let opts = all.map(l => `<option value="${l}" ${selected===l?'selected':''}>${l}</option>`).join('');
+  if (['MBS','VC'].includes(inst)) {
+    opts += `<option value="__UNI__" ${selected==='__UNI__'?'selected':''}>→ University</option>`;
+  }
+  return opts;
 }
 
 function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
-  if (act === 'promote') {
-    return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">
-      ${levelOpts}
-    </select>`;
-  }
-  if (act === 'graduate') {
-    return `<span class="text-xs text-green-600 font-semibold">Status → Graduated</span>`;
-  }
-  if (act === 'uni') {
-    return `<span class="text-xs text-purple-600 font-semibold">→ UNI Yr.1 (RDF Scholarship)</span>`;
-  }
-  if (act === 'uni_own') {
-    return `<span class="text-xs text-purple-400 font-semibold">→ University (own)</span>`;
-  }
-  if (act === 'hold') {
-    return `<span class="text-xs text-orange-500 font-semibold">Stay at ${level}</span>`;
-  }
-  if (act === 'suspend') {
-    return `<span class="text-xs text-yellow-600 font-semibold">Status → Suspended</span>`;
-  }
-  if (act === 'resign') {
-    return `<span class="text-xs text-red-500 font-semibold">Status → Resigned</span>`;
-  }
+  if (act === 'promote')   return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${levelOpts}</select>`;
+  if (act === 'graduate')  return `<span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>`;
+  if (act === 'uni')       return `<span class="text-xs text-purple-600 font-semibold">${t('promoUniRDF')}</span>`;
+  if (act === 'uni_own')   return `<span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span>`;
+  if (act === 'hold')      return `<span class="text-xs text-orange-500 font-semibold">${t('promoStayLevel')}</span>`;
+  if (act === 'suspend')   return `<span class="text-xs text-yellow-600 font-semibold">${t('promoStatusSuspended')}</span>`;
+  if (act === 'resign')    return `<span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>`;
   return `<span class="text-xs text-gray-400">—</span>`;
 }
 
 function renderUniDetailRow(stipNo, dec) {
   return `
-  <tr id="unirow_${stipNo}" style="background:#faf5ff;border-top:none">
-    <td></td><td></td>
+  <tr id="unirow_${stipNo}" style="background:#faf5ff">
+    <td class="no-print"></td><td></td>
     <td colspan="7" class="py-2 px-3">
       <div class="flex flex-wrap gap-2 items-center">
         <span class="text-xs font-bold text-purple-700 flex items-center gap-1">
-          <i data-lucide="building-2" class="w-3 h-3"></i> University Details
+          <i data-lucide="building-2" class="w-3 h-3"></i> ${t('promoUniDetails')}
         </span>
-        <input type="text" class="notes-input" style="width:160px" placeholder="University name"
+        <input type="text" class="notes-input" style="width:160px" placeholder="${t('promoUniName')}"
           value="${dec.uniName||''}" onchange="setDec('${stipNo}','uniName',this.value)">
-        <input type="text" class="notes-input" style="width:120px" placeholder="Faculty"
+        <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoFaculty')}"
           value="${dec.uniFaculty||''}" onchange="setDec('${stipNo}','uniFaculty',this.value)">
-        <input type="text" class="notes-input" style="width:120px" placeholder="Major / Program"
+        <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoUniMajor')}"
           value="${dec.uniMajor||''}" onchange="setDec('${stipNo}','uniMajor',this.value)">
-        <input type="text" class="notes-input" style="width:90px" placeholder="Province"
+        <input type="text" class="notes-input" style="width:90px" placeholder="${t('promoProvince')}"
           value="${dec.uniProvince||''}" onchange="setDec('${stipNo}','uniProvince',this.value)">
-        <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniDuration',this.value)" style="width:80px">
-          <option value="">Duration</option>
-          ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${dec.uniDuration==n?'selected':''}>${n} yr</option>`).join('')}
+        <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniDuration',this.value)" style="width:90px">
+          <option value="">${t('promoDuration')}</option>
+          ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${dec.uniDuration==n?'selected':''}>${n} ${LANG==='th'?'ปี':'yr'}</option>`).join('')}
         </select>
       </div>
     </td>
@@ -541,7 +685,6 @@ function onActionChange(stipNo, inst, level, newAct) {
   const dec = ROW_DECISIONS[stipNo];
   dec.action = newAct;
 
-  // Auto-fill nextLevel from rules
   if (newAct === 'promote') {
     const rule = PROMO_RULES[inst + '||' + level];
     dec.nextLevel = rule ? rule.to : '';
@@ -552,9 +695,7 @@ function onActionChange(stipNo, inst, level, newAct) {
   // Update detail cell
   const detCell = document.getElementById('detail_' + stipNo);
   if (detCell) {
-    const levelOpts = (LEVEL_OPTIONS[inst] || [])
-      .map(l => `<option value="${l}" ${dec.nextLevel===l?'selected':''}>${l}</option>`).join('');
-    detCell.innerHTML = renderDetailCell(stipNo, inst, level, newAct, dec, levelOpts);
+    detCell.innerHTML = renderDetailCell(stipNo, inst, level, newAct, dec, buildLevelOpts(inst, dec.nextLevel));
   }
 
   // Toggle UNI detail row
@@ -562,51 +703,49 @@ function onActionChange(stipNo, inst, level, newAct) {
   const mainRow     = document.getElementById('row_'    + stipNo);
   const isUni = ['uni','uni_own'].includes(newAct);
 
-  if (isUni && !existUniRow) {
-    // Insert UNI detail row after main row
-    if (mainRow) mainRow.insertAdjacentHTML('afterend', renderUniDetailRow(stipNo, dec));
+  if (isUni && !existUniRow && mainRow) {
+    mainRow.insertAdjacentHTML('afterend', renderUniDetailRow(stipNo, dec));
+    lucide.createIcons();
   } else if (!isUni && existUniRow) {
     existUniRow.remove();
   }
 
-  // Update scholarship cell
-  const schCell = mainRow?.cells[7];
-  if (schCell) {
-    if (isUni) {
-      const schVal = dec.uniScholarship || 'Pending';
-      schCell.innerHTML = `<select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniScholarship',this.value)">
-        <option value="Yes"     ${schVal==='Yes'    ?'selected':''}>✓ Yes</option>
-        <option value="No"      ${schVal==='No'     ?'selected':''}>✗ No</option>
-        <option value="Pending" ${schVal==='Pending'?'selected':''}>⏳ Pending</option>
-      </select>`;
-    } else {
-      const schLabel = dec.uniScholarship || '—';
-      const schBadge = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
-      schCell.innerHTML = `<span class="uni-sch-badge ${schBadge}">${schLabel}</span>`;
+  // Update scholarship cell (column index 7)
+  if (mainRow) {
+    const schCell = mainRow.cells[7];
+    if (schCell) {
+      if (isUni) {
+        const sv = dec.uniScholarship || 'Pending';
+        schCell.innerHTML = `<select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniScholarship',this.value)">
+          <option value="Yes"     ${sv==='Yes'    ?'selected':''}>✓ ${t('promoSchYes')}</option>
+          <option value="No"      ${sv==='No'     ?'selected':''}>✗ ${t('promoSchNo')}</option>
+          <option value="Pending" ${sv==='Pending'?'selected':''}>⏳ ${t('promoSchPending')}</option>
+        </select>`;
+      } else {
+        const scl = { Yes:t('promoSchYes'), No:t('promoSchNo'), Pending:t('promoSchPending') }[dec.uniScholarship] || '—';
+        const scc = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
+        schCell.innerHTML = `<span class="uni-sch-badge ${scc}">${scl}</span>`;
+      }
     }
+    mainRow.classList.toggle('excluded', newAct === 'skip');
+    const chk = mainRow.querySelector('.group-check');
+    if (chk) chk.checked = newAct !== 'skip';
   }
 
-  // Excluded row styling
-  if (mainRow) mainRow.classList.toggle('excluded', newAct === 'skip');
-  const chk = mainRow?.querySelector('.group-check');
-  if (chk) chk.checked = newAct !== 'skip';
-
-  lucide.createIcons();
   updateStats();
 }
 
 function onRowCheck(stipNo, checked) {
   if (!checked) {
     setDec(stipNo, 'action', 'skip');
-    const actSel = document.getElementById('act_' + stipNo);
-    if (actSel) actSel.value = 'skip';
+    const sel = document.getElementById('act_' + stipNo);
+    if (sel) sel.value = 'skip';
     document.getElementById('row_' + stipNo)?.classList.add('excluded');
   } else {
-    // Restore to 'promote' if was 'skip'
-    if ((ROW_DECISIONS[stipNo] || {}).action === 'skip') {
+    if ((ROW_DECISIONS[stipNo]||{}).action === 'skip') {
       setDec(stipNo, 'action', 'promote');
-      const actSel = document.getElementById('act_' + stipNo);
-      if (actSel) actSel.value = 'promote';
+      const sel = document.getElementById('act_' + stipNo);
+      if (sel) sel.value = 'promote';
       document.getElementById('row_' + stipNo)?.classList.remove('excluded');
     }
   }
@@ -616,62 +755,54 @@ function onRowCheck(stipNo, checked) {
 function promoteAllInGroup(inst, level) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  const rule = PROMO_RULES[inst + '||' + level];
-  const defAction = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni') ? 'graduate' : 'promote';
-  const defNext   = defAction === 'promote' ? (rule ? rule.to : '') : '';
+  const rule   = PROMO_RULES[inst + '||' + level];
+  const defAct = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni') ? 'graduate' : 'promote';
+  const defNxt = defAct === 'promote' ? (rule ? rule.to : '') : '';
   group.students.forEach(s => {
     if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
-    ROW_DECISIONS[s.StipNo].action    = defAction;
-    ROW_DECISIONS[s.StipNo].nextLevel = defNext;
+    ROW_DECISIONS[s.StipNo].action    = defAct;
+    ROW_DECISIONS[s.StipNo].nextLevel = defNxt;
   });
-  // Re-render just this group
   renderGroups();
 }
 
 function selectAllInGroup(inst, level, checked) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  group.students.forEach(s => {
-    onRowCheck(s.StipNo, checked);
-    const actSel = document.getElementById('act_' + s.StipNo);
-    if (actSel && !checked) actSel.value = 'skip';
-  });
+  group.students.forEach(s => onRowCheck(s.StipNo, checked));
 }
 
-// ─────────────────────────────────────────────
-// FILTER / TOGGLE
-// ─────────────────────────────────────────────
 function filterGroups() { renderGroups(); }
 
 function toggleGroup(inst, level) {
-  const gKey   = inst + '||' + level;
-  const body   = document.getElementById('body_'    + CSS.escape(gKey));
-  const chev   = document.getElementById('chevron_' + CSS.escape(gKey));
+  const gKey = inst + '||' + level;
+  const body = document.getElementById('body_'    + CSS.escape(gKey));
+  const chev = document.getElementById('chevron_' + CSS.escape(gKey));
   if (!body) return;
-  const hidden = body.style.display === 'none';
-  body.style.display = hidden ? '' : 'none';
+  const hiding = body.style.display !== 'none';
+  body.style.display = hiding ? 'none' : '';
   if (chev) {
-    chev.setAttribute('data-lucide', hidden ? 'chevron-up' : 'chevron-down');
+    chev.setAttribute('data-lucide', hiding ? 'chevron-down' : 'chevron-up');
     lucide.createIcons();
   }
 }
 
 // ─────────────────────────────────────────────
-// STATS
+// STATS BAR
 // ─────────────────────────────────────────────
 function updateStats() {
-  const counts = { promote:0, graduate:0, uni:0, uni_own:0, hold:0, suspend:0, resign:0, skip:0 };
+  const counts = {};
   Object.values(ROW_DECISIONS).forEach(d => { counts[d.action] = (counts[d.action]||0) + 1; });
   const bar = document.getElementById('promoStats');
   if (!bar) return;
   const parts = [
-    counts.promote   ? `<span>⬆ Promote: <b>${counts.promote}</b></span>`   : '',
-    counts.graduate  ? `<span>🎓 Graduate: <b>${counts.graduate}</b></span>` : '',
-    (counts.uni+counts.uni_own) ? `<span>🏛 → Uni: <b>${counts.uni+counts.uni_own}</b></span>` : '',
-    counts.hold      ? `<span>⏸ Hold: <b>${counts.hold}</b></span>`         : '',
-    counts.suspend   ? `<span>⚠ Suspend: <b>${counts.suspend}</b></span>`   : '',
-    counts.resign    ? `<span>✕ Resign: <b>${counts.resign}</b></span>`     : '',
-    counts.skip      ? `<span>— Skip: <b>${counts.skip}</b></span>`         : '',
+    counts.promote   ? `<span>⬆ ${t('promoActPromote')}: <b>${counts.promote}</b></span>`    : '',
+    counts.graduate  ? `<span>🎓 ${t('promoActGraduate')}: <b>${counts.graduate}</b></span>`  : '',
+    (counts.uni||0)+(counts.uni_own||0) ? `<span>🏛 Uni: <b>${(counts.uni||0)+(counts.uni_own||0)}</b></span>` : '',
+    counts.hold      ? `<span>⏸ ${t('promoActHold')}: <b>${counts.hold}</b></span>`           : '',
+    counts.suspend   ? `<span>⚠ ${t('promoActSuspend')}: <b>${counts.suspend}</b></span>`     : '',
+    counts.resign    ? `<span>✕ ${t('promoActResign')}: <b>${counts.resign}</b></span>`       : '',
+    counts.skip      ? `<span>— ${t('promoActSkip')}: <b>${counts.skip}</b></span>`           : '',
   ].filter(Boolean);
   bar.innerHTML = parts.join('<span class="mx-1 text-gray-200">|</span>');
 }
@@ -682,132 +813,266 @@ function updateStats() {
 async function applyAllChanges() {
   const active = Object.entries(ROW_DECISIONS).filter(([, d]) => d.action !== 'skip');
   if (active.length === 0) {
-    return Swal.fire('Nothing to Apply', 'All students are set to "No Change".', 'info');
+    return Swal.fire(t('promoNothingToApply'), t('promoNothingDesc'), 'info');
   }
 
-  // Build summary for confirmation
-  const counts = { promote:0, graduate:0, uni:0, uni_own:0, hold:0, suspend:0, resign:0 };
+  const counts = {};
   active.forEach(([, d]) => counts[d.action] = (counts[d.action]||0) + 1);
-  const summaryLines = [
-    counts.promote  ? `<b>${counts.promote}</b> students will be promoted to next level` : '',
-    counts.graduate ? `<b>${counts.graduate}</b> students will be marked as Graduated` : '',
-    counts.uni      ? `<b>${counts.uni}</b> students will continue to University (RDF scholarship)` : '',
-    counts.uni_own  ? `<b>${counts.uni_own}</b> students will go to University (own expense)` : '',
-    counts.hold     ? `<b>${counts.hold}</b> students will hold / repeat current year` : '',
-    counts.suspend  ? `<b>${counts.suspend}</b> students will be suspended` : '',
-    counts.resign   ? `<b>${counts.resign}</b> students will resign from scholarship` : '',
+  const lines = [
+    counts.promote  ? `<b>${counts.promote}</b> ${LANG==='th'?'นักเรียนจะถูกเลื่อนชั้น':'students will be promoted'}` : '',
+    counts.graduate ? `<b>${counts.graduate}</b> ${LANG==='th'?'นักเรียนจะจบการศึกษา':'students will graduate'}` : '',
+    (counts.uni||0)+(counts.uni_own||0) ? `<b>${(counts.uni||0)+(counts.uni_own||0)}</b> ${LANG==='th'?'นักเรียนจะต่อมหาวิทยาลัย':'students continuing to university'}` : '',
+    counts.hold     ? `<b>${counts.hold}</b> ${LANG==='th'?'นักเรียนจะซ้ำชั้น':'students will repeat year'}` : '',
+    counts.suspend  ? `<b>${counts.suspend}</b> ${LANG==='th'?'นักเรียนจะพักการเรียน':'students will be suspended'}` : '',
+    counts.resign   ? `<b>${counts.resign}</b> ${LANG==='th'?'นักเรียนจะลาออก':'students will resign'}` : '',
   ].filter(Boolean);
 
   const promoDate = document.getElementById('promotionDate').value;
   const { isConfirmed } = await Swal.fire({
-    icon: 'question',
-    title: 'Confirm Promotion',
-    html: `<div class="text-left text-sm space-y-1.5">${summaryLines.map(l=>`<div>• ${l}</div>`).join('')}</div>
-           <div class="mt-3 text-xs text-gray-400">Effective date: <b>${promoDate || 'today'}</b></div>`,
-    showCancelButton: true,
-    confirmButtonText: 'Apply Changes',
-    confirmButtonColor: '#16a34a',
-    cancelButtonText: 'Cancel',
+    icon:'question', title: t('promoConfirmTitle'),
+    html: `<div class="text-left text-sm space-y-1.5">${lines.map(l=>`<div>• ${l}</div>`).join('')}</div>
+           <div class="mt-3 text-xs text-gray-400">${t('promoEffDate')}: <b>${promoDate || '—'}</b></div>`,
+    showCancelButton:true,
+    confirmButtonText: t('promoApplyAll'),
+    confirmButtonColor:'#16a34a',
+    cancelButtonText: t('cancel'),
   });
   if (!isConfirmed) return;
 
-  // Build promotion payloads
   const promotions = [];
-  const user = (getUser() || {}).username || 'admin';
+  const user = (getUser()||{}).username || 'admin';
 
   active.forEach(([stipNo, dec]) => {
-    const payload = { StipNo: stipNo };
-
+    const p = { StipNo: stipNo };
     switch (dec.action) {
-      case 'promote':
-        payload.NewLevel = dec.nextLevel;
-        break;
-      case 'graduate':
-        payload.NewStatus = 'Graduated';
-        break;
+      case 'promote':   p.NewLevel = dec.nextLevel; break;
+      case 'graduate':  p.NewStatus = 'Graduated'; break;
       case 'uni':
-        payload.NewInstitution = 'UNI';
-        payload.NewLevel       = 'ชั้นปีที่ 1';
-        payload.NewStatus      = 'Active';
-        payload.UniScholarship = dec.uniScholarship || 'Yes';
-        if (dec.uniName)     payload.UniName     = dec.uniName;
-        if (dec.uniFaculty)  payload.UniFaculty  = dec.uniFaculty;
-        if (dec.uniMajor)    payload.UniMajor    = dec.uniMajor;
-        if (dec.uniProvince) payload.UniProvince = dec.uniProvince;
-        if (dec.uniDuration) payload.UniDuration = dec.uniDuration;
-        // Set LastEducation based on original institution
-        {
-          const origGroup = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
-          if (origGroup?.institution === 'MBS') payload.LastEducation = 'มัธยมศึกษาตอนปลาย';
-          else if (origGroup?.institution === 'VC') {
-            payload.LastEducation = origGroup.level.includes('ปวส.')
-              ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)'
-              : 'ประกาศนียบัตรวิชาชีพ (ปวช.)';
-          }
-        }
+        p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
+        p.UniScholarship = dec.uniScholarship || 'Yes';
+        if (dec.uniName)     p.UniName     = dec.uniName;
+        if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
+        if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+        if (dec.uniProvince) p.UniProvince = dec.uniProvince;
+        if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+        { const og = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+          if (og?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
+          else if (og?.institution === 'VC') p.LastEducation = og.level.includes('ปวส.')
+            ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)' : 'ประกาศนียบัตรวิชาชีพ (ปวช.)'; }
         break;
       case 'uni_own':
-        payload.NewStatus      = 'University';
-        payload.UniScholarship = 'No';
-        if (dec.uniName)     payload.UniName     = dec.uniName;
-        if (dec.uniFaculty)  payload.UniFaculty  = dec.uniFaculty;
-        if (dec.uniMajor)    payload.UniMajor    = dec.uniMajor;
-        if (dec.uniProvince) payload.UniProvince = dec.uniProvince;
-        if (dec.uniDuration) payload.UniDuration = dec.uniDuration;
+        p.NewStatus = 'University'; p.UniScholarship = 'No';
+        if (dec.uniName)     p.UniName     = dec.uniName;
+        if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
+        if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+        if (dec.uniProvince) p.UniProvince = dec.uniProvince;
+        if (dec.uniDuration) p.UniDuration = dec.uniDuration;
         break;
-      case 'hold':
-        // No level/status change; just write notes if any
-        break;
-      case 'suspend':
-        payload.NewStatus = 'Suspended';
-        break;
-      case 'resign':
-        payload.NewStatus = 'Resigned';
-        break;
+      case 'suspend': p.NewStatus = 'Suspended'; break;
+      case 'resign':  p.NewStatus = 'Resigned';  break;
+      case 'hold': break; // no status/level change
     }
-
-    if (dec.notes !== undefined) payload.PromotionNotes = dec.notes;
-    if (dec.uniScholarship !== undefined && dec.action !== 'uni' && dec.action !== 'uni_own')
-      payload.UniScholarship = dec.uniScholarship;
-
-    promotions.push(payload);
+    if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
+    if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
+      p.UniScholarship = dec.uniScholarship;
+    promotions.push(p);
   });
 
-  // Remove hold entries that have nothing to update (except notes)
-  const meaningfulPromotions = promotions.filter(p =>
+  const meaningful = promotions.filter(p =>
     p.NewLevel || p.NewStatus || p.NewInstitution ||
-    p.UniScholarship !== undefined || p.PromotionNotes !== undefined
-  );
+    p.UniScholarship !== undefined || p.PromotionNotes !== undefined);
+  if (meaningful.length === 0) return Swal.fire(t('warning'), t('promoNothingToSave'), 'info');
 
-  if (meaningfulPromotions.length === 0) {
-    return Swal.fire('Nothing to Save', 'No actual changes to apply.', 'info');
-  }
-
-  showLoader(true, `Applying ${meaningfulPromotions.length} changes...`);
+  showLoader(true, LANG==='th'?`กำลังบันทึก ${meaningful.length} รายการ...`:`Applying ${meaningful.length} changes...`);
   try {
-    const res = await API.post('promoteStudents', {
-      promotions: meaningfulPromotions,
-      reqUser: user,
-      promotionDate: promoDate,
-    });
+    const res = await API.promoteStudents(meaningful, user, promoDate);
     showLoader(false);
     if (res.status === 'success') {
       await Swal.fire({
-        icon: 'success',
-        title: 'Promotion Applied',
-        html: `<b>${res.success}</b> students updated successfully.${res.errors?.length ? `<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>` : ''}`,
-        confirmButtonColor: '#16a34a',
+        icon:'success', title: t('promoApplied'),
+        html: `<b>${res.success}</b> ${t('promoUpdated')}${res.errors?.length?`<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>`:''}`,
+        confirmButtonColor:'#16a34a',
       });
-      // Reset decisions & reload
       ROW_DECISIONS = {};
       loadPage();
     } else {
-      Swal.fire('Error', res.message || 'Promotion failed.', 'error');
+      Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
     }
   } catch(e) {
     showLoader(false);
-    Swal.fire('Error', e.message || 'Network error.', 'error');
+    Swal.fire(t('error'), e.message||'Network error', 'error');
   }
+}
+
+// ─────────────────────────────────────────────
+// EXPORT MODAL
+// ─────────────────────────────────────────────
+function openExportModal() {
+  // Build group list
+  const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const sorted = [...ALL_GROUPS].sort((a,b) => {
+    const io = (instOrder[a.institution]??9) - (instOrder[b.institution]??9);
+    if (io !== 0) return io;
+    return (LEVEL_OPTIONS[a.institution]||[]).indexOf(a.level) - (LEVEL_OPTIONS[b.institution]||[]).indexOf(b.level);
+  });
+
+  const listEl = document.getElementById('exportGroupList');
+  const color = inst => INST_COLORS[inst] || '#64748b';
+  listEl.innerHTML = sorted.map(g => {
+    const gk = g.institution + '||' + g.level;
+    return `<label class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm">
+      <input type="checkbox" name="exportGroup" value="${gk}" checked class="rounded accent-blue-600">
+      <span class="font-bold text-xs" style="color:${color(g.institution)};min-width:36px">${g.institution}</span>
+      <span class="text-gray-700 text-xs flex-1">${g.level}</span>
+      <span class="text-gray-400 text-xs">${g.students.length} ${t('promoStudents')}</span>
+    </label>`;
+  }).join('');
+
+  document.getElementById('exportModal').classList.remove('hidden');
+  updateExportLabels();
+  lucide.createIcons();
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.add('hidden');
+}
+
+function exportSelectAll(val) {
+  document.querySelectorAll('input[name="exportGroup"]').forEach(cb => cb.checked = val);
+}
+
+function doExport() {
+  const fmt    = document.querySelector('input[name="exportFmt"]:checked').value;
+  const lang   = document.querySelector('input[name="exportLangOpt"]:checked').value;
+  const onlyChg  = document.getElementById('expOnlyChanged').checked;
+  const inclSkip = document.getElementById('expIncludeSkip').checked;
+
+  const selGroups = new Set(
+    [...document.querySelectorAll('input[name="exportGroup"]:checked')].map(cb => cb.value)
+  );
+
+  // Build rows
+  const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const sorted = [...ALL_GROUPS].sort((a,b) => {
+    const io = (instOrder[a.institution]??9) - (instOrder[b.institution]??9);
+    if (io !== 0) return io;
+    return (LEVEL_OPTIONS[a.institution]||[]).indexOf(a.level) - (LEVEL_OPTIONS[b.institution]||[]).indexOf(b.level);
+  });
+
+  // Get translation function for chosen export language
+  const tL = (key) => T[lang][key] || T['th'][key] || key;
+
+  const rows = [];
+  let seq = 1;
+  sorted.forEach(g => {
+    const gk = g.institution + '||' + g.level;
+    if (!selGroups.has(gk)) return;
+    g.students.forEach(s => {
+      const dec = ROW_DECISIONS[s.StipNo] || {};
+      const act = dec.action || 'promote';
+      if (onlyChg && act === 'skip' && !inclSkip) return;
+      if (!inclSkip && act === 'skip') return;
+
+      const thaiName = ((s.Title||'') + (s.FirstName||'') + ' ' + (s.LastName||'')).trim();
+      const engName  = ((s.EngFirstName||'') + ' ' + (s.EngLastName||'')).trim();
+
+      const actionLabel = {
+        promote:'promoActPromote', graduate:'promoActGraduate',
+        uni:'promoActUni', uni_own:'promoActUniOwn',
+        hold:'promoActHold', suspend:'promoActSuspend',
+        resign:'promoActResign', skip:'promoActSkip',
+      };
+      const nextLabel = (() => {
+        if (act==='promote')  return dec.nextLevel || '';
+        if (act==='graduate') return tL('promoStatusGraduated');
+        if (act==='uni')      return tL('promoUniRDF');
+        if (act==='uni_own')  return tL('promoUniOwn');
+        if (act==='hold')     return tL('promoStayLevel');
+        if (act==='suspend')  return tL('promoStatusSuspended');
+        if (act==='resign')   return tL('promoStatusResigned');
+        return '—';
+      })();
+      const schLabel = { Yes:tL('promoSchYes'), No:tL('promoSchNo'), Pending:tL('promoSchPending') }[dec.uniScholarship] || '—';
+
+      rows.push({
+        [tL('exportNo')]:        seq++,
+        [tL('promoColStipNo')]:  s.StipNo,
+        [lang==='th'?'ชื่อ-นามสกุล (TH)':'Thai Name']: thaiName,
+        [lang==='th'?'ชื่อ-นามสกุล (EN)':'English Name']: engName,
+        [tL('exportInst')]:      g.institution,
+        [tL('exportLevel')]:     g.level,
+        [tL('exportAction')]:    tL(actionLabel[act]||'promoActSkip'),
+        [tL('exportNextLevel')]: nextLabel,
+        [tL('exportUniSch')]:    schLabel,
+        [tL('exportNotes')]:     dec.notes || '',
+      });
+    });
+  });
+
+  if (rows.length === 0) {
+    return Swal.fire(tL('warning'), lang==='th'?'ไม่มีข้อมูลในกลุ่มที่เลือก':'No data in selected groups', 'info');
+  }
+
+  closeExportModal();
+
+  if (fmt === 'excel') {
+    generateExcel(rows, lang, tL);
+  } else {
+    generatePDF(rows, lang, tL);
+  }
+}
+
+function generateExcel(rows, lang, tL) {
+  const wb   = XLSX.utils.book_new();
+  const ws   = XLSX.utils.json_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:5},{wch:12},{wch:24},{wch:24},{wch:8},{wch:28},{wch:18},{wch:28},{wch:12},{wch:20}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, tL('exportReportTitle').substring(0,31));
+
+  const acad   = document.getElementById('academicYear').value || '';
+  const pDate  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+  const user   = (getUser()||{}).name || (getUser()||{}).username || '';
+  const fname  = `RDF_Promotion${acad?'_'+acad:''}_${pDate}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+function generatePDF(rows, lang, tL) {
+  const acad  = document.getElementById('academicYear').value || '';
+  const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+  const user  = (getUser()||{}).name || (getUser()||{}).username || '';
+  const org   = lang==='th' ? RDF.FOUNDATION_TH : RDF.FOUNDATION_EN;
+
+  // Fill print header
+  document.getElementById('prh_org').textContent   = org;
+  document.getElementById('prh_title').textContent = tL('exportReportTitle');
+  document.getElementById('prh_date').textContent  = tL('exportDate') + ': ' + pDate;
+  document.getElementById('prh_acad').textContent  = acad ? tL('exportAcadYear') + ': ' + acad : '';
+  document.getElementById('prh_by').textContent    = tL('exportGeneratedBy') + ': ' + user;
+
+  // Build a temporary print-only table
+  const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
+  const thead = `<tr>${cols.map(c=>`<th style="padding:4px 8px;border:1px solid #ccc;background:#1e3a8a;color:#fff;font-size:10pt">${c}</th>`).join('')}</tr>`;
+  const tbody = rows.map(r =>
+    `<tr>${cols.map(c=>`<td style="padding:4px 8px;border:1px solid #e5e7eb;font-size:9pt">${r[c]??''}</td>`).join('')}</tr>`
+  ).join('');
+
+  let printEl = document.getElementById('printTableWrap');
+  if (!printEl) {
+    printEl = document.createElement('div');
+    printEl.id = 'printTableWrap';
+    printEl.className = 'print-only';
+    document.body.appendChild(printEl);
+  }
+  printEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-family:'Sarabun',sans-serif">${thead}${tbody}</table>`;
+
+  window.print();
+
+  // Clean up after print
+  setTimeout(() => { printEl.innerHTML = ''; }, 1000);
 }
 
 // ─────────────────────────────────────────────
@@ -832,20 +1097,20 @@ API.post = async function(action, body) {
 // ─────────────────────────────────────────────
 document.getElementById('footerYear').textContent = new Date().getFullYear();
 
-// Auth guard — admin only
 (function() {
   const u = requireAuth('index.html');
   if (!u) return;
   if (u.role === 'Student') { window.location.href = 'dashboard.html'; return; }
   renderNavUser(u);
+
+  // Sync lang button
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = (localStorage.getItem('rdfLang')||'th') === 'th' ? 'EN' : 'TH';
+
+  setLang(localStorage.getItem('rdfLang') || 'th');
   loadPage();
 })();
 initDBStatus();
-
-// Check if settings.html set a tab preference
-if (localStorage.getItem('settingsTab') === 'promotion') {
-  localStorage.removeItem('settingsTab');
-}
 </script>
 </body>
 </html>
