@@ -970,8 +970,8 @@ function doExport() {
     g.students.forEach(s => {
       const dec = ROW_DECISIONS[s.StipNo] || {};
       const act = dec.action || 'promote';
-      if (onlyChg && act === 'skip' && !inclSkip) return;
-      if (!inclSkip && act === 'skip') return;
+      // onlyChg=true and inclSkip=false → skip 'skip' rows; all other combos → include all
+      if (onlyChg && !inclSkip && act === 'skip') return;
 
       const thaiName = ((s.Title||'') + (s.FirstName||'') + ' ' + (s.LastName||'')).trim();
       const engName  = ((s.EngFirstName||'') + ' ' + (s.EngLastName||'')).trim();
@@ -1023,56 +1023,72 @@ function doExport() {
 }
 
 function generateExcel(rows, lang, tL) {
-  const wb   = XLSX.utils.book_new();
-  const ws   = XLSX.utils.json_to_sheet(rows);
+  try {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
 
-  // Column widths
-  ws['!cols'] = [
-    {wch:5},{wch:12},{wch:24},{wch:24},{wch:8},{wch:28},{wch:18},{wch:28},{wch:12},{wch:20}
-  ];
+    // Column widths
+    ws['!cols'] = [
+      {wch:5},{wch:12},{wch:24},{wch:24},{wch:8},{wch:28},{wch:18},{wch:28},{wch:12},{wch:20}
+    ];
 
-  XLSX.utils.book_append_sheet(wb, ws, tL('exportReportTitle').substring(0,31));
+    // Sheet names cannot contain: \ / ? * [ ] :
+    const sheetTitle = (lang === 'en' ? 'Promotion Report' : 'รายงานเลื่อนชั้น')
+      .replace(/[\\/?*[\]:]/g, '').substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
 
-  const acad   = document.getElementById('academicYear').value || '';
-  const pDate  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
-  const user   = (getUser()||{}).name || (getUser()||{}).username || '';
-  const fname  = `RDF_Promotion${acad?'_'+acad:''}_${pDate}.xlsx`;
-  XLSX.writeFile(wb, fname);
+    const acad  = document.getElementById('academicYear').value || '';
+    const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+    const fname = `RDF_Promotion${acad ? '_' + acad : ''}_${pDate}.xlsx`;
+    XLSX.writeFile(wb, fname);
+  } catch(e) {
+    console.error('Excel export error:', e);
+    Swal.fire(tL('error') || 'Error', 'Export failed: ' + e.message, 'error');
+  }
 }
 
 function generatePDF(rows, lang, tL) {
-  const acad  = document.getElementById('academicYear').value || '';
-  const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
-  const user  = (getUser()||{}).name || (getUser()||{}).username || '';
-  const org   = lang==='th' ? RDF.FOUNDATION_TH : RDF.FOUNDATION_EN;
+  try {
+    const acad  = document.getElementById('academicYear').value || '';
+    const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+    const user  = (getUser()||{}).name || (getUser()||{}).username || '';
+    const org   = lang==='th' ? RDF.FOUNDATION_TH : RDF.FOUNDATION_EN;
 
-  // Fill print header
-  document.getElementById('prh_org').textContent   = org;
-  document.getElementById('prh_title').textContent = tL('exportReportTitle');
-  document.getElementById('prh_date').textContent  = tL('exportDate') + ': ' + pDate;
-  document.getElementById('prh_acad').textContent  = acad ? tL('exportAcadYear') + ': ' + acad : '';
-  document.getElementById('prh_by').textContent    = tL('exportGeneratedBy') + ': ' + user;
+    // Fill print header
+    document.getElementById('prh_org').textContent   = org;
+    document.getElementById('prh_title').textContent = tL('exportReportTitle');
+    document.getElementById('prh_date').textContent  = tL('exportDate') + ': ' + pDate;
+    document.getElementById('prh_acad').textContent  = acad ? tL('exportAcadYear') + ': ' + acad : '';
+    document.getElementById('prh_by').textContent    = tL('exportGeneratedBy') + ': ' + user;
 
-  // Build a temporary print-only table
-  const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
-  const thead = `<tr>${cols.map(c=>`<th style="padding:4px 8px;border:1px solid #ccc;background:#1e3a8a;color:#fff;font-size:10pt">${c}</th>`).join('')}</tr>`;
-  const tbody = rows.map(r =>
-    `<tr>${cols.map(c=>`<td style="padding:4px 8px;border:1px solid #e5e7eb;font-size:9pt">${r[c]??''}</td>`).join('')}</tr>`
-  ).join('');
+    // Build a temporary print-only table
+    const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
+    const thead = `<tr>${cols.map(c =>
+      `<th style="padding:5px 8px;border:1px solid #ccc;background:#1e3a8a;color:#fff;font-size:9pt;white-space:nowrap">${c}</th>`
+    ).join('')}</tr>`;
+    const tbody = rows.map((r, i) =>
+      `<tr style="background:${i%2===0?'#fff':'#f8faff'}">${cols.map(c =>
+        `<td style="padding:4px 8px;border:1px solid #e5e7eb;font-size:8.5pt">${r[c] ?? ''}</td>`
+      ).join('')}</tr>`
+    ).join('');
 
-  let printEl = document.getElementById('printTableWrap');
-  if (!printEl) {
-    printEl = document.createElement('div');
-    printEl.id = 'printTableWrap';
-    printEl.className = 'print-only';
-    document.body.appendChild(printEl);
+    let printEl = document.getElementById('printTableWrap');
+    if (!printEl) {
+      printEl = document.createElement('div');
+      printEl.id = 'printTableWrap';
+      printEl.className = 'print-only';
+      document.body.appendChild(printEl);
+    }
+    printEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-family:'Sarabun','TH Sarabun New',sans-serif">${thead}${tbody}</table>`;
+
+    window.print();
+
+    // Clean up after print dialog closes
+    setTimeout(() => { printEl.innerHTML = ''; }, 2000);
+  } catch(e) {
+    console.error('PDF export error:', e);
+    Swal.fire(tL('error') || 'Error', 'PDF export failed: ' + e.message, 'error');
   }
-  printEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-family:'Sarabun',sans-serif">${thead}${tbody}</table>`;
-
-  window.print();
-
-  // Clean up after print
-  setTimeout(() => { printEl.innerHTML = ''; }, 1000);
 }
 
 // ─────────────────────────────────────────────
