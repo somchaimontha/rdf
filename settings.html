@@ -360,104 +360,149 @@
   </div>
 
   <!-- ═══════════════════════════════════════════
-       PANEL: MAJORS
+       PANEL: MAJORS  (Unified bilingual academic programs)
   ════════════════════════════════════════════ -->
   <div id="panelMajors" class="hidden">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-      <div class="card fade-in-up">
-        <div class="card-header" style="background:#1d4ed8">
-          <i data-lucide="school" class="w-4 h-4"></i> แผนการเรียน / สาขาวิชา — MBS
+    <!-- ── Toolbar ── -->
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+      <!-- Institution filter -->
+      <div class="flex gap-1.5" id="apInstFilter">
+        <button onclick="apSetInst('')"    id="apInstAll"  class="btn btn-sm btn-primary ap-inst-btn">ทั้งหมด</button>
+        <button onclick="apSetInst('MBS')" id="apInstMBS"  class="btn btn-sm btn-secondary ap-inst-btn">MBS</button>
+        <button onclick="apSetInst('VC')"  id="apInstVC"   class="btn btn-sm btn-secondary ap-inst-btn">VC</button>
+      </div>
+      <!-- Category filter -->
+      <div class="flex gap-1.5" id="apCatFilter">
+        <button onclick="apSetCat('')"          id="apCatAll"  class="btn btn-sm btn-primary ap-cat-btn">ทุกประเภท</button>
+        <button onclick="apSetCat('plan')"      id="apCatPlan" class="btn btn-sm btn-secondary ap-cat-btn">แผนการเรียน</button>
+        <button onclick="apSetCat('program')"   id="apCatProg" class="btn btn-sm btn-secondary ap-cat-btn">สาขาวิชา</button>
+        <button onclick="apSetCat('department')" id="apCatDept" class="btn btn-sm btn-secondary ap-cat-btn">แผนกวิชา</button>
+      </div>
+      <!-- Search -->
+      <div class="flex-1 min-w-0" style="max-width:260px">
+        <input type="text" id="apSearch" oninput="apRender()" class="field-input text-sm"
+               placeholder="ค้นหา / Search...">
+      </div>
+      <div class="ml-auto flex gap-2">
+        <button onclick="apOpenAdd()" class="btn btn-primary btn-sm">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการ
+        </button>
+        <button onclick="apSaveAll()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกทั้งหมด
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Summary badges ── -->
+    <div id="apSummary" class="flex flex-wrap gap-2 mb-4"></div>
+
+    <!-- ── Table ── -->
+    <div class="card" style="overflow:hidden">
+      <div class="overflow-x-auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb">
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap">สถานศึกษา</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap">ประเภท / Type</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">ชื่อภาษาไทย</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">English Name</th>
+              <th style="padding:10px 14px;text-align:center;font-weight:700;color:#374151;white-space:nowrap">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="apTableBody">
+            <tr><td colspan="5" class="text-center text-gray-400 py-12">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="apEmpty" class="hidden text-center py-12 text-gray-400">
+        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+        <p class="font-semibold">ไม่พบรายการ</p>
+        <button onclick="apOpenAdd()" class="btn btn-primary btn-sm mt-3">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการแรก
+        </button>
+      </div>
+    </div>
+
+    <!-- ── University List ── (separate section, same panel) -->
+    <div class="card mt-5 fade-in-up">
+      <div class="card-header" style="background:#0369a1">
+        <i data-lucide="building-2" class="w-4 h-4"></i> รายชื่อมหาวิทยาลัย / University List
+        <span id="uniListCount" class="ml-auto text-xs font-normal opacity-70">0 รายการ</span>
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4">รายชื่อมหาวิทยาลัยที่ใช้ใน dropdown ฟอร์มนักเรียนและรายงาน — รองรับทั้งสองภาษา</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;font-size:11px;font-weight:700;
+                    color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding:0 4px">
+          <span>ชื่อภาษาไทย</span><span>English Name</span><span></span>
         </div>
-        <div class="card-body">
-          <p class="text-xs text-gray-500 mb-3">Maesariang Boripat Suksa School — พิมพ์แล้วกด Enter เพื่อเพิ่ม</p>
-          <div class="tag-wrap" id="tagsMBS" onclick="document.getElementById('tagInputMBS').focus()">
-            <input type="text" id="tagInputMBS" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..." onkeydown="addTag(event,'MBS')">
-          </div>
-          <div class="flex justify-end mt-3">
-            <button onclick="saveMajors('MBS')" class="btn btn-primary btn-sm">
-              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก MBS
-            </button>
-          </div>
+        <div id="uniListRows" class="space-y-2 mb-4">
+          <div class="text-center text-gray-400 py-4 text-sm">กำลังโหลด...</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center" class="mb-4">
+          <input type="text" id="uniInputTH" class="field-input text-sm" placeholder="ชื่อมหาวิทยาลัย (ไทย)">
+          <input type="text" id="uniInputEN" class="field-input text-sm" placeholder="University Name (EN)">
+          <button onclick="addUniEntry()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd;white-space:nowrap">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม
+          </button>
+        </div>
+        <div class="flex justify-end pt-3 border-t border-gray-100">
+          <button onclick="saveUniList()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกรายชื่อมหาวิทยาลัย
+          </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="card fade-in-up delay-1">
-        <div class="card-header" style="background:#ea580c">
-          <i data-lucide="wrench" class="w-4 h-4"></i> สาขาวิชา — VC (แผนการเรียน)
+  <!-- ─── Academic Program Edit Modal ─── -->
+  <div id="apModal" class="hidden modal-overlay" style="z-index:10000">
+    <div class="modal-box" style="max-width:500px">
+      <div class="modal-header" style="background:#1e3a8a;color:#fff;border-radius:16px 16px 0 0">
+        <span class="font-bold flex items-center gap-2">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          <span id="apModalTitle">เพิ่มรายการ</span>
+        </span>
+        <button onclick="apCloseModal()" style="background:none;border:none;color:#fff;opacity:.7;cursor:pointer;font-size:20px;line-height:1">×</button>
+      </div>
+      <div class="modal-body space-y-4">
+        <input type="hidden" id="apModalId">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label">สถานศึกษา / Institution <span class="text-red-500">*</span></label>
+            <select id="apModalInst" class="field-select text-sm" onchange="apUpdateCategoryOptions()">
+              <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
+              <option value="VC">VC — Maesariang Industrial and Community Education College</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">ประเภท / Category <span class="text-red-500">*</span></label>
+            <select id="apModalCat" class="field-select text-sm">
+              <option value="plan">แผนการเรียน (Study Plan)</option>
+              <option value="program">สาขาวิชา (Program)</option>
+              <option value="department">แผนกวิชา (Department)</option>
+            </select>
+          </div>
         </div>
-        <div class="card-body">
-          <p class="text-xs text-gray-500 mb-3">Vocational College — แผนการเรียน/สาขาวิชาหลัก</p>
-          <div class="tag-wrap" id="tagsVC" onclick="document.getElementById('tagInputVC').focus()">
-            <input type="text" id="tagInputVC" class="tag-add-input" placeholder="เพิ่มสาขาวิชา..." onkeydown="addTag(event,'VC')">
-          </div>
-          <div class="flex justify-end mt-3">
-            <button onclick="saveMajors('VC')" class="btn btn-sm" style="background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa">
-              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก VC
-            </button>
-          </div>
+        <div>
+          <label class="field-label">ชื่อภาษาไทย <span class="text-red-500">*</span></label>
+          <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาศาสตร์-คณิตศาสตร์">
+        </div>
+        <div>
+          <label class="field-label">English Name <span class="text-red-500">*</span></label>
+          <input type="text" id="apModalNameEN" class="field-input" placeholder="e.g. Science-Mathematics">
+        </div>
+        <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
+          <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+          รายการนี้จะแสดงใน dropdown ของฟอร์มนักเรียน, ระบบเลื่อนชั้น และรายงาน ตามสถาบันและภาษาที่เลือก
         </div>
       </div>
-
-      <div class="card fade-in-up delay-2 md:col-span-2">
-        <div class="card-header" style="background:#7c3aed">
-          <i data-lucide="layers" class="w-4 h-4"></i> แผนกวิชา — VC (Department)
-        </div>
-        <div class="card-body">
-          <p class="text-xs text-gray-500 mb-3">แผนกวิชาของ Vocational College (ใช้สำหรับช่อง "แผนกวิชา" ในฟอร์ม)</p>
-          <div class="tag-wrap" id="tagsDEPT_VC" onclick="document.getElementById('tagInputDEPT_VC').focus()">
-            <input type="text" id="tagInputDEPT_VC" class="tag-add-input" placeholder="เพิ่มแผนกวิชา..." onkeydown="addTag(event,'DEPT_VC')">
-          </div>
-          <div class="flex justify-end mt-3">
-            <button onclick="saveMajors('DEPT_VC')" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #ddd6fe">
-              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกแผนกวิชา VC
-            </button>
-          </div>
-        </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="apCloseModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
+        <button onclick="apSaveEntry()" class="btn btn-primary btn-sm font-bold">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก
+        </button>
       </div>
-
-      <!-- University List Card -->
-      <div class="card fade-in-up delay-3 md:col-span-2">
-        <div class="card-header" style="background:#0369a1">
-          <i data-lucide="building-2" class="w-4 h-4"></i> รายชื่อมหาวิทยาลัย / University List
-        </div>
-        <div class="card-body">
-          <p class="text-xs text-gray-500 mb-4">
-            รายชื่อมหาวิทยาลัยที่ใช้ในระบบ — ทั้งชื่อภาษาไทยและอังกฤษ<br>
-            ข้อมูลนี้จะแสดงใน dropdown ฟอร์มนักเรียนและรายงานทุกหน้า
-          </p>
-
-          <!-- Table header -->
-          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;font-size:11px;font-weight:700;
-                      color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding:0 4px">
-            <span>ชื่อภาษาไทย</span>
-            <span>English Name</span>
-            <span></span>
-          </div>
-
-          <!-- University rows -->
-          <div id="uniListRows" class="space-y-2 mb-4">
-            <div class="text-center text-gray-400 py-4 text-sm">กำลังโหลด...</div>
-          </div>
-
-          <!-- Add row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center" class="mb-4">
-            <input type="text" id="uniInputTH" class="field-input text-sm" placeholder="ชื่อมหาวิทยาลัย (ไทย)">
-            <input type="text" id="uniInputEN" class="field-input text-sm" placeholder="University Name (EN)">
-            <button onclick="addUniEntry()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd;white-space:nowrap">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม
-            </button>
-          </div>
-
-          <div class="flex justify-between items-center pt-3 border-t border-gray-100">
-            <span class="text-xs text-gray-400" id="uniListCount">0 รายการ</span>
-            <button onclick="saveUniList()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd">
-              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกรายชื่อมหาวิทยาลัย
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -1664,73 +1709,244 @@ function renderLogs() {
 }
 
 // ─────────────────────────────────────────────
-// MAJORS MANAGEMENT
+// ACADEMIC PROGRAMS MANAGEMENT (Unified Bilingual)
+// Schema: { id, institution, category, nameTH, nameEN }
+// institution: 'MBS' | 'VC'
+// category: 'plan' (MBS study plans) | 'program' (VC programs) | 'department' (VC departments)
 // ─────────────────────────────────────────────
-let majorsState = {};
+let _apState = [];  // full list
+let _apInst  = '';  // current institution filter ('' = all)
+let _apCat   = '';  // current category filter ('' = all)
 
-async function loadMajors() {
-  majorsState = {
-    MBS:     [...(RDF.MAJORS?.MBS     || [])],
-    VC:      [...(RDF.MAJORS?.VC      || [])],
-    DEPT_VC: [...(RDF.DEPARTMENTS?.VC || [])]
-  };
+function _genApId() {
+  return 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6);
+}
+
+async function apLoad() {
+  const tableBody = document.getElementById('apTableBody');
+  const emptyEl   = document.getElementById('apEmpty');
+  if (tableBody) tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 py-10">กำลังโหลด...</td></tr>`;
   try {
     const r = await API.getSystemSettings();
     if (r.status === 'success' && r.data) {
-      if (Array.isArray(r.data.MAJORS_MBS))     majorsState.MBS     = r.data.MAJORS_MBS;
-      if (Array.isArray(r.data.MAJORS_VC))      majorsState.VC      = r.data.MAJORS_VC;
-      if (Array.isArray(r.data.DEPARTMENTS_VC)) majorsState.DEPT_VC = r.data.DEPARTMENTS_VC;
+      if (Array.isArray(r.data.ACADEMIC_PROGRAMS) && r.data.ACADEMIC_PROGRAMS.length > 0) {
+        _apState = r.data.ACADEMIC_PROGRAMS;
+      } else {
+        // Migrate old string arrays → unified objects
+        const migrateOld = (arr, institution, category) =>
+          (arr || []).filter(Boolean).map(name => ({
+            id: _genApId(), institution, category,
+            nameTH: typeof name === 'string' ? name : (name.nameTH || name.nameEN || ''),
+            nameEN: typeof name === 'string' ? name : (name.nameEN || name.nameTH || '')
+          }));
+        const oldMBS   = r.data.MAJORS_MBS     || RDF.MAJORS?.MBS     || [];
+        const oldVC    = r.data.MAJORS_VC      || RDF.MAJORS?.VC      || [];
+        const oldDept  = r.data.DEPARTMENTS_VC || RDF.DEPARTMENTS?.VC || [];
+        _apState = [
+          ...migrateOld(oldMBS,  'MBS', 'plan'),
+          ...migrateOld(oldVC,   'VC',  'program'),
+          ...migrateOld(oldDept, 'VC',  'department')
+        ];
+      }
     }
-  } catch(e) {}
-  renderAllTags();
+  } catch(e) { _apState = []; }
+  apRender();
 }
 
-function renderAllTags() { ['MBS','VC','DEPT_VC'].forEach(renderTags); }
+function apRender() {
+  const tableBody = document.getElementById('apTableBody');
+  const emptyEl   = document.getElementById('apEmpty');
+  const summary   = document.getElementById('apSummary');
+  const q         = (document.getElementById('apSearch')?.value || '').toLowerCase();
+  if (!tableBody) return;
 
-function renderTags(key) {
-  const wrap  = document.getElementById('tags' + key);
-  const input = document.getElementById('tagInput' + key);
-  if (!wrap || !input) return;
-  [...wrap.querySelectorAll('.tag-item')].forEach(t => t.remove());
-  (majorsState[key] || []).forEach(val => {
-    const span = document.createElement('span');
-    span.className = key.startsWith('DEPT') ? 'tag-item dept' : (key === 'VC' ? 'tag-item vc' : 'tag-item');
-    span.innerHTML = `${val} <span class="tag-remove" onclick="removeTag('${key}','${val.replace(/'/g,"\\'")}')">×</span>`;
-    wrap.insertBefore(span, input);
+  const filtered = _apState.filter(p => {
+    if (_apInst && p.institution !== _apInst) return false;
+    if (_apCat  && p.category    !== _apCat)  return false;
+    if (q && !(p.nameTH||'').toLowerCase().includes(q) && !(p.nameEN||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  // Summary badges
+  const mbsCount  = _apState.filter(p => p.institution === 'MBS').length;
+  const vcCount   = _apState.filter(p => p.institution === 'VC').length;
+  const planCount = _apState.filter(p => p.category === 'plan').length;
+  const progCount = _apState.filter(p => p.category === 'program').length;
+  const deptCount = _apState.filter(p => p.category === 'department').length;
+  if (summary) summary.innerHTML = `
+    <span style="background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">MBS ${mbsCount}</span>
+    <span style="background:#fce7f3;color:#9d174d;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">VC ${vcCount}</span>
+    <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">แผน ${planCount}</span>
+    <span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">โปรแกรม ${progCount}</span>
+    <span style="background:#ede9fe;color:#5b21b6;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">ภาควิชา ${deptCount}</span>
+    <span style="color:#6b7280;font-size:11px">รวม ${_apState.length} รายการ (แสดง ${filtered.length})</span>`;
+
+  if (!filtered.length) {
+    tableBody.innerHTML = '';
+    if (emptyEl) emptyEl.classList.remove('hidden');
+    return;
+  }
+  if (emptyEl) emptyEl.classList.add('hidden');
+
+  const instLabel = { MBS:'MBS', VC:'VC' };
+  const catLabel  = { plan:'แผนการศึกษา', program:'หลักสูตร', department:'ภาควิชา/สาขา' };
+  const catColor  = { plan:'background:#dbeafe;color:#1e40af', program:'background:#fce7f3;color:#9d174d', department:'background:#ede9fe;color:#5b21b6' };
+  const instColor = { MBS:'background:#dbeafe;color:#1d4ed8', VC:'background:#fce7f3;color:#be185d' };
+
+  tableBody.innerHTML = filtered.map(p => `
+    <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+      <td style="padding:10px 12px">
+        <span style="${instColor[p.institution]||'background:#f1f5f9;color:#374151'};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700">${instLabel[p.institution]||p.institution}</span>
+      </td>
+      <td style="padding:10px 12px">
+        <span style="${catColor[p.category]||'background:#f1f5f9;color:#374151'};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600">${catLabel[p.category]||p.category}</span>
+      </td>
+      <td style="padding:10px 12px;font-size:13px;color:#1e293b;font-weight:500">${_esc(p.nameTH||'—')}</td>
+      <td style="padding:10px 12px;font-size:13px;color:#475569">${_esc(p.nameEN||'—')}</td>
+      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+        <button onclick="apOpenEdit('${p.id}')" title="แก้ไข"
+                style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;border-radius:8px;padding:4px 10px;cursor:pointer;margin-right:4px;font-size:12px">
+          <i data-lucide="pencil" class="w-3.5 h-3.5" style="display:inline-block;vertical-align:middle"></i>
+        </button>
+        <button onclick="apDelete('${p.id}')" title="ลบ"
+                style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5" style="display:inline-block;vertical-align:middle"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+  lucide.createIcons();
+}
+
+function apSetInst(inst) {
+  _apInst = inst;
+  const ids = { '':'apInstAll', 'MBS':'apInstMBS', 'VC':'apInstVC' };
+  document.querySelectorAll('.ap-inst-btn').forEach(b => {
+    const active = b.id === ids[inst];
+    b.style.background = active ? '#1e3a8a' : '#f8fafc';
+    b.style.color = active ? '#fff' : '#374151';
+    b.style.border = active ? '1.5px solid #1e3a8a' : '1.5px solid #e5e7eb';
+  });
+  apRender();
+}
+
+function apSetCat(cat) {
+  _apCat = cat;
+  const ids = { '':'apCatAll', 'plan':'apCatPlan', 'program':'apCatProg', 'department':'apCatDept' };
+  document.querySelectorAll('.ap-cat-btn').forEach(b => {
+    const active = b.id === ids[cat];
+    b.style.background = active ? '#0f766e' : '#f8fafc';
+    b.style.color = active ? '#fff' : '#374151';
+    b.style.border = active ? '1.5px solid #0f766e' : '1.5px solid #e5e7eb';
+  });
+  apRender();
+}
+
+function apUpdateCategoryOptions() {
+  const inst = document.getElementById('apModalInst')?.value;
+  const sel  = document.getElementById('apModalCat');
+  if (!sel) return;
+  const opts = inst === 'MBS'
+    ? [['plan','แผนการศึกษา / Study Plan']]
+    : [['program','หลักสูตร / Program'], ['department','ภาควิชา/สาขา / Department']];
+  sel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+}
+
+function apOpenAdd() {
+  const modal = document.getElementById('apModal');
+  const title = document.getElementById('apModalTitle');
+  if (!modal) return;
+  document.getElementById('apModalId').value     = '';
+  document.getElementById('apModalInst').value   = _apInst || 'MBS';
+  apUpdateCategoryOptions();
+  if (_apCat) document.getElementById('apModalCat').value = _apCat;
+  document.getElementById('apModalNameTH').value = '';
+  document.getElementById('apModalNameEN').value = '';
+  if (title) title.textContent = 'เพิ่มรายการใหม่';
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
+}
+
+function apOpenEdit(id) {
+  const p = _apState.find(x => x.id === id);
+  if (!p) return;
+  const modal = document.getElementById('apModal');
+  const title = document.getElementById('apModalTitle');
+  if (!modal) return;
+  document.getElementById('apModalId').value     = p.id;
+  document.getElementById('apModalInst').value   = p.institution;
+  apUpdateCategoryOptions();
+  document.getElementById('apModalCat').value    = p.category;
+  document.getElementById('apModalNameTH').value = p.nameTH || '';
+  document.getElementById('apModalNameEN').value = p.nameEN || '';
+  if (title) title.textContent = 'แก้ไขรายการ';
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
+}
+
+function apCloseModal() {
+  const modal = document.getElementById('apModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function apSaveEntry() {
+  const id     = document.getElementById('apModalId').value.trim();
+  const inst   = document.getElementById('apModalInst').value;
+  const cat    = document.getElementById('apModalCat').value;
+  const nameTH = document.getElementById('apModalNameTH').value.trim();
+  const nameEN = document.getElementById('apModalNameEN').value.trim();
+  if (!nameTH && !nameEN) {
+    Swal.fire('แจ้งเตือน', 'กรุณากรอกชื่ออย่างน้อย 1 ภาษา', 'warning'); return;
+  }
+  // Duplicate check (same inst+cat+name)
+  const dup = _apState.find(p =>
+    p.id !== id &&
+    p.institution === inst &&
+    p.category === cat &&
+    ((nameTH && (p.nameTH||'').toLowerCase() === nameTH.toLowerCase()) ||
+     (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase()))
+  );
+  if (dup) {
+    Swal.fire('แจ้งเตือน', `มีรายการ "${dup.nameTH||dup.nameEN}" อยู่แล้วในกลุ่มเดียวกัน`, 'warning'); return;
+  }
+  if (id) {
+    const idx = _apState.findIndex(p => p.id === id);
+    if (idx !== -1) _apState[idx] = { id, institution: inst, category: cat, nameTH, nameEN };
+  } else {
+    _apState.push({ id: _genApId(), institution: inst, category: cat, nameTH, nameEN });
+  }
+  apCloseModal();
+  apRender();
+}
+
+function apDelete(id) {
+  const p = _apState.find(x => x.id === id);
+  if (!p) return;
+  Swal.fire({
+    title: 'ยืนยันการลบ',
+    text: `ลบ "${p.nameTH || p.nameEN}" ?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก'
+  }).then(res => {
+    if (res.isConfirmed) {
+      _apState = _apState.filter(x => x.id !== id);
+      apRender();
+    }
   });
 }
 
-function addTag(e, key) {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
-  const val = e.target.value.trim();
-  if (!val || (majorsState[key]||[]).includes(val)) { e.target.value=''; return; }
-  if (!majorsState[key]) majorsState[key] = [];
-  majorsState[key].push(val);
-  renderTags(key);
-  e.target.value = '';
-}
-
-function removeTag(key, val) {
-  majorsState[key] = (majorsState[key]||[]).filter(m => m !== val);
-  renderTags(key);
-}
-
-async function saveMajors(key) {
-  const keyMap = { MBS:'MAJORS_MBS', VC:'MAJORS_VC', DEPT_VC:'DEPARTMENTS_VC' };
-  const settingKey = keyMap[key];
-  if (!settingKey) return;
+async function apSaveAll() {
+  showLoader(true, 'กำลังบันทึก...');
   try {
-    showLoader(true, 'กำลังบันทึก...');
     const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
-    const r = await Promise.race([API.saveSetting(settingKey, majorsState[key]), _t]);
+    const r  = await Promise.race([API.saveSetting('ACADEMIC_PROGRAMS', _apState), _t]);
     showLoader(false);
     if (r.status === 'success') {
-      if (key === 'MBS' || key === 'VC') { if (!RDF.MAJORS) RDF.MAJORS={}; RDF.MAJORS[key]=[...majorsState[key]]; }
-      if (key === 'DEPT_VC') { if (!RDF.DEPARTMENTS) RDF.DEPARTMENTS={}; RDF.DEPARTMENTS.VC=[...majorsState[key]]; }
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:`${_apState.length} รายการ`, timer:2000, showConfirmButton:false });
     } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้', 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -2491,7 +2707,7 @@ async function savePromotionSettings() {
 // INIT
 // ─────────────────────────────────────────────
 loadAdmins();
-loadMajors();
+apLoad();
 loadUniList();
 initDBStatus();
 </script>
