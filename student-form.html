@@ -900,10 +900,30 @@
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
 if (user) renderNavUser(user);
+
+// RBAC: Students can only edit their own profile
+// Admins need editStudents permission
+(function _rbacFormGuard() {
+  if (!user) return;
+  const urlParams = new URLSearchParams(window.location.search);
+  const stipParam = urlParams.get('stipNo');
+  if (user.role === 'Student') {
+    // Student must only see their own StipNo
+    if (stipParam && stipParam !== user.stipNo) {
+      RBAC._showAccessDenied(user);
+      return;
+    }
+    // Student opening own form: apply field locks after DOM is ready
+    window.addEventListener('load', () => RBAC.applyFieldGuards());
+  } else if (!RBAC.has('editStudents') && !RBAC.has('viewStudents')) {
+    RBAC.enforcePage(['editStudents']);
+  }
+})();
 
 const urlParams = new URLSearchParams(window.location.search);
 const editStipNo = urlParams.get('stipNo');

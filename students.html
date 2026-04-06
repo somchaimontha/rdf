@@ -78,7 +78,8 @@
         <i data-lucide="file-text" class="w-4 h-4"></i>
         <span data-t="reportBtn">รายงาน</span>
       </button>
-      <a href="student-form.html" class="btn btn-primary btn-sm">
+      <a href="student-form.html" class="btn btn-primary btn-sm" data-admin-only
+         id="btnAddStudent">
         <i data-lucide="user-plus" class="w-4 h-4"></i>
         <span data-t="addStudent">เพิ่มนักเรียนใหม่</span>
       </a>
@@ -573,10 +574,22 @@
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
-if (user) renderNavUser(user);
+// RBAC: Students → redirect to own profile; others need viewStudents permission
+if (user) {
+  if (!RBAC.enforcePage(['viewStudents','viewOwnProfile'])) {
+    // enforcePage already handled the redirect
+  } else {
+    renderNavUser(user);
+    // Hide add/edit buttons for read-only roles
+    if (!RBAC.has('editStudents')) {
+      document.querySelectorAll('[data-admin-only]').forEach(el => el.remove());
+    }
+  }
+}
 
 let allStudents = [];
 let filteredStudents = [];

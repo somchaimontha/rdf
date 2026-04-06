@@ -1045,6 +1045,36 @@
         </table>
       </div>
     </div>
+
+    <!-- ── Student Access Configuration ── -->
+    <div class="card fade-in-up delay-2 mt-4" style="border-left:4px solid #0ea5e9">
+      <div class="card-header flex items-center justify-between">
+        <span class="font-bold text-gray-700 flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4" style="color:#0ea5e9"></i>
+          กำหนดสิทธิ์นักเรียน / Student Editable Fields
+        </span>
+        <button onclick="saveStudentEditableFields()"
+                class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1.5px solid #bae6fd">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก
+        </button>
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4">
+          เลือกช่องที่อนุญาตให้นักเรียนทุนแก้ไขข้อมูลของตนเองได้
+          ช่องที่ไม่ได้เลือกจะเป็น Read-Only สำหรับนักเรียน
+          รหัสทุน (StipNo) และข้อมูลการศึกษาหลักจะถูกล็อคเสมอ<br>
+          <span class="text-gray-400">Fields not selected will be read-only for Students. StipNo &amp; academic fields are always locked.</span>
+        </p>
+        <div id="studentFieldsGrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+          <!-- Rendered by buildStudentFieldsUI() -->
+        </div>
+        <div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+          <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i>
+          <b>ช่องที่ล็อคเสมอ (Always Protected):</b>
+          รหัสทุน, เลขบัตรประชาชน, สถาบัน, ชั้นเรียน, ปีทุน, ปีที่เข้า, สถานะ, สาขาวิชา, ทุน ม.
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -1194,9 +1224,13 @@
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+// RBAC: only SuperAdmin can access settings
+RBAC.enforcePage(['viewSettings']);
 
 const user = requireAuth();
 if (user) {
@@ -1226,7 +1260,7 @@ function switchTab(tab) {
   if (tab === 'apikeys')                    loadApiKeyStatus();
   if (tab === 'sessions')                   loadActiveSessions();
   // Note: 'promotion' tab now shows a redirect card — no lazy load needed.
-  if (tab === 'roles')                    buildPermMatrix();
+  if (tab === 'roles') { buildPermMatrix(); loadStudentEditableFields(); }
   if (tab === 'general')                  loadGeneralSettings();
 }
 
@@ -2146,6 +2180,92 @@ const PERMISSIONS = [
   ['จัดการ API Keys',             true,  false, false, false, false, false],
   ['ดูประวัติการใช้งาน (Log)',    true,  true,  false, false, false, false],
 ];
+
+// ─────────────────────────────────────────────
+// STUDENT EDITABLE FIELDS CONFIGURATION
+// Saved as STUDENT_EDITABLE_FIELDS[] in system settings.
+// read by rbac.js → RBAC.getStudentEditableFields()
+// ─────────────────────────────────────────────
+const STUDENT_FIELD_OPTIONS = [
+  // [fieldId, labelTH, labelEN, group]
+  ['f_phone1',       'เบอร์โทรศัพท์ 1',        'Phone 1',               'contact'],
+  ['f_phone2',       'เบอร์โทรศัพท์ 2',        'Phone 2',               'contact'],
+  ['f_email',        'อีเมล',                   'Email',                 'contact'],
+  ['f_lineId',       'LINE ID',                  'LINE ID',               'contact'],
+  ['f_province',     'จังหวัด',                 'Province',              'address'],
+  ['f_amphoe',       'อำเภอ',                   'District',              'address'],
+  ['f_tambon',       'ตำบล',                    'Sub-district',          'address'],
+  ['f_zipCode',      'รหัสไปรษณีย์',            'Postal Code',           'address'],
+  ['f_addr',         'ที่อยู่',                  'Address',               'address'],
+  ['f_parentPhone',  'เบอร์โทรผู้ปกครอง',       'Parent Phone',          'family'],
+  ['f_parent1Fname', 'ชื่อ บิดา/มารดา คนที่ 1', 'Parent 1 First Name',   'family'],
+  ['f_parent1Lname', 'นามสกุล บิดา/มารดา คนที่ 1','Parent 1 Last Name', 'family'],
+  ['f_parent2Fname', 'ชื่อ บิดา/มารดา คนที่ 2', 'Parent 2 First Name',   'family'],
+  ['f_parent2Lname', 'นามสกุล บิดา/มารดา คนที่ 2','Parent 2 Last Name', 'family'],
+  ['f_profilePicUrl','รูปโปรไฟล์',              'Profile Photo',         'photo'],
+  ['f_picUrl',       'URL รูปโปรไฟล์',           'Profile Photo URL',    'photo'],
+];
+
+let _studentEditableFields = null;
+
+async function loadStudentEditableFields() {
+  try {
+    const r = await API.getSystemSettings();
+    const saved = r.data?.STUDENT_EDITABLE_FIELDS;
+    _studentEditableFields = Array.isArray(saved) && saved.length > 0
+      ? saved : RBAC.getDefaultEditableFields();
+  } catch { _studentEditableFields = RBAC.getDefaultEditableFields(); }
+  buildStudentFieldsUI();
+}
+
+function buildStudentFieldsUI() {
+  const grid = document.getElementById('studentFieldsGrid');
+  if (!grid) return;
+  const current = new Set(_studentEditableFields || RBAC.getDefaultEditableFields());
+  const groupColors = {
+    contact:'#eff6ff', address:'#f0fdf4', family:'#faf5ff', photo:'#fff7ed'
+  };
+  const groupTH = { contact:'ข้อมูลติดต่อ', address:'ที่อยู่', family:'ครอบครัว', photo:'รูปโปรไฟล์' };
+  const groups = [...new Set(STUDENT_FIELD_OPTIONS.map(f => f[3]))];
+
+  grid.innerHTML = groups.map(g => `
+    <div style="grid-column:span 1;margin-bottom:4px">
+      <div style="background:${groupColors[g]||'#f8fafc'};border-radius:8px;padding:8px 10px">
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:6px;letter-spacing:.5px">
+          ${groupTH[g]||g}
+        </p>
+        ${STUDENT_FIELD_OPTIONS.filter(f => f[3]===g).map(([fid,lth,len]) => `
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 0;font-size:12px;color:#374151">
+            <input type="checkbox" id="sef_${fid}" value="${fid}"
+                   ${current.has(fid)?'checked':''}
+                   style="width:14px;height:14px;accent-color:#0ea5e9;cursor:pointer">
+            <span>${lth}<span style="color:#94a3b8;font-size:10px;margin-left:4px">${len}</span></span>
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function saveStudentEditableFields() {
+  const selected = [...document.querySelectorAll('#studentFieldsGrid input[type=checkbox]:checked')]
+    .map(cb => cb.value);
+  if (selected.length === 0) {
+    Swal.fire('แจ้งเตือน', 'กรุณาเลือกอย่างน้อย 1 ช่องที่นักเรียนสามารถแก้ไขได้', 'warning');
+    return;
+  }
+  _studentEditableFields = selected;
+  showLoader(true, 'กำลังบันทึก...');
+  try {
+    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('หมดเวลา')),30000));
+    const r  = await Promise.race([API.saveSetting('STUDENT_EDITABLE_FIELDS', selected), _t]);
+    showLoader(false);
+    if (r.status === 'success') {
+      // Also update localStorage cache used by rbac.js
+      localStorage.setItem('rdfStudentEditableFields', JSON.stringify(selected));
+      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ',
+        text:`นักเรียนสามารถแก้ไข ${selected.length} ช่องข้อมูล`, timer:2000, showConfirmButton:false });
+    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด','error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้','error'); }
+}
 
 function buildPermMatrix() {
   const tbody = document.getElementById('permMatrix');

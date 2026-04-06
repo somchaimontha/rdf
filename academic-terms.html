@@ -517,8 +517,11 @@
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
+// RBAC: students cannot access academic terms management
+RBAC.enforcePage(['viewStudents']);
 const user = requireAuth();
 if (user) renderNavUser(user);
 document.getElementById('footerYear').textContent = new Date().getFullYear();

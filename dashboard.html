@@ -97,7 +97,7 @@
   </div>
 
   <!-- Menu Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 fade-in-up delay-3">
+  <div class="menu-cards-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 fade-in-up delay-3">
     <div class="menu-card" style="border-top-color:#1e3a8a" onclick="window.location.href='students.html'">
       <div class="menu-icon" style="background:#eff6ff">
         <i data-lucide="users" class="w-7 h-7" style="color:#1e3a8a"></i>
@@ -295,6 +295,7 @@
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -303,6 +304,8 @@ const user = requireAuth();
 if (user) {
   renderNavUser(user);
   document.getElementById('welcomeName').textContent = user.name;
+  // Apply role-based menu visibility before loading data
+  RBAC.applyDashboardUI(user);
   loadStats();
   loadSystemNotice();
 }
@@ -311,6 +314,8 @@ async function loadSystemNotice() {
   try {
     const r = await API.getSystemSettings();
     if (r.status !== 'success' || !r.data) return;
+    // Cache student editable fields for rbac.js field guards
+    RBAC.cacheStudentFields(r.data);
     const n = r.data['SYSTEM_NOTICE'];
     if (!n || !n.active || !n.text) return;
     const styles = {
