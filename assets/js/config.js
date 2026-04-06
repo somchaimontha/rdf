@@ -6,7 +6,26 @@ const RDF = {
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
   VERSION: "2.0.0",
   DEFAULT_LANG: "th",
-  INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Vocational College", UNI:"University", OTHER:"อื่นๆ" },
+  INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"อื่นๆ" },
+  INSTITUTION_LABELS_TH: { MBS:'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"', VC:'วิทยาลัยการอาชีพแม่สะเรียง', UNI:'มหาวิทยาลัย', OTHER:'อื่นๆ' },
+  INSTITUTION_DATA: {
+    MBS: {
+      nameTH: 'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"',
+      nameEN: 'Maesariang Boripat Suksa School',
+      addrTH: '315 หมู่ 1 ต.บ้านกาศ อ.แม่สะเรียง จ.แม่ฮ่องสอน 58110',
+      addrEN: '315 Moo 1, Bankad, Maesariang, Mae Hong Son 58110, Thailand',
+      tel: '053-681251', fax: '053-681336', email: 'admin@boripat.ac.th',
+    },
+    VC: {
+      nameTH: 'วิทยาลัยการอาชีพแม่สะเรียง',
+      nameEN: 'Maesariang Industrial and Community Education College',
+      addrTH: '111 หมู่ 7 อ.แม่สะเรียง จ.แม่ฮ่องสอน 58110',
+      addrEN: '111 Moo 7, Maesariang, Mae Hong Son 58110, Thailand',
+      tel: '053-681576', fax: '053-681576', email: 'msr.ieecc@msr.ac.th',
+    },
+    UNI: { nameTH:'มหาวิทยาลัย', nameEN:'University', addrTH:'', addrEN:'', tel:'', fax:'', email:'' },
+    OTHER:{ nameTH:'อื่นๆ', nameEN:'Other', addrTH:'', addrEN:'', tel:'', fax:'', email:'' },
+  },
   INST_COLORS: { MBS:"#1d4ed8", VC:"#ea580c", UNI:"#7c3aed", OTHER:"#64748b" },
   STATUS_LABELS_TH: {
     Active:"กำลังศึกษา", Graduated:"สำเร็จการศึกษา", Suspended:"พักการเรียน",
