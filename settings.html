@@ -416,6 +416,48 @@
         </div>
       </div>
 
+      <!-- University List Card -->
+      <div class="card fade-in-up delay-3 md:col-span-2">
+        <div class="card-header" style="background:#0369a1">
+          <i data-lucide="building-2" class="w-4 h-4"></i> รายชื่อมหาวิทยาลัย / University List
+        </div>
+        <div class="card-body">
+          <p class="text-xs text-gray-500 mb-4">
+            รายชื่อมหาวิทยาลัยที่ใช้ในระบบ — ทั้งชื่อภาษาไทยและอังกฤษ<br>
+            ข้อมูลนี้จะแสดงใน dropdown ฟอร์มนักเรียนและรายงานทุกหน้า
+          </p>
+
+          <!-- Table header -->
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;font-size:11px;font-weight:700;
+                      color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding:0 4px">
+            <span>ชื่อภาษาไทย</span>
+            <span>English Name</span>
+            <span></span>
+          </div>
+
+          <!-- University rows -->
+          <div id="uniListRows" class="space-y-2 mb-4">
+            <div class="text-center text-gray-400 py-4 text-sm">กำลังโหลด...</div>
+          </div>
+
+          <!-- Add row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center" class="mb-4">
+            <input type="text" id="uniInputTH" class="field-input text-sm" placeholder="ชื่อมหาวิทยาลัย (ไทย)">
+            <input type="text" id="uniInputEN" class="field-input text-sm" placeholder="University Name (EN)">
+            <button onclick="addUniEntry()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd;white-space:nowrap">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม
+            </button>
+          </div>
+
+          <div class="flex justify-between items-center pt-3 border-t border-gray-100">
+            <span class="text-xs text-gray-400" id="uniListCount">0 รายการ</span>
+            <button onclick="saveUniList()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกรายชื่อมหาวิทยาลัย
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1692,6 +1734,104 @@ async function saveMajors(key) {
 }
 
 // ─────────────────────────────────────────────
+// UNIVERSITY LIST MANAGEMENT
+// Stored as UNIVERSITY_LIST[] in system settings.
+// Each entry: { nameTH: string, nameEN: string }
+// ─────────────────────────────────────────────
+let uniListState = [];
+
+async function loadUniList() {
+  try {
+    const r = await API.getSystemSettings();
+    if (r.status === 'success' && Array.isArray(r.data?.UNIVERSITY_LIST)) {
+      uniListState = r.data.UNIVERSITY_LIST;
+    } else {
+      // Seed from existing student data if blank
+      uniListState = [];
+    }
+  } catch(e) { uniListState = []; }
+  renderUniListRows();
+}
+
+function renderUniListRows() {
+  const el = document.getElementById('uniListRows');
+  const cnt = document.getElementById('uniListCount');
+  if (!el) return;
+  if (cnt) cnt.textContent = `${uniListState.length} รายการ`;
+  if (!uniListState.length) {
+    el.innerHTML = `<div class="text-center text-gray-400 py-3 text-sm">ยังไม่มีรายการมหาวิทยาลัย — เพิ่มด้านล่าง</div>`;
+    return;
+  }
+  el.innerHTML = uniListState.map((u, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;
+                padding:6px 8px;background:${i%2===0?'#f8fafc':'#fff'};border-radius:8px;
+                border:1px solid #e5e7eb">
+      <input type="text" value="${_esc(u.nameTH)}" oninput="uniListState[${i}].nameTH=this.value"
+             class="field-input text-sm" style="margin:0" placeholder="ชื่อไทย">
+      <input type="text" value="${_esc(u.nameEN)}" oninput="uniListState[${i}].nameEN=this.value"
+             class="field-input text-sm" style="margin:0" placeholder="English name">
+      <button onclick="removeUniEntry(${i})" title="ลบ"
+              style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
+                     padding:5px 8px;cursor:pointer;flex-shrink:0">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>`).join('');
+  lucide.createIcons();
+}
+
+function _esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function addUniEntry() {
+  const th = document.getElementById('uniInputTH').value.trim();
+  const en = document.getElementById('uniInputEN').value.trim();
+  if (!th && !en) {
+    Swal.fire('แจ้งเตือน', 'กรุณากรอกชื่อมหาวิทยาลัยอย่างน้อย 1 ภาษา', 'warning'); return;
+  }
+  // Duplicate check (case-insensitive)
+  const dup = uniListState.find(u =>
+    (th && u.nameTH.toLowerCase() === th.toLowerCase()) ||
+    (en && u.nameEN.toLowerCase() === en.toLowerCase())
+  );
+  if (dup) {
+    Swal.fire('แจ้งเตือน', `มีรายการ "${dup.nameTH||dup.nameEN}" อยู่แล้ว`, 'warning'); return;
+  }
+  uniListState.push({ nameTH: th, nameEN: en });
+  document.getElementById('uniInputTH').value = '';
+  document.getElementById('uniInputEN').value = '';
+  renderUniListRows();
+}
+
+function removeUniEntry(i) {
+  uniListState.splice(i, 1);
+  renderUniListRows();
+}
+
+async function saveUniList() {
+  // Validate: no completely empty entries
+  const clean = uniListState.filter(u => u.nameTH.trim() || u.nameEN.trim());
+  // Check duplicates
+  const seen = new Set();
+  for (const u of clean) {
+    const key = (u.nameTH+'|'+u.nameEN).toLowerCase();
+    if (seen.has(key)) {
+      Swal.fire('แจ้งเตือน', `พบรายการซ้ำ: "${u.nameTH||u.nameEN}"`, 'warning'); return;
+    }
+    seen.add(key);
+  }
+  uniListState = clean;
+  showLoader(true, 'กำลังบันทึก...');
+  try {
+    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('หมดเวลา (30s)')), 30000));
+    const r  = await Promise.race([API.saveSetting('UNIVERSITY_LIST', uniListState), _t]);
+    showLoader(false);
+    if (r.status === 'success') {
+      renderUniListRows();
+      Swal.fire({ icon:'success', title:'บันทึกรายชื่อมหาวิทยาลัยสำเร็จ', timer:1800, showConfirmButton:false });
+    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้', 'error'); }
+}
+
+// ─────────────────────────────────────────────
 // API KEY MANAGEMENT
 // ─────────────────────────────────────────────
 async function loadApiKeyStatus() {
@@ -2352,6 +2492,7 @@ async function savePromotionSettings() {
 // ─────────────────────────────────────────────
 loadAdmins();
 loadMajors();
+loadUniList();
 initDBStatus();
 </script>
 </body>

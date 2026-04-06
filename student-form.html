@@ -1057,12 +1057,47 @@ async function generateStipNo() {
 }
 
 async function loadUniNames() {
+  // Merge: names from GAS backend + centralized UNIVERSITY_LIST from system settings
   try {
-    const r = await API.getUniNames();
+    const [gasRes, settingsRes] = await Promise.all([
+      API.getUniNames().catch(() => ({ data: [] })),
+      API.getSystemSettings().catch(() => ({ status: 'error', data: {} }))
+    ]);
     const dl = document.getElementById('uniList');
+    if (!dl) return;
     dl.innerHTML = '';
-    (r.data||[]).forEach(n => { const o=document.createElement('option'); o.value=n; dl.appendChild(o); });
-  } catch(e) {}
+
+    // Collect unique names — prefer bilingual entries from settings
+    const seen = new Set();
+    const addOption = (valTH, valEN) => {
+      const isEN = typeof LANG !== 'undefined' && LANG === 'en';
+      const display = isEN ? (valEN || valTH) : (valTH || valEN);
+      if (display && !seen.has(display.toLowerCase())) {
+        seen.add(display.toLowerCase());
+        const o = document.createElement('option');
+        o.value = display;
+        // Also add the other language as a second option so it matches both
+        if (valTH && valEN && valTH !== valEN) {
+          const o2 = document.createElement('option');
+          o2.value = isEN ? valTH : valEN;
+          if (!seen.has(o2.value.toLowerCase())) {
+            seen.add(o2.value.toLowerCase());
+            dl.appendChild(o2);
+          }
+        }
+        dl.appendChild(o);
+      }
+    };
+
+    // 1. Centralized UNIVERSITY_LIST (settings) — highest priority
+    const settingsList = settingsRes.status === 'success'
+      ? (settingsRes.data?.UNIVERSITY_LIST || []) : [];
+    settingsList.forEach(u => addOption(u.nameTH || '', u.nameEN || ''));
+
+    // 2. GAS-sourced names (from student records)
+    (gasRes.data || []).forEach(n => { if (n) addOption(n, n); });
+
+  } catch(e) { /* silently fail — datalist is optional */ }
 }
 
 // ── Birthday dropdowns init ──
