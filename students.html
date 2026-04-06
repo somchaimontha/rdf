@@ -56,6 +56,12 @@
         <span data-t="studentList">รายชื่อนักเรียนทุน</span>
       </h2>
     </div>
+    <!-- Active term badge (populated after settings load) -->
+    <div id="activeTermBadge" class="hidden items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+         style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0">
+      <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+      <span id="activeTermBadgeText"></span>
+    </div>
     <div class="flex gap-2 flex-wrap">
       <button onclick="loadStudents()" class="btn btn-secondary btn-sm">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -1332,6 +1338,23 @@ const RPT_FIELD_DEFS = [
   { key:'religion',      cat:'personal', defaultOn:false,
     labelTH:'ศาสนา',                  labelEN:'Religion',
     render:(s)=> s.religion||'—' },
+  // ── Academic Term (dynamically resolved against SETTINGS.ACADEMIC_TERMS) ──
+  { key:'_activeTerm',   cat:'academic',   defaultOn:false,
+    labelTH:'ภาคเรียนปัจจุบัน',       labelEN:'Current Term',
+    render:(s)=> {
+      // Look up active terms for this student's institution from settings
+      const terms = (window._rptSettings && window._rptSettings['ACADEMIC_TERMS']) || [];
+      const today = new Date(); today.setHours(0,0,0,0);
+      const active = terms.filter(t => {
+        if (t.institution && t.institution !== s.institution) return false;
+        const start = new Date(t.startDate); start.setHours(0,0,0,0);
+        const end   = new Date(t.endDate);   end.setHours(23,59,59,0);
+        return today >= start && today <= end;
+      });
+      if (!active.length) return '—';
+      return active.map(t => LANG==='en' ? (t.labelEN||t.labelTH) : t.labelTH).join(', ');
+    }
+  },
   // ── University ──
   { key:'uniName',       cat:'university', defaultOn:false,
     labelTH:'ชื่อมหาวิทยาลัย',        labelEN:'University Name',
@@ -1933,6 +1956,52 @@ ${sigHTML}
 
 loadStudents();
 initDBStatus();
+
+// ── Load active term badge after settings ──────────────────────
+(async () => {
+  try {
+    if (!Object.keys(_rptSettings).length) {
+      const res = await API.getSystemSettings();
+      if (res.status === 'success') _rptSettings = res.data || {};
+    }
+    const terms  = Array.isArray(_rptSettings['ACADEMIC_TERMS']) ? _rptSettings['ACADEMIC_TERMS'] : [];
+    const today  = new Date(); today.setHours(0,0,0,0);
+    const active = terms.filter(t => {
+      const s = new Date(t.startDate); s.setHours(0,0,0,0);
+      const e = new Date(t.endDate);   e.setHours(23,59,59,0);
+      return today >= s && today <= e;
+    });
+    const badge = document.getElementById('activeTermBadge');
+    const text  = document.getElementById('activeTermBadgeText');
+    if (active.length && badge && text) {
+      const lbl = active.map(t => LANG==='en' ? (t.labelEN||t.labelTH) : t.labelTH).join(', ');
+      text.textContent = lbl;
+      badge.classList.remove('hidden');
+      badge.style.display = 'flex';
+      lucide.createIcons();
+    }
+    // Also load in-app notifications badge via localStorage
+    _showNotifBadge(_rptSettings['NOTIFICATIONS'] || []);
+  } catch(_) {}
+})();
+
+function _showNotifBadge(notifs) {
+  // Find or create a nav bell badge on this page (students page doesn't have one by default)
+  const read = JSON.parse(localStorage.getItem('rdfReadNotifs')||'[]');
+  const unread = (notifs||[]).filter(n => !read.includes(n.id)).length;
+  if (unread > 0) {
+    const badge = document.createElement('div');
+    badge.style.cssText = `position:fixed;bottom:20px;right:20px;background:#1e3a8a;color:#fff;
+      border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;z-index:9990;font-size:11px;font-weight:700;
+      flex-direction:column;gap:1px`;
+    badge.innerHTML = `<i data-lucide="bell" style="width:18px;height:18px"></i><span>${unread>9?'9+':unread}</span>`;
+    badge.title = `${unread} การแจ้งเตือนที่ยังไม่ได้อ่าน`;
+    badge.onclick = () => window.location.href = 'academic-terms.html';
+    document.body.appendChild(badge);
+    lucide.createIcons();
+  }
+}
 </script>
 </body>
 </html>
