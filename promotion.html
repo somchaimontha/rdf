@@ -53,121 +53,123 @@
   box-shadow:0 2px 8px rgba(0,0,0,.06); }
 .group-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
   overflow:hidden; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
-/* ── Avatar ── */
-
-/*
- * ARCHITECTURE: The avatar-wrap is overflow:visible so the img can
- * scale beyond the 36px container without being clipped.
- * The circle shape is maintained by border-radius on the img itself.
- * On hover the img scales to ~189px (5×5 cm at 96dpi) via transform:scale().
- * z-index is elevated on hover so the enlarged image floats above the table.
- * A ::after pseudo-element shows the student name below the zoomed image.
- */
-
-/* ── Container cell — must NOT clip its children ── */
+/* ── Avatar (table cell) ── */
 .avatar-cell {
   width: 44px;
   padding: 4px 6px !important;
-  /* overflow must remain visible for the scale to break out */
   overflow: visible;
-  position: relative;
 }
 
-/* ── Wrapper: 36×36 positioning anchor; overflow VISIBLE ── */
+/* Resting circle — defeats Tailwind's  img { height:auto } reset */
 .avatar-wrap {
-  position: relative;
-  flex-shrink: 0;
+  display: inline-block;
   width: 36px;
   height: 36px;
-  /* No overflow:hidden — clipping is handled by border-radius on the img */
-  z-index: 1;
-  transition: z-index 0s;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  cursor: zoom-in;
+  flex-shrink: 0;
+  transition: border-color .2s, box-shadow .2s;
 }
 .avatar-wrap:hover {
-  z-index: 300; /* float above every other cell and sticky toolbar */
+  border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(30,58,138,.25);
 }
-
-/* ── The image itself: circle shape via border-radius on img ── */
 .avatar-wrap img.student-avatar,
 img.student-avatar {
-  /* Force exact square — defeats Tailwind's  height:auto reset */
   width: 36px !important;
   height: 36px !important;
   min-width: 36px !important;
   min-height: 36px !important;
-  max-width: none !important;  /* must allow scale to grow beyond 36px */
-  max-height: none !important;
-
-  border-radius: 50%;         /* circle */
-  object-fit: cover;          /* crop without distortion */
+  max-width: 36px !important;
+  max-height: 36px !important;
+  border-radius: 50%;
+  object-fit: cover;
   display: block;
-  flex-shrink: 0;
-
-  /* Smooth spring-feel scale transition */
-  transition:
-    transform    0.30s cubic-bezier(0.34, 1.36, 0.64, 1),
-    border-radius 0.25s ease,
-    box-shadow   0.25s ease;
-
-  /* Scale from center of the img */
-  transform-origin: 50% 50%;
-
-  /* Subtle resting shadow */
-  box-shadow: 0 1px 4px rgba(0,0,0,.15);
-
-  cursor: zoom-in;
-  position: relative;
-  z-index: inherit;
-}
-
-/* ── Hover: scale to ≈189px (5 cm) ─────────────────────────
-   5cm at 96dpi ≈ 189px.  189 / 36 = 5.25 → scale(5.25)
-   border-radius transitions from 50% (circle) to 14px (rounded rect)
-   so the enlarged view shows more of the face without looking like
-   a tiny circle stretched to a large size.
-────────────────────────────────────────────────────────────── */
-.avatar-wrap:hover img.student-avatar {
-  transform: scale(5.25);
-  border-radius: 14px;
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.38),
-    0 0 0 3px #ffffff,
-    0 0 0 5px rgba(30, 58, 138, 0.30);
-  cursor: zoom-out;
-  z-index: 300;
-}
-
-/* ── Name label: appears below zoomed image via ::after ──────
-   Positioned relative to the 36px avatar-wrap.
-   The scaled img extends (189-36)/2 ≈ 77px beyond each edge,
-   so label top = 100% (36px bottom) + 77px overhang + 6px gap = ~119px.
-────────────────────────────────────────────────────────────── */
-.avatar-wrap::after {
-  content: attr(data-name);
-  position: absolute;
-  top: 119px;          /* just below the bottom of the 189px zoomed image */
-  left: 50%;
-  transform: translateX(-50%);
-
-  background: rgba(15, 23, 42, 0.92);
-  color: #fff;
-  font-size: 10.5px;
-  font-family: 'Sarabun', 'TH Sarabun New', sans-serif;
-  font-weight: 600;
-  line-height: 1.4;
-  padding: 4px 10px;
-  border-radius: 7px;
-  white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-
-  /* Hidden until hover */
-  opacity: 0;
-  transition: opacity 0.18s ease 0.12s;
-  z-index: 301;
+  border: none;
+  box-shadow: none;
 }
-.avatar-wrap:hover::after {
+
+/* ── Fixed overlay — lives on <body>, above everything ── */
+#avatarOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;   /* invisible until active */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Semi-transparent backdrop (hidden by default) */
+#avatarOverlay .av-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.22);
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+
+/* Large circular image — 189 px ≈ 5 cm at 96 dpi */
+#avatarOverlay .av-img-wrap {
+  position: relative;
+  width: 189px;
+  height: 189px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #fff;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.40),
+    0 0 0 6px rgba(30,58,138,.25);
+  opacity: 0;
+  transform: scale(0.55);
+  transition:
+    opacity   .25s ease,
+    transform .30s cubic-bezier(0.34, 1.30, 0.64, 1);
+}
+#avatarOverlay .av-img-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Name tag below the circle */
+#avatarOverlay .av-name {
+  position: relative;
+  background: rgba(15,23,42,.88);
+  color: #fff;
+  font-family: 'Sarabun','TH Sarabun New',sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 5px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.30);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .22s ease .10s, transform .22s ease .10s;
+  text-align: center;
+}
+#avatarOverlay.av-active .av-backdrop,
+#avatarOverlay.av-active .av-img-wrap,
+#avatarOverlay.av-active .av-name {
   opacity: 1;
+}
+#avatarOverlay.av-active .av-img-wrap {
+  transform: scale(1);
+}
+#avatarOverlay.av-active .av-name {
+  transform: translateY(0);
 }
 /* ── Print / PDF ── */
 @media print {
@@ -519,6 +521,15 @@ img.student-avatar {
       </button>
     </div>
   </div>
+</div>
+
+<!-- ── Avatar zoom overlay (position:fixed — escapes all table clipping) ── -->
+<div id="avatarOverlay" aria-hidden="true">
+  <div class="av-backdrop"></div>
+  <div class="av-img-wrap">
+    <img id="avOverlayImg" src="" alt="">
+  </div>
+  <div id="avOverlayName" class="av-name"></div>
 </div>
 
 <footer class="rdf-footer no-print">
@@ -1765,6 +1776,52 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
   loadPage();
 })();
 initDBStatus();
+
+// ─────────────────────────────────────────────
+// AVATAR ZOOM OVERLAY
+// Uses position:fixed — never clipped by table
+// overflow, sticky toolbars, or any parent.
+// ─────────────────────────────────────────────
+(function initAvatarOverlay() {
+  const overlay   = document.getElementById('avatarOverlay');
+  const ovImg     = document.getElementById('avOverlayImg');
+  const ovName    = document.getElementById('avOverlayName');
+  let   hideTimer = null;
+
+  function show(wrap) {
+    clearTimeout(hideTimer);
+    const img      = wrap.querySelector('img.student-avatar');
+    const name     = wrap.dataset.name || '';
+    const src      = img ? img.src : '';
+    const fallback = img ? (img.dataset.fallback || '') : '';
+
+    ovImg.src = src;
+    ovImg.onerror = function() { this.onerror = null; this.src = fallback; };
+    ovImg.alt = name;
+    ovName.textContent = name;
+    overlay.classList.add('av-active');
+  }
+
+  function hide() {
+    // Small delay prevents flicker when cursor briefly crosses the gap
+    hideTimer = setTimeout(() => overlay.classList.remove('av-active'), 120);
+  }
+
+  // Delegated listeners — work for rows rendered at any time
+  const container = document.getElementById('groupsContainer');
+  container.addEventListener('mouseover', e => {
+    const wrap = e.target.closest('.avatar-wrap');
+    if (wrap) show(wrap);
+  });
+  container.addEventListener('mouseout', e => {
+    const wrap = e.target.closest('.avatar-wrap');
+    if (wrap) hide();
+  });
+
+  // Keep overlay alive if cursor drifts onto the backdrop itself
+  overlay.addEventListener('mouseover', () => clearTimeout(hideTimer));
+  overlay.addEventListener('mouseout',  () => hide());
+})();
 </script>
 </body>
 </html>
