@@ -271,10 +271,111 @@ img.student-avatar {
         <i data-lucide="printer" class="w-4 h-4"></i>
         <span data-t="promoPrintReport">พิมพ์รายงานทางการ</span>
       </button>
-      <a href="settings.html" onclick="localStorage.setItem('settingsTab','promotion')" class="btn btn-secondary btn-sm">
+      <button onclick="togglePromoSettings()" id="btnPromoSettings" class="btn btn-secondary btn-sm">
         <i data-lucide="settings" class="w-4 h-4"></i>
         <span data-t="promoSettings">ตั้งค่าเลื่อนชั้น</span>
-      </a>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ PROMOTION SETTINGS PANEL ═══
+       Moved here from settings.html → Grade Promotion tab.
+       Single source of truth: all promotion config lives in promotion.html.
+       Saved as key 'promotionSettings' in Google Sheets (no duplication).
+       Visibility: toggled by the "ตั้งค่าเลื่อนชั้น" button above.
+  ════════════════════════════════════════════════════════════ -->
+  <div id="promoSettingsPanel" class="hidden no-print mb-4">
+    <div style="background:#fff;border:1.5px solid #e0e7ff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(30,58,138,.08)">
+
+      <!-- Header bar -->
+      <div style="background:linear-gradient(90deg,#1e3a8a 0%,#1d4ed8 100%);padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
+        <span class="font-bold text-white flex items-center gap-2 text-sm">
+          <i data-lucide="settings-2" class="w-4 h-4"></i>
+          <span data-t="promoSettingsTitle">ตั้งค่าการเลื่อนชั้น / Promotion Settings</span>
+        </span>
+        <div class="flex gap-2">
+          <button onclick="savePromotionSettings()"
+                  style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span data-t="saveSettings">บันทึกการตั้งค่า</span>
+          </button>
+          <button onclick="togglePromoSettings()"
+                  style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;cursor:pointer">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <div style="padding:18px 20px">
+        <!-- ── Promotion Schedule ── -->
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i data-lucide="calendar-check" class="w-3.5 h-3.5" style="color:#16a34a"></i>
+          <span data-t="promoScheduleTitle">ตารางเวลาเลื่อนชั้น / Promotion Schedule</span>
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="promoDateLabel">วันที่เลื่อนชั้น (Default)</label>
+            <input type="date" id="ps_promotionDate" class="field-input text-sm">
+            <p class="text-xs text-gray-400 mt-1" data-t="promoDateHint">ค่านี้จะถูก pre-fill ในกล่องวันที่ด้านบน</p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="promoAcadYear">ปีการศึกษา / Academic Year</label>
+            <input type="text" id="ps_academicYear" class="field-input text-sm" placeholder="e.g. 2024-2025">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="promoUniPolicy">นโยบายทุนมหาวิทยาลัย / Uni Scholarship Policy</label>
+            <select id="ps_uniPolicy" class="field-select text-sm">
+              <option value="manual" data-t="promoUniManual">Manual Review per Student</option>
+              <option value="auto"   data-t="promoUniAuto">Auto-Grant to All Eligible</option>
+              <option value="none"   data-t="promoUniNone">No Continuation Scholarship</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="promoUniDeadline">วันสุดท้ายยื่นทุน ม. / Application Deadline</label>
+            <input type="date" id="ps_uniDeadline" class="field-input text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="promoUniDefaultStatus">สถานะทุน ม. เริ่มต้น / Default UniScholarship Status</label>
+            <select id="ps_uniDefaultStatus" class="field-select text-sm">
+              <option value="Pending" data-t="promoSchPending">Pending (requires review)</option>
+              <option value="Yes"     data-t="promoSchYes">Yes (auto-approve all)</option>
+              <option value="No"      data-t="promoSchNo">No (requires separate application)</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e;width:100%">
+              <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1"></i>
+              <span data-t="promoSettingsHint">ค่าที่ตั้งไว้นี้เป็นค่า default ที่โหลดมาเมื่อเปิดหน้านี้ การแก้ไขรายนักเรียนทำได้ในตารางด้านล่าง</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Level Progression Rules ── -->
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i data-lucide="git-branch" class="w-3.5 h-3.5" style="color:#1d4ed8"></i>
+          <span data-t="promoLevelRules">กฎการเลื่อนชั้น / Level Progression Rules</span>
+          <button onclick="resetPromotionRules()"
+                  style="margin-left:auto;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px">
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+            <span data-t="resetDefault">คืนค่าเริ่มต้น</span>
+          </button>
+        </p>
+        <div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:10px">
+          <table class="w-full text-xs" id="promotionRulesTable">
+            <thead>
+              <tr style="background:#f8faff;border-bottom:1.5px solid #e5e7eb">
+                <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap" data-t="promoInstCol">สถานศึกษา</th>
+                <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoCurrentLevel">ชั้นปัจจุบัน</th>
+                <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoNextLevel">ชั้นถัดไป (Default)</th>
+                <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoCompletion">การดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody id="promotionRulesBody">
+              <tr><td colspan="4" class="text-center text-gray-400 py-6 text-xs">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -550,6 +651,10 @@ let ALL_GROUPS    = [];
 let PROMO_RULES   = {};
 let SETTINGS      = {};
 let ROW_DECISIONS = {};
+// _psRules: the rules array last loaded from settings (for the in-page settings panel).
+// _editableRules: set when admin edits rules in the panel (before saving).
+let _psRules      = null;
+let _editableRules = null;
 
 const INST_COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#64748b' };
 const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb' };
@@ -609,6 +714,107 @@ function studentAvatarSrc(s) {
 }
 
 // ─────────────────────────────────────────────
+// PROMOTION SETTINGS PANEL
+// Single source of truth — moved from settings.html.
+// Data is stored under key 'promotionSettings' in Google Sheets.
+// The same key is read by loadPage() → PROMO_RULES, so there is
+// exactly one write path and one read path — no duplication.
+// ─────────────────────────────────────────────
+let _promoSettingsPanelOpen = false;
+
+function togglePromoSettings() {
+  _promoSettingsPanelOpen = !_promoSettingsPanelOpen;
+  const panel = document.getElementById('promoSettingsPanel');
+  const btn   = document.getElementById('btnPromoSettings');
+  if (panel) panel.classList.toggle('hidden', !_promoSettingsPanelOpen);
+  if (btn)   btn.style.background = _promoSettingsPanelOpen ? '#eff6ff' : '';
+  if (_promoSettingsPanelOpen) {
+    // Re-render rules in case user reloaded data
+    renderPromotionRules(_editableRules || _psRules || DEFAULT_RULES);
+    lucide.createIcons();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function renderPromotionRules(rules) {
+  const tbody = document.getElementById('promotionRulesBody');
+  if (!tbody) return;
+  const COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed' };
+  tbody.innerHTML = rules.map((r, i) => `
+    <tr style="border-bottom:1px solid #f1f5f9">
+      <td style="padding:8px 12px">
+        <span style="font-weight:700;font-size:11px;padding:2px 8px;border-radius:6px;background:${COLORS[r.inst]||'#64748b'}18;color:${COLORS[r.inst]||'#64748b'}">${r.inst}</span>
+      </td>
+      <td style="padding:8px 12px;font-size:12px;color:#374151">${r.from}</td>
+      <td style="padding:8px 12px">
+        <input class="field-input text-xs py-1" style="min-width:200px" value="${r.to}"
+          oninput="updatePromoRule(${i},'to',this.value)">
+      </td>
+      <td style="padding:8px 12px">
+        <select class="field-select text-xs py-1" onchange="updatePromoRule(${i},'completion',this.value)">
+          <option value="promote"      ${r.completion==='promote'     ?'selected':''}>⬆ ${LANG==='th'?'เลื่อนชั้น':'Promote to Next Level'}</option>
+          <option value="graduate"     ${r.completion==='graduate'    ?'selected':''}>🎓 ${LANG==='th'?'จบการศึกษา':'Graduate'}</option>
+          <option value="graduate_uni" ${r.completion==='graduate_uni'?'selected':''}>🏛 ${LANG==='th'?'จบ + สามารถต่อม.':'Graduate + Eligible for University'}</option>
+        </select>
+      </td>
+    </tr>`).join('');
+  lucide.createIcons();
+}
+
+function updatePromoRule(idx, field, val) {
+  // Lazily clone the current rules array so the original DEFAULT_RULES is never mutated
+  if (!_editableRules) _editableRules = (_psRules || DEFAULT_RULES).map(r => ({...r}));
+  _editableRules[idx][field] = val;
+}
+
+function resetPromotionRules() {
+  _editableRules = DEFAULT_RULES.map(r => ({...r}));
+  renderPromotionRules(_editableRules);
+}
+
+async function savePromotionSettings() {
+  const el = id => document.getElementById(id);
+  // Use edited rules if admin changed them; otherwise use loaded rules or defaults
+  const rules = _editableRules || _psRules || DEFAULT_RULES;
+  const settings = {
+    promotionDate:    el('ps_promotionDate')?.value    || '',
+    academicYear:     el('ps_academicYear')?.value     || '',
+    uniPolicy:        el('ps_uniPolicy')?.value        || 'manual',
+    uniDeadline:      el('ps_uniDeadline')?.value      || '',
+    uniDefaultStatus: el('ps_uniDefaultStatus')?.value || 'Pending',
+    levelRules:       rules,
+  };
+  try {
+    showLoader(true, LANG==='th'?'กำลังบันทึก...':'Saving...');
+    const _t  = new Promise((_,rej) => setTimeout(() => rej(new Error('Timeout (30s)')), 30000));
+    const res = await Promise.race([
+      API.saveSetting('promotionSettings', settings, (getUser()||{}).username || 'admin'),
+      _t,
+    ]);
+    showLoader(false);
+    if (res.status === 'success') {
+      // Update in-memory state so the main table immediately reflects new rules
+      _psRules = rules;
+      _editableRules = null;
+      PROMO_RULES = {};
+      rules.forEach(r => { PROMO_RULES[r.inst + '||' + r.from] = r; });
+      // Also sync the toolbar date/year fields from the panel
+      if (settings.promotionDate) el('promotionDate').value = settings.promotionDate;
+      if (settings.academicYear)  el('academicYear').value  = settings.academicYear;
+      Swal.fire({ icon:'success',
+        title: LANG==='th'?'บันทึกสำเร็จ':'Saved',
+        text:  LANG==='th'?'ตั้งค่าการเลื่อนชั้นอัปเดตแล้ว':'Promotion settings updated.',
+        timer:2000, showConfirmButton:false });
+    } else {
+      Swal.fire(LANG==='th'?'ผิดพลาด':'Error', res.message || 'Save failed', 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(LANG==='th'?'ผิดพลาด':'Error', e.message || 'Cannot save settings', 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
 // BILINGUAL
 // ─────────────────────────────────────────────
 function promoToggleLang() {
@@ -644,8 +850,19 @@ async function loadPage() {
     document.getElementById('academicYear').value  = ps.academicYear  || '';
 
     const rules = ps.levelRules || DEFAULT_RULES;
+    _psRules = rules;       // keep array form for the settings panel
+    _editableRules = null;  // reset editable copy on each reload
     PROMO_RULES = {};
     rules.forEach(r => { PROMO_RULES[r.inst + '||' + r.from] = r; });
+
+    // Sync settings panel fields (populated from the same source, no duplication)
+    const _el = id => document.getElementById(id);
+    if (_el('ps_promotionDate'))    _el('ps_promotionDate').value    = ps.promotionDate    || '';
+    if (_el('ps_academicYear'))     _el('ps_academicYear').value     = ps.academicYear     || '';
+    if (_el('ps_uniPolicy'))        _el('ps_uniPolicy').value        = ps.uniPolicy        || 'manual';
+    if (_el('ps_uniDeadline'))      _el('ps_uniDeadline').value      = ps.uniDeadline      || '';
+    if (_el('ps_uniDefaultStatus')) _el('ps_uniDefaultStatus').value = ps.uniDefaultStatus || 'Pending';
+    renderPromotionRules(rules);
 
     if (studRes.status !== 'success') throw new Error(studRes.message || t('promoLoadError'));
 
