@@ -54,8 +54,42 @@
 .group-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
   overflow:hidden; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
 /* ── Avatar ── */
-.student-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover;
-  border:1.5px solid #e5e7eb; flex-shrink:0; display:block; }
+.avatar-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  transition: box-shadow .2s ease, transform .2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+}
+.avatar-wrap:hover {
+  transform: scale(1.18);
+  box-shadow: 0 4px 14px rgba(30,58,138,.22);
+  border-color: #93c5fd;
+  z-index: 2;
+}
+/* Neutralize Tailwind's img reset — force square dimensions */
+.avatar-wrap img.student-avatar,
+img.student-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px;
+  min-height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  border: none;
+  box-shadow: none;
+}
 /* ── Print / PDF ── */
 @media print {
   .no-print, .rdf-nav, .rdf-footer, #loader, .sticky-toolbar,
@@ -643,7 +677,7 @@ function renderGroupTable(inst, level, students, nextDefault, isGradLevel) {
         <th style="width:32px" class="no-print">
           <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}',this.checked)" class="rounded">
         </th>
-        <th style="width:36px"></th>
+        <th style="width:44px"></th>
         <th>${t('promoColName')}</th>
         <th style="width:90px">${t('promoColStipNo')}</th>
         <th style="width:80px">${t('promoColStatus')}</th>
@@ -713,12 +747,14 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
       <input type="checkbox" class="rounded group-check" data-stipno="${s.StipNo}"
         ${act!=='skip'?'checked':''} onchange="onRowCheck('${s.StipNo}',this.checked)">
     </td>
-    <td>
-      <img src="${photoSrc}"
-        class="student-avatar"
-        data-fallback="${photoFallback}"
-        onerror="this.onerror=null;this.src=this.dataset.fallback"
-        alt="">
+    <td style="width:44px;padding:4px 6px">
+      <div class="avatar-wrap">
+        <img src="${photoSrc}"
+          class="student-avatar"
+          data-fallback="${photoFallback}"
+          onerror="this.onerror=null;this.src=this.dataset.fallback"
+          alt="">
+      </div>
     </td>
     <td>
       <div class="font-semibold text-gray-800 text-xs leading-tight">${thaiName || '—'}</div>
