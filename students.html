@@ -206,131 +206,223 @@
   </div>
 </footer>
 
-<!-- ─── Student Report Modal ─── -->
-<div id="studentReportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3"
-     style="background:rgba(0,0,0,.5)">
-  <div class="bg-white rounded-2xl shadow-2xl w-full overflow-hidden" style="max-width:640px">
-    <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#1e3a8a">
+<!-- ─── Student Report Modal v2 (Dynamic Field Selection) ─── -->
+<div id="studentReportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4"
+     style="background:rgba(0,0,0,.55)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full flex flex-col" style="max-width:880px;max-height:94vh">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 rounded-t-2xl flex-shrink-0" style="background:#1e3a8a">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
         <i data-lucide="file-text" class="w-4 h-4"></i>
-        <span data-t="rptModalTitle">สร้างรายงานนักเรียน</span>
+        สร้างรายงานนักเรียน / Student Report
       </h3>
-      <button onclick="closeStudentReportModal()" class="text-white opacity-70 hover:opacity-100">
+      <button onclick="closeStudentReportModal()" class="text-white opacity-60 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
-    <div class="p-5 space-y-0" style="max-height:80vh;overflow-y:auto">
 
-      <!-- Report Type -->
-      <div class="mb-4">
-        <span class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2" data-t="rptTypeLabel">ประเภทรายงาน</span>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
-            <input type="radio" name="rptType" value="all" checked class="accent-blue-600">
-            <span data-t="rptTypeAll">รายชื่อนักเรียนทั้งหมด</span></label>
-          <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
-            <input type="radio" name="rptType" value="active" class="accent-blue-600">
-            <span data-t="rptTypeActive">เฉพาะที่กำลังศึกษา</span></label>
-          <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
-            <input type="radio" name="rptType" value="graduated" class="accent-blue-600">
-            <span data-t="rptTypeGrad">ผู้สำเร็จการศึกษา</span></label>
-          <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
-            <input type="radio" name="rptType" value="university" class="accent-blue-600">
-            <span data-t="rptTypeUni">ต่อมหาวิทยาลัย</span></label>
-        </div>
-      </div>
+    <!-- Tab Navigation -->
+    <div class="flex border-b bg-gray-50 flex-shrink-0" style="overflow-x:auto">
+      <button id="rptTab1Btn" onclick="switchRptTab(1)"
+        style="padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;
+               border:none;border-bottom:2.5px solid #2563eb;color:#1d4ed8;
+               display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s">
+        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> ตั้งค่ารายงาน
+      </button>
+      <button id="rptTab2Btn" onclick="switchRptTab(2)"
+        style="padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;
+               border:none;border-bottom:2.5px solid transparent;color:#6b7280;
+               display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s">
+        <i data-lucide="table-2" class="w-3.5 h-3.5"></i> เลือกฟิลด์
+        <span id="rptFieldCount" style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:2px">0</span>
+      </button>
+      <button id="rptTab3Btn" onclick="switchRptTab(3)"
+        style="padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;
+               border:none;border-bottom:2.5px solid transparent;color:#6b7280;
+               display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s">
+        <i data-lucide="eye" class="w-3.5 h-3.5"></i> ตัวอย่างข้อมูล
+      </button>
+    </div>
 
-      <!-- Institution + Language -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
+    <!-- Tab Contents -->
+    <div class="flex-1 overflow-y-auto" style="min-height:0">
+
+      <!-- ── Tab 1: Report Setup ── -->
+      <div id="rptTabContent1" class="p-5 space-y-4">
+
+        <!-- Report Type -->
         <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" data-t="rptInstLabel">กรองสถานศึกษา</label>
-          <select id="rptInst" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
-            <option value="">ทุกสถานศึกษา / All Institutions</option>
-            <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
-            <option value="VC">VC — Vocational College</option>
-            <option value="UNI">University</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ภาษารายงาน / Language</label>
-          <div class="flex gap-3 mt-2.5">
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-              <input type="radio" name="rptLang" value="th" checked class="accent-blue-600"> ไทย</label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-              <input type="radio" name="rptLang" value="en" class="accent-blue-600"> English</label>
+          <span class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">ประเภทรายงาน / Report Type</span>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
+              <input type="radio" name="rptType" value="all" checked class="accent-blue-600">
+              <span>รายชื่อนักเรียนทั้งหมด</span></label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
+              <input type="radio" name="rptType" value="active" class="accent-blue-600">
+              <span>เฉพาะที่กำลังศึกษา</span></label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
+              <input type="radio" name="rptType" value="graduated" class="accent-blue-600">
+              <span>ผู้สำเร็จการศึกษา</span></label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
+              <input type="radio" name="rptType" value="university" class="accent-blue-600">
+              <span>นักเรียนต่อมหาวิทยาลัย</span></label>
           </div>
         </div>
-      </div>
 
-      <!-- Academic Year + Date -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
+        <!-- Institution + Language -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">กรองสถานศึกษา / Institution</label>
+            <select id="rptInst" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+              <option value="">ทุกสถานศึกษา / All Institutions</option>
+              <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
+              <option value="VC">VC — Maesariang Industrial and Community Education College</option>
+              <option value="UNI">University</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ภาษารายงาน / Language</label>
+            <div class="flex gap-3 mt-2.5">
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="rptLang" value="th" checked class="accent-blue-600"> ไทย</label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="rptLang" value="en" class="accent-blue-600"> English</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Year + Date -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ปีการศึกษา / Academic Year</label>
+            <select id="rptYear" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+              <option value="">ทุกปีการศึกษา / All Years</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">วันที่รายงาน / Report Date</label>
+            <input type="date" id="rptDate" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+          </div>
+        </div>
+
+        <!-- School + Subject -->
         <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" data-t="rptAcadYear">ปีการศึกษา</label>
-          <select id="rptYear" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
-            <option value="">ทุกปีการศึกษา / All Years</option>
-          </select>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ชื่อสถานศึกษา (หัวเอกสาร)</label>
+          <input type="text" id="rptSchool" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                 placeholder="เว้นว่างเพื่อใช้ชื่ออัตโนมัติ / Leave blank for auto">
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" data-t="rptDate">วันที่รายงาน</label>
-          <input type="date" id="rptDate" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">เรื่อง / หัวข้อรายงาน</label>
+          <input type="text" id="rptSubject" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                 placeholder="จะสร้างอัตโนมัติหากว่างไว้ / Auto-generated if blank">
+        </div>
+
+        <!-- Options -->
+        <div class="flex gap-4 flex-wrap">
+          <label class="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" id="rptGroupInst" checked class="rounded accent-blue-600">
+            จัดกลุ่มตามสถานศึกษา / Group by Institution</label>
+          <label class="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" id="rptShowYear" checked class="rounded accent-blue-600">
+            แสดงปีการศึกษา / Show Academic Year</label>
+        </div>
+
+        <!-- Signatories -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">ผู้ลงนาม / Signatories</span>
+            <a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')"
+               class="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              <i data-lucide="settings" class="w-3 h-3"></i> ตั้งค่าผู้ลงนาม
+            </a>
+          </div>
+          <div id="rptSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+            <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
+          <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+          <span>รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวตั้ง พร้อมส่วนหัวทุกหน้า ลายเซ็นหน้าสุดท้าย<br>
+          Report opens in a new window — A4 portrait, header repeats, signature on last page.</span>
         </div>
       </div>
 
-      <!-- School Name + Subject -->
-      <div class="mb-4">
-        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" data-t="rptSchool">ชื่อสถานศึกษา (หัวเอกสาร)</label>
-        <input type="text" id="rptSchool" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-               placeholder="เว้นว่างเพื่อใช้ชื่ออัตโนมัติ / Leave blank for auto">
-      </div>
-      <div class="mb-4">
-        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" data-t="rptSubject">เรื่อง / หัวข้อรายงาน</label>
-        <input type="text" id="rptSubject" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-               placeholder="จะสร้างอัตโนมัติหากว่างไว้ / Auto-generated if blank">
-      </div>
+      <!-- ── Tab 2: Field Selection ── -->
+      <div id="rptTabContent2" class="hidden p-5">
 
-      <!-- Options -->
-      <div class="flex gap-4 mb-4 flex-wrap">
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" id="rptGroupInst" checked class="rounded accent-blue-600">
-          <span data-t="rptGroupByInst">จัดกลุ่มตามสถานศึกษา</span>
-        </label>
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" id="rptShowYear" checked class="rounded accent-blue-600">
-          <span>แสดงปีการศึกษา / Show Academic Year</span>
-        </label>
-      </div>
-
-      <!-- Signatories from Settings -->
-      <div class="mb-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wide" data-t="rptSigLabel">ผู้ลงนาม</span>
-          <a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')"
-             class="text-xs text-blue-600 hover:underline flex items-center gap-1">
-            <i data-lucide="settings" class="w-3 h-3"></i> ตั้งค่าผู้ลงนาม
-          </a>
+        <!-- Templates Row -->
+        <div class="mb-5 p-4 rounded-xl" style="background:#fffbeb;border:1px solid #fcd34d">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5" style="color:#92400e">
+              <i data-lucide="bookmark" class="w-3.5 h-3.5"></i> แม่แบบรายงาน / Report Templates
+            </span>
+          </div>
+          <div class="flex gap-2 flex-wrap items-center">
+            <select id="rptTplSelect" class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none flex-1 min-w-0" style="border-color:#fcd34d">
+              <option value="">— เลือกแม่แบบ / Select Template —</option>
+              <option value="__quick">สรุปย่อ (Quick Summary)</option>
+              <option value="__standard">มาตรฐาน (Standard)</option>
+              <option value="__full">รายละเอียดครบถ้วน (Full Detail)</option>
+            </select>
+            <button onclick="_loadRptTemplate()" class="btn btn-sm text-xs" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">
+              <i data-lucide="download" class="w-3 h-3"></i> โหลด
+            </button>
+            <button onclick="_saveRptTemplatePrompt()" class="btn btn-sm text-xs" style="background:#fff;color:#92400e;border:1px solid #fcd34d">
+              <i data-lucide="save" class="w-3 h-3"></i> บันทึก
+            </button>
+          </div>
+          <!-- Saved user templates -->
+          <div id="rptTplSaved" class="mt-2 flex flex-wrap gap-1.5"></div>
         </div>
-        <div id="rptSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+
+        <!-- Global Controls -->
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm font-bold text-gray-700">เลือกฟิลด์ที่ต้องการในรายงาน</span>
+          <div class="flex gap-2">
+            <button onclick="_rptSelectAllFields(true)" class="btn btn-sm text-xs" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">
+              เลือกทั้งหมด
+            </button>
+            <button onclick="_rptSelectAllFields(false)" class="btn btn-sm btn-secondary text-xs">
+              ยกเลิกทั้งหมด
+            </button>
+          </div>
         </div>
+
+        <!-- Dynamically-generated field groups -->
+        <div id="rptFieldGroups" class="space-y-3"></div>
       </div>
 
-      <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
-        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <span>รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวตั้ง พร้อมส่วนหัวทุกหน้า ลายเซ็นหน้าสุดท้าย<br>
-        Report opens in a new window — A4 portrait, header repeats, signature on last page.</span>
+      <!-- ── Tab 3: Preview ── -->
+      <div id="rptTabContent3" class="hidden p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+            <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
+            ตัวอย่างข้อมูล (10 รายการแรก)
+          </div>
+          <button onclick="_renderPreview()" class="btn btn-sm btn-secondary text-xs">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> รีเฟรช
+          </button>
+        </div>
+        <div id="rptPreviewWrap" class="overflow-auto rounded-xl border border-gray-200" style="max-height:460px">
+          <div class="text-center text-gray-400 py-10 text-sm">คลิก "รีเฟรช" เพื่อแสดงตัวอย่าง</div>
+        </div>
+        <p id="rptPreviewInfo" class="text-xs text-gray-400 mt-2"></p>
       </div>
-    </div>
-    <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
+
+    </div><!-- /tab contents -->
+
+    <!-- Footer -->
+    <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50 rounded-b-2xl flex-shrink-0">
       <button onclick="closeStudentReportModal()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
       <div class="flex gap-2">
         <button onclick="doStudentExcelExport()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
-          <i data-lucide="table-2" class="w-4 h-4"></i>
-          <span data-t="rptExcel">Excel</span>
+          <i data-lucide="table-2" class="w-4 h-4"></i> Excel
         </button>
         <button onclick="doStudentReport()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
-          <i data-lucide="printer" class="w-4 h-4"></i>
-          <span data-t="rptGenerate">สร้างและพิมพ์รายงาน</span>
+          <i data-lucide="printer" class="w-4 h-4"></i> สร้างและพิมพ์รายงาน
         </button>
       </div>
     </div>
@@ -1161,16 +1253,348 @@ function _showDupDone() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// STUDENT REPORT SYSTEM
+// STUDENT REPORT SYSTEM v2 — Dynamic Field Selection
 // ══════════════════════════════════════════════════════════════
+
+/* ── Field Definitions ─────────────────────────────────────────
+ * Each entry describes one column that can appear in reports.
+ * render(s, isEN) → display string for student record s.
+ * Fields NOT in this list are auto-detected from data as "dynamic".
+ */
+const RPT_FIELD_DEFS = [
+  // ── Identity ──
+  { key:'stipNo',        cat:'identity', defaultOn:true,
+    labelTH:'รหัสทุน',                labelEN:'Stip No.',
+    render:(s)=> s.stipNo||'—' },
+  { key:'idCard',        cat:'identity', defaultOn:false,
+    labelTH:'เลขบัตรประชาชน',         labelEN:'ID Card',
+    render:(s)=> fmtIDCard(s.idCard) },
+  { key:'name',          cat:'identity', defaultOn:true,
+    labelTH:'ชื่อ-นามสกุล (ไทย)',     labelEN:'Thai Name',
+    render:(s)=> s.name||'—' },
+  { key:'engName',       cat:'identity', defaultOn:true,
+    labelTH:'ชื่อภาษาอังกฤษ',         labelEN:'English Name',
+    render:(s)=> [s.engTitle,s.engFname,s.engLname].filter(Boolean).join(' ')||'—' },
+  { key:'birthYear',     cat:'identity', defaultOn:false,
+    labelTH:'ปีเกิด (ค.ศ.)',          labelEN:'Birth Year',
+    render:(s)=> s.birthYear||'—' },
+  // ── Academic ──
+  { key:'institution',   cat:'academic', defaultOn:true,
+    labelTH:'สถานศึกษา',              labelEN:'Institution',
+    render:(s,isEN)=> isEN ? (RDF.INSTITUTION_LABELS[s.institution]||s.institution||'—')
+                           : ((RDF.INSTITUTION_LABELS_TH||{})[s.institution]||RDF.INSTITUTION_LABELS[s.institution]||s.institution||'—') },
+  { key:'level',         cat:'academic', defaultOn:true,
+    labelTH:'ระดับชั้น',              labelEN:'Level / Grade',
+    render:(s)=> s.level||'—' },
+  { key:'scholarshipYear', cat:'academic', defaultOn:true,
+    labelTH:'ปีการศึกษา (พ.ศ.)',      labelEN:'Acad. Year (BE)',
+    render:(s)=> s.scholarshipYear ? String(parseInt(s.scholarshipYear)+543) : '—' },
+  { key:'entryYear',     cat:'academic', defaultOn:false,
+    labelTH:'ปีเข้าเรียน (ค.ศ.)',     labelEN:'Entry Year',
+    render:(s)=> s.entryYear||'—' },
+  { key:'major',         cat:'academic', defaultOn:true,
+    labelTH:'สาขา/แผนก',             labelEN:'Major / Dept.',
+    render:(s)=> s.major||'—' },
+  { key:'studentId',     cat:'academic', defaultOn:false,
+    labelTH:'รหัสนักเรียน',           labelEN:'Student ID',
+    render:(s)=> s.studentId||'—' },
+  { key:'lastEducation', cat:'academic', defaultOn:false,
+    labelTH:'การศึกษาสุดท้าย',        labelEN:'Last Education',
+    render:(s)=> s.lastEducation||'—' },
+  // ── Status ──
+  { key:'status',        cat:'status',   defaultOn:true,
+    labelTH:'สถานะ',                  labelEN:'Status',
+    render:(s,isEN)=> isEN ? (RDF.STATUS_LABELS_EN[s.status]||s.status||'—')
+                           : (RDF.STATUS_LABELS_TH[s.status]||s.status||'—') },
+  // ── Contact ──
+  { key:'phone',         cat:'contact',  defaultOn:true,
+    labelTH:'โทรศัพท์',               labelEN:'Phone',
+    render:(s)=> fmtPhone(s.phone) },
+  { key:'phone2',        cat:'contact',  defaultOn:false,
+    labelTH:'โทรศัพท์ 2',            labelEN:'Phone 2',
+    render:(s)=> s.phone2||'—' },
+  { key:'province',      cat:'contact',  defaultOn:false,
+    labelTH:'จังหวัด',                labelEN:'Province',
+    render:(s)=> s.province||'—' },
+  { key:'amphoe',        cat:'contact',  defaultOn:false,
+    labelTH:'อำเภอ',                  labelEN:'District',
+    render:(s)=> s.amphoe||'—' },
+  { key:'tambon',        cat:'contact',  defaultOn:false,
+    labelTH:'ตำบล',                   labelEN:'Sub-district',
+    render:(s)=> s.tambon||'—' },
+  // ── Personal ──
+  { key:'sex',           cat:'personal', defaultOn:false,
+    labelTH:'เพศ',                    labelEN:'Gender',
+    render:(s)=> s.sex||'—' },
+  { key:'nationality',   cat:'personal', defaultOn:false,
+    labelTH:'สัญชาติ',                labelEN:'Nationality',
+    render:(s)=> s.nationality||'—' },
+  { key:'religion',      cat:'personal', defaultOn:false,
+    labelTH:'ศาสนา',                  labelEN:'Religion',
+    render:(s)=> s.religion||'—' },
+  // ── University ──
+  { key:'uniName',       cat:'university', defaultOn:false,
+    labelTH:'ชื่อมหาวิทยาลัย',        labelEN:'University Name',
+    render:(s)=> s.uniName||'—' },
+  { key:'faculty',       cat:'university', defaultOn:false,
+    labelTH:'คณะ',                    labelEN:'Faculty',
+    render:(s)=> s.faculty||'—' },
+  { key:'uniMajor',      cat:'university', defaultOn:false,
+    labelTH:'สาขาวิชา (มหาวิทยาลัย)',  labelEN:'Uni Major',
+    render:(s)=> s.uniMajor||'—' },
+  { key:'uniProvince',   cat:'university', defaultOn:false,
+    labelTH:'จังหวัดมหาวิทยาลัย',     labelEN:'Uni Province',
+    render:(s)=> s.uniProvince||'—' },
+];
+
+/* Category display metadata */
+const RPT_CAT_META = {
+  identity:   { labelTH:'ข้อมูลระบุตัวตน',     labelEN:'Identity',     icon:'user' },
+  academic:   { labelTH:'ข้อมูลการศึกษา',       labelEN:'Academic',     icon:'book-open' },
+  status:     { labelTH:'สถานะ',                labelEN:'Status',       icon:'activity' },
+  contact:    { labelTH:'ข้อมูลติดต่อ',         labelEN:'Contact',      icon:'phone' },
+  personal:   { labelTH:'ข้อมูลส่วนตัว',        labelEN:'Personal',     icon:'heart' },
+  university: { labelTH:'ข้อมูลมหาวิทยาลัย',   labelEN:'University',   icon:'building-2' },
+  dynamic:    { labelTH:'ฟิลด์อื่นๆ (ตรวจพบอัตโนมัติ)', labelEN:'Other Fields (Auto-detected)', icon:'layers' },
+};
+
+/* Built-in templates */
+const RPT_TEMPLATES_BUILTIN = {
+  __quick: {
+    labelTH:'สรุปย่อ', labelEN:'Quick Summary',
+    fields:['stipNo','name','institution','status']
+  },
+  __standard: {
+    labelTH:'มาตรฐาน', labelEN:'Standard Report',
+    fields:['stipNo','name','engName','institution','level','scholarshipYear','phone','status']
+  },
+  __full: {
+    labelTH:'รายละเอียดครบถ้วน', labelEN:'Full Detail',
+    fields: null // null = all fields
+  },
+};
 
 const _RPT_DEFAULT_SIGS = [
   { role:'ผู้บันทึกข้อมูล', name:'', position:'' },
   { role:'ผู้ตรวจสอบ',      name:'', position:'' },
 ];
 
+// ── Tab Switching ──────────────────────────────────────────────
+function switchRptTab(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById(`rptTabContent${i}`).classList.toggle('hidden', i !== n);
+    const btn = document.getElementById(`rptTab${i}Btn`);
+    if (i === n) {
+      btn.style.borderBottomColor = '#2563eb';
+      btn.style.color = '#1d4ed8';
+      btn.style.background = '#fff';
+    } else {
+      btn.style.borderBottomColor = 'transparent';
+      btn.style.color = '#6b7280';
+      btn.style.background = '';
+    }
+  });
+  if (n === 3) _renderPreview();
+}
+
+// ── Auto-detect fields not in RPT_FIELD_DEFS ──────────────────
+function _getDynamicFields(data) {
+  if (!data || !data.length) return [];
+  const definedKeys = new Set(RPT_FIELD_DEFS.map(f => f.key));
+  // Keys that belong to composite fields — don't show them as separate
+  const EXCLUDE = new Set([
+    'pic','_rowIdx','_id','createdAt','updatedAt','rowNum',
+    'engTitle','engFname','engLname','title','fname','lname',
+  ]);
+  const allKeys = new Set();
+  data.slice(0, 30).forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
+  return [...allKeys]
+    .filter(k => !definedKeys.has(k) && !EXCLUDE.has(k) && !k.startsWith('_') && k.length > 1)
+    .sort()
+    .map(k => ({
+      key: k, cat: 'dynamic', defaultOn: false,
+      labelTH: k, labelEN: k,
+      render: (s) => (s[k] != null && s[k] !== '') ? String(s[k]) : '—'
+    }));
+}
+
+// ── Build Field Selection UI (Tab 2) ──────────────────────────
+function _renderFieldSelectionUI(extraFields) {
+  const allDefs = [...RPT_FIELD_DEFS, ...(extraFields || [])];
+  const grouped = {};
+  allDefs.forEach(f => {
+    if (!grouped[f.cat]) grouped[f.cat] = [];
+    grouped[f.cat].push(f);
+  });
+  const catOrder = ['identity','academic','status','contact','personal','university','dynamic'];
+  const isEN = document.querySelector('input[name="rptLang"]:checked')?.value === 'en';
+  const el = document.getElementById('rptFieldGroups');
+  if (!el) return;
+
+  el.innerHTML = catOrder
+    .filter(cat => grouped[cat] && grouped[cat].length)
+    .map(cat => {
+      const meta = RPT_CAT_META[cat] || { labelTH: cat, labelEN: cat, icon: 'layers' };
+      const catLabel = isEN ? meta.labelEN : meta.labelTH;
+      const fields = grouped[cat];
+      return `
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+            <span class="text-xs font-bold text-gray-600 flex items-center gap-1.5">
+              <i data-lucide="${meta.icon}" class="w-3.5 h-3.5 text-blue-500"></i>
+              ${catLabel}
+              <span class="text-gray-400 font-normal">(${fields.length})</span>
+            </span>
+            <div class="flex gap-2">
+              <button onclick="_rptSelectCat('${cat}', true)" class="text-xs text-blue-600 hover:underline">เลือกทั้งหมด</button>
+              <span class="text-gray-300">|</span>
+              <button onclick="_rptSelectCat('${cat}', false)" class="text-xs text-gray-400 hover:underline">ยกเลิก</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+            ${fields.map(f => `
+              <label class="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer transition" style="border-bottom:1px solid #f3f4f6">
+                <input type="checkbox" name="rptField" value="${f.key}"
+                       ${f.defaultOn ? 'checked' : ''}
+                       onchange="_updateRptFieldCount()"
+                       class="rounded accent-blue-600 flex-shrink-0">
+                <span class="text-xs text-gray-700">${isEN ? f.labelEN : f.labelTH}</span>
+              </label>`).join('')}
+          </div>
+        </div>`;
+    }).join('');
+
+  lucide.createIcons();
+  _updateRptFieldCount();
+}
+
+function _updateRptFieldCount() {
+  const n = document.querySelectorAll('input[name="rptField"]:checked').length;
+  const el = document.getElementById('rptFieldCount');
+  if (el) el.textContent = n;
+}
+
+function _rptSelectAllFields(checked) {
+  document.querySelectorAll('input[name="rptField"]').forEach(cb => cb.checked = checked);
+  _updateRptFieldCount();
+}
+
+function _rptSelectCat(cat, checked) {
+  const catKeys = new Set(
+    [...RPT_FIELD_DEFS, ...(window._rptDynamicFields||[])].filter(f => f.cat === cat).map(f => f.key)
+  );
+  document.querySelectorAll('input[name="rptField"]').forEach(cb => {
+    if (catKeys.has(cb.value)) cb.checked = checked;
+  });
+  _updateRptFieldCount();
+}
+
+function _getSelectedFields() {
+  const allDefs = [...RPT_FIELD_DEFS, ...(window._rptDynamicFields||[])];
+  const defMap  = Object.fromEntries(allDefs.map(f => [f.key, f]));
+  const checked = new Set([...document.querySelectorAll('input[name="rptField"]:checked')].map(cb => cb.value));
+  // Return in the canonical order from allDefs
+  return allDefs.filter(f => checked.has(f.key));
+}
+
+// ── Templates ─────────────────────────────────────────────────
+function _loadRptTemplate() {
+  const key = document.getElementById('rptTplSelect').value;
+  if (!key) return;
+  let tpl = RPT_TEMPLATES_BUILTIN[key] || JSON.parse(localStorage.getItem('rdfRptTemplates')||'{}')[key];
+  if (!tpl) return;
+  document.querySelectorAll('input[name="rptField"]').forEach(cb => {
+    cb.checked = (tpl.fields === null) ? true : tpl.fields.includes(cb.value);
+  });
+  _updateRptFieldCount();
+  Swal.fire({ toast:true, position:'top-end', icon:'success',
+    title:`โหลดแม่แบบ "${tpl.labelTH||tpl.name||key}" แล้ว`, timer:2000, showConfirmButton:false });
+}
+
+async function _saveRptTemplatePrompt() {
+  const { value: name } = await Swal.fire({
+    title: 'บันทึกแม่แบบ / Save Template',
+    input: 'text', inputPlaceholder: 'ชื่อแม่แบบ / Template name',
+    showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#1d4ed8',
+  });
+  if (!name) return;
+  const fields = [...document.querySelectorAll('input[name="rptField"]:checked')].map(cb => cb.value);
+  const saved = JSON.parse(localStorage.getItem('rdfRptTemplates')||'{}');
+  saved[name] = { name, labelTH: name, labelEN: name, fields };
+  localStorage.setItem('rdfRptTemplates', JSON.stringify(saved));
+  _refreshSavedTemplatesUI();
+  Swal.fire({ toast:true, position:'top-end', icon:'success',
+    title:`บันทึกแม่แบบ "${name}" แล้ว`, timer:2000, showConfirmButton:false });
+}
+
+function _refreshSavedTemplatesUI() {
+  const saved = JSON.parse(localStorage.getItem('rdfRptTemplates')||'{}');
+  const sel = document.getElementById('rptTplSelect');
+  const el  = document.getElementById('rptTplSaved');
+  // Remove previously injected saved-template options
+  [...sel.options].filter(o => !o.value.startsWith('__') && o.value !== '').forEach(o => o.remove());
+  const keys = Object.keys(saved);
+  keys.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k; opt.textContent = k;
+    sel.appendChild(opt);
+  });
+  if (el) el.innerHTML = keys.length ? keys.map(k => `
+    <div class="flex items-center gap-1 bg-white rounded-lg px-2 py-1 text-xs" style="border:1px solid #fcd34d">
+      <span class="font-semibold" style="color:#92400e">${k}</span>
+      <button onclick="_deleteRptTemplate('${k.replace(/'/g,"\\'")}')"
+              class="text-red-400 hover:text-red-600 ml-1 font-bold" title="ลบ">×</button>
+    </div>`).join('') : '';
+}
+
+function _deleteRptTemplate(name) {
+  const saved = JSON.parse(localStorage.getItem('rdfRptTemplates')||'{}');
+  delete saved[name];
+  localStorage.setItem('rdfRptTemplates', JSON.stringify(saved));
+  _refreshSavedTemplatesUI();
+}
+
+// ── Live Preview (Tab 3) ───────────────────────────────────────
+function _renderPreview() {
+  const { data, isEN } = _getRptData();
+  const selFields = _getSelectedFields();
+  const wrap = document.getElementById('rptPreviewWrap');
+  const info = document.getElementById('rptPreviewInfo');
+
+  if (!selFields.length) {
+    wrap.innerHTML = '<div class="text-center text-gray-400 py-10 text-sm">ยังไม่ได้เลือกฟิลด์ — ไปที่แท็บ "เลือกฟิลด์" ก่อน</div>';
+    if (info) info.textContent = '';
+    return;
+  }
+  if (!data.length) {
+    wrap.innerHTML = '<div class="text-center text-gray-400 py-10 text-sm">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>';
+    if (info) info.textContent = '';
+    return;
+  }
+
+  const preview = data.slice(0, 10);
+  const hdrs = selFields.map(f =>
+    `<th style="background:#1e3a8a;color:#fff;padding:6px 10px;font-size:11px;white-space:nowrap;text-align:left">${isEN?f.labelEN:f.labelTH}</th>`
+  ).join('');
+  const rows = preview.map((s, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f8faff';
+    const cells = selFields.map(f =>
+      `<td style="padding:5px 10px;font-size:11px;border-bottom:1px solid #e5e7eb;white-space:nowrap">${f.render(s, isEN)}</td>`
+    ).join('');
+    return `<tr style="background:${bg}">${cells}</tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table style="border-collapse:collapse;font-family:sans-serif;width:100%;min-width:max-content">
+    <thead><tr>${hdrs}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  if (info) info.textContent = `แสดง ${preview.length} จาก ${data.length} รายการ · ${selFields.length} ฟิลด์ที่เลือก`;
+}
+
+// ── Modal Open/Close ───────────────────────────────────────────
 async function openStudentReportModal() {
-  // Populate year dropdown from loaded data
+  // Populate year dropdown
   const yearSel = document.getElementById('rptYear');
   yearSel.innerHTML = `<option value="">ทุกปีการศึกษา / All Years</option>`;
   getAcademicYears(allStudents).forEach(y => {
@@ -1180,17 +1604,20 @@ async function openStudentReportModal() {
     yearSel.appendChild(opt);
   });
 
-  // Default date
   document.getElementById('rptDate').value = new Date().toISOString().split('T')[0];
-
-  // Pre-fill inst from URL param
-  const instSel = document.getElementById('rptInst');
-  if (initInst) instSel.value = initInst;
-
-  // Sync language radio
+  if (initInst) document.getElementById('rptInst').value = initInst;
   document.querySelectorAll('input[name="rptLang"]').forEach(r => r.checked = (r.value === LANG));
 
-  // Load signature block from settings
+  // Detect dynamic fields from actual data (auto-extensible)
+  window._rptDynamicFields = _getDynamicFields(allStudents);
+
+  // Build field selection UI
+  _renderFieldSelectionUI(window._rptDynamicFields);
+
+  // Load saved templates into dropdown
+  _refreshSavedTemplatesUI();
+
+  // Load signature block
   if (!Object.keys(_rptSettings).length) {
     try {
       const res = await API.getSystemSettings();
@@ -1199,6 +1626,7 @@ async function openStudentReportModal() {
   }
   _renderRptSigList();
 
+  switchRptTab(1);
   document.getElementById('studentReportModal').classList.remove('hidden');
   lucide.createIcons();
 }
@@ -1213,10 +1641,7 @@ function _renderRptSigList() {
   window._rptSigSlots = sigs;
   const el = document.getElementById('rptSigList');
   if (!el) return;
-  if (!sigs.length) {
-    el.innerHTML = `<div class="text-xs text-gray-400 p-3 text-center">ยังไม่มีผู้ลงนาม</div>`;
-    return;
-  }
+  if (!sigs.length) { el.innerHTML = `<div class="text-xs text-gray-400 p-3 text-center">ยังไม่มีผู้ลงนาม</div>`; return; }
   el.innerHTML = sigs.map((s, i) => `
     <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer">
       <input type="checkbox" name="rptSig" value="${i}" checked class="rounded accent-blue-600 flex-shrink-0">
@@ -1231,6 +1656,7 @@ function _renderRptSigList() {
     </label>`).join('');
 }
 
+// ── Get filtered/sorted data from modal settings ───────────────
 function _getRptData() {
   const rptType = document.querySelector('input[name="rptType"]:checked').value;
   const inst    = document.getElementById('rptInst').value;
@@ -1239,12 +1665,11 @@ function _getRptData() {
   const isEN    = lang === 'en';
   const groupInst = document.getElementById('rptGroupInst').checked;
 
-  // Status filter map
   const STATUS_FILTER = {
     all:        null,
     active:     s => s.status === 'Active',
     graduated:  s => s.status === 'Graduated',
-    university: s => ['University', 'Continued'].includes(s.status),
+    university: s => ['University','Continued'].includes(s.status),
   };
   const statusFn = STATUS_FILTER[rptType] || null;
 
@@ -1254,42 +1679,42 @@ function _getRptData() {
     if (statusFn && !statusFn(s)) return false;
     return true;
   });
-
-  // Sort newest first
   data.sort((a, b) => extractStipNum(b.stipNo) - extractStipNum(a.stipNo));
-
   return { data, isEN, groupInst, rptType };
 }
 
+// ── Print / PDF ────────────────────────────────────────────────
 function doStudentReport() {
   const { data, isEN, groupInst } = _getRptData();
-  const lang    = document.querySelector('input[name="rptLang"]:checked').value;
-  const selIdxs = new Set([...document.querySelectorAll('input[name="rptSig"]:checked')].map(cb => +cb.value));
-  const sigs    = (window._rptSigSlots || _RPT_DEFAULT_SIGS).filter((_, i) => selIdxs.has(i));
+  const lang       = document.querySelector('input[name="rptLang"]:checked').value;
+  const selIdxs    = new Set([...document.querySelectorAll('input[name="rptSig"]:checked')].map(cb=>+cb.value));
+  const sigs       = (window._rptSigSlots||_RPT_DEFAULT_SIGS).filter((_,i)=>selIdxs.has(i));
+  const selFields  = _getSelectedFields();
+
+  if (!data.length) {
+    Swal.fire(isEN?'No Data':'ไม่พบข้อมูล',
+      isEN?'No students match the selected criteria.':'ไม่พบนักเรียนในเงื่อนไขที่เลือก','info'); return;
+  }
+  if (!selFields.length) {
+    Swal.fire(isEN?'No Fields Selected':'ยังไม่ได้เลือกฟิลด์',
+      isEN?'Go to "Fields" tab and select at least one field.':'ไปที่แท็บ "เลือกฟิลด์" และเลือกอย่างน้อย 1 ฟิลด์','warning'); return;
+  }
 
   const opts = {
     lang, isEN,
-    inst:    document.getElementById('rptInst').value,
-    year:    document.getElementById('rptYear').value,
-    school:  document.getElementById('rptSchool').value.trim(),
-    subject: document.getElementById('rptSubject').value.trim(),
-    pDate:   document.getElementById('rptDate').value,
-    groupInst,
-    sigs,
-    data,
+    inst:      document.getElementById('rptInst').value,
+    year:      document.getElementById('rptYear').value,
+    school:    document.getElementById('rptSchool').value.trim(),
+    subject:   document.getElementById('rptSubject').value.trim(),
+    pDate:     document.getElementById('rptDate').value,
+    groupInst, sigs, data,
+    fields:    selFields,
   };
-
-  if (!data.length) {
-    Swal.fire(isEN ? 'No Data' : 'ไม่พบข้อมูล',
-      isEN ? 'No students match the selected criteria.' : 'ไม่พบนักเรียนในเงื่อนไขที่เลือก', 'info');
-    return;
-  }
 
   const html = _buildStudentReportHTML(opts);
   const win  = window.open('', '_blank', 'width=900,height=850');
   if (!win) {
-    Swal.fire(t('error'), isEN ? 'Browser blocked popup. Allow popups for this site.' : 'เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup', 'error');
-    return;
+    Swal.fire(t('error'), isEN?'Browser blocked popup.':'เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup','error'); return;
   }
   win.document.open();
   win.document.write(html);
@@ -1299,153 +1724,145 @@ function doStudentReport() {
   closeStudentReportModal();
 }
 
+// ── Excel Export (respects selected fields) ────────────────────
 function doStudentExcelExport() {
   const { data, isEN } = _getRptData();
+  const selFields = _getSelectedFields();
+
   if (!data.length) {
-    Swal.fire(isEN ? 'No Data' : 'ไม่พบข้อมูล', '', 'info');
-    return;
+    Swal.fire(isEN?'No Data':'ไม่พบข้อมูล','','info'); return;
   }
-  const rows = data.map((s, i) => {
-    const thaiName = ((s.name||'')).trim();
-    const engName  = [s.engTitle, s.engFname, s.engLname].filter(Boolean).join(' ');
-    const beYear   = s.scholarshipYear ? parseInt(s.scholarshipYear) + 543 : '';
-    const instName = isEN ? (RDF.INSTITUTION_LABELS[s.institution]||s.institution||'')
-                           : ((RDF.INSTITUTION_LABELS_TH||{})[s.institution]||RDF.INSTITUTION_LABELS[s.institution]||s.institution||'');
-    return {
-      [isEN ? 'No.' : 'ลำดับ']:         i + 1,
-      [isEN ? 'StipNo' : 'รหัสทุน']:   s.stipNo || '',
-      [isEN ? 'Thai Name' : 'ชื่อ-นามสกุล (ไทย)']: thaiName,
-      [isEN ? 'English Name' : 'ชื่อ-นามสกุล (EN)']: engName,
-      [isEN ? 'Institution' : 'สถานศึกษา']: instName,
-      [isEN ? 'Level' : 'ระดับชั้น']:  s.level || '',
-      [isEN ? 'Acad. Year (BE)' : 'ปีการศึกษา (พ.ศ.)']: beYear,
-      [isEN ? 'Status' : 'สถานะ']:     isEN ? (RDF.STATUS_LABELS_EN[s.status]||s.status||'') : (RDF.STATUS_LABELS_TH[s.status]||s.status||''),
-      [isEN ? 'Phone' : 'โทรศัพท์']:   s.phone || '',
-      [isEN ? 'Major' : 'สาขา/แผนก']: s.major || '',
-    };
-  });
+  if (!selFields.length) {
+    Swal.fire(isEN?'No Fields Selected':'ยังไม่ได้เลือกฟิลด์',
+      isEN?'Please select at least one field.':'กรุณาเลือกอย่างน้อย 1 ฟิลด์','warning'); return;
+  }
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:5},{wch:12},{wch:22},{wch:22},{wch:28},{wch:18},{wch:10},{wch:14},{wch:13},{wch:18}];
-  const sheetName = isEN ? 'Student List' : 'รายชื่อนักเรียน';
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  try {
+    const rows = data.map((s, i) => {
+      const row = { [isEN?'No.':'ลำดับ']: i + 1 };
+      selFields.forEach(f => {
+        const val = f.render(s, isEN);
+        row[isEN ? f.labelEN : f.labelTH] = val === '—' ? '' : val;
+      });
+      return row;
+    });
 
-  const inst = document.getElementById('rptInst').value;
-  const year = document.getElementById('rptYear').value;
-  const date = document.getElementById('rptDate').value || new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb, `RDF_Students${inst?'_'+inst:''}${year?'_'+year:''}_${date}.xlsx`);
-  closeStudentReportModal();
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // Dynamic column widths
+    const baseW = Math.min(24, Math.max(10, Math.round(140 / (selFields.length + 1))));
+    ws['!cols'] = [{ wch: 5 }, ...selFields.map(() => ({ wch: baseW }))];
+    XLSX.utils.book_append_sheet(wb, ws, isEN ? 'Student List' : 'รายชื่อนักเรียน');
+
+    const inst = document.getElementById('rptInst').value;
+    const year = document.getElementById('rptYear').value;
+    const date = document.getElementById('rptDate').value || new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `RDF_Students${inst?'_'+inst:''}${year?'_'+year:''}_${date}.xlsx`);
+    closeStudentReportModal();
+  } catch(e) {
+    Swal.fire(t('error'), e.message, 'error');
+  }
 }
 
+// ── Build Print Report HTML (dynamic columns) ─────────────────
 function _buildStudentReportHTML(opts) {
-  const { data, isEN, groupInst, sigs, pDate, school, subject, inst, year } = opts;
+  const { data, isEN, groupInst, sigs, pDate, school, subject, inst, year, fields } = opts;
   const org = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
+
+  // Use provided fields; fall back to defaults if none passed
+  const allFields  = fields && fields.length ? fields : RPT_FIELD_DEFS.filter(f => f.defaultOn);
+  // When grouping by institution, remove the institution column from per-row display
+  const rowFields  = groupInst ? allFields.filter(f => f.key !== 'institution') : allFields;
+  const colCount   = rowFields.length + 1; // +1 for seq col
 
   const getInstName = code => {
     if (!code) return isEN ? 'All Institutions' : 'ทุกสถานศึกษา';
-    const d = RDF.INSTITUTION_DATA && RDF.INSTITUTION_DATA[code];
+    const d = RDF.INSTITUTION_DATA?.[code];
     return d ? (isEN ? d.nameEN : d.nameTH) : (RDF.INSTITUTION_LABELS[code] || code);
   };
   const getInstAddr = code => {
-    const d = RDF.INSTITUTION_DATA && RDF.INSTITUTION_DATA[code];
+    const d = RDF.INSTITUTION_DATA?.[code];
     return d ? (isEN ? d.addrEN : d.addrTH) : '';
   };
 
-  const instName = inst ? getInstName(inst) : (isEN ? 'All Institutions' : 'ทุกสถานศึกษา');
+  const instName     = inst ? getInstName(inst) : (isEN ? 'All Institutions' : 'ทุกสถานศึกษา');
   const schoolDisplay = school || instName;
-  const beYear = year ? (parseInt(year) + 543) + (isEN ? ` (${year})` : '') : '';
-  const rptTitle = isEN ? 'Scholarship Student List' : 'รายชื่อนักเรียนทุนการศึกษา';
-  const docSubject = subject || `${schoolDisplay}${beYear ? ' ปีการศึกษา '+beYear : ''} — ${rptTitle}`;
+  const beYear       = year ? (parseInt(year)+543) + (isEN ? ` (${year})` : '') : '';
+  const rptTitle     = isEN ? 'Scholarship Student List' : 'รายชื่อนักเรียนทุนการศึกษา';
+  const docSubject   = subject || `${schoolDisplay}${beYear ? ' ปีการศึกษา '+beYear : ''} — ${rptTitle}`;
 
-  // ── Build table rows (grouped or flat) ──────────────────────
-  let tableBody = '';
-  let seq = 1;
-  const statusLbls = isEN ? RDF.STATUS_LABELS_EN : RDF.STATUS_LABELS_TH;
   const instColors = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#64748b' };
+  const statusStyle = st => {
+    const bg  = st==='Active'?'#dcfce7':st==='Graduated'?'#ede9fe':st==='Suspended'?'#fef3c7':'#fee2e2';
+    const col = st==='Active'?'#15803d':st==='Graduated'?'#7c3aed':st==='Suspended'?'#92400e':'#dc2626';
+    return `background:${bg};color:${col}`;
+  };
 
-  const renderRow = (s, i) => {
-    const thaiName = (s.name || '—');
-    const engName  = [s.engTitle, s.engFname, s.engLname].filter(Boolean).join(' ') || '—';
-    const beYr     = s.scholarshipYear ? parseInt(s.scholarshipYear) + 543 : '—';
-    const statusL  = statusLbls[s.status] || s.status || '—';
-    const instLb   = getInstName(s.institution);
-    const rowBg    = i % 2 === 0 ? '#fff' : '#f8faff';
-    return `<tr style="background:${rowBg};page-break-inside:avoid">
-      <td style="width:3%;text-align:center;color:#9ca3af;font-size:8pt">${seq++}</td>
-      <td style="width:9%;font-family:monospace;font-size:7.5pt;color:#374151">${s.stipNo||'—'}</td>
-      <td style="width:20%"><div style="font-weight:700;font-size:9pt">${thaiName}</div>
-        <div style="font-size:8pt;color:#2563eb">${engName}</div></td>
-      ${groupInst ? '' : `<td style="width:16%;font-size:8pt;color:#374151">${instLb}</td>`}
-      <td style="width:14%;font-size:8pt">${s.level||'—'}</td>
-      <td style="width:7%;font-size:8pt;text-align:center">${beYr}</td>
-      <td style="width:10%;font-size:8pt">${s.phone||'—'}</td>
-      <td style="width:11%;font-size:8pt">${s.major||'—'}</td>
-      <td style="width:10%;font-size:8pt;text-align:center">
-        <span style="padding:1px 8px;border-radius:10px;font-weight:700;font-size:7.5pt;
-          background:${s.status==='Active'?'#dcfce7':s.status==='Graduated'?'#ede9fe':s.status==='Suspended'?'#fef3c7':'#fee2e2'};
-          color:${s.status==='Active'?'#15803d':s.status==='Graduated'?'#7c3aed':s.status==='Suspended'?'#92400e':'#dc2626'}">
-          ${statusL}</span></td>
+  // Table header
+  const thHdr = `<th style="width:3%;text-align:center">${isEN?'No.':'ลำดับ'}</th>` +
+    rowFields.map(f => `<th style="white-space:nowrap">${isEN ? f.labelEN : f.labelTH}</th>`).join('');
+
+  // Row renderer
+  let seq = 1;
+  const renderRow = (s, rowIdx) => {
+    const bg    = rowIdx % 2 === 0 ? '#fff' : '#f8faff';
+    const cells = rowFields.map(f => {
+      const val = f.render(s, isEN);
+      if (f.key === 'status') {
+        return `<td style="font-size:8pt"><span style="padding:1px 8px;border-radius:10px;font-weight:700;font-size:7.5pt;${statusStyle(s.status)}">${val}</span></td>`;
+      }
+      if (f.key === 'stipNo') return `<td style="font-family:monospace;font-size:8pt;color:#374151">${val}</td>`;
+      if (f.key === 'name')   return `<td style="font-weight:700;font-size:9pt">${val}</td>`;
+      return `<td style="font-size:8.5pt">${val}</td>`;
+    }).join('');
+    return `<tr style="background:${bg};page-break-inside:avoid">
+      <td style="text-align:center;color:#9ca3af;font-size:8pt">${seq++}</td>${cells}
     </tr>`;
   };
 
-  const thHdr = `
-    <th style="width:3%">${isEN?'No.':'ลำดับ'}</th>
-    <th style="width:9%">${isEN?'StipNo':'รหัสทุน'}</th>
-    <th style="width:20%">${isEN?'Name':'ชื่อ-นามสกุล'}</th>
-    ${groupInst ? '' : `<th style="width:16%">${isEN?'Institution':'สถานศึกษา'}</th>`}
-    <th style="width:14%">${isEN?'Level / Grade':'ระดับชั้น'}</th>
-    <th style="width:7%;text-align:center">${isEN?'Acad. Year (BE)':'ปีการศึกษา'}</th>
-    <th style="width:10%">${isEN?'Phone':'โทรศัพท์'}</th>
-    <th style="width:11%">${isEN?'Major':'สาขา'}</th>
-    <th style="width:10%;text-align:center">${isEN?'Status':'สถานะ'}</th>`;
-
+  // Build body (grouped or flat)
+  let tableBody = '';
   if (groupInst) {
-    // Group by institution
     const groups = {};
-    const ORDER = ['MBS','VC','UNI','OTHER'];
-    data.forEach(s => {
-      const k = s.institution || 'OTHER';
-      if (!groups[k]) groups[k] = [];
-      groups[k].push(s);
-    });
-    ORDER.filter(k => groups[k] && groups[k].length).forEach(k => {
-      const gData  = groups[k];
-      const color  = instColors[k] || '#64748b';
-      const gName  = getInstName(k);
-      const gAddr  = getInstAddr(k);
-      const instInfo = RDF.INSTITUTION_DATA && RDF.INSTITUTION_DATA[k];
-      tableBody += `
-        <tr style="page-break-before:auto">
-          <td colspan="${groupInst?8:9}" style="background:${color}15;padding:8px 8px 4px;border-top:2.5px solid ${color}">
-            <div style="font-weight:800;font-size:10pt;color:${color}">${gName}</div>
-            ${gAddr ? `<div style="font-size:7.5pt;color:#6b7280;margin-top:1px">${gAddr}</div>` : ''}
-            ${instInfo ? `<div style="font-size:7.5pt;color:#9ca3af">Tel: ${instInfo.tel}${instInfo.email?' | '+instInfo.email:''}</div>` : ''}
-            <div style="font-size:7.5pt;color:#6b7280;margin-top:2px">${isEN?'Total':'จำนวน'}: <b>${gData.length}</b> ${isEN?'student(s)':'คน'}</div>
-          </td>
-        </tr>`;
+    const ORDER  = ['MBS','VC','UNI','OTHER'];
+    data.forEach(s => { const k = s.institution||'OTHER'; if (!groups[k]) groups[k]=[]; groups[k].push(s); });
+    ORDER.filter(k => groups[k]?.length).forEach(k => {
+      const gData = groups[k];
+      const color = instColors[k] || '#64748b';
+      const gName = getInstName(k);
+      const gAddr = getInstAddr(k);
+      const info  = RDF.INSTITUTION_DATA?.[k];
+      tableBody += `<tr>
+        <td colspan="${colCount}" style="background:${color}15;padding:8px 8px 4px;border-top:2.5px solid ${color}">
+          <div style="font-weight:800;font-size:10pt;color:${color}">${gName}</div>
+          ${gAddr ? `<div style="font-size:7.5pt;color:#6b7280;margin-top:1px">${gAddr}</div>` : ''}
+          ${info ? `<div style="font-size:7.5pt;color:#9ca3af">Tel: ${info.tel}${info.email?' | '+info.email:''}</div>` : ''}
+          <div style="font-size:7.5pt;color:#6b7280;margin-top:2px">${isEN?'Total':'จำนวน'}: <b>${gData.length}</b> ${isEN?'student(s)':'คน'}</div>
+        </td>
+      </tr>`;
       gData.forEach((s, i) => { tableBody += renderRow(s, i); });
     });
   } else {
     data.forEach((s, i) => { tableBody += renderRow(s, i); });
   }
 
-  // ── Summary row ───────────────────────────────────────────────
+  // Summary
   const statusCounts = {};
-  data.forEach(s => { statusCounts[s.status] = (statusCounts[s.status]||0) + 1; });
-  const summaryRows = Object.entries(statusCounts).map(([st, n]) =>
-    `<tr><td>${statusLbls[st]||st}</td><td style="text-align:center;font-weight:700">${n}</td></tr>`
-  ).join('');
+  data.forEach(s => { statusCounts[s.status] = (statusCounts[s.status]||0)+1; });
+  const statusLbls  = isEN ? RDF.STATUS_LABELS_EN : RDF.STATUS_LABELS_TH;
+  const summaryRows = Object.entries(statusCounts)
+    .map(([st,n]) => `<tr><td>${statusLbls[st]||st}</td><td style="text-align:center;font-weight:700">${n}</td></tr>`)
+    .join('');
 
-  // ── Signature block ───────────────────────────────────────────
-  const sigHTML = (sigs && sigs.length) ? `
+  // Signature block
+  const sigHTML = sigs?.length ? `
     <div style="margin-top:32px;display:flex;justify-content:flex-end;gap:40px;flex-wrap:wrap;page-break-inside:avoid">
       ${sigs.map(s => `
         <div style="text-align:center;min-width:150px;flex:1;max-width:200px">
           <div style="font-weight:700;font-size:9pt;color:#374151;margin-bottom:2px">${s.role||''}</div>
           <div style="border-top:1px solid #374151;margin:38px 10px 6px"></div>
           <div style="font-size:9pt;font-weight:700">(${s.name||'&nbsp;'.repeat(20)})</div>
-          ${s.position ? `<div style="font-size:8pt;color:#6b7280;margin-top:2px">${s.position}</div>` : ''}
+          ${s.position?`<div style="font-size:8pt;color:#6b7280;margin-top:2px">${s.position}</div>`:''}
           <div style="font-size:7.5pt;color:#9ca3af;margin-top:3px">${isEN?'Date':'วันที่'} ${pDate||''}</div>
         </div>`).join('')}
     </div>` : '';
@@ -1506,13 +1923,12 @@ td{padding:4px 6px;border:1px solid #e5e7eb;vertical-align:middle}
     </table>
   </div>
 </div>
-
 ${sigHTML}
 </body></html>`;
 }
 
 // ══════════════════════════════════════════════════════════════
-// END REPORT SYSTEM
+// END REPORT SYSTEM v2
 // ══════════════════════════════════════════════════════════════
 
 loadStudents();
