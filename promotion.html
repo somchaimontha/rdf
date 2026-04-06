@@ -54,41 +54,120 @@
 .group-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
   overflow:hidden; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
 /* ── Avatar ── */
+
+/*
+ * ARCHITECTURE: The avatar-wrap is overflow:visible so the img can
+ * scale beyond the 36px container without being clipped.
+ * The circle shape is maintained by border-radius on the img itself.
+ * On hover the img scales to ~189px (5×5 cm at 96dpi) via transform:scale().
+ * z-index is elevated on hover so the enlarged image floats above the table.
+ * A ::after pseudo-element shows the student name below the zoomed image.
+ */
+
+/* ── Container cell — must NOT clip its children ── */
+.avatar-cell {
+  width: 44px;
+  padding: 4px 6px !important;
+  /* overflow must remain visible for the scale to break out */
+  overflow: visible;
+  position: relative;
+}
+
+/* ── Wrapper: 36×36 positioning anchor; overflow VISIBLE ── */
 .avatar-wrap {
+  position: relative;
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #e5e7eb;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10);
-  transition: box-shadow .2s ease, transform .2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
+  /* No overflow:hidden — clipping is handled by border-radius on the img */
+  z-index: 1;
+  transition: z-index 0s;
 }
 .avatar-wrap:hover {
-  transform: scale(1.18);
-  box-shadow: 0 4px 14px rgba(30,58,138,.22);
-  border-color: #93c5fd;
-  z-index: 2;
+  z-index: 300; /* float above every other cell and sticky toolbar */
 }
-/* Neutralize Tailwind's img reset — force square dimensions */
+
+/* ── The image itself: circle shape via border-radius on img ── */
 .avatar-wrap img.student-avatar,
 img.student-avatar {
+  /* Force exact square — defeats Tailwind's  height:auto reset */
   width: 36px !important;
   height: 36px !important;
-  min-width: 36px;
-  min-height: 36px;
-  max-width: 36px;
-  max-height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: none !important;  /* must allow scale to grow beyond 36px */
+  max-height: none !important;
+
+  border-radius: 50%;         /* circle */
+  object-fit: cover;          /* crop without distortion */
   display: block;
   flex-shrink: 0;
-  border: none;
-  box-shadow: none;
+
+  /* Smooth spring-feel scale transition */
+  transition:
+    transform    0.30s cubic-bezier(0.34, 1.36, 0.64, 1),
+    border-radius 0.25s ease,
+    box-shadow   0.25s ease;
+
+  /* Scale from center of the img */
+  transform-origin: 50% 50%;
+
+  /* Subtle resting shadow */
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+
+  cursor: zoom-in;
+  position: relative;
+  z-index: inherit;
+}
+
+/* ── Hover: scale to ≈189px (5 cm) ─────────────────────────
+   5cm at 96dpi ≈ 189px.  189 / 36 = 5.25 → scale(5.25)
+   border-radius transitions from 50% (circle) to 14px (rounded rect)
+   so the enlarged view shows more of the face without looking like
+   a tiny circle stretched to a large size.
+────────────────────────────────────────────────────────────── */
+.avatar-wrap:hover img.student-avatar {
+  transform: scale(5.25);
+  border-radius: 14px;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.38),
+    0 0 0 3px #ffffff,
+    0 0 0 5px rgba(30, 58, 138, 0.30);
+  cursor: zoom-out;
+  z-index: 300;
+}
+
+/* ── Name label: appears below zoomed image via ::after ──────
+   Positioned relative to the 36px avatar-wrap.
+   The scaled img extends (189-36)/2 ≈ 77px beyond each edge,
+   so label top = 100% (36px bottom) + 77px overhang + 6px gap = ~119px.
+────────────────────────────────────────────────────────────── */
+.avatar-wrap::after {
+  content: attr(data-name);
+  position: absolute;
+  top: 119px;          /* just below the bottom of the 189px zoomed image */
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: rgba(15, 23, 42, 0.92);
+  color: #fff;
+  font-size: 10.5px;
+  font-family: 'Sarabun', 'TH Sarabun New', sans-serif;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 4px 10px;
+  border-radius: 7px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+
+  /* Hidden until hover */
+  opacity: 0;
+  transition: opacity 0.18s ease 0.12s;
+  z-index: 301;
+}
+.avatar-wrap:hover::after {
+  opacity: 1;
 }
 /* ── Print / PDF ── */
 @media print {
@@ -747,13 +826,14 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
       <input type="checkbox" class="rounded group-check" data-stipno="${s.StipNo}"
         ${act!=='skip'?'checked':''} onchange="onRowCheck('${s.StipNo}',this.checked)">
     </td>
-    <td style="width:44px;padding:4px 6px">
-      <div class="avatar-wrap">
+    <td class="avatar-cell">
+      <div class="avatar-wrap"
+           data-name="${(thaiName || engName || s.StipNo).replace(/"/g,'&quot;')}">
         <img src="${photoSrc}"
           class="student-avatar"
           data-fallback="${photoFallback}"
           onerror="this.onerror=null;this.src=this.dataset.fallback"
-          alt="">
+          alt="${thaiName || ''}">
       </div>
     </td>
     <td>
