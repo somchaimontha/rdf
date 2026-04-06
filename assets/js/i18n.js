@@ -222,6 +222,20 @@ const T = {
     exportNextLevel: "ชั้น/สถานะถัดไป",
     exportUniSch: "ทุนต่อ ม.",
     exportNotes: "หมายเหตุ",
+    /* Formal Print Report */
+    promoPrintReport: "พิมพ์รายงานทางการ",
+    printModalTitle: "พิมพ์รายงานทางการ",
+    reportTypeLabel: "ประเภทรายงาน",
+    reportGrad: "รายงานผู้สำเร็จการศึกษา",
+    reportPromo: "รายงานสรุปการเลื่อนชั้น",
+    reportSchoolLabel: "ชื่อสถานศึกษา",
+    reportSubjectLabel: "เรื่อง (หัวข้อเอกสาร)",
+    reportSignedByLabel: "ผู้รับรองข้อมูล / ลงนาม",
+    reportPositionLabel: "ตำแหน่ง",
+    reportInstFilter: "กรองสถานศึกษา",
+    reportGradTitle: "รายงานผู้สำเร็จการศึกษา",
+    reportPromoTitle: "รายงานสรุปการเลื่อนชั้น",
+    reportGenerate: "สร้างและพิมพ์รายงาน",
   },
   en: {
     appName: "Scholarship Management System",
@@ -422,6 +436,20 @@ const T = {
     exportNextLevel: "Next Level / New Status",
     exportUniSch: "Uni Scholarship",
     exportNotes: "Notes",
+    /* Formal Print Report */
+    promoPrintReport: "Print Formal Report",
+    printModalTitle: "Print Formal Report",
+    reportTypeLabel: "Report Type",
+    reportGrad: "Graduation Report",
+    reportPromo: "Promotion Summary",
+    reportSchoolLabel: "School / Institution Name",
+    reportSubjectLabel: "Document Subject",
+    reportSignedByLabel: "Certified by / Signature",
+    reportPositionLabel: "Position / Title",
+    reportInstFilter: "Filter Institution",
+    reportGradTitle: "Graduation Report",
+    reportPromoTitle: "Grade Promotion Summary Report",
+    reportGenerate: "Generate & Print Report",
   }
 };
 

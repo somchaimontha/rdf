@@ -70,6 +70,13 @@
 }
 .print-only { display:none; }
 #printReportHeader { display:none; }
+/* ── Print Report Modal ── */
+.pr-section { margin-bottom:14px; }
+.pr-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; display:block; margin-bottom:5px; }
+.pr-radio-row { display:flex; gap:16px; flex-wrap:wrap; }
+.pr-radio-row label { display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; }
+.pr-field { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:7px 10px; font-size:13px; outline:none; font-family:inherit; }
+.pr-field:focus { border-color:#1d4ed8; box-shadow:0 0 0 3px rgba(29,78,216,.08); }
 </style>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
@@ -144,6 +151,10 @@
       <button onclick="openExportModal()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
         <i data-lucide="download" class="w-4 h-4"></i>
         <span data-t="promoExportReport">ออกรายงาน</span>
+      </button>
+      <button onclick="openPrintReportModal()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="promoPrintReport">พิมพ์รายงานทางการ</span>
       </button>
       <a href="settings.html" onclick="localStorage.setItem('settingsTab','promotion')" class="btn btn-secondary btn-sm">
         <i data-lucide="settings" class="w-4 h-4"></i>
@@ -289,6 +300,104 @@
       <button onclick="doExport()" class="btn btn-sm font-bold" style="background:#16a34a;color:#fff;border:none">
         <i data-lucide="download" class="w-4 h-4"></i>
         <span data-t="exportGenerate">สร้างรายงาน</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRINT REPORT MODAL ═══ -->
+<div id="printReportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,.5)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:620px">
+    <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#1e3a8a">
+      <h3 class="font-bold text-white flex items-center gap-2 text-base">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="printModalTitle">พิมพ์รายงานทางการ</span>
+      </h3>
+      <button onclick="closePrintReportModal()" class="text-white opacity-70 hover:opacity-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-0" style="max-height:78vh;overflow-y:auto">
+
+      <!-- Report Type -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="reportTypeLabel">ประเภทรายงาน</span>
+        <div class="pr-radio-row">
+          <label><input type="radio" name="prType" value="graduation" checked class="accent-blue-600">
+            <span data-t="reportGrad">รายงานผู้สำเร็จการศึกษา</span></label>
+          <label><input type="radio" name="prType" value="promotion" class="accent-blue-600">
+            <span data-t="reportPromo">รายงานสรุปการเลื่อนชั้น</span></label>
+        </div>
+      </div>
+
+      <!-- Institution + Language -->
+      <div class="grid grid-cols-2 gap-3 pr-section">
+        <div>
+          <span class="pr-label" data-t="reportInstFilter">กรองสถานศึกษา</span>
+          <select id="prModalInst" class="pr-field">
+            <option value="" data-t="promoAllInst">ทุกสถานศึกษา</option>
+            <option value="MBS">MBS</option>
+            <option value="VC">VC</option>
+            <option value="UNI">University</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div>
+          <span class="pr-label" data-t="exportLang">ภาษารายงาน</span>
+          <div class="pr-radio-row" style="margin-top:8px">
+            <label><input type="radio" name="prLang" value="th" checked class="accent-blue-600"> ไทย</label>
+            <label><input type="radio" name="prLang" value="en" class="accent-blue-600"> English</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Academic Year + Date -->
+      <div class="grid grid-cols-2 gap-3 pr-section">
+        <div>
+          <span class="pr-label" data-t="promoAcadYear">ปีการศึกษา</span>
+          <input type="text" id="prModalAcad" class="pr-field" placeholder="2024-2025">
+        </div>
+        <div>
+          <span class="pr-label" data-t="promoDateLabel">วันที่รายงาน</span>
+          <input type="date" id="prModalDate" class="pr-field">
+        </div>
+      </div>
+
+      <!-- School Name -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="reportSchoolLabel">ชื่อสถานศึกษา</span>
+        <input type="text" id="prModalSchool" class="pr-field" placeholder="The Dyckerhoff Foundation Maesaring Vocational...">
+      </div>
+
+      <!-- Subject -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="reportSubjectLabel">เรื่อง (หัวข้อเอกสาร)</span>
+        <input type="text" id="prModalSubject" class="pr-field" placeholder="จะสร้างให้อัตโนมัติหากว่างไว้ / Auto-generated if blank">
+      </div>
+
+      <!-- Signed by + Position -->
+      <div class="grid grid-cols-2 gap-3 pr-section">
+        <div>
+          <span class="pr-label" data-t="reportSignedByLabel">ผู้รับรองข้อมูล</span>
+          <input type="text" id="prModalSignBy" class="pr-field" placeholder="ชื่อผู้ลงนาม / Signer name">
+        </div>
+        <div>
+          <span class="pr-label" data-t="reportPositionLabel">ตำแหน่ง</span>
+          <input type="text" id="prModalPosition" class="pr-field" placeholder="ผู้อำนวยการ / Director...">
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
+        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+        <span>รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน พร้อมส่วนหัวซ้ำทุกหน้า และลายเซ็นหน้าสุดท้าย<br>
+        Report opens in a new window — A4 landscape, headers repeat per page, signature on last page.</span>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 px-5 py-4 border-t bg-gray-50">
+      <button onclick="closePrintReportModal()" class="btn btn-secondary btn-sm" data-t="exportCancel">ยกเลิก</button>
+      <button onclick="doPrintReport()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="reportGenerate">สร้างและพิมพ์รายงาน</span>
       </button>
     </div>
   </div>
@@ -1089,6 +1198,366 @@ function generatePDF(rows, lang, tL) {
     console.error('PDF export error:', e);
     Swal.fire(tL('error') || 'Error', 'PDF export failed: ' + e.message, 'error');
   }
+}
+
+// ─────────────────────────────────────────────
+// FORMAL PRINT REPORT
+// ─────────────────────────────────────────────
+function getTitleEN(thaiTitle) {
+  if (!thaiTitle) return '';
+  if (thaiTitle.includes('นางสาว') || thaiTitle.toLowerCase().includes('miss')) return 'Miss';
+  if (thaiTitle.includes('นาง')    || thaiTitle.toLowerCase().includes('mrs'))  return 'Mrs.';
+  if (thaiTitle.includes('นาย')    || thaiTitle.toLowerCase().includes('mr'))   return 'Mr.';
+  return '';
+}
+
+function noDataRow(colspan, isEN) {
+  return `<tr><td colspan="${colspan}" style="text-align:center;padding:20px;color:#9ca3af;font-style:italic">${isEN?'No data found':'ไม่พบข้อมูล'}</td></tr>`;
+}
+
+function openPrintReportModal() {
+  document.getElementById('prModalAcad').value     = document.getElementById('academicYear').value  || '';
+  document.getElementById('prModalDate').value     = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+  document.getElementById('prModalSchool').value   = '';
+  document.getElementById('prModalSubject').value  = '';
+  document.getElementById('prModalSignBy').value   = '';
+  document.getElementById('prModalPosition').value = '';
+  document.querySelectorAll('input[name="prLang"]').forEach(r => { r.checked = (r.value === LANG); });
+  document.getElementById('printReportModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closePrintReportModal() {
+  document.getElementById('printReportModal').classList.add('hidden');
+}
+
+function doPrintReport() {
+  const opts = {
+    lang:       document.querySelector('input[name="prLang"]:checked').value,
+    reportType: document.querySelector('input[name="prType"]:checked').value,
+    inst:       document.getElementById('prModalInst').value,
+    school:     document.getElementById('prModalSchool').value.trim(),
+    subject:    document.getElementById('prModalSubject').value.trim(),
+    signedBy:   document.getElementById('prModalSignBy').value.trim(),
+    position:   document.getElementById('prModalPosition').value.trim(),
+    acad:       document.getElementById('prModalAcad').value,
+    pDate:      document.getElementById('prModalDate').value,
+  };
+
+  const html = generateFormalReportHTML(opts);
+  const win  = window.open('', '_blank', 'width=1200,height=850');
+  if (!win) {
+    Swal.fire(t('error'), LANG==='th'?'เบราว์เซอร์บล็อก Popup กรุณาอนุญาต popup':'Browser blocked popup. Please allow popups for this site.', 'error');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { try { win.print(); } catch(e) {} }, 900);
+  closePrintReportModal();
+}
+
+function generateFormalReportHTML(opts) {
+  const tL   = key => (T[opts.lang]||{})[key] || T['th'][key] || key;
+  const isEN = opts.lang === 'en';
+  const gradActions = new Set(['graduate','uni','uni_own']);
+
+  // Sort groups by institution order
+  const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const sorted = [...ALL_GROUPS].sort((a,b) => {
+    const io = (instOrder[a.institution]??9) - (instOrder[b.institution]??9);
+    if (io!==0) return io;
+    return (LEVEL_OPTIONS[a.institution]||[]).indexOf(a.level) - (LEVEL_OPTIONS[b.institution]||[]).indexOf(b.level);
+  });
+
+  // Collect matching rows
+  const dataRows = [];
+  sorted.forEach(g => {
+    if (opts.inst && g.institution !== opts.inst) return;
+    g.students.forEach(s => {
+      const dec = ROW_DECISIONS[s.StipNo] || {};
+      const act = dec.action || 'promote';
+      if (opts.reportType === 'graduation' && !gradActions.has(act)) return;
+      if (opts.reportType === 'promotion'  && act === 'skip') return;
+      dataRows.push({ g, s, dec });
+    });
+  });
+
+  const org  = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
+  const instLbl = opts.inst
+    ? (instLabelMap[opts.inst] || opts.inst)
+    : (isEN ? 'All Institutions' : 'ทุกสถานศึกษา');
+  const schoolDisplay = opts.school || instLbl;
+  const rptTitle = tL(opts.reportType === 'graduation' ? 'reportGradTitle' : 'reportPromoTitle');
+  const subject  = opts.subject || `${schoolDisplay}${opts.acad?' '+opts.acad:''} (${rptTitle})`;
+
+  const tableHTML   = opts.reportType === 'graduation'
+    ? buildGradTableHTML(dataRows, isEN)
+    : buildPromoTableHTML(dataRows, isEN);
+  const summaryHTML   = buildReportSummaryHTML(dataRows, opts.reportType, isEN);
+  const signatureHTML = buildSignatureHTML(opts, isEN);
+
+  return `<!DOCTYPE html>
+<html lang="${opts.lang}">
+<head><meta charset="UTF-8"><title>${subject}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color:#000;background:#fff}
+@page{size:A4 landscape;margin:1.4cm 1.2cm}
+.rpt-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+.rpt-logo{height:52px;width:52px;object-fit:contain;flex-shrink:0}
+.rpt-org{font-size:10.5pt;font-weight:800;color:#1e3a8a}
+.rpt-title{font-size:11.5pt;font-weight:700;margin-top:3px}
+.rpt-subj{font-size:9pt;color:#374151;margin-top:3px}
+.rpt-meta{margin-left:auto;text-align:right;font-size:8pt;color:#4b5563;line-height:1.7;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:8.5pt;page-break-inside:auto}
+thead{display:table-header-group}
+tbody{display:table-row-group}
+tr{page-break-inside:avoid}
+th{background:#1e3a8a;color:#fff;padding:5px 6px;border:1px solid #1e3a8a;font-weight:700;text-align:center;font-size:8pt;line-height:1.3;vertical-align:middle}
+th.sub-h{background:#2d4faa;font-size:7.5pt}
+td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle;line-height:1.35}
+tr:nth-child(even) td{background:#f8faff}
+.tc{text-align:center}
+.seq{font-size:8pt;color:#9ca3af;text-align:center}
+.act-lbl{display:inline-block;padding:1px 7px;border-radius:10px;font-size:7.5pt;font-weight:700}
+.a-promote{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.a-graduate{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.a-uni{background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe}
+.a-hold{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.a-suspend{background:#fef9c3;color:#a16207;border:1px solid #fde68a}
+.a-resign{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+.sum-sec{margin-top:20px;page-break-inside:avoid}
+.sum-title{font-weight:800;font-size:9.5pt;color:#1e3a8a;margin-bottom:8px;border-left:3px solid #1e3a8a;padding-left:8px}
+.sum-wrap{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.sum-tbl{border-collapse:collapse;font-size:8.5pt;min-width:240px}
+.sum-tbl th{background:#374151;color:#fff;padding:4px 14px;border:1px solid #374151;font-size:8pt;text-align:left}
+.sum-tbl td{padding:4px 14px;border:1px solid #d1d5db}
+.sum-tbl tr:nth-child(even) td{background:#f9fafb}
+.sum-total td{font-weight:800;background:#e8f4fd!important;color:#1e3a8a}
+.sig-sec{margin-top:30px;page-break-inside:avoid}
+.sig-wrap{display:flex;justify-content:flex-end;gap:50px}
+.sig-blk{text-align:center;min-width:190px}
+.sig-lbl{font-size:8pt;color:#6b7280;margin-bottom:4px}
+.sig-line{border-top:1px solid #374151;margin:38px 16px 6px}
+.sig-name{font-size:9pt;font-weight:700}
+.sig-pos{font-size:8pt;color:#6b7280;margin-top:2px}
+.sig-date{font-size:8pt;color:#6b7280;margin-top:3px}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head>
+<body>
+<div class="rpt-hdr">
+  <img class="rpt-logo" src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF">
+  <div style="flex:1">
+    <div class="rpt-org">${org}</div>
+    <div class="rpt-title">${rptTitle}</div>
+    <div class="rpt-subj">${subject}</div>
+  </div>
+  <div class="rpt-meta">
+    <div>${isEN?'Date':'วันที่'}: <b>${opts.pDate||''}</b></div>
+    ${opts.acad?`<div>${isEN?'Academic Year':'ปีการศึกษา'}: <b>${opts.acad}</b></div>`:''}
+    ${opts.signedBy?`<div>${isEN?'Prepared by':'จัดทำโดย'}: ${opts.signedBy}</div>`:''}
+    <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${isEN?'Total':'รวมทั้งหมด'}: ${dataRows.length} ${isEN?'student(s)':'คน'}</div>
+  </div>
+</div>
+${tableHTML}
+${summaryHTML}
+${signatureHTML}
+</body></html>`;
+}
+
+const instLabelMap = { MBS:'Maesaring (MBS)', VC:'Vocational College (VC)', UNI:'University (UNI)', OTHER:'Other' };
+
+function buildGradTableHTML(dataRows, isEN) {
+  let seq = 1;
+  const rows = dataRows.map(({ g, s, dec }) => {
+    const thaiName  = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const engTitleFirst = (getTitleEN(s.Title) ? getTitleEN(s.Title)+' ' : '') + (s.EngFirstName||'');
+    const engLast   = s.EngLastName || '';
+    const cont      = dec.action==='uni' || dec.action==='uni_own';
+    const newLevel  = cont ? (isEN?'University':'มหาวิทยาลัย') : '—';
+    const duration  = dec.uniDuration ? dec.uniDuration+(isEN?' yr':' ปี') : '—';
+    return `<tr>
+      <td class="seq">${seq++}</td>
+      <td>${engTitleFirst}</td>
+      <td>${engLast}</td>
+      <td>${thaiName}</td>
+      <td>${s.Major||'—'}</td>
+      <td>${g.level}</td>
+      <td>${cont&&dec.uniName ? dec.uniName : '—'}</td>
+      <td>${cont&&(dec.uniMajor||dec.uniFaculty) ? (dec.uniMajor||dec.uniFaculty) : '—'}</td>
+      <td>${newLevel}</td>
+      <td class="tc">${duration}</td>
+      <td>${dec.notes||'—'}</td>
+      <td>${dec.uniProvince||'—'}</td>
+    </tr>`;
+  }).join('') || noDataRow(12, isEN);
+
+  return `<table>
+    <thead>
+      <tr>
+        <th rowspan="2" style="width:3%">${isEN?'No.':'ลำดับ'}</th>
+        <th colspan="3" style="width:27%">${isEN?'Name':'ชื่อ-นามสกุล'}</th>
+        <th rowspan="2" style="width:8%">${isEN?'Major':'สาขา'}</th>
+        <th rowspan="2" style="width:10%">${isEN?'Graduated with a degree in':'จบการศึกษาระดับ'}</th>
+        <th rowspan="2" style="width:12%">${isEN?'Study in a new place':'สถานศึกษาใหม่'}</th>
+        <th rowspan="2" style="width:9%">${isEN?'Major (new)':'สาขา (ใหม่)'}</th>
+        <th rowspan="2" style="width:9%">${isEN?'Level of further new study (new)':'ระดับการศึกษาต่อ'}</th>
+        <th rowspan="2" style="width:6%">${isEN?'Duration (yr)':'ระยะเวลา'}</th>
+        <th rowspan="2" style="width:11%">${isEN?'Employment Status / Remarks':'สถานะ / หมายเหตุ'}</th>
+        <th rowspan="2" style="width:5%">${isEN?'Province':'จังหวัด'}</th>
+      </tr>
+      <tr>
+        <th class="sub-h" style="width:9%">${isEN?'Title & First Name':'คำนำหน้า+ชื่อ (EN)'}</th>
+        <th class="sub-h" style="width:8%">${isEN?'Last Name':'นามสกุล (EN)'}</th>
+        <th class="sub-h" style="width:10%">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function buildPromoTableHTML(dataRows, isEN) {
+  let seq = 1;
+  const aMap = {
+    promote: { lbl:isEN?'Promote':'เลื่อนชั้น',       cls:'a-promote' },
+    graduate:{ lbl:isEN?'Graduate':'จบการศึกษา',       cls:'a-graduate' },
+    uni:     { lbl:isEN?'Uni (RDF)':'ต่อ ม. (RDF)',    cls:'a-uni' },
+    uni_own: { lbl:isEN?'Uni (Own)':'ต่อ ม. (ตนเอง)', cls:'a-uni' },
+    hold:    { lbl:isEN?'Hold':'ซ้ำชั้น',               cls:'a-hold' },
+    suspend: { lbl:isEN?'Suspend':'พักการเรียน',        cls:'a-suspend' },
+    resign:  { lbl:isEN?'Resign':'ลาออก',               cls:'a-resign' },
+  };
+  const rows = dataRows.map(({ g, s, dec }) => {
+    const thaiName = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const engName  = ((s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
+    const act = dec.action || 'promote';
+    const { lbl, cls } = aMap[act] || { lbl:act, cls:'' };
+    const nextLvl = act==='promote' ? (dec.nextLevel||'—')
+      : act==='graduate' ? (isEN?'Graduated':'สำเร็จการศึกษา')
+      : act==='uni'      ? (isEN?'UNI Year 1 (RDF Sch.)':'มหาวิทยาลัย ปี 1 (RDF)')
+      : act==='uni_own'  ? (isEN?'University (Own funding)':'มหาวิทยาลัย (ทุนตนเอง)')
+      : act==='hold'     ? (isEN?'Same level':'ระดับเดิม')
+      : act==='suspend'  ? (isEN?'Suspended':'พักการเรียน')
+      : act==='resign'   ? (isEN?'Resigned':'ลาออก') : '—';
+    const schMap = { Yes:isEN?'Yes':'ใช่', No:isEN?'No':'ไม่ใช่', Pending:isEN?'Pending':'รอพิจารณา' };
+    const schLbl = ['uni','uni_own'].includes(act) ? (schMap[dec.uniScholarship]||'—') : '—';
+    return `<tr>
+      <td class="seq">${seq++}</td>
+      <td>${thaiName}</td>
+      <td>${engName||'—'}</td>
+      <td class="tc" style="font-size:7.5pt;font-family:monospace">${s.StipNo}</td>
+      <td class="tc">${g.institution}</td>
+      <td>${g.level}</td>
+      <td class="tc"><span class="act-lbl ${cls}">${lbl}</span></td>
+      <td>${nextLvl}</td>
+      <td class="tc">${schLbl}</td>
+      <td>${dec.notes||'—'}</td>
+    </tr>`;
+  }).join('') || noDataRow(10, isEN);
+
+  return `<table>
+    <thead>
+      <tr>
+        <th style="width:3%">${isEN?'No.':'ลำดับ'}</th>
+        <th style="width:14%">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
+        <th style="width:12%">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
+        <th style="width:8%">${isEN?'StipNo':'รหัสทุน'}</th>
+        <th style="width:5%">${isEN?'Inst.':'สถานศึกษา'}</th>
+        <th style="width:14%">${isEN?'Current Level':'ระดับชั้นปัจจุบัน'}</th>
+        <th style="width:9%">${isEN?'Action':'การดำเนินการ'}</th>
+        <th style="width:17%">${isEN?'Next Level / New Status':'ชั้น / สถานะถัดไป'}</th>
+        <th style="width:7%">${isEN?'Uni Sch.':'ทุนต่อ ม.'}</th>
+        <th style="width:11%">${isEN?'Notes':'หมายเหตุ'}</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function buildReportSummaryHTML(dataRows, reportType, isEN) {
+  if (dataRows.length === 0) return '';
+
+  if (reportType === 'graduation') {
+    const byInst = {};
+    dataRows.forEach(({ g, dec }) => {
+      const inst = g.institution;
+      if (!byInst[inst]) byInst[inst] = { total:0, cont:0 };
+      byInst[inst].total++;
+      if (dec.action==='uni'||dec.action==='uni_own') byInst[inst].cont++;
+    });
+    const instNames = {
+      MBS: isEN?'Secondary School Level (MBS)':'ระดับมัธยมศึกษา (MBS)',
+      VC:  isEN?'Vocational Certificate Level (VC)':'ระดับอาชีวศึกษา (VC)',
+      UNI: isEN?'University Level (UNI)':'ระดับมหาวิทยาลัย (UNI)',
+      OTHER:isEN?'Other Level':'ระดับอื่นๆ',
+    };
+    const vcHint = {
+      MBS: isEN?['Total','Continue to higher study','Not continue']:['จบการศึกษา ทั้งหมด','เรียนต่อระดับสูง','ไม่เรียนต่อ'],
+      VC:  isEN?['Total','Continue their studies','Not continue their studies']:['จบการศึกษา ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
+      UNI: isEN?['Total','—','—']:['จบการศึกษา ทั้งหมด','—','—'],
+      OTHER:isEN?['Total','Continue','Not continue']:['จบการศึกษา ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
+    };
+    const tables = Object.entries(byInst).map(([inst, c]) => {
+      const labels = (vcHint[inst]||(isEN?['Total','Continue','Not continue']:['ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ']));
+      return `<table class="sum-tbl">
+        <thead><tr><th colspan="2">${instNames[inst]||inst}</th></tr></thead>
+        <tbody>
+          <tr><td>${labels[0]}</td><td class="tc"><b>${c.total}</b></td></tr>
+          <tr><td>${labels[1]}</td><td class="tc">${c.cont||'—'}</td></tr>
+          <tr><td>${labels[2]}</td><td class="tc">${c.total-c.cont > 0 ? c.total-c.cont : '—'}</td></tr>
+        </tbody>
+      </table>`;
+    }).join('');
+    return `<div class="sum-sec"><div class="sum-title">${isEN?'Summary':'สรุป'}</div><div class="sum-wrap">${tables}</div></div>`;
+
+  } else {
+    const counts = {};
+    const aNames = {
+      promote: isEN?'Grade Promotion':'เลื่อนชั้น',
+      graduate:isEN?'Graduated':'จบการศึกษา',
+      uni:     isEN?'Continue to University (RDF Scholarship)':'ต่อมหาวิทยาลัย (ทุน RDF)',
+      uni_own: isEN?'Continue to University (Own Funding)':'ต่อมหาวิทยาลัย (ทุนตนเอง)',
+      hold:    isEN?'Repeat Year':'ซ้ำชั้น',
+      suspend: isEN?'Suspended':'พักการเรียน',
+      resign:  isEN?'Resigned':'ลาออก',
+    };
+    dataRows.forEach(({ dec }) => {
+      const a = dec.action||'promote';
+      counts[a] = (counts[a]||0)+1;
+    });
+    const rows = Object.entries(counts).map(([a,n]) =>
+      `<tr><td>${aNames[a]||a}</td><td class="tc">${n}</td></tr>`
+    ).join('');
+    return `<div class="sum-sec"><div class="sum-title">${isEN?'Summary':'สรุป'}</div>
+    <div class="sum-wrap"><table class="sum-tbl">
+      <thead><tr><th>${isEN?'Action':'การดำเนินการ'}</th><th style="min-width:60px;text-align:center">${isEN?'Count (students)':'จำนวน (คน)'}</th></tr></thead>
+      <tbody>
+        ${rows}
+        <tr class="sum-total"><td>${isEN?'Total':'รวมทั้งหมด'}</td><td class="tc">${dataRows.length}</td></tr>
+      </tbody>
+    </table></div></div>`;
+  }
+}
+
+function buildSignatureHTML(opts, isEN) {
+  const signedBy = opts.signedBy || '';
+  const position = opts.position || '';
+  const dateStr  = opts.pDate    || new Date().toISOString().split('T')[0];
+  const blank    = '&nbsp;'.repeat(30);
+  return `<div class="sig-sec">
+    <div class="sig-wrap">
+      <div class="sig-blk">
+        <div class="sig-lbl">${isEN?'Certified / Signed by':'ลงนามรับรองข้อมูล'}</div>
+        <div class="sig-line"></div>
+        <div class="sig-name">(${signedBy || blank})</div>
+        <div class="sig-pos">${position || (isEN?'Position':'ตำแหน่ง')}</div>
+        <div class="sig-date">${isEN?'Date':'วันที่'}&nbsp;&nbsp;${dateStr}</div>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ─────────────────────────────────────────────
