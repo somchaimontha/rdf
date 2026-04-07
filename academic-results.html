@@ -491,9 +491,15 @@ async function loadAll() {
     _TERMS    = Array.isArray(_SETTINGS.ACADEMIC_TERMS)  ? _SETTINGS.ACADEMIC_TERMS  : [];
 
     // getStudentsForPromotion returns { groups: [{institution, level, students:[...]}] }
-    // Flatten all groups into a single array — fields are PascalCase (StipNo, Status, etc.)
+    // Institution and CurrentLevel are GROUP properties — must merge into each student
     const groups = studRes.status === 'success' ? (studRes.groups || []) : [];
-    _STUDENTS = groups.flatMap(g => g.students || []);
+    _STUDENTS = groups.flatMap(g =>
+      (g.students || []).map(s => ({
+        ...s,
+        Institution:  s.Institution  || g.institution || '',
+        CurrentLevel: s.CurrentLevel || g.level        || '',
+      }))
+    );
 
     populateTermDropdown();
 
@@ -607,9 +613,9 @@ function buildEntryGroups(year, sem, inst) {
   prompt.classList.add('hidden');
   hint.classList.remove('hidden');
 
-  // Filter students: Active or University only
+  // getStudentsForPromotion already returns only eligible students; just filter by institution
   const students = _STUDENTS
-    .filter(s => ['Active','University'].includes(s.Status) && (!inst || s.Institution === inst))
+    .filter(s => !inst || s.Institution === inst)
     .sort((a, b) => {
       const io = (INST_ORDER[a.Institution]??9) - (INST_ORDER[b.Institution]??9);
       if (io !== 0) return io;

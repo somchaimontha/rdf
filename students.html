@@ -185,6 +185,7 @@
           <th data-t="phone">โทรศัพท์</th>
           <th>สถานะ</th>
           <th class="hide-mobile text-center">ปีเกิด ค.ศ.</th>
+          <th class="text-center hide-mobile" style="color:#7c3aed">ผลการเรียน</th>
           <th class="text-center" data-t="actions">จัดการ</th>
         </tr>
       </thead>
@@ -212,6 +213,23 @@
     <span id="dbStatusText">กำลังตรวจสอบ...</span>
   </div>
 </footer>
+
+<!-- ─── Grade History Modal ─── -->
+<div id="gradeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3"
+     style="background:rgba(0,0,0,.5)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full flex flex-col" style="max-width:640px;max-height:90vh">
+    <div class="flex items-center justify-between px-5 py-3.5 rounded-t-2xl flex-shrink-0" style="background:#7c3aed">
+      <h3 class="font-bold text-white flex items-center gap-2 text-sm">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span id="gradeModalStudentName">ผลการเรียน</span>
+      </h3>
+      <button onclick="closeGradeModal()" class="text-white opacity-70 hover:opacity-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div id="gradeModalBody" class="flex-1 overflow-y-auto"></div>
+  </div>
+</div>
 
 <!-- ─── Student Report Modal v2 (Dynamic Field Selection) ─── -->
 <div id="studentReportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4"
@@ -596,6 +614,7 @@ let filteredStudents = [];
 let currentPage = 1;
 let advSearchOpen = false;
 let _rptSettings = {}; // cached system settings for signature block
+let _allGrades   = []; // STUDENT_GRADES from system settings (shared across modules)
 
 // ── Language toggle (bilingual support) ──────────────────────
 function toggleLang() {
@@ -626,16 +645,22 @@ const incompleteFilter = urlParams.get('incomplete') === '1';
 async function loadStudents() {
   showLoader(true, t('loading'));
   try {
-    const result = await API.getStudents();
+    const [studResult, settResult] = await Promise.all([
+      API.getStudents(),
+      API.getSystemSettings().catch(() => ({ data: {} })),
+    ]);
     showLoader(false);
-    if (result.status === 'success') {
-      allStudents = result.data || [];
+    if (studResult.status === 'success') {
+      allStudents  = studResult.data || [];
+      const sett   = settResult.data || {};
+      _allGrades   = Array.isArray(sett.STUDENT_GRADES) ? sett.STUDENT_GRADES : [];
+      _rptSettings = sett;
       populateFilterOptions();
       if (initInst)   document.getElementById('filterInst').value   = initInst;
       if (initStatus) document.getElementById('filterStatus').value = initStatus;
       applyFilters();
     } else {
-      Swal.fire(t('error'), result.message, 'error');
+      Swal.fire(t('error'), studResult.message, 'error');
     }
   } catch(e) {
     showLoader(false);
@@ -772,8 +797,21 @@ function renderTable() {
       <td class="hide-mobile text-center">
         ${s.birthYear ? `<span class="font-mono text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">${s.birthYear}</span>` : '<span class="text-gray-300 text-xs">—</span>'}
       </td>
+      <td class="hide-mobile text-center">
+        ${(() => {
+          const sg = _allGrades.filter(g => g.stipNo === s.stipNo);
+          if (!sg.length) return `<span class="text-gray-300 text-xs">—</span>`;
+          const gpas = sg.map(g => parseFloat(g.gpa)).filter(v => !isNaN(v));
+          const avg  = gpas.length ? (gpas.reduce((a,b)=>a+b,0)/gpas.length).toFixed(2) : '?';
+          const col  = parseFloat(avg) >= 3.5 ? '#15803d' : parseFloat(avg) >= 3.0 ? '#1d4ed8' : parseFloat(avg) >= 2.5 ? '#a16207' : parseFloat(avg) >= 2.0 ? '#c2410c' : '#be123c';
+          return `<button onclick="openGradeModal('${s.stipNo}')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px">
+            <span style="font-weight:800;font-size:13px;color:${col}">${avg}</span>
+            <span style="font-size:9px;color:#9ca3af">${sg.length} ภาคเรียน</span>
+          </button>`;
+        })()}
+      </td>
       <td>
-        <div class="flex items-center justify-center gap-1">
+        <div class="flex items-center justify-center gap-1 flex-wrap">
           <a href="student-profile.html?stipNo=${encodeURIComponent(s.stipNo)}" title="${t('view')}"
              class="btn btn-icon" style="background:#eff6ff;color:#1d4ed8">
             <i data-lucide="eye" class="w-3.5 h-3.5"></i>
@@ -782,6 +820,10 @@ function renderTable() {
              class="btn btn-icon btn-warning">
             <i data-lucide="edit" class="w-3.5 h-3.5"></i>
           </a>
+          <button onclick="openGradeModal('${s.stipNo}')" title="ผลการเรียน"
+                  class="btn btn-icon" style="background:#faf5ff;color:#7c3aed">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+          </button>
           <a href="student-profile.html?stipNo=${encodeURIComponent(s.stipNo)}&print=1" title="${t('print')}"
              class="btn btn-icon btn-secondary">
             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
@@ -856,6 +898,122 @@ function updateActiveFilters(f) {
   }
 }
 
+// ── Grade Modal ──────────────────────────────────────────
+function semLabelTH(v) {
+  if (v === '1') return 'ภาคเรียนที่ 1';
+  if (v === '2') return 'ภาคเรียนที่ 2';
+  if (v === 'summer') return 'ภาคฤดูร้อน';
+  return v;
+}
+function gpaClass(gpa) {
+  const v = parseFloat(gpa);
+  if (isNaN(v)) return '';
+  if (v >= 3.50) return 'badge-green';
+  if (v >= 3.00) return 'badge-blue';
+  if (v >= 2.50) return 'badge-gold';
+  if (v >= 2.00) return 'badge-orange';
+  return 'badge-red';
+}
+
+function openGradeModal(stipNo) {
+  const stu = allStudents.find(s => s.stipNo === stipNo);
+  if (!stu) return;
+
+  const isEN = LANG === 'en';
+  const name = isEN
+    ? ([stu.engTitle, stu.engFname, stu.engLname].filter(Boolean).join(' ') || `${stu.name||stipNo}`)
+    : (stu.name || stipNo);
+
+  // Filter grades for this student
+  const grades = _allGrades
+    .filter(g => g.stipNo === stipNo)
+    .sort((a, b) => {
+      if (b.acadYear !== a.acadYear) return b.acadYear - a.acadYear;
+      return String(a.semester).localeCompare(String(b.semester));
+    });
+
+  // Build grade rows
+  let rowsHTML = '';
+  if (!grades.length) {
+    rowsHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af;font-size:12px">
+      ยังไม่มีผลการเรียนที่บันทึกไว้<br>
+      <a href="academic-results.html" style="color:#7c3aed;font-size:11px;font-weight:600">ไปที่หน้าบันทึกผลการเรียน →</a>
+    </td></tr>`;
+  } else {
+    rowsHTML = grades.map((g, i) => {
+      const gpaV = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
+      const gpaBadge = g.gpa != null
+        ? `<span class="badge ${gpaClass(g.gpa)}" style="font-weight:800;font-size:12px">${gpaV}</span>` : '—';
+      const upd = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '—';
+      return `<tr style="border-bottom:1px solid #f1f5f9">
+        <td style="text-align:center;font-size:11px;color:#9ca3af;padding:8px 10px">${i+1}</td>
+        <td style="font-weight:700;font-size:12px;padding:8px 10px">${g.acadYear || '—'}</td>
+        <td style="font-size:12px;padding:8px 10px">${semLabelTH(g.semester)}</td>
+        <td style="text-align:center;padding:8px 10px">${gpaBadge}</td>
+        <td style="font-size:11px;color:#6b7280;padding:8px 10px">
+          ${g.notes ? `<span>${g.notes}</span><br>` : ''}
+          <span style="font-size:10px;color:#9ca3af">บันทึกโดย ${g.updatedBy||'—'} · ${upd}</span>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Stats
+  const gpas = grades.map(g => parseFloat(g.gpa)).filter(v => !isNaN(v));
+  const avg  = gpas.length ? (gpas.reduce((a,b)=>a+b,0)/gpas.length).toFixed(2) : '—';
+  const high = gpas.length ? Math.max(...gpas).toFixed(2) : '—';
+
+  document.getElementById('gradeModalBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 18px 12px;border-bottom:1px solid #f1f5f9">
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:15px;color:#1e3a8a">${name}</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px">${stipNo} · ${stu.institution||'—'} · ${stu.level||'—'}</div>
+      </div>
+      ${grades.length ? `
+      <div style="text-align:center;background:#faf5ff;border:1px solid #ddd6fe;border-radius:10px;padding:6px 14px">
+        <div style="font-size:18px;font-weight:900;color:#7c3aed">${avg}</div>
+        <div style="font-size:10px;color:#6b7280">GPA เฉลี่ย</div>
+      </div>
+      <div style="text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:6px 14px">
+        <div style="font-size:18px;font-weight:900;color:#16a34a">${high}</div>
+        <div style="font-size:10px;color:#6b7280">GPA สูงสุด</div>
+      </div>
+      <div style="text-align:center;background:#f8faff;border:1px solid #e5e7eb;border-radius:10px;padding:6px 14px">
+        <div style="font-size:18px;font-weight:900;color:#374151">${grades.length}</div>
+        <div style="font-size:10px;color:#6b7280">ภาคเรียน</div>
+      </div>` : ''}
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
+            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;width:32px">#</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">ปีการศึกษา</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">ภาคเรียน</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">GPA</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">หมายเหตุ / บันทึกโดย</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>
+    <div style="padding:10px 18px;background:#f8faff;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6b7280">
+      <span>ข้อมูลจาก STUDENT_GRADES — ใช้ร่วมกันทุกโมดูล</span>
+      <a href="academic-results.html" style="color:#7c3aed;font-weight:700;display:flex;align-items:center;gap:4px;text-decoration:none">
+        <i data-lucide="external-link" style="width:12px;height:12px"></i>
+        จัดการผลการเรียน
+      </a>
+    </div>`;
+
+  document.getElementById('gradeModalStudentName').textContent = `ผลการเรียน — ${name}`;
+  document.getElementById('gradeModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeGradeModal() {
+  document.getElementById('gradeModal').classList.add('hidden');
+}
+
 async function confirmDelete(stipNo) {
   const result = await Swal.fire({
     title: t('deleteConfirm'),
@@ -883,6 +1041,7 @@ async function confirmDelete(stipNo) {
 }
 
 document.getElementById('footerYear').textContent = new Date().getFullYear();
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGradeModal(); });
 
 // Show dup-check button for Admin roles only
 if ((user||{}).role === 'SuperAdmin' || (user||{}).role === 'Admin') {
