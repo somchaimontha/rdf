@@ -1024,24 +1024,44 @@
       </div>
     </div>
 
-    <!-- Permission Matrix -->
+    <!-- Permission Matrix (Editable) -->
     <div class="card fade-in-up delay-1">
-      <div class="card-header"><span class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="table" class="w-4 h-4" style="color:#1e3a8a"></i>ตาราง Permission Matrix</span></div>
-      <div class="card-body overflow-x-auto">
-        <table class="w-full text-xs min-w-max">
+      <div class="card-header flex items-center justify-between">
+        <span class="font-bold text-gray-700 flex items-center gap-2">
+          <i data-lucide="table" class="w-4 h-4" style="color:#1e3a8a"></i>
+          ตาราง Permission Matrix
+          <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-weight:600">คลิกเซลล์เพื่อแก้ไข</span>
+        </span>
+        <div class="flex gap-2">
+          <button onclick="resetPermMatrix()"
+                  class="btn btn-secondary btn-sm text-xs">
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> คืนค่าเริ่มต้น
+          </button>
+          <button onclick="savePermMatrix()"
+                  class="btn btn-sm text-xs" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก Permission
+          </button>
+        </div>
+      </div>
+      <div class="card-body overflow-x-auto" style="padding-top:0">
+        <p class="text-xs text-gray-400 py-2">
+          <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+          SuperAdmin (สิทธิ์สูงสุดทุกอย่าง) และ Student (เฉพาะโปรไฟล์ตนเอง) ถูกล็อคไว้เสมอ — ไม่สามารถแก้ไขได้<br>
+          Roles ที่แก้ไขได้: <b>Manager, Finance, Committee, DormTeacher</b>
+        </p>
+        <table class="w-full text-xs min-w-max" id="permMatrixTable">
           <thead>
-            <tr class="border-b">
-              <th class="py-2 px-3 text-left text-gray-500">ฟังก์ชัน</th>
-              <th class="py-2 px-3 text-center" style="color:#dc2626">SuperAdmin</th>
-              <th class="py-2 px-3 text-center" style="color:#1d4ed8">Manager</th>
-              <th class="py-2 px-3 text-center" style="color:#16a34a">Finance</th>
-              <th class="py-2 px-3 text-center" style="color:#7c3aed">Committee</th>
-              <th class="py-2 px-3 text-center" style="color:#ea580c">DormTeacher</th>
-              <th class="py-2 px-3 text-center" style="color:#0ea5e9">Student</th>
+            <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
+              <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;min-width:200px">ฟังก์ชัน / Permission</th>
+              <th style="padding:10px 12px;text-align:center;color:#dc2626;font-weight:800;min-width:90px">SuperAdmin<br><span style="font-size:9px;font-weight:400;color:#9ca3af">ล็อค</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#1d4ed8;font-weight:800;min-width:90px">Manager<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#16a34a;font-weight:800;min-width:90px">Finance<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#7c3aed;font-weight:800;min-width:90px">Committee<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#ea580c;font-weight:800;min-width:100px">DormTeacher<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#0ea5e9;font-weight:800;min-width:90px">Student<br><span style="font-size:9px;font-weight:400;color:#9ca3af">ล็อค</span></th>
             </tr>
           </thead>
-          <tbody id="permMatrix">
-          </tbody>
+          <tbody id="permMatrix"></tbody>
         </table>
       </div>
     </div>
@@ -1260,7 +1280,7 @@ function switchTab(tab) {
   if (tab === 'apikeys')                    loadApiKeyStatus();
   if (tab === 'sessions')                   loadActiveSessions();
   // Note: 'promotion' tab now shows a redirect card — no lazy load needed.
-  if (tab === 'roles') { buildPermMatrix(); loadStudentEditableFields(); }
+  if (tab === 'roles') { loadRbacPermissions(); loadStudentEditableFields(); }
   if (tab === 'general')                  loadGeneralSettings();
 }
 
@@ -2164,24 +2184,6 @@ async function forceLogout(username) {
 }
 
 // ─────────────────────────────────────────────
-// PERMISSION MATRIX
-// ─────────────────────────────────────────────
-const PERMISSIONS = [
-  ['ดูรายชื่อนักเรียน',           true,  true,  true,  true,  true,  false],
-  ['ดูโปรไฟล์นักเรียน',           true,  true,  true,  true,  true,  'self'],
-  ['เพิ่ม / แก้ไขนักเรียน',       true,  true,  false, false, 'basic',false],
-  ['ลบนักเรียน',                  true,  true,  false, false, false, false],
-  ['นำเข้า CSV',                  true,  true,  false, false, false, false],
-  ['พิมพ์โปรไฟล์',               true,  true,  true,  true,  true,  'self'],
-  ['ดูข้อมูลการเงิน',             true,  true,  true,  false, false, false],
-  ['จัดการสาขาวิชา/ตั้งค่า',     true,  false, false, false, false, false],
-  ['จัดการผู้ดูแลระบบ',           true,  false, false, false, false, false],
-  ['ดู/ล้างเซสชัน',              true,  false, false, false, false, false],
-  ['จัดการ API Keys',             true,  false, false, false, false, false],
-  ['ดูประวัติการใช้งาน (Log)',    true,  true,  false, false, false, false],
-];
-
-// ─────────────────────────────────────────────
 // STUDENT EDITABLE FIELDS CONFIGURATION
 // Saved as STUDENT_EDITABLE_FIELDS[] in system settings.
 // read by rbac.js → RBAC.getStudentEditableFields()
@@ -2267,24 +2269,180 @@ async function saveStudentEditableFields() {
   } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้','error'); }
 }
 
+// ─────────────────────────────────────────────
+// EDITABLE PERMISSION MATRIX
+// ─────────────────────────────────────────────
+
+// Permission definitions: each row in the matrix
+// key must match RBAC permission keys in rbac.js
+const PERM_DEFS = [
+  // group, key, labelTH, labelEN
+  { group:'นักเรียน',    key:'viewStudents',   th:'ดูรายชื่อนักเรียนทั้งหมด',       en:'View all students' },
+  { group:'นักเรียน',    key:'editStudents',   th:'เพิ่ม / แก้ไขนักเรียน',          en:'Add / Edit students' },
+  { group:'นักเรียน',    key:'deleteStudents', th:'ลบนักเรียน',                      en:'Delete students' },
+  { group:'นักเรียน',    key:'importStudents', th:'นำเข้าข้อมูล CSV',               en:'Import CSV' },
+  { group:'รายงาน',      key:'printProfile',   th:'พิมพ์โปรไฟล์นักเรียน',           en:'Print student profile' },
+  { group:'รายงาน',      key:'viewReports',    th:'ดูและสร้างรายงาน',               en:'View & generate reports' },
+  { group:'รายงาน',      key:'exportData',     th:'ส่งออก Excel / PDF',             en:'Export Excel / PDF' },
+  { group:'เลื่อนชั้น', key:'viewPromotion',  th:'เข้าถึงหน้าเลื่อนชั้น',          en:'Access promotion page' },
+  { group:'เลื่อนชั้น', key:'runPromotion',   th:'ดำเนินการเลื่อนชั้น (batch)',    en:'Run batch promotion' },
+  { group:'ตั้งค่า',     key:'viewSettings',   th:'เข้าถึงหน้าตั้งค่าระบบ',         en:'Access settings page' },
+  { group:'ตั้งค่า',     key:'editSettings',   th:'แก้ไขการตั้งค่าระบบ (SuperAdmin)', en:'Edit system settings' },
+  { group:'นักเรียน(ตนเอง)', key:'viewOwnProfile', th:'ดูโปรไฟล์ตนเอง (Student only)',  en:'View own profile' },
+  { group:'นักเรียน(ตนเอง)', key:'editOwnProfile', th:'แก้ไขข้อมูลตนเอง (Student only)', en:'Edit own profile' },
+];
+
+// Editable roles (SuperAdmin and Student are always locked)
+const PERM_EDITABLE_ROLES = ['Manager','Finance','Committee','DormTeacher'];
+
+// Current in-memory state for the matrix editor
+// Structure: { Manager: Set(['viewStudents',...]), Finance: Set([...]), ... }
+let _permState = {};
+
+async function loadRbacPermissions() {
+  // Start from effective map (dynamic or default)
+  const effectiveMap = RBAC.getEffectiveMap();
+  PERM_EDITABLE_ROLES.forEach(role => {
+    _permState[role] = new Set(Array.isArray(effectiveMap[role]) ? effectiveMap[role] : []);
+  });
+  buildPermMatrix();
+}
+
 function buildPermMatrix() {
   const tbody = document.getElementById('permMatrix');
-  if (!tbody || tbody.innerHTML.trim()) return; // only build once
-  tbody.innerHTML = PERMISSIONS.map(([fn, sa, mg, fi, co, dt, st]) => {
-    const icon = v => v === true ? `<i data-lucide="check-circle-2" class="w-4 h-4 inline" style="color:#16a34a"></i>`
-                    : v === false ? `<i data-lucide="x-circle" class="w-4 h-4 inline" style="color:#ef4444"></i>`
-                    : `<span class="text-xs font-bold" style="color:#f59e0b">${v}</span>`;
-    return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition">
-      <td class="py-2 px-3 font-medium text-gray-700">${fn}</td>
-      <td class="py-2 px-3 text-center">${icon(sa)}</td>
-      <td class="py-2 px-3 text-center">${icon(mg)}</td>
-      <td class="py-2 px-3 text-center">${icon(fi)}</td>
-      <td class="py-2 px-3 text-center">${icon(co)}</td>
-      <td class="py-2 px-3 text-center">${icon(dt)}</td>
-      <td class="py-2 px-3 text-center">${icon(st)}</td>
+  if (!tbody) return;
+
+  // Group rows by category
+  const groups = [...new Set(PERM_DEFS.map(p => p.group))];
+
+  const GROUP_COLORS = {
+    'นักเรียน':        '#eff6ff',
+    'รายงาน':          '#f0fdf4',
+    'เลื่อนชั้น':     '#faf5ff',
+    'ตั้งค่า':         '#fff7ed',
+    'นักเรียน(ตนเอง)': '#f0f9ff',
+  };
+
+  // Locked cells — icons only, no interaction
+  const lockedOn  = `<span title="สิทธิ์สูงสุด — ล็อค" style="cursor:default;font-size:16px">✅</span>`;
+  const lockedOff = `<span title="ไม่มีสิทธิ์ — ล็อค" style="cursor:default;font-size:15px;opacity:.35">⛔</span>`;
+
+  // Student fixed permissions
+  const STUDENT_PERMS = new Set(['viewOwnProfile','editOwnProfile']);
+
+  let html = '';
+  groups.forEach(g => {
+    const rows = PERM_DEFS.filter(p => p.group === g);
+    const bgColor = GROUP_COLORS[g] || '#f8fafc';
+
+    // Group header
+    html += `<tr style="background:${bgColor}">
+      <td colspan="7" style="padding:5px 12px;font-size:10px;font-weight:800;
+          text-transform:uppercase;letter-spacing:.7px;color:#64748b;border-top:1px solid #e5e7eb">
+        ${g}
+      </td>
     </tr>`;
-  }).join('');
-  lucide.createIcons();
+
+    rows.forEach(p => {
+      // SuperAdmin always on, Student fixed
+      const saCell  = lockedOn;
+      const stuCell = STUDENT_PERMS.has(p.key) ? lockedOn : lockedOff;
+
+      // Editable role cells
+      const editCells = PERM_EDITABLE_ROLES.map(role => {
+        const on = (_permState[role] || new Set()).has(p.key);
+        const cls   = on ? 'pmc-on'  : 'pmc-off';
+        const emoji = on ? '✅' : '❌';
+        const tip   = on
+          ? `${role}: มีสิทธิ์ — คลิกเพื่อยกเลิก`
+          : `${role}: ไม่มีสิทธิ์ — คลิกเพื่อเปิด`;
+        return `<td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9">
+          <button class="pmc-toggle ${cls}" data-role="${role}" data-perm="${p.key}"
+                  onclick="togglePermCell('${role}','${p.key}',this)"
+                  title="${tip}"
+                  style="background:none;border:none;cursor:pointer;font-size:16px;
+                         padding:3px 8px;border-radius:8px;transition:background .15s;
+                         ${on ? 'background:#f0fdf4' : 'background:#fff5f5'}">
+            ${emoji}
+          </button>
+        </td>`;
+      }).join('');
+
+      html += `<tr style="border-bottom:1px solid #f1f5f9" onmouseover="this.style.background='#fafbff'" onmouseout="this.style.background=''">
+        <td style="padding:8px 12px;font-size:12px;color:#374151;font-weight:500">
+          ${p.th}
+          <span style="color:#94a3b8;font-size:10px;margin-left:6px">${p.en}</span>
+        </td>
+        <td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9;background:#fef2f2">${saCell}</td>
+        ${editCells}
+        <td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9;background:#f0f9ff">${stuCell}</td>
+      </tr>`;
+    });
+  });
+
+  tbody.innerHTML = html;
+}
+
+function togglePermCell(role, perm, btn) {
+  if (!_permState[role]) _permState[role] = new Set();
+  const nowOn = _permState[role].has(perm);
+  if (nowOn) {
+    _permState[role].delete(perm);
+    btn.textContent = '❌';
+    btn.title = `${role}: ไม่มีสิทธิ์ — คลิกเพื่อเปิด`;
+    btn.style.background = '#fff5f5';
+    btn.classList.replace('pmc-on','pmc-off');
+  } else {
+    _permState[role].add(perm);
+    btn.textContent = '✅';
+    btn.title = `${role}: มีสิทธิ์ — คลิกเพื่อยกเลิก`;
+    btn.style.background = '#f0fdf4';
+    btn.classList.replace('pmc-off','pmc-on');
+  }
+}
+
+function resetPermMatrix() {
+  Swal.fire({
+    title:'คืนค่าเริ่มต้น?',
+    text:'Permission ทุก Role จะถูกรีเซ็ตเป็นค่าเริ่มต้นของระบบ',
+    icon:'warning', showCancelButton:true,
+    confirmButtonColor:'#dc2626', confirmButtonText:'รีเซ็ต',
+    cancelButtonText:'ยกเลิก',
+  }).then(r => {
+    if (!r.isConfirmed) return;
+    const defaults = RBAC.getDefaultMap();
+    PERM_EDITABLE_ROLES.forEach(role => {
+      _permState[role] = new Set(defaults[role] || []);
+    });
+    buildPermMatrix();
+  });
+}
+
+async function savePermMatrix() {
+  // Convert Sets → plain arrays for serialisation
+  const toSave = {};
+  PERM_EDITABLE_ROLES.forEach(role => {
+    toSave[role] = [...(_permState[role] || new Set())];
+  });
+  // SuperAdmin and Student are always fixed — add them back so the full map is stored
+  toSave.SuperAdmin = ['*'];
+  toSave.Student    = ['viewOwnProfile','editOwnProfile'];
+
+  showLoader(true, 'กำลังบันทึก Permission...');
+  try {
+    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('หมดเวลา (30s)')),30000));
+    const r  = await Promise.race([API.saveSetting('RBAC_PERMISSIONS', toSave), _t]);
+    showLoader(false);
+    if (r.status === 'success') {
+      // Update in-memory cache so the current page respects new permissions
+      RBAC.cachePermissions({ RBAC_PERMISSIONS: toSave });
+      Swal.fire({
+        icon:'success', title:'บันทึก Permission สำเร็จ',
+        text:'การตั้งค่าสิทธิ์จะมีผลทันทีสำหรับทุกผู้ใช้ที่เข้าสู่ระบบใหม่',
+        timer:2500, showConfirmButton:false,
+      });
+    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด','error'); }
+  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'บันทึกไม่สำเร็จ','error'); }
 }
 
 // ─────────────────────────────────────────────

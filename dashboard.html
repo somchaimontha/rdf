@@ -314,7 +314,9 @@ async function loadSystemNotice() {
   try {
     const r = await API.getSystemSettings();
     if (r.status !== 'success' || !r.data) return;
-    // Cache student editable fields for rbac.js field guards
+    // Cache RBAC permissions + student editable fields for rbac.js
+    // This ensures every page loads the admin-configured permissions
+    RBAC.cachePermissions(r.data);
     RBAC.cacheStudentFields(r.data);
     const n = r.data['SYSTEM_NOTICE'];
     if (!n || !n.active || !n.text) return;

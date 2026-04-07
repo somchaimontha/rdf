@@ -30,8 +30,13 @@
  */
 
 // ─────────────────────────────────────────────
-// PERMISSION MAP  (role → granted permissions)
-// '*' = all permissions granted
+// PERMISSION MAP — DEFAULT (hardcoded fallback)
+// Admin can override via settings.html → Roles tab → Permission Matrix.
+// Overrides are saved to Google Sheets as 'RBAC_PERMISSIONS' and cached
+// in localStorage as 'rdfRbacPermissions'.
+// SuperAdmin is always '*' (cannot be overridden).
+// Student is always fixed (cannot be overridden — security).
+// '*' = all permissions granted.
 // ─────────────────────────────────────────────
 const RBAC_MAP = {
   SuperAdmin:  ['*'],
@@ -44,6 +49,17 @@ const RBAC_MAP = {
   DormTeacher: ['viewStudents','editStudents','printProfile'],
   Student:     ['viewOwnProfile','editOwnProfile'],
 };
+
+// Dynamic map loaded from settings (null = use RBAC_MAP defaults above)
+let _rbacDynamicMap = null;
+
+// Load cached permissions from localStorage at script initialisation
+(function _rbacInitCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('rdfRbacPermissions') || 'null');
+    if (cached && typeof cached === 'object') _rbacDynamicMap = cached;
+  } catch { /* ignore — will fall back to RBAC_MAP */ }
+})();
 
 // ─────────────────────────────────────────────
 // FIELDS: student-form.html field-level control
@@ -72,11 +88,19 @@ const RBAC = {
 
   // ── Core checks ──────────────────────────────
 
-  /** Returns true if current user has the given permission key. */
+  /** Returns true if current user has the given permission key.
+   *  Uses dynamic map (from settings) when available; falls back to RBAC_MAP. */
   has(perm) {
     const user = (typeof getUser === 'function') ? getUser() : null;
     if (!user) return false;
-    const perms = RBAC_MAP[user.role] || [];
+    // SuperAdmin and Student are always fixed — never affected by dynamic map
+    if (user.role === 'SuperAdmin') return true;
+    if (user.role === 'Student') {
+      return ['viewOwnProfile','editOwnProfile'].includes(perm);
+    }
+    // Use admin-configured permissions if available, else fall back to defaults
+    const map   = _rbacDynamicMap || RBAC_MAP;
+    const perms = map[user.role] || RBAC_MAP[user.role] || [];
     return perms.includes('*') || perms.includes(perm);
   },
 
@@ -183,6 +207,35 @@ const RBAC = {
       );
     }
   },
+
+  /**
+   * Cache RBAC permissions from system settings into localStorage.
+   * Saved by settings.html as 'RBAC_PERMISSIONS'.
+   * Call this after any getSystemSettings() so all pages get the latest rules.
+   * SuperAdmin and Student entries in the saved map are ignored (always fixed).
+   */
+  cachePermissions(settings) {
+    if (!settings || !settings.RBAC_PERMISSIONS) return;
+    const saved = settings.RBAC_PERMISSIONS;
+    if (typeof saved !== 'object') return;
+    // Merge: keep defaults for SuperAdmin/Student; use saved for others
+    const merged = { ...RBAC_MAP, ...saved };
+    merged.SuperAdmin = ['*'];                              // always locked
+    merged.Student    = ['viewOwnProfile','editOwnProfile']; // always locked
+    _rbacDynamicMap = merged;
+    localStorage.setItem('rdfRbacPermissions', JSON.stringify(merged));
+  },
+
+  /**
+   * Returns the effective permission map (dynamic if loaded, else defaults).
+   * Used by settings.html to pre-fill the editable matrix.
+   */
+  getEffectiveMap() {
+    return _rbacDynamicMap || { ...RBAC_MAP };
+  },
+
+  /** Default (hardcoded) permission map — used for "Reset to Default" button. */
+  getDefaultMap() { return { ...RBAC_MAP }; },
 
   // ── Field-level control (student-form.html) ───
 
