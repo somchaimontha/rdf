@@ -229,9 +229,6 @@
     <button class="s-tab" id="tabRoles" onclick="switchTab('roles')">
       <i data-lucide="shield" class="w-4 h-4"></i> สิทธิ์ผู้ใช้
     </button>
-    <button class="s-tab" id="tabPromotion" onclick="switchTab('promotion')">
-      <i data-lucide="trophy" class="w-4 h-4"></i> Grade Promotion
-    </button>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -1081,9 +1078,8 @@
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-4">
           เลือกช่องที่อนุญาตให้นักเรียนทุนแก้ไขข้อมูลของตนเองได้
-          ช่องที่ไม่ได้เลือกจะเป็น Read-Only สำหรับนักเรียน
-          รหัสทุน (StipNo) และข้อมูลการศึกษาหลักจะถูกล็อคเสมอ<br>
-          <span class="text-gray-400">Fields not selected will be read-only for Students. StipNo &amp; academic fields are always locked.</span>
+          ช่องที่ไม่ได้เลือกจะเป็น Read-Only สำหรับนักเรียน<br>
+          <span class="text-gray-400">Fields not selected will be read-only for Students. Only StipNo is permanently locked and cannot be unlocked.</span>
         </p>
         <div id="studentFieldsGrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
           <!-- Rendered by buildStudentFieldsUI() -->
@@ -1091,69 +1087,12 @@
         <div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
           <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i>
           <b>ช่องที่ล็อคเสมอ (Always Protected):</b>
-          รหัสทุน, เลขบัตรประชาชน, สถาบัน, ชั้นเรียน, ปีทุน, ปีที่เข้า, สถานะ, สาขาวิชา, ทุน ม.
+          รหัสทุน (StipNo) — ไม่สามารถอนุญาตให้นักเรียนแก้ไขได้ไม่ว่ากรณีใด
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       PANEL: GRADE PROMOTION SETTINGS
-  ════════════════════════════════════════════ -->
-  <div id="panelPromotion" class="hidden">
-    <!-- ── CONSOLIDATED: Grade Promotion settings have moved to promotion.html ──
-         This panel now redirects to the promotion page where all promotion config
-         and execution live together. No duplication of logic or data.
-    ── -->
-    <div class="card fade-in-up" style="border-left:4px solid #16a34a">
-      <div class="card-body py-6">
-        <div class="flex flex-col md:flex-row items-start md:items-center gap-5">
-          <div style="background:#f0fdf4;border-radius:14px;padding:14px;flex-shrink:0">
-            <i data-lucide="trophy" class="w-8 h-8" style="color:#16a34a"></i>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800 text-base mb-1 flex items-center gap-2">
-              <span>Grade Promotion &amp; Graduation</span>
-              <span style="background:#dcfce7;color:#16a34a;font-size:10px;padding:2px 8px;border-radius:999px;font-weight:700">ย้ายไปแล้ว / Relocated</span>
-            </h3>
-            <p class="text-sm text-gray-500 mb-3">
-              การตั้งค่าการเลื่อนชั้น (Promotion Schedule, Level Progression Rules, Scholarship Policy)
-              ถูกย้ายไปรวมไว้ที่ <b>promotion.html</b> เพื่อให้ admin จัดการทั้งการตั้งค่าและการดำเนินการได้ในหน้าเดียว
-              และป้องกันข้อมูลซ้ำซ้อน
-            </p>
-            <p class="text-xs text-gray-400 mb-4">
-              Promotion settings (schedule, level rules, scholarship policy) now live inside
-              <b>promotion.html</b> — click the ⚙ <em>ตั้งค่าเลื่อนชั้น</em> button on that page to configure.
-              Data is stored under a single key <code>promotionSettings</code> in Google Sheets.
-            </p>
-            <div class="flex flex-wrap gap-2">
-              <a href="promotion.html" class="btn btn-sm font-bold" style="background:#16a34a;color:#fff;border:none">
-                <i data-lucide="trophy" class="w-4 h-4"></i>
-                ไปที่ระบบเลื่อนชั้น / Go to Promotion
-              </a>
-              <a href="promotion.html" class="btn btn-secondary btn-sm text-xs"
-                 onclick="setTimeout(()=>document.getElementById('btnPromoSettings')?.click(),600)">
-                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-                เปิดแผง Setting ในหน้าเลื่อนชั้น
-              </a>
-            </div>
-          </div>
-          <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;min-width:200px">
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ข้อมูลที่จัดการได้</p>
-            <ul class="text-xs text-gray-600 space-y-1.5">
-              <li class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3 h-3 text-green-500"></i> Promotion Date default</li>
-              <li class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3 h-3 text-green-500"></i> Academic Year</li>
-              <li class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3 h-3 text-green-500"></i> University Scholarship Policy</li>
-              <li class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3 h-3 text-green-500"></i> Level Progression Rules</li>
-              <li class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3 h-3 text-green-500"></i> Batch promote / graduate</li>
-              <li class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3 h-3 text-green-500"></i> Individual student overrides</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
 
 </main>
 
@@ -1262,7 +1201,7 @@ if (user) {
 // ─────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────
-const ALL_TABS = ['admins','majors','general','logs','apikeys','sessions','roles','promotion'];
+const ALL_TABS = ['admins','majors','general','logs','apikeys','sessions','roles'];
 
 function switchTab(tab) {
   ALL_TABS.forEach(t => {
@@ -1278,9 +1217,8 @@ function switchTab(tab) {
   if (tab === 'overview'   && !chartsBuilt) loadOverview();
   if (tab === 'logs'       && !logsLoaded)  loadLogs();
   if (tab === 'apikeys')                    loadApiKeyStatus();
-  if (tab === 'sessions')                   loadActiveSessions();
-  // Note: 'promotion' tab now shows a redirect card — no lazy load needed.
-  if (tab === 'roles') { loadRbacPermissions(); loadStudentEditableFields(); }
+  if (tab === 'sessions')  loadActiveSessions();
+  if (tab === 'roles')     { loadRbacPermissions(); loadStudentEditableFields(); }
   if (tab === 'general')                  loadGeneralSettings();
 }
 
@@ -2190,22 +2128,35 @@ async function forceLogout(username) {
 // ─────────────────────────────────────────────
 const STUDENT_FIELD_OPTIONS = [
   // [fieldId, labelTH, labelEN, group]
-  ['f_phone1',       'เบอร์โทรศัพท์ 1',        'Phone 1',               'contact'],
-  ['f_phone2',       'เบอร์โทรศัพท์ 2',        'Phone 2',               'contact'],
-  ['f_email',        'อีเมล',                   'Email',                 'contact'],
-  ['f_lineId',       'LINE ID',                  'LINE ID',               'contact'],
-  ['f_province',     'จังหวัด',                 'Province',              'address'],
-  ['f_amphoe',       'อำเภอ',                   'District',              'address'],
-  ['f_tambon',       'ตำบล',                    'Sub-district',          'address'],
-  ['f_zipCode',      'รหัสไปรษณีย์',            'Postal Code',           'address'],
-  ['f_addr',         'ที่อยู่',                  'Address',               'address'],
-  ['f_parentPhone',  'เบอร์โทรผู้ปกครอง',       'Parent Phone',          'family'],
-  ['f_parent1Fname', 'ชื่อ บิดา/มารดา คนที่ 1', 'Parent 1 First Name',   'family'],
-  ['f_parent1Lname', 'นามสกุล บิดา/มารดา คนที่ 1','Parent 1 Last Name', 'family'],
-  ['f_parent2Fname', 'ชื่อ บิดา/มารดา คนที่ 2', 'Parent 2 First Name',   'family'],
-  ['f_parent2Lname', 'นามสกุล บิดา/มารดา คนที่ 2','Parent 2 Last Name', 'family'],
-  ['f_profilePicUrl','รูปโปรไฟล์',              'Profile Photo',         'photo'],
-  ['f_picUrl',       'URL รูปโปรไฟล์',           'Profile Photo URL',    'photo'],
+  // ── ข้อมูลการศึกษา (admin-configurable — StipNo remains always locked separately) ──
+  ['f_idCard',        'เลขบัตรประชาชน',           'National ID',           'academic'],
+  ['f_institution',   'สถาบัน',                   'Institution',           'academic'],
+  ['f_level',         'ชั้นเรียน',                'Class / Level',         'academic'],
+  ['f_scholarYear',   'ปีทุน (พ.ศ.)',             'Scholarship Year',      'academic'],
+  ['f_entryYear',     'ปีที่เข้า (พ.ศ.)',         'Entry Year',            'academic'],
+  ['f_status',        'สถานะนักเรียน',             'Student Status',        'academic'],
+  ['f_major',         'สาขาวิชา',                 'Major / Field',         'academic'],
+  ['f_uniScholarship','ทุน ม. (University Sch.)', 'University Scholarship','academic'],
+  // ── ข้อมูลติดต่อ ──
+  ['f_phone1',        'เบอร์โทรศัพท์ 1',          'Phone 1',               'contact'],
+  ['f_phone2',        'เบอร์โทรศัพท์ 2',          'Phone 2',               'contact'],
+  ['f_email',         'อีเมล',                    'Email',                 'contact'],
+  ['f_lineId',        'LINE ID',                   'LINE ID',               'contact'],
+  // ── ที่อยู่ ──
+  ['f_province',      'จังหวัด',                  'Province',              'address'],
+  ['f_amphoe',        'อำเภอ',                    'District',              'address'],
+  ['f_tambon',        'ตำบล',                     'Sub-district',          'address'],
+  ['f_zipCode',       'รหัสไปรษณีย์',             'Postal Code',           'address'],
+  ['f_addr',          'ที่อยู่',                   'Address',               'address'],
+  // ── ครอบครัว ──
+  ['f_parentPhone',   'เบอร์โทรผู้ปกครอง',        'Parent Phone',          'family'],
+  ['f_parent1Fname',  'ชื่อ บิดา/มารดา คนที่ 1',  'Parent 1 First Name',   'family'],
+  ['f_parent1Lname',  'นามสกุล บิดา/มารดา คนที่ 1','Parent 1 Last Name',  'family'],
+  ['f_parent2Fname',  'ชื่อ บิดา/มารดา คนที่ 2',  'Parent 2 First Name',   'family'],
+  ['f_parent2Lname',  'นามสกุล บิดา/มารดา คนที่ 2','Parent 2 Last Name',  'family'],
+  // ── รูปโปรไฟล์ ──
+  ['f_profilePicUrl', 'รูปโปรไฟล์',               'Profile Photo',         'photo'],
+  ['f_picUrl',        'URL รูปโปรไฟล์',            'Profile Photo URL',     'photo'],
 ];
 
 let _studentEditableFields = null;
@@ -2225,26 +2176,33 @@ function buildStudentFieldsUI() {
   if (!grid) return;
   const current = new Set(_studentEditableFields || RBAC.getDefaultEditableFields());
   const groupColors = {
-    contact:'#eff6ff', address:'#f0fdf4', family:'#faf5ff', photo:'#fff7ed'
+    academic:'#fef9c3', contact:'#eff6ff', address:'#f0fdf4', family:'#faf5ff', photo:'#fff7ed'
   };
-  const groupTH = { contact:'ข้อมูลติดต่อ', address:'ที่อยู่', family:'ครอบครัว', photo:'รูปโปรไฟล์' };
+  const groupTH = { academic:'ข้อมูลการศึกษา / Academic', contact:'ข้อมูลติดต่อ', address:'ที่อยู่', family:'ครอบครัว', photo:'รูปโปรไฟล์' };
   const groups = [...new Set(STUDENT_FIELD_OPTIONS.map(f => f[3]))];
 
-  grid.innerHTML = groups.map(g => `
-    <div style="grid-column:span 1;margin-bottom:4px">
+  grid.innerHTML = groups.map(g => {
+    // Academic group spans all columns (has 8 fields — display in 2-col inner grid)
+    const isAcademic = g === 'academic';
+    const fields = STUDENT_FIELD_OPTIONS.filter(f => f[3] === g);
+    return `
+    <div style="grid-column:${isAcademic?'1/-1':'span 1'};margin-bottom:4px">
       <div style="background:${groupColors[g]||'#f8fafc'};border-radius:8px;padding:8px 10px">
         <p style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:6px;letter-spacing:.5px">
           ${groupTH[g]||g}
         </p>
-        ${STUDENT_FIELD_OPTIONS.filter(f => f[3]===g).map(([fid,lth,len]) => `
+        <div style="${isAcademic?'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0 12px':''}">
+        ${fields.map(([fid,lth,len]) => `
           <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 0;font-size:12px;color:#374151">
             <input type="checkbox" id="sef_${fid}" value="${fid}"
                    ${current.has(fid)?'checked':''}
                    style="width:14px;height:14px;accent-color:#0ea5e9;cursor:pointer">
             <span>${lth}<span style="color:#94a3b8;font-size:10px;margin-left:4px">${len}</span></span>
           </label>`).join('')}
+        </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function saveStudentEditableFields() {
@@ -2838,7 +2796,6 @@ async function saveSignatureBlock() {
 
 // ─────────────────────────────────────────────
 // INIT
-// Note: Grade Promotion settings functions removed — consolidated into promotion.html.
 // ─────────────────────────────────────────────
 loadAdmins();
 apLoad();

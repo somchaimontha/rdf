@@ -66,10 +66,10 @@ let _rbacDynamicMap = null;
 // ─────────────────────────────────────────────
 
 // These fields are ALWAYS read-only for Students — cannot be overridden by admin
+// Only รหัสทุน (StipNo) is unconditionally locked.
+// All other academic/identity fields are now admin-configurable via settings.html → สิทธิ์ผู้ใช้
 const STUDENT_PROTECTED_FIELDS = new Set([
-  'f_stipNo','f_idCard','f_institution','f_level','f_scholarYear',
-  'f_entryYear','f_status','f_uniScholarship','f_major','f_department',
-  'f_engTitle','f_lastEducation',
+  'f_stipNo',
 ]);
 
 // Default editable fields for Students (admin can change in settings)
