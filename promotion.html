@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Table ── */
 .promo-group-header {
@@ -33,7 +34,15 @@
 .act-hold       { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
 .act-suspend    { background:#fef9c3; color:#a16207; border:1px solid #fde68a; }
 .act-resign     { background:#fff1f2; color:#be123c; border:1px solid #fecdd3; }
-.act-skip       { background:#f9fafb; color:#6b7280; border:1px solid #e5e7eb; }
+.act-skip        { background:#f9fafb; color:#6b7280; border:1px solid #e5e7eb; }
+.act-withdraw    { background:#fff1f2; color:#9f1239; border:1px solid #fda4af; }
+/* ── Stats Section ── */
+.stats-section { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:18px 20px;
+  margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+/* ── Withdrawal Form ── */
+.wf-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; display:block; margin-bottom:4px; }
+.wf-field { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:7px 10px; font-size:13px; outline:none; font-family:inherit; }
+.wf-field:focus { border-color:#9f1239; }
 .uni-sch-badge  { display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
   border-radius:12px; font-size:10px; font-weight:700; }
 .sch-yes     { background:#f0fdf4; color:#16a34a; }
@@ -271,6 +280,14 @@ img.student-avatar {
         <i data-lucide="printer" class="w-4 h-4"></i>
         <span data-t="promoPrintReport">พิมพ์รายงานทางการ</span>
       </button>
+      <button onclick="openWithdrawalFormModal()" class="btn btn-sm" style="background:#fff1f2;color:#9f1239;border:1.5px solid #fda4af">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span data-t="promoWithdrawalFormBtn">ใบลาออก</span>
+      </button>
+      <button onclick="toggleStatsSection()" id="btnStats" class="btn btn-secondary btn-sm">
+        <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+        <span data-t="promoViewStats">สถิติ</span>
+      </button>
       <button onclick="togglePromoSettings()" id="btnPromoSettings" class="btn btn-secondary btn-sm">
         <i data-lucide="settings" class="w-4 h-4"></i>
         <span data-t="promoSettings">ตั้งค่าเลื่อนชั้น</span>
@@ -435,8 +452,34 @@ img.student-avatar {
     <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> <span data-t="promoActUni">จบ + ต่อม. (ทุน RDF)</span></span>
     <span class="action-badge act-hold"><i data-lucide="pause-circle" style="width:10px;height:10px"></i> <span data-t="promoActHold">ซ้ำชั้น</span></span>
     <span class="action-badge act-suspend"><i data-lucide="clock" style="width:10px;height:10px"></i> <span data-t="promoActSuspend">พักการเรียน</span></span>
-    <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> <span data-t="promoActResign">ลาออก</span></span>
+    <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> <span data-t="promoActResign">ลาออกจากสถาบัน</span></span>
+    <span class="action-badge act-withdraw"><i data-lucide="shield-off" style="width:10px;height:10px"></i> <span data-t="promoActWithdrawSch">ถอนทุน</span></span>
     <span class="action-badge act-skip"><i data-lucide="minus" style="width:10px;height:10px"></i> <span data-t="promoActSkip">ไม่เปลี่ยน</span></span>
+  </div>
+
+  <!-- ═══ STATISTICS SECTION ═══ -->
+  <div id="statsSection" class="hidden stats-section no-print mb-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-700 flex items-center gap-2 text-sm">
+        <i data-lucide="bar-chart-2" class="w-4 h-4" style="color:#1d4ed8"></i>
+        <span data-t="promoStatsTitle">สถิติการเลื่อนชั้น / Promotion Statistics</span>
+      </h3>
+      <button onclick="toggleStatsSection()" class="text-gray-400 hover:text-gray-700">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Bar chart -->
+      <div>
+        <p class="text-xs font-semibold text-gray-500 mb-2" data-t="promoStatsDistrib">การกระจายสถานะ</p>
+        <canvas id="statsChartBar" height="160"></canvas>
+      </div>
+      <!-- Summary cards -->
+      <div>
+        <p class="text-xs font-semibold text-gray-500 mb-2" data-t="promoStatsSummary">สรุปจำนวน</p>
+        <div id="statsCardGrid" class="grid grid-cols-2 gap-2 text-xs"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Groups container -->
@@ -543,6 +586,8 @@ img.student-avatar {
             รายงานผู้สำเร็จการศึกษา <span class="text-gray-400 text-xs">/ Graduation Report</span></label>
           <label><input type="radio" name="prType" value="promotion" class="accent-blue-600">
             รายงานสรุปการเลื่อนชั้น <span class="text-gray-400 text-xs">/ Promotion Summary</span></label>
+          <label><input type="radio" name="prType" value="withdrawal" class="accent-blue-600">
+            รายงานนักเรียนลาออก/ถอนทุน <span class="text-gray-400 text-xs">/ Withdrawal Report</span></label>
         </div>
       </div>
 
@@ -619,6 +664,75 @@ img.student-avatar {
       <button onclick="doPrintReport()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
         <i data-lucide="printer" class="w-4 h-4"></i>
         สร้างและพิมพ์รายงาน / Generate &amp; Print
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WITHDRAWAL FORM MODAL ═══ -->
+<div id="withdrawalFormModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,.5)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:700px">
+    <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#9f1239">
+      <h3 class="font-bold text-white flex items-center gap-2 text-base">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span data-t="promoWithdrawalForm">ใบลาออก / Withdrawal Form</span>
+      </h3>
+      <button onclick="closeWithdrawalFormModal()" class="text-white opacity-70 hover:opacity-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4" style="max-height:75vh;overflow-y:auto">
+
+      <!-- Student list (auto-populated) -->
+      <div>
+        <span class="wf-label" data-t="promoWfStudents">นักเรียนที่ลาออก / ถอนทุน (อัตโนมัติ)</span>
+        <div id="wfStudentList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100" style="max-height:220px;overflow-y:auto">
+          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">แสดงเฉพาะนักเรียนที่เลือกสถานะ "ลาออกจากสถาบัน" หรือ "ถอนทุน" เท่านั้น</p>
+      </div>
+
+      <!-- Document details -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <span class="wf-label" data-t="promoWfDocDate">วันที่เอกสาร / Document Date</span>
+          <input type="date" id="wfDocDate" class="wf-field">
+        </div>
+        <div>
+          <span class="wf-label" data-t="promoWfAcadYear">ปีการศึกษา / Academic Year</span>
+          <input type="text" id="wfAcadYear" class="wf-field" placeholder="2024-2025">
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div>
+        <span class="wf-label" data-t="promoWithdrawalReasonLabel">เหตุผลการลาออก / ถอนทุน</span>
+        <textarea id="wfReason" class="wf-field" rows="2"
+          placeholder="ระบุเหตุผล... / State reason..."></textarea>
+      </div>
+
+      <!-- Signature slots (loaded from settings) -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="wf-label" style="margin-bottom:0">ผู้ลงนาม / Signatories</span>
+          <span class="text-xs text-gray-400">ใช้รายชื่อจากการตั้งค่า</span>
+        </div>
+        <div id="wfSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+        </div>
+      </div>
+
+      <div class="bg-rose-50 border border-rose-100 rounded-lg p-3 text-xs text-rose-700 flex gap-2 items-start">
+        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+        <span>เอกสารจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวตั้ง พร้อมลายเซ็นท้ายเอกสาร<br>
+        Form opens in a new window — A4 portrait, with signatures at the bottom.</span>
+      </div>
+    </div>
+    <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
+      <button onclick="closeWithdrawalFormModal()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
+      <button onclick="doPrintWithdrawalForm()" class="btn btn-sm font-bold" style="background:#9f1239;color:#fff;border:none">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="promoWfPrint">พิมพ์ใบลาออก / Print Form</span>
       </button>
     </div>
   </div>
@@ -1035,9 +1149,10 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
     ${['MBS','VC'].includes(inst) ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
     ${['MBS','VC'].includes(inst) ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
     <option value="hold"    ${act==='hold'   ?'selected':''}>⏸ ${t('promoActHold')}</option>
-    <option value="suspend" ${act==='suspend'?'selected':''}>⚠ ${t('promoActSuspend')}</option>
-    <option value="resign"  ${act==='resign' ?'selected':''}>✕ ${t('promoActResign')}</option>
-    <option value="skip"    ${act==='skip'   ?'selected':''}>— ${t('promoActSkip')}</option>
+    <option value="suspend"      ${act==='suspend'     ?'selected':''}>⚠ ${t('promoActSuspend')}</option>
+    <option value="resign"       ${act==='resign'      ?'selected':''}>✕ ${t('promoActResign')}</option>
+    <option value="withdraw_sch" ${act==='withdraw_sch'?'selected':''}>🚫 ${t('promoActWithdrawSch')}</option>
+    <option value="skip"         ${act==='skip'        ?'selected':''}>— ${t('promoActSkip')}</option>
   </select>`;
 
   // Uni scholarship cell
@@ -1104,7 +1219,8 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
   if (act === 'uni_own')   return `<span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span>`;
   if (act === 'hold')      return `<span class="text-xs text-orange-500 font-semibold">${t('promoStayLevel')}</span>`;
   if (act === 'suspend')   return `<span class="text-xs text-yellow-600 font-semibold">${t('promoStatusSuspended')}</span>`;
-  if (act === 'resign')    return `<span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>`;
+  if (act === 'resign')       return `<span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>`;
+  if (act === 'withdraw_sch') return `<span class="text-xs font-semibold" style="color:#9f1239">${t('promoStatusWithdrawnSch')}</span>`;
   return `<span class="text-xs text-gray-400">—</span>`;
 }
 
@@ -1263,10 +1379,13 @@ function updateStats() {
     (counts.uni||0)+(counts.uni_own||0) ? `<span>🏛 Uni: <b>${(counts.uni||0)+(counts.uni_own||0)}</b></span>` : '',
     counts.hold      ? `<span>⏸ ${t('promoActHold')}: <b>${counts.hold}</b></span>`           : '',
     counts.suspend   ? `<span>⚠ ${t('promoActSuspend')}: <b>${counts.suspend}</b></span>`     : '',
-    counts.resign    ? `<span>✕ ${t('promoActResign')}: <b>${counts.resign}</b></span>`       : '',
-    counts.skip      ? `<span>— ${t('promoActSkip')}: <b>${counts.skip}</b></span>`           : '',
+    counts.resign       ? `<span>✕ ${t('promoActResign')}: <b>${counts.resign}</b></span>`             : '',
+    counts.withdraw_sch ? `<span>🚫 ${t('promoActWithdrawSch')}: <b>${counts.withdraw_sch}</b></span>` : '',
+    counts.skip         ? `<span>— ${t('promoActSkip')}: <b>${counts.skip}</b></span>`                 : '',
   ].filter(Boolean);
   bar.innerHTML = parts.join('<span class="mx-1 text-gray-200">|</span>');
+  // Refresh chart if stats section is open
+  if (_statsSectionOpen) renderStatsChart();
 }
 
 // ─────────────────────────────────────────────
@@ -1286,7 +1405,8 @@ async function applyAllChanges() {
     (counts.uni||0)+(counts.uni_own||0) ? `<b>${(counts.uni||0)+(counts.uni_own||0)}</b> ${LANG==='th'?'นักเรียนจะต่อมหาวิทยาลัย':'students continuing to university'}` : '',
     counts.hold     ? `<b>${counts.hold}</b> ${LANG==='th'?'นักเรียนจะซ้ำชั้น':'students will repeat year'}` : '',
     counts.suspend  ? `<b>${counts.suspend}</b> ${LANG==='th'?'นักเรียนจะพักการเรียน':'students will be suspended'}` : '',
-    counts.resign   ? `<b>${counts.resign}</b> ${LANG==='th'?'นักเรียนจะลาออก':'students will resign'}` : '',
+    counts.resign       ? `<b>${counts.resign}</b> ${LANG==='th'?'นักเรียนจะลาออกจากสถาบัน':'students will withdraw from institution'}` : '',
+    counts.withdraw_sch ? `<b>${counts.withdraw_sch}</b> ${LANG==='th'?'นักเรียนจะถอนทุนการศึกษา':'students will withdraw from scholarship'}` : '',
   ].filter(Boolean);
 
   const promoDate = document.getElementById('promotionDate').value;
@@ -1330,8 +1450,9 @@ async function applyAllChanges() {
         if (dec.uniProvince) p.UniProvince = dec.uniProvince;
         if (dec.uniDuration) p.UniDuration = dec.uniDuration;
         break;
-      case 'suspend': p.NewStatus = 'Suspended'; break;
-      case 'resign':  p.NewStatus = 'Resigned';  break;
+      case 'suspend':      p.NewStatus = 'Suspended';           break;
+      case 'resign':       p.NewStatus = 'Resigned';            break;
+      case 'withdraw_sch': p.NewStatus = 'WithdrawnScholarship'; break;
       case 'hold': break; // no status/level change
     }
     if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
@@ -1442,7 +1563,7 @@ function doExport() {
         promote:'promoActPromote', graduate:'promoActGraduate',
         uni:'promoActUni', uni_own:'promoActUniOwn',
         hold:'promoActHold', suspend:'promoActSuspend',
-        resign:'promoActResign', skip:'promoActSkip',
+        resign:'promoActResign', withdraw_sch:'promoActWithdrawSch', skip:'promoActSkip',
       };
       const nextLabel = (() => {
         if (act==='promote')  return dec.nextLevel || '';
@@ -1450,8 +1571,9 @@ function doExport() {
         if (act==='uni')      return tL('promoUniRDF');
         if (act==='uni_own')  return tL('promoUniOwn');
         if (act==='hold')     return tL('promoStayLevel');
-        if (act==='suspend')  return tL('promoStatusSuspended');
-        if (act==='resign')   return tL('promoStatusResigned');
+        if (act==='suspend')      return tL('promoStatusSuspended');
+        if (act==='resign')       return tL('promoStatusResigned');
+        if (act==='withdraw_sch') return tL('promoStatusWithdrawnSch');
         return '—';
       })();
       const schLabel = { Yes:tL('promoSchYes'), No:tL('promoSchNo'), Pending:tL('promoSchPending') }[dec.uniScholarship] || '—';
@@ -1652,7 +1774,8 @@ function doPrintReport() {
 function generateFormalReportHTML(opts) {
   const tL   = key => (T[opts.lang]||{})[key] || T['th'][key] || key;
   const isEN = opts.lang === 'en';
-  const gradActions = new Set(['graduate','uni','uni_own']);
+  const gradActions       = new Set(['graduate','uni','uni_own']);
+  const withdrawalActions = new Set(['resign','withdraw_sch']);
 
   // Sort groups by institution order
   const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
@@ -1671,17 +1794,18 @@ function generateFormalReportHTML(opts) {
       const act = dec.action || 'promote';
       if (opts.reportType === 'graduation' && !gradActions.has(act)) return;
       if (opts.reportType === 'promotion'  && act === 'skip') return;
+      if (opts.reportType === 'withdrawal' && !withdrawalActions.has(act)) return;
       dataRows.push({ g, s, dec });
     });
   });
 
   // Bilingual strings — hardcoded to avoid i18n key lookup failures
   const STR = {
-    th: { grad:'รายงานผู้สำเร็จการศึกษา', promo:'รายงานสรุปการเลื่อนชั้น',
+    th: { grad:'รายงานผู้สำเร็จการศึกษา', promo:'รายงานสรุปการเลื่อนชั้น', withdrawal:'รายงานนักเรียนลาออก / ถอนทุน',
           date:'วันที่', acad:'ปีการศึกษา', total:'รวมทั้งหมด', person:'คน',
           summary:'สรุป', preparedBy:'จัดทำโดย', signedBy:'ลงนามรับรองข้อมูล',
           position:'ตำแหน่ง', signDate:'วันที่', allInst:'ทุกสถานศึกษา' },
-    en: { grad:'Graduation Report', promo:'Grade Promotion Summary Report',
+    en: { grad:'Graduation Report', promo:'Grade Promotion Summary Report', withdrawal:'Withdrawal Report',
           date:'Date', acad:'Academic Year', total:'Total', person:'student(s)',
           summary:'Summary', preparedBy:'Prepared by', signedBy:'Certified by',
           position:'Position', signDate:'Date', allInst:'All Institutions' },
@@ -1693,12 +1817,15 @@ function generateFormalReportHTML(opts) {
     ? (instLabelMap[opts.inst] || opts.inst)
     : S.allInst;
   const schoolDisplay = opts.school || instLbl;
-  const rptTitle = opts.reportType === 'graduation' ? S.grad : S.promo;
+  const rptTitle = opts.reportType === 'graduation' ? S.grad
+    : opts.reportType === 'withdrawal' ? S.withdrawal : S.promo;
   const subject  = opts.subject || `${schoolDisplay}${opts.acad?' '+opts.acad:''} (${rptTitle})`;
 
   const tableHTML     = opts.reportType === 'graduation'
     ? buildGradTableHTML(dataRows, isEN)
-    : buildPromoTableHTML(dataRows, isEN);
+    : opts.reportType === 'withdrawal'
+      ? buildWithdrawalTableHTML(dataRows, isEN)
+      : buildPromoTableHTML(dataRows, isEN);
   const summaryHTML   = buildReportSummaryHTML(dataRows, opts.reportType, isEN, S);
   const signatureHTML = buildSignatureHTML(opts.sigs || [], opts.pDate, S, isEN);
 
@@ -1825,13 +1952,14 @@ function buildGradTableHTML(dataRows, isEN) {
 function buildPromoTableHTML(dataRows, isEN) {
   let seq = 1;
   const aMap = {
-    promote: { lbl:isEN?'Promote':'เลื่อนชั้น',       cls:'a-promote' },
-    graduate:{ lbl:isEN?'Graduate':'จบการศึกษา',       cls:'a-graduate' },
-    uni:     { lbl:isEN?'Uni (RDF)':'ต่อ ม. (RDF)',    cls:'a-uni' },
-    uni_own: { lbl:isEN?'Uni (Own)':'ต่อ ม. (ตนเอง)', cls:'a-uni' },
-    hold:    { lbl:isEN?'Hold':'ซ้ำชั้น',               cls:'a-hold' },
-    suspend: { lbl:isEN?'Suspend':'พักการเรียน',        cls:'a-suspend' },
-    resign:  { lbl:isEN?'Resign':'ลาออก',               cls:'a-resign' },
+    promote:     { lbl:isEN?'Promote':'เลื่อนชั้น',                cls:'a-promote' },
+    graduate:    { lbl:isEN?'Graduate':'จบการศึกษา',                cls:'a-graduate' },
+    uni:         { lbl:isEN?'Uni (RDF)':'ต่อ ม. (RDF)',             cls:'a-uni' },
+    uni_own:     { lbl:isEN?'Uni (Own)':'ต่อ ม. (ตนเอง)',          cls:'a-uni' },
+    hold:        { lbl:isEN?'Hold':'ซ้ำชั้น',                       cls:'a-hold' },
+    suspend:     { lbl:isEN?'Suspend':'พักการเรียน',                cls:'a-suspend' },
+    resign:      { lbl:isEN?'Withdraw (Inst.)':'ลาออกจากสถาบัน',   cls:'a-resign' },
+    withdraw_sch:{ lbl:isEN?'Withdraw (Sch.)':'ถอนทุนการศึกษา',    cls:'a-resign' },
   };
   const rows = dataRows.map(({ g, s, dec }) => {
     const thaiName = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
@@ -1844,7 +1972,8 @@ function buildPromoTableHTML(dataRows, isEN) {
       : act==='uni_own'  ? (isEN?'University (Own funding)':'มหาวิทยาลัย (ทุนตนเอง)')
       : act==='hold'     ? (isEN?'Same level':'ระดับเดิม')
       : act==='suspend'  ? (isEN?'Suspended':'พักการเรียน')
-      : act==='resign'   ? (isEN?'Resigned':'ลาออก') : '—';
+      : act==='resign'       ? (isEN?'Withdrawn (Institution)':'ลาออกจากสถาบัน')
+      : act==='withdraw_sch' ? (isEN?'Withdrawn (Scholarship)':'ถอนทุนการศึกษา') : '—';
     const schMap = { Yes:isEN?'Yes':'ใช่', No:isEN?'No':'ไม่ใช่', Pending:isEN?'Pending':'รอพิจารณา' };
     const schLbl = ['uni','uni_own'].includes(act) ? (schMap[dec.uniScholarship]||'—') : '—';
     return `<tr>
@@ -1918,13 +2047,14 @@ function buildReportSummaryHTML(dataRows, reportType, isEN, S) {
 
   } else {
     const aNames = {
-      promote: isEN?'Grade Promotion':'เลื่อนชั้น',
-      graduate:isEN?'Graduated':'จบการศึกษา',
-      uni:     isEN?'Cont. to University (RDF Scholarship)':'ต่อมหาวิทยาลัย (ทุน RDF)',
-      uni_own: isEN?'Cont. to University (Own Funding)':'ต่อมหาวิทยาลัย (ทุนตนเอง)',
-      hold:    isEN?'Repeat Year':'ซ้ำชั้น',
-      suspend: isEN?'Suspended':'พักการเรียน',
-      resign:  isEN?'Resigned':'ลาออก',
+      promote:     isEN?'Grade Promotion':'เลื่อนชั้น',
+      graduate:    isEN?'Graduated':'จบการศึกษา',
+      uni:         isEN?'Cont. to University (RDF Scholarship)':'ต่อมหาวิทยาลัย (ทุน RDF)',
+      uni_own:     isEN?'Cont. to University (Own Funding)':'ต่อมหาวิทยาลัย (ทุนตนเอง)',
+      hold:        isEN?'Repeat Year':'ซ้ำชั้น',
+      suspend:     isEN?'Suspended':'พักการเรียน',
+      resign:      isEN?'Withdrawn from Institution':'ลาออกจากสถาบัน',
+      withdraw_sch:isEN?'Withdrawn from Scholarship':'ถอนทุนการศึกษา',
     };
     const counts = {};
     dataRows.forEach(({ dec }) => {
@@ -1959,6 +2089,348 @@ function buildSignatureHTML(sigs, dateStr, S, isEN) {
     </div>`;
   }).join('');
   return `<div class="sig-sec"><div class="sig-wrap">${blocks}</div></div>`;
+}
+
+// ─────────────────────────────────────────────
+// WITHDRAWAL FORM
+// Generates a printable A4 portrait form listing
+// all students with resign or withdraw_sch status.
+// ─────────────────────────────────────────────
+function openWithdrawalFormModal() {
+  // Populate student list from ROW_DECISIONS
+  const withdrawActions = new Set(['resign','withdraw_sch']);
+  const students = [];
+  ALL_GROUPS.forEach(g => {
+    g.students.forEach(s => {
+      const act = (ROW_DECISIONS[s.StipNo] || {}).action;
+      if (withdrawActions.has(act)) {
+        students.push({ s, g, act, dec: ROW_DECISIONS[s.StipNo] });
+      }
+    });
+  });
+
+  const listEl = document.getElementById('wfStudentList');
+  if (students.length === 0) {
+    listEl.innerHTML = `<div class="text-xs text-gray-400 p-4 text-center">
+      ยังไม่มีนักเรียนที่ตั้งสถานะ "ลาออกจากสถาบัน" หรือ "ถอนทุน"<br>
+      No students with resignation/withdrawal status yet.
+    </div>`;
+  } else {
+    listEl.innerHTML = students.map(({ s, g, act }) => {
+      const name = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+      const typeLabel = act === 'resign'
+        ? `<span style="color:#be123c;font-weight:700">ลาออกจากสถาบัน</span>`
+        : `<span style="color:#9f1239;font-weight:700">ถอนทุน</span>`;
+      return `<div class="flex items-center gap-3 px-3 py-2 text-xs hover:bg-gray-50">
+        <input type="checkbox" name="wfStudent" value="${s.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0">
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-800">${name}</div>
+          <div class="text-gray-400">${s.StipNo} • ${g.institution} — ${g.level}</div>
+        </div>
+        ${typeLabel}
+      </div>`;
+    }).join('');
+  }
+
+  // Pre-fill doc date and academic year
+  document.getElementById('wfDocDate').value  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+  document.getElementById('wfAcadYear').value = document.getElementById('academicYear').value  || '';
+  document.getElementById('wfReason').value   = '';
+
+  // Load signatories
+  const sigs = (SETTINGS && Array.isArray(SETTINGS['SIGNATURE_BLOCK']) && SETTINGS['SIGNATURE_BLOCK'].length)
+    ? SETTINGS['SIGNATURE_BLOCK'] : DEFAULT_SIG_SLOTS;
+  window._wfSigSlots = sigs;
+  const sigEl = document.getElementById('wfSigList');
+  sigEl.innerHTML = sigs.length === 0
+    ? `<div class="text-xs text-gray-400 p-3 text-center">ยังไม่มีผู้ลงนาม</div>`
+    : sigs.map((s, i) => `
+      <label class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer text-xs">
+        <input type="checkbox" name="wfSig" value="${i}" checked class="rounded accent-rose-700">
+        <span class="font-semibold text-gray-700">${s.role||('ผู้ลงนาม '+(i+1))}</span>
+        ${s.name ? `<span class="text-gray-400">${s.name}</span>` : ''}
+      </label>`).join('');
+
+  document.getElementById('withdrawalFormModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeWithdrawalFormModal() {
+  document.getElementById('withdrawalFormModal').classList.add('hidden');
+}
+
+function doPrintWithdrawalForm() {
+  const selStips = new Set(
+    [...document.querySelectorAll('input[name="wfStudent"]:checked')].map(cb => cb.value)
+  );
+  const selSigIdxs = new Set(
+    [...document.querySelectorAll('input[name="wfSig"]:checked')].map(cb => +cb.value)
+  );
+  const selSigs = (window._wfSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selSigIdxs.has(i));
+
+  // Collect selected students with their data
+  const withdrawActions = new Set(['resign','withdraw_sch']);
+  const rows = [];
+  ALL_GROUPS.forEach(g => {
+    g.students.forEach(s => {
+      if (!selStips.has(s.StipNo)) return;
+      const act = (ROW_DECISIONS[s.StipNo] || {}).action;
+      if (!withdrawActions.has(act)) return;
+      rows.push({ s, g, act, dec: ROW_DECISIONS[s.StipNo] || {} });
+    });
+  });
+
+  if (rows.length === 0) {
+    Swal.fire(LANG==='th'?'ไม่มีข้อมูล':'No Data',
+      LANG==='th'?'กรุณาเลือกนักเรียนอย่างน้อย 1 คน':'Please select at least one student.', 'info');
+    return;
+  }
+
+  const isEN = LANG === 'en';
+  const docDate  = document.getElementById('wfDocDate').value  || new Date().toISOString().split('T')[0];
+  const acadYear = document.getElementById('wfAcadYear').value || '';
+  const reason   = document.getElementById('wfReason').value   || '';
+  const org      = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
+
+  const html = generateWithdrawalFormHTML({ rows, docDate, acadYear, reason, sigs: selSigs, isEN, org });
+  const win = window.open('', '_blank', 'width=900,height=1100');
+  if (!win) {
+    Swal.fire(t('error'), isEN?'Browser blocked popup. Please allow popups.':'เบราว์เซอร์บล็อก Popup', 'error');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { try { win.print(); } catch(e) {} }, 900);
+  closeWithdrawalFormModal();
+}
+
+function generateWithdrawalFormHTML({ rows, docDate, acadYear, reason, sigs, isEN, org }) {
+  const thDate = (d) => {
+    if (!d) return '.....................';
+    const [y, m, day] = d.split('-');
+    const thMonths = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    return isEN ? d : `${parseInt(day)} ${thMonths[parseInt(m)]} ${parseInt(y)+543}`;
+  };
+
+  const tableRows = rows.map(({ s, g, act, dec }, i) => {
+    const name  = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const engN  = ((s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
+    const type  = act === 'resign'
+      ? (isEN ? 'Withdraw from Institution' : 'ลาออกจากสถาบัน')
+      : (isEN ? 'Withdraw from Scholarship' : 'ถอนทุนการศึกษา');
+    const notes = dec.notes || '—';
+    return `<tr style="background:${i%2===0?'#fff':'#fff8f8'}">
+      <td style="text-align:center;width:4%;padding:6px 8px;border:1px solid #e5e7eb;color:#9ca3af;font-size:8pt">${i+1}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:9pt">${name}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt;color:#4b5563">${engN||'—'}</td>
+      <td style="text-align:center;padding:6px 8px;border:1px solid #e5e7eb;font-family:monospace;font-size:8pt">${s.StipNo}</td>
+      <td style="text-align:center;padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt">${g.institution}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt">${g.level}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt;color:#9f1239;font-weight:700">${type}</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8pt;color:#6b7280">${notes}</td>
+    </tr>`;
+  }).join('');
+
+  const sigBlocks = sigs.map(s => `
+    <div style="flex:1;min-width:160px;max-width:220px;text-align:center">
+      <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px">${s.role||''}</div>
+      <div style="border-top:1px solid #374151;margin:40px 12px 6px"></div>
+      <div style="font-size:9pt;font-weight:700">${s.name ? `(${s.name})` : '(&nbsp;'.repeat(20)+')'}</div>
+      ${s.position ? `<div style="font-size:8pt;color:#6b7280">${s.position}</div>` : ''}
+      <div style="font-size:7.5pt;color:#9ca3af;margin-top:4px">${isEN?'Date':'วันที่'}  ${thDate(docDate)}</div>
+    </div>`).join('');
+
+  const reasonSection = reason ? `
+    <div style="margin:18px 0;padding:10px 16px;background:#fff8f8;border:1px solid #fca5a5;border-radius:8px">
+      <span style="font-size:8.5pt;font-weight:700;color:#9f1239">${isEN?'Reason for Withdrawal:':'เหตุผลการลาออก / ถอนทุน:'}</span>
+      <p style="font-size:9pt;margin-top:5px;line-height:1.6">${reason}</p>
+    </div>` : '';
+
+  return `<!DOCTYPE html>
+<html lang="${isEN?'en':'th'}">
+<head><meta charset="UTF-8">
+<title>${isEN?'Withdrawal Form':'ใบลาออก'} — RDF</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding:1.8cm}
+@page{size:A4 portrait;margin:1.5cm}
+table{width:100%;border-collapse:collapse}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head>
+<body>
+<!-- Header -->
+<div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:20px;padding-bottom:12px;border-bottom:2.5px solid #9f1239">
+  <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" style="height:52px;object-fit:contain;flex-shrink:0">
+  <div style="flex:1">
+    <div style="font-size:11pt;font-weight:800;color:#9f1239">${org}</div>
+    <div style="font-size:12pt;font-weight:700;margin-top:3px">${isEN?'Withdrawal Form':'แบบฟอร์มใบลาออก / ถอนทุน'}</div>
+    ${acadYear ? `<div style="font-size:9pt;color:#374151;margin-top:2px">${isEN?'Academic Year':'ปีการศึกษา'}: <b>${acadYear}</b></div>` : ''}
+  </div>
+  <div style="text-align:right;font-size:8.5pt;color:#4b5563;line-height:1.8;flex-shrink:0">
+    <div>${isEN?'Date':'วันที่'}: <b>${thDate(docDate)}</b></div>
+    <div>${isEN?'Total':'รวมทั้งหมด'}: <b>${rows.length}</b> ${isEN?'student(s)':'คน'}</div>
+  </div>
+</div>
+
+${reasonSection}
+
+<!-- Student table -->
+<table>
+  <thead>
+    <tr style="background:#9f1239">
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:center">${isEN?'No.':'ลำดับ'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:center">${isEN?'StipNo':'รหัสทุน'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:center">${isEN?'Inst.':'สถาบัน'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Level':'ระดับชั้น'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Withdrawal Type':'ประเภทการออก'}</th>
+      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Notes':'หมายเหตุ'}</th>
+    </tr>
+  </thead>
+  <tbody>${tableRows}</tbody>
+</table>
+
+<!-- Signature -->
+${sigs.length > 0 ? `
+<div style="margin-top:40px">
+  <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:16px;border-left:3px solid #9f1239;padding-left:8px">
+    ${isEN?'Authorized Signatures':'ลายเซ็นผู้รับรองข้อมูล'}
+  </div>
+  <div style="display:flex;justify-content:space-evenly;gap:16px;flex-wrap:wrap">${sigBlocks}</div>
+</div>` : ''}
+</body></html>`;
+}
+
+// ─────────────────────────────────────────────
+// WITHDRAWAL TABLE for formal print report
+// ─────────────────────────────────────────────
+function buildWithdrawalTableHTML(dataRows, isEN) {
+  let seq = 1;
+  const rows = dataRows.map(({ g, s, dec }) => {
+    const name = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const eng  = ((s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
+    const type = dec.action === 'resign'
+      ? (isEN?'Withdraw (Institution)':'ลาออกจากสถาบัน')
+      : (isEN?'Withdraw (Scholarship)':'ถอนทุนการศึกษา');
+    return `<tr>
+      <td class="seq">${seq++}</td>
+      <td>${name}</td>
+      <td>${eng||'—'}</td>
+      <td class="tc" style="font-family:monospace;font-size:7.5pt">${s.StipNo}</td>
+      <td class="tc">${g.institution}</td>
+      <td>${g.level}</td>
+      <td style="color:#9f1239;font-weight:700">${type}</td>
+      <td>${dec.notes||'—'}</td>
+    </tr>`;
+  }).join('') || noDataRow(8, isEN);
+  return `<table>
+    <thead><tr>
+      <th style="width:3%">${isEN?'No.':'ลำดับ'}</th>
+      <th style="width:18%">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
+      <th style="width:14%">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
+      <th style="width:9%">${isEN?'StipNo':'รหัสทุน'}</th>
+      <th style="width:6%">${isEN?'Inst.':'สถาบัน'}</th>
+      <th style="width:14%">${isEN?'Level':'ระดับชั้น'}</th>
+      <th style="width:14%">${isEN?'Withdrawal Type':'ประเภทการออก'}</th>
+      <th style="width:22%">${isEN?'Notes':'หมายเหตุ'}</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ─────────────────────────────────────────────
+// STATISTICS CHART (Chart.js)
+// Shows bar chart of current session decisions.
+// ─────────────────────────────────────────────
+let _statsChart = null;
+let _statsSectionOpen = false;
+
+function toggleStatsSection() {
+  _statsSectionOpen = !_statsSectionOpen;
+  const sec = document.getElementById('statsSection');
+  const btn = document.getElementById('btnStats');
+  if (sec) sec.classList.toggle('hidden', !_statsSectionOpen);
+  if (btn) btn.style.background = _statsSectionOpen ? '#eff6ff' : '';
+  if (_statsSectionOpen) {
+    renderStatsChart();
+    lucide.createIcons();
+  }
+}
+
+function renderStatsChart() {
+  // Count decisions
+  const ACTIONS = [
+    { key:'promote',     label: LANG==='th'?'เลื่อนชั้น':'Promote',              color:'#1d4ed8' },
+    { key:'graduate',    label: LANG==='th'?'จบการศึกษา':'Graduate',             color:'#16a34a' },
+    { key:'uni',         label: LANG==='th'?'ต่อม. (RDF)':'Uni (RDF)',           color:'#7c3aed' },
+    { key:'uni_own',     label: LANG==='th'?'ต่อม. (ตนเอง)':'Uni (Own)',         color:'#a21caf' },
+    { key:'hold',        label: LANG==='th'?'ซ้ำชั้น':'Hold',                    color:'#c2410c' },
+    { key:'suspend',     label: LANG==='th'?'พักการเรียน':'Suspend',             color:'#a16207' },
+    { key:'resign',      label: LANG==='th'?'ลาออกจากสถาบัน':'Resign (Inst.)',   color:'#be123c' },
+    { key:'withdraw_sch',label: LANG==='th'?'ถอนทุน':'Withdraw Sch.',            color:'#9f1239' },
+    { key:'skip',        label: LANG==='th'?'ไม่เปลี่ยน':'No Change',            color:'#9ca3af' },
+  ];
+
+  const counts = {};
+  Object.values(ROW_DECISIONS).forEach(d => { counts[d.action] = (counts[d.action]||0) + 1; });
+  const active = ACTIONS.filter(a => counts[a.key] > 0);
+
+  // Card grid
+  const grid = document.getElementById('statsCardGrid');
+  if (grid) {
+    const total = Object.values(counts).reduce((a,b) => a+b, 0);
+    grid.innerHTML = active.map(a => `
+      <div style="background:${a.color}12;border:1.5px solid ${a.color}30;border-radius:10px;padding:10px 12px">
+        <div style="font-size:10px;color:${a.color};font-weight:700;margin-bottom:2px">${a.label}</div>
+        <div style="font-size:22px;font-weight:800;color:${a.color}">${counts[a.key]||0}</div>
+        <div style="font-size:10px;color:#9ca3af">${total>0?Math.round((counts[a.key]||0)/total*100):0}%</div>
+      </div>`).join('');
+  }
+
+  // Bar chart
+  const canvas = document.getElementById('statsChartBar');
+  if (!canvas) return;
+
+  if (_statsChart) { _statsChart.destroy(); _statsChart = null; }
+
+  _statsChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: active.map(a => a.label),
+      datasets: [{
+        label: LANG==='th'?'จำนวนนักเรียน':'Students',
+        data: active.map(a => counts[a.key]||0),
+        backgroundColor: active.map(a => a.color + 'cc'),
+        borderColor: active.map(a => a.color),
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} ${LANG==='th'?'คน':'student(s)'}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, font: { size: 10 } },
+          grid: { color: '#f1f5f9' },
+        },
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+      },
+    },
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -1997,6 +2469,11 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
   loadPage();
 })();
 initDBStatus();
+
+// ESC closes withdrawal form modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeWithdrawalFormModal();
+});
 
 // ─────────────────────────────────────────────
 // AVATAR ZOOM OVERLAY
