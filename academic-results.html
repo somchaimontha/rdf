@@ -448,8 +448,17 @@ const DEFAULT_SIG_SLOTS = [
 
 const INST_COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#6b7280' };
 const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb' };
-const INST_LABEL  = { MBS:'MBS', VC:'VC', UNI:'University / มหาวิทยาลัย', OTHER:'อื่นๆ' };
+const INST_LABEL  = { MBS:'MBS — โรงเรียนแม่สะเรียงฯ', VC:'VC — วิทยาลัยการอาชีพ', UNI:'University / มหาวิทยาลัย', OTHER:'อื่นๆ' };
 const INST_ORDER  = { MBS:0, VC:1, UNI:2, OTHER:3 };
+
+// Level ordering (same as promotion.html) for consistent row sorting
+const LEVEL_OPTIONS = {
+  MBS:  ['มัธยมศึกษาปีที่ 1 (Grade 7)','มัธยมศึกษาปีที่ 2 (Grade 8)','มัธยมศึกษาปีที่ 3 (Grade 9)',
+         'มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)'],
+  VC:   ['ปวช. ชั้นปีที่ 1','ปวช. ชั้นปีที่ 2','ปวช. ชั้นปีที่ 3','ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'],
+  UNI:  ['ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4','ชั้นปีที่ 5','ชั้นปีที่ 6'],
+  OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','อื่นๆ'],
+};
 
 // ── Semester label ─────────────────────────────────────────
 function semLabel(val, isEN) {
@@ -619,8 +628,8 @@ function buildEntryGroups(year, sem, inst) {
     .sort((a, b) => {
       const io = (INST_ORDER[a.Institution]??9) - (INST_ORDER[b.Institution]??9);
       if (io !== 0) return io;
-      return ((LEVEL_OPTIONS||{})[a.Institution]||[]).indexOf(a.CurrentLevel) -
-             ((LEVEL_OPTIONS||{})[b.Institution]||[]).indexOf(b.CurrentLevel);
+      return (LEVEL_OPTIONS[a.Institution]||[]).indexOf(a.CurrentLevel) -
+             (LEVEL_OPTIONS[b.Institution]||[]).indexOf(b.CurrentLevel);
     });
 
   countEl.textContent = `${students.length} ${isEN?'student(s)':'นักเรียน'} — ${year} ${semLabel(sem,isEN)}`;
