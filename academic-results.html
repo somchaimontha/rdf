@@ -3,77 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ผลการเรียน / Academic Results — RDF</title>
+<title>ผลการเรียน — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
-/* ── KPI ── */
+/* ── KPI Strip ── */
 .ar-kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
 @media(min-width:640px){ .ar-kpi-grid { grid-template-columns:repeat(4,1fr); } }
 .ar-kpi { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px;
   box-shadow:0 1px 3px rgba(0,0,0,.04); }
 .ar-kpi-val { font-size:26px; font-weight:800; line-height:1; }
 .ar-kpi-lbl { font-size:11px; color:#6b7280; margin-top:4px; }
+
 /* ── Filters bar ── */
 .ar-filters { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
   padding:12px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:20px; }
 .ar-filter-group { display:flex; flex-direction:column; gap:3px; }
 .ar-filter-lbl { font-size:10px; font-weight:700; text-transform:uppercase;
   letter-spacing:.5px; color:#9ca3af; }
+
 /* ── Mode toggle ── */
-.mode-tab { padding:6px 14px; border-radius:8px; font-size:12px; font-weight:700;
+.mode-tab { padding:7px 18px; border-radius:8px; font-size:13px; font-weight:700;
   cursor:pointer; border:1.5px solid #e5e7eb; background:#fff; color:#6b7280; transition:all .15s; }
 .mode-tab.active { background:#7c3aed; color:#fff; border-color:#7c3aed; }
-/* ── Grade entry table ── */
+
+/* ── Sticky toolbar ── */
+.sticky-toolbar { position:sticky; top:0; z-index:30; background:#fff;
+  border-bottom:1px solid #e5e7eb; padding:10px 16px; margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06); border-radius:0 0 12px 12px; }
+
+/* ── Group cards (like promotion.html) ── */
+.group-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  overflow:hidden; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.group-header { display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px; font-weight:700; font-size:14px; }
+
+/* ── Grade table ── */
 .ar-table { width:100%; border-collapse:collapse; font-size:12px; }
 .ar-table thead tr { background:#f8faff; border-bottom:2px solid #e5e7eb; }
 .ar-table th { padding:8px 10px; text-align:left; font-size:10px; font-weight:700;
   text-transform:uppercase; letter-spacing:.5px; color:#6b7280; white-space:nowrap; }
-.ar-table td { padding:6px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.ar-table td { padding:7px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+.ar-table tr:last-child td { border-bottom:none; }
 .ar-table tr:hover td { background:#fafbff; }
 .ar-table tr.graded td { background:#faf5ff; }
+.ar-table tr.entry-hidden { display:none; }
+
 /* ── GPA badge ── */
-.gpa-badge { display:inline-block; padding:2px 8px; border-radius:8px;
+.gpa-badge { display:inline-block; padding:2px 9px; border-radius:8px;
   font-size:11px; font-weight:800; white-space:nowrap; }
-.gpa-ex  { background:#f0fdf4; color:#15803d; }   /* 3.50-4.00 */
-.gpa-gd  { background:#eff6ff; color:#1d4ed8; }   /* 3.00-3.49 */
-.gpa-av  { background:#fefce8; color:#a16207; }   /* 2.50-2.99 */
-.gpa-bl  { background:#fff7ed; color:#c2410c; }   /* 2.00-2.49 */
-.gpa-po  { background:#fff1f2; color:#be123c; }   /* 0.00-1.99 */
-/* ── Print modal ── */
-.pr-section { margin-bottom:14px; }
-.pr-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; display:block; margin-bottom:5px; }
-.pr-field { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:7px 10px; font-size:13px; outline:none; font-family:inherit; }
-.pr-field:focus { border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.08); }
-.pr-radio-row { display:flex; gap:16px; flex-wrap:wrap; }
-.pr-radio-row label { display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; }
-/* ── Section card ── */
+.gpa-ex  { background:#f0fdf4; color:#15803d; }
+.gpa-gd  { background:#eff6ff; color:#1d4ed8; }
+.gpa-av  { background:#fefce8; color:#a16207; }
+.gpa-bl  { background:#fff7ed; color:#c2410c; }
+.gpa-po  { background:#fff1f2; color:#be123c; }
+
+/* ── GPA input ── */
+.gpa-input { width:72px; border:1.5px solid #e5e7eb; border-radius:6px; padding:4px 6px;
+  font-size:12px; font-weight:700; text-align:center; outline:none; font-family:inherit; }
+.gpa-input:focus { border-color:#7c3aed; background:#ede9fe; }
+
+/* ── History table ── */
 .ar-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px;
   overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); margin-bottom:20px; }
 .ar-card-hdr { padding:10px 16px; display:flex; align-items:center; gap:8px;
   font-size:12px; font-weight:700; color:#fff; }
 .ar-card-body { padding:0; }
+
+/* ── Print modal ── */
+.pr-section { margin-bottom:14px; }
+.pr-label { font-size:11px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:#6b7280; display:block; margin-bottom:5px; }
+.pr-field { width:100%; border:1.5px solid #e5e7eb; border-radius:8px;
+  padding:7px 10px; font-size:13px; outline:none; font-family:inherit; }
+.pr-field:focus { border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.08); }
+.pr-radio-row { display:flex; gap:16px; flex-wrap:wrap; }
+.pr-radio-row label { display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; }
+
 /* ── Scroll-to-top ── */
 #scrollTop { position:fixed; bottom:24px; right:24px; z-index:50; width:40px; height:40px;
   border-radius:50%; background:#7c3aed; color:#fff; border:none; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.2);
-  opacity:0; transition:opacity .3s; pointer-events:none; }
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,.2); opacity:0; transition:opacity .3s; pointer-events:none; }
 #scrollTop.visible { opacity:1; pointer-events:all; }
-/* ── GPA input ── */
-.gpa-input { width:70px; border:1.5px solid #e5e7eb; border-radius:6px; padding:4px 6px;
-  font-size:12px; font-weight:700; text-align:center; outline:none; font-family:inherit; }
-.gpa-input:focus { border-color:#7c3aed; background:#ede9fe; }
+
 /* ── Animations ── */
 @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 .fade-up { animation:fadeUp .35s ease both; }
 .delay-1 { animation-delay:.06s; }
 .delay-2 { animation-delay:.12s; }
+
 /* ── Print ── */
 @media print {
-  .no-print,.rdf-nav,.rdf-footer,#loader { display:none !important; }
+  .no-print,.rdf-nav,.rdf-footer,#loader,.sticky-toolbar { display:none !important; }
   body { background:#fff !important; }
   @page { size:A4 landscape; margin:1.4cm 1.2cm; }
 }
@@ -113,28 +139,33 @@
 
 <main class="container main-content">
 
-  <!-- Back + Header -->
+  <!-- Back link -->
   <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit no-print">
     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
     <span data-t="promoBackDash">กลับหน้าหลัก</span>
   </a>
 
+  <!-- Page header -->
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 no-print fade-up">
     <div>
       <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
         <i data-lucide="book-open" class="w-5 h-5" style="color:#7c3aed"></i>
-        <span data-t="arTitle">ผลการเรียน / Academic Results</span>
+        <span>ผลการเรียน / Academic Results</span>
       </h2>
-      <p class="text-xs text-gray-400 mt-0.5" data-t="arSubtitle">บันทึก แก้ไข และพิมพ์ผลการเรียนรายภาคเรียน</p>
+      <p class="text-xs text-gray-400 mt-0.5">บันทึก แก้ไข และพิมพ์ผลการเรียนรายภาคเรียน แยกตามสถาบัน</p>
     </div>
     <div class="flex gap-2 flex-wrap">
       <button onclick="loadAll()" class="btn btn-secondary btn-sm">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         <span data-t="promoReload">โหลดใหม่</span>
       </button>
+      <button onclick="exportToExcel()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span>ส่งออก Excel</span>
+      </button>
       <button onclick="openPrintModal()" class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        <span data-t="arPrint">พิมพ์รายงานทางการ</span>
+        <span>พิมพ์รายงานทางการ</span>
       </button>
     </div>
   </div>
@@ -143,27 +174,24 @@
   <div class="ar-filters no-print fade-up delay-1">
     <i data-lucide="filter" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
 
-    <!-- Academic Year -->
     <div class="ar-filter-group">
-      <span class="ar-filter-lbl" data-t="gradesAcadYear">ปีการศึกษา (พ.ศ.)</span>
+      <span class="ar-filter-lbl">ปีการศึกษา (พ.ศ.)</span>
       <input type="number" id="fltYear" class="field-input text-sm" style="width:110px"
              placeholder="2568" min="2560" max="2600" onchange="applyFilters()">
     </div>
 
-    <!-- Semester/Term -->
     <div class="ar-filter-group">
-      <span class="ar-filter-lbl" data-t="gradesSemester">ภาคเรียน / Term</span>
-      <select id="fltSem" class="field-select text-sm" style="min-width:180px" onchange="applyFilters()">
+      <span class="ar-filter-lbl">ภาคเรียน</span>
+      <select id="fltSem" class="field-select text-sm" style="min-width:170px" onchange="applyFilters()">
         <option value="">— ทุกภาคเรียน —</option>
-        <option value="1">ภาคเรียนที่ 1 / Semester 1</option>
-        <option value="2">ภาคเรียนที่ 2 / Semester 2</option>
-        <option value="summer">ภาคฤดูร้อน / Summer</option>
+        <option value="1">ภาคเรียนที่ 1</option>
+        <option value="2">ภาคเรียนที่ 2</option>
+        <option value="summer">ภาคฤดูร้อน</option>
       </select>
     </div>
 
-    <!-- Institution -->
     <div class="ar-filter-group">
-      <span class="ar-filter-lbl" data-t="gradesFilterInst">สถานศึกษา</span>
+      <span class="ar-filter-lbl">สถานศึกษา</span>
       <select id="fltInst" class="field-select text-sm" onchange="applyFilters()">
         <option value="">ทุกสถานศึกษา</option>
         <option value="MBS">MBS</option>
@@ -172,13 +200,11 @@
       </select>
     </div>
 
-    <!-- Reset -->
     <button onclick="resetFilters()" class="btn btn-secondary btn-sm" style="align-self:flex-end">
       <i data-lucide="x" class="w-3.5 h-3.5"></i>
-      <span data-t="rptReset">ล้างตัวกรอง</span>
+      <span>ล้างตัวกรอง</span>
     </button>
 
-    <!-- Timestamp -->
     <div class="ml-auto text-xs text-gray-400 flex items-center gap-1.5" style="align-self:flex-end">
       <i data-lucide="clock" class="w-3.5 h-3.5"></i>
       <span id="arTimestamp">—</span>
@@ -189,78 +215,70 @@
   <div class="ar-kpi-grid fade-up delay-1">
     <div class="ar-kpi" style="border-left:4px solid #7c3aed">
       <div class="ar-kpi-val" id="kpiGraded" style="color:#7c3aed">—</div>
-      <div class="ar-kpi-lbl" data-t="arKpiGraded">มีผลการเรียนแล้ว</div>
+      <div class="ar-kpi-lbl">นักเรียนที่มีผลการเรียน</div>
     </div>
     <div class="ar-kpi" style="border-left:4px solid #16a34a">
       <div class="ar-kpi-val" id="kpiAvg" style="color:#16a34a">—</div>
-      <div class="ar-kpi-lbl" data-t="arKpiAvg">เกรดเฉลี่ย (GPA เฉลี่ย)</div>
+      <div class="ar-kpi-lbl">GPA เฉลี่ย</div>
     </div>
     <div class="ar-kpi" style="border-left:4px solid #1d4ed8">
       <div class="ar-kpi-val" id="kpiHighest" style="color:#1d4ed8">—</div>
-      <div class="ar-kpi-lbl" data-t="arKpiHighest">GPA สูงสุด</div>
+      <div class="ar-kpi-lbl">GPA สูงสุด</div>
     </div>
     <div class="ar-kpi" style="border-left:4px solid #be123c">
       <div class="ar-kpi-val" id="kpiBelow2" style="color:#be123c">—</div>
-      <div class="ar-kpi-lbl" data-t="arKpiBelow2">ต่ำกว่า 2.00</div>
+      <div class="ar-kpi-lbl">ต่ำกว่า 2.00</div>
     </div>
   </div>
 
   <!-- ── View Mode Toggle ── -->
   <div class="flex items-center gap-3 mb-4 no-print fade-up delay-2">
-    <span class="text-xs font-semibold text-gray-500" data-t="arViewMode">มุมมอง:</span>
-    <button id="modeEntry" class="mode-tab active" onclick="setMode('entry')" data-t="arModeEntry">บันทึกผลการเรียน</button>
-    <button id="modeHistory" class="mode-tab" onclick="setMode('history')" data-t="arModeHistory">ประวัติผลการเรียน</button>
-    <span id="arEntryHint" class="text-xs text-gray-400 ml-2"></span>
+    <span class="text-xs font-semibold text-gray-500">มุมมอง:</span>
+    <button id="modeEntry"   class="mode-tab active" onclick="setMode('entry')">บันทึกผลการเรียน</button>
+    <button id="modeHistory" class="mode-tab"         onclick="setMode('history')">ประวัติผลการเรียน</button>
   </div>
 
   <!-- ══════════════════ ENTRY MODE ══════════════════ -->
-  <div id="panelEntry" class="ar-card fade-up delay-2">
-    <div class="ar-card-hdr" style="background:#7c3aed">
-      <i data-lucide="edit-3" class="w-4 h-4"></i>
-      <span data-t="arEntryTitle">กรอกผลการเรียน</span>
-      <span class="ml-auto text-purple-200 text-xs font-normal" id="entryTermLabel"></span>
-    </div>
-    <div class="ar-card-body">
-      <!-- Entry toolbar -->
-      <div class="flex flex-wrap gap-2 items-center px-4 py-3 border-b border-gray-100 no-print">
-        <span class="text-xs text-gray-500" id="entryCount">—</span>
-        <div class="ml-auto flex gap-2">
+  <div id="panelEntry" class="fade-up delay-2">
+
+    <!-- Sticky toolbar -->
+    <div class="sticky-toolbar no-print">
+      <div class="flex flex-wrap gap-2 items-center justify-between">
+        <div class="flex gap-2 flex-wrap items-center">
+          <div class="search-wrap">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <input type="text" id="entrySearch" class="field-input search-input"
+              placeholder="ค้นหาชื่อหรือรหัสทุน..." style="width:210px"
+              oninput="filterEntryRows()">
+          </div>
+          <span class="text-xs text-gray-400" id="entryCount">กรุณาเลือกปีการศึกษาและภาคเรียน</span>
+        </div>
+        <div class="flex gap-2">
           <button onclick="clearAllGPAInputs()" class="btn btn-secondary btn-sm text-xs">
-            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-            <span data-t="arClearAll">ล้างทั้งหมด</span>
+            <i data-lucide="eraser" class="w-3.5 h-3.5"></i> ล้างทั้งหมด
           </button>
-          <button onclick="saveGrades()" class="btn btn-sm font-bold text-xs" style="background:#7c3aed;color:#fff;border:none">
+          <button onclick="saveGrades()" class="btn btn-sm font-bold" style="background:#7c3aed;color:#fff;border:none;min-width:150px">
             <i data-lucide="save" class="w-3.5 h-3.5"></i>
-            <span data-t="gradesSave">บันทึกผลการเรียน</span>
+            <span>บันทึกผลการเรียน</span>
           </button>
         </div>
       </div>
-      <div class="overflow-x-auto">
-        <table class="ar-table">
-          <thead>
-            <tr>
-              <th style="width:32px">#</th>
-              <th data-t="gradeColName">ชื่อ-สกุล</th>
-              <th data-t="gradeColInst">สถานศึกษา</th>
-              <th data-t="gradeColLevel">ชั้น/ระดับ</th>
-              <th class="text-center" data-t="gradeColGPA">GPA (0–4)</th>
-              <th data-t="gradeColNotes">หมายเหตุ</th>
-              <th class="text-center no-print" data-t="arColAct">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="entryTableBody">
-            <tr>
-              <td colspan="7" class="text-center text-gray-400 py-10 text-xs">
-                กรุณาเลือกปีการศึกษาและภาคเรียน
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="flex items-center gap-1.5 text-xs text-gray-400 px-4 py-3 border-t border-gray-100 no-print">
-        <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0"></i>
-        <span data-t="gradesNote">ระบบป้องกันข้อมูลซ้ำอัตโนมัติ — หากมีผลการเรียนของนักเรียนคนเดิมในภาคเรียนเดียวกันอยู่แล้ว จะอัปเดตแทนการเพิ่มใหม่</span>
-      </div>
+    </div>
+
+    <!-- Prompt when no year/sem selected -->
+    <div id="entryPrompt" class="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-400 text-sm">
+      <i data-lucide="book-open" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
+      <p class="font-semibold">กรุณาเลือกปีการศึกษาและภาคเรียนด้านบนเพื่อเริ่มกรอกผลการเรียน</p>
+      <p class="text-xs mt-1">ระบบจะแสดงรายชื่อนักเรียนทั้งหมดพร้อมช่องกรอก GPA โดยอัตโนมัติ</p>
+    </div>
+
+    <!-- Group cards container -->
+    <div id="entryGroupsContainer"></div>
+
+    <!-- Save hint -->
+    <div id="entrySaveHint" class="hidden flex items-center gap-1.5 text-xs text-gray-400 py-3 no-print">
+      <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0"></i>
+      <span>ระบบป้องกันข้อมูลซ้ำอัตโนมัติ — หากมีผลการเรียนอยู่แล้วจะอัปเดตแทนการเพิ่มใหม่ • แถวสีม่วง = มีผลการเรียนแล้ว</span>
     </div>
   </div>
 
@@ -268,23 +286,23 @@
   <div id="panelHistory" class="ar-card hidden fade-up delay-2">
     <div class="ar-card-hdr" style="background:#374151">
       <i data-lucide="history" class="w-4 h-4"></i>
-      <span data-t="arHistoryTitle">ประวัติผลการเรียนทั้งหมด</span>
+      <span>ประวัติผลการเรียนทั้งหมด</span>
       <span class="ml-auto text-gray-300 text-xs font-normal" id="historyCount">—</span>
     </div>
     <div class="ar-card-body overflow-x-auto">
       <table class="ar-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th data-t="gradeColName">ชื่อ-สกุล</th>
-            <th data-t="gradeColInst">สถานศึกษา</th>
-            <th data-t="gradeColLevel">ชั้น</th>
-            <th data-t="gradesAcadYear">ปีการศึกษา</th>
-            <th data-t="gradesSemester">ภาคเรียน</th>
-            <th class="text-center" data-t="gradeColGPA">GPA</th>
-            <th data-t="gradeColNotes">หมายเหตุ</th>
-            <th data-t="arColUpdated">อัปเดตโดย</th>
-            <th class="no-print"></th>
+            <th style="width:32px">#</th>
+            <th>ชื่อ-สกุล</th>
+            <th>สถานศึกษา</th>
+            <th>ชั้น/ระดับ</th>
+            <th>ปีการศึกษา</th>
+            <th>ภาคเรียน</th>
+            <th class="text-center">GPA</th>
+            <th>หมายเหตุ</th>
+            <th>บันทึกโดย</th>
+            <th class="no-print" style="width:40px"></th>
           </tr>
         </thead>
         <tbody id="historyTableBody">
@@ -299,11 +317,10 @@
 <!-- ══════════════════ FORMAL PRINT MODAL ══════════════════ -->
 <div id="arPrintModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,.5)">
   <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:660px">
-    <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#7c3aed">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        <span data-t="arPrintModalTitle">พิมพ์รายงานผลการเรียน / Print Grade Report</span>
+        พิมพ์รายงานผลการเรียน / Print Grade Report
       </h3>
       <button onclick="closePrintModal()" class="text-white opacity-70 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -311,30 +328,27 @@
     </div>
 
     <div class="p-5 space-y-0" style="max-height:82vh;overflow-y:auto">
-      <!-- Language -->
       <div class="pr-section">
-        <span class="pr-label" data-t="rptPrLang">ภาษารายงาน / Report Language</span>
+        <span class="pr-label">ภาษารายงาน / Report Language</span>
         <div class="pr-radio-row">
           <label><input type="radio" name="arPrLang" value="th" checked class="accent-purple-600"> ภาษาไทย</label>
           <label><input type="radio" name="arPrLang" value="en" class="accent-purple-600"> English</label>
         </div>
       </div>
 
-      <!-- Acad Year + Date -->
       <div class="grid grid-cols-2 gap-3 pr-section">
         <div>
-          <span class="pr-label" data-t="rptPrAcad">ปีการศึกษา / Academic Year</span>
+          <span class="pr-label">ปีการศึกษา / Academic Year</span>
           <input type="text" id="arPrAcad" class="pr-field" placeholder="2024-2025">
         </div>
         <div>
-          <span class="pr-label" data-t="rptPrDate">วันที่รายงาน / Report Date</span>
+          <span class="pr-label">วันที่รายงาน / Report Date</span>
           <input type="date" id="arPrDate" class="pr-field">
         </div>
       </div>
 
-      <!-- Term / Semester -->
       <div class="pr-section">
-        <span class="pr-label" data-t="gradesSemester">ภาคเรียน / Term</span>
+        <span class="pr-label">ภาคเรียน / Term</span>
         <select id="arPrSem" class="pr-field">
           <option value="">— ทุกภาคเรียน / All Terms —</option>
           <option value="1">ภาคเรียนที่ 1 / Semester 1</option>
@@ -343,9 +357,8 @@
         </select>
       </div>
 
-      <!-- Institution -->
       <div class="pr-section">
-        <span class="pr-label" data-t="gradesFilterInst">สถานศึกษา / Institution</span>
+        <span class="pr-label">สถานศึกษา / Institution</span>
         <select id="arPrInst" class="pr-field">
           <option value="">ทุกสถานศึกษา / All</option>
           <option value="MBS">MBS</option>
@@ -354,30 +367,27 @@
         </select>
       </div>
 
-      <!-- Subject -->
       <div class="pr-section">
-        <span class="pr-label" data-t="rptPrSubject">เรื่อง / Document Subject</span>
+        <span class="pr-label">เรื่อง / Document Subject</span>
         <input type="text" id="arPrSubject" class="pr-field" placeholder="จะสร้างให้อัตโนมัติ / Auto-generated if blank">
       </div>
 
-      <!-- Sort order -->
       <div class="pr-section">
-        <span class="pr-label" data-t="arPrSort">เรียงลำดับ / Sort Order</span>
+        <span class="pr-label">เรียงลำดับ / Sort Order</span>
         <div class="pr-radio-row">
-          <label><input type="radio" name="arPrSort" value="inst" checked class="accent-purple-600"> <span data-t="arSortInst">สถาบัน → ชั้น → ชื่อ</span></label>
-          <label><input type="radio" name="arPrSort" value="gpa" class="accent-purple-600"> <span data-t="arSortGpa">GPA (สูง→ต่ำ)</span></label>
-          <label><input type="radio" name="arPrSort" value="name" class="accent-purple-600"> <span data-t="arSortName">ชื่อ A→Z</span></label>
+          <label><input type="radio" name="arPrSort" value="inst" checked class="accent-purple-600"> <span>สถาบัน → ชั้น → ชื่อ</span></label>
+          <label><input type="radio" name="arPrSort" value="gpa"  class="accent-purple-600"> <span>GPA (สูง→ต่ำ)</span></label>
+          <label><input type="radio" name="arPrSort" value="name" class="accent-purple-600"> <span>ชื่อ A→Z</span></label>
         </div>
       </div>
 
-      <!-- Signatories -->
       <div class="pr-section">
         <div class="flex items-center justify-between mb-2">
-          <span class="pr-label" style="margin-bottom:0" data-t="rptPrSigs">ผู้ลงนามในเอกสาร / Signatories</span>
+          <span class="pr-label" style="margin-bottom:0">ผู้ลงนามในเอกสาร / Signatories</span>
           <a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')"
              class="text-xs text-purple-600 hover:underline flex items-center gap-1">
             <i data-lucide="settings" class="w-3 h-3"></i>
-            <span data-t="rptPrSigSettings">ตั้งค่าผู้ลงนาม</span>
+            ตั้งค่าผู้ลงนาม
           </a>
         </div>
         <div id="arPrSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
@@ -387,18 +397,15 @@
 
       <div class="bg-purple-50 border border-purple-100 rounded-lg p-3 text-xs text-purple-700 flex gap-2 items-start">
         <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <span data-t="rptPrHint">รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน พร้อมลายเซ็นท้ายเอกสาร</span>
+        <span>รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน พร้อมลายเซ็นท้ายเอกสาร</span>
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
-      <button onclick="closePrintModal()" class="btn btn-secondary btn-sm">
-        <span data-t="cancel">ยกเลิก</span>
-      </button>
+      <button onclick="closePrintModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
       <button onclick="doPrint()" class="btn btn-sm font-bold" style="background:#7c3aed;color:#fff;border:none">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        <span data-t="rptPrGenerate">สร้างและพิมพ์รายงาน</span>
+        สร้างและพิมพ์รายงาน
       </button>
     </div>
   </div>
@@ -409,7 +416,7 @@
 </button>
 
 <footer class="rdf-footer no-print">
-  <span>RDF Scholarship Management System — Academic Results</span>
+  <span>RDF — ระบบบันทึกผลการเรียน</span>
   <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบ">
     <span class="db-dot"></span>
     <span id="dbStatusText">กำลังตรวจสอบ...</span>
@@ -423,18 +430,16 @@
 <script src="assets/js/rbac.js"></script>
 <script src="assets/js/api.js"></script>
 <script>
-// ── RBAC ──────────────────────────────────────────────────
 RBAC.enforcePage(['viewStudents']);
 
 // ══════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════
-let _STUDENTS = [];   // all students from API.getStudents()
-let _GRADES   = [];   // STUDENT_GRADES from system settings
-let _TERMS    = [];   // ACADEMIC_TERMS from system settings
-let _SETTINGS = {};   // full settings
-
-let _currentMode = 'entry';  // 'entry' | 'history'
+let _STUDENTS = [];
+let _GRADES   = [];
+let _TERMS    = [];
+let _SETTINGS = {};
+let _currentMode = 'entry';
 
 const DEFAULT_SIG_SLOTS = [
   { role:'ผู้บันทึกข้อมูล',   name:'', position:'' },
@@ -442,13 +447,15 @@ const DEFAULT_SIG_SLOTS = [
 ];
 
 const INST_COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#6b7280' };
+const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb' };
+const INST_LABEL  = { MBS:'MBS', VC:'VC', UNI:'University / มหาวิทยาลัย', OTHER:'อื่นๆ' };
+const INST_ORDER  = { MBS:0, VC:1, UNI:2, OTHER:3 };
 
-// ── Semester label helper ──────────────────────────────────
+// ── Semester label ─────────────────────────────────────────
 function semLabel(val, isEN) {
-  if (val === '1')      return isEN ? 'Semester 1' : 'ภาคเรียนที่ 1';
-  if (val === '2')      return isEN ? 'Semester 2' : 'ภาคเรียนที่ 2';
-  if (val === 'summer') return isEN ? 'Summer'      : 'ภาคฤดูร้อน';
-  // Custom term: look up in _TERMS
+  if (val === '1')      return isEN ? 'Semester 1'  : 'ภาคเรียนที่ 1';
+  if (val === '2')      return isEN ? 'Semester 2'  : 'ภาคเรียนที่ 2';
+  if (val === 'summer') return isEN ? 'Summer Term' : 'ภาคฤดูร้อน';
   const term = _TERMS.find(t => t.semester === val);
   return term ? (isEN ? term.labelEN : term.labelTH) : val;
 }
@@ -464,7 +471,6 @@ function gpaClass(gpa) {
   return 'gpa-po';
 }
 
-// ── Student lookup ─────────────────────────────────────────
 function findStudent(stipNo) {
   return _STUDENTS.find(s => s.StipNo === stipNo) || null;
 }
@@ -473,7 +479,7 @@ function findStudent(stipNo) {
 // DATA LOADING
 // ══════════════════════════════════════════════════════════
 async function loadAll() {
-  showLoader(true, t('loading'));
+  showLoader(true, 'กำลังโหลดข้อมูล...');
   try {
     const [settRes, studRes] = await Promise.all([
       API.getSystemSettings(),
@@ -487,7 +493,6 @@ async function loadAll() {
 
     populateTermDropdown();
 
-    // Default year to current BE year
     const yearEl = document.getElementById('fltYear');
     if (yearEl && !yearEl.value) {
       yearEl.value = new Date().getFullYear() + 543;
@@ -496,45 +501,32 @@ async function loadAll() {
     applyFilters();
 
     const ts = document.getElementById('arTimestamp');
-    if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + new Date().toLocaleString();
+    if (ts) ts.textContent = 'อัปเดต: ' + new Date().toLocaleString('th-TH');
 
     showLoader(false);
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error')||'Error', e.message, 'error');
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
   }
 }
 
-// ── Populate term dropdown from ACADEMIC_TERMS (custom terms) ─
+// ── Populate term dropdown from ACADEMIC_TERMS ─────────────
 function populateTermDropdown() {
-  const sel = document.getElementById('fltSem');
-  // Keep standard options, add any custom term semesters from ACADEMIC_TERMS
-  const seen = new Set(['', '1', '2', 'summer']);
-  _TERMS.forEach(term => {
-    const key = term.semester || '';
-    if (key && !seen.has(key)) {
-      seen.add(key);
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = LANG === 'th' ? (term.labelTH || key) : (term.labelEN || key);
-      sel.appendChild(opt);
-    }
-  });
-  // Also refresh print modal semester dropdown
-  const prSel = document.getElementById('arPrSem');
-  if (prSel) {
-    const added = new Set([...prSel.options].map(o => o.value));
+  ['fltSem','arPrSem'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const seen = new Set([...sel.options].map(o => o.value));
     _TERMS.forEach(term => {
       const key = term.semester || '';
-      if (key && !added.has(key)) {
-        added.add(key);
+      if (key && !seen.has(key)) {
+        seen.add(key);
         const opt = document.createElement('option');
         opt.value = key;
         opt.textContent = LANG === 'th' ? (term.labelTH || key) : (term.labelEN || key);
-        prSel.appendChild(opt);
+        sel.appendChild(opt);
       }
     });
-  }
+  });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -546,8 +538,7 @@ function applyFilters() {
   const inst = document.getElementById('fltInst').value;
 
   buildKPIStrip(year, sem, inst);
-
-  if (_currentMode === 'entry') buildEntryTable(year, sem, inst);
+  if (_currentMode === 'entry') buildEntryGroups(year, sem, inst);
   else buildHistoryTable(year, sem, inst);
 }
 
@@ -581,9 +572,8 @@ function buildKPIStrip(year, sem, inst) {
     const stipSet = new Set(_STUDENTS.filter(s => s.Institution === inst).map(s => s.StipNo));
     filtered = filtered.filter(g => stipSet.has(g.stipNo));
   }
-
   const gpas   = filtered.map(g => parseFloat(g.gpa)).filter(v => !isNaN(v));
-  const avg    = gpas.length ? gpas.reduce((a,b) => a+b, 0) / gpas.length : null;
+  const avg    = gpas.length ? (gpas.reduce((a,b)=>a+b,0)/gpas.length) : null;
   const high   = gpas.length ? Math.max(...gpas) : null;
   const below2 = gpas.filter(v => v < 2.0).length;
 
@@ -594,63 +584,83 @@ function buildKPIStrip(year, sem, inst) {
 }
 
 // ══════════════════════════════════════════════════════════
-// ENTRY TABLE (editable grade input per student)
+// ENTRY MODE — GROUP CARDS
 // ══════════════════════════════════════════════════════════
-function buildEntryTable(year, sem, inst) {
-  const isEN  = LANG === 'en';
-  const tbody = document.getElementById('entryTableBody');
-  const hint  = document.getElementById('arEntryHint');
-  const label = document.getElementById('entryTermLabel');
+function buildEntryGroups(year, sem, inst) {
+  const isEN      = LANG === 'en';
+  const container = document.getElementById('entryGroupsContainer');
+  const prompt    = document.getElementById('entryPrompt');
+  const hint      = document.getElementById('entrySaveHint');
+  const countEl   = document.getElementById('entryCount');
 
-  // Must have both year and semester for entry mode
   if (!year || !sem) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-400 py-10 text-xs">
-      ${isEN ? 'Select an academic year AND semester above to enter grades.' : 'กรุณาเลือกทั้งปีการศึกษาและภาคเรียนเพื่อกรอกผลการเรียน'}
-    </td></tr>`;
-    if (hint)  hint.textContent  = isEN ? '(Select year + semester)' : '(เลือกปีการศึกษา + ภาคเรียน)';
-    if (label) label.textContent = '';
-    document.getElementById('entryCount').textContent = '';
+    container.innerHTML = '';
+    prompt.classList.remove('hidden');
+    hint.classList.add('hidden');
+    countEl.textContent = isEN ? 'Select year + semester to start' : 'กรุณาเลือกปีการศึกษาและภาคเรียน';
     return;
   }
+  prompt.classList.add('hidden');
+  hint.classList.remove('hidden');
 
-  if (hint)  hint.textContent  = '';
-  if (label) label.textContent = `${year} — ${semLabel(sem, isEN)}`;
-
-  // Build student list: only Active or University students, sorted by inst/level
-  const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
-  const students  = _STUDENTS
-    .filter(s => (s.Status === 'Active' || s.Status === 'University') && (!inst || s.Institution === inst))
+  // Filter students: Active or University only
+  const students = _STUDENTS
+    .filter(s => ['Active','University'].includes(s.Status) && (!inst || s.Institution === inst))
     .sort((a, b) => {
-      const io = (instOrder[a.Institution]??9) - (instOrder[b.Institution]??9);
+      const io = (INST_ORDER[a.Institution]??9) - (INST_ORDER[b.Institution]??9);
       if (io !== 0) return io;
-      return (LEVEL_OPTIONS[a.Institution]||[]).indexOf(a.CurrentLevel) -
-             (LEVEL_OPTIONS[b.Institution]||[]).indexOf(b.CurrentLevel);
+      return ((LEVEL_OPTIONS||{})[a.Institution]||[]).indexOf(a.CurrentLevel) -
+             ((LEVEL_OPTIONS||{})[b.Institution]||[]).indexOf(b.CurrentLevel);
     });
 
-  document.getElementById('entryCount').textContent =
-    `${students.length} ${isEN ? 'student(s)' : 'นักเรียน'} — ${isEN ? 'existing grades highlighted' : 'แถวสีม่วง = มีผลการเรียนแล้ว'}`;
+  countEl.textContent = `${students.length} ${isEN?'student(s)':'นักเรียน'} — ${year} ${semLabel(sem,isEN)}`;
 
   if (!students.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-400 py-10 text-xs">${t('noData')||'ไม่พบข้อมูล'}</td></tr>`;
+    container.innerHTML = `<div class="text-center text-gray-400 py-12 bg-white rounded-xl border"><p>${isEN?'No students found.':'ไม่พบนักเรียนที่ Active'}</p></div>`;
     return;
   }
 
-  tbody.innerHTML = students.map((s, i) => {
-    const existing = _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === year && g.semester === sem);
-    const name     = isEN
-      ? (`${s.EngFirstName||''} ${s.EngLastName||''}`.trim() || `${s.FirstName||''} ${s.LastName||''}`.trim())
-      : `${s.Title||''}${s.FirstName||''} ${s.LastName||''}`.trim();
-    const gpaVal   = existing != null && existing.gpa != null ? existing.gpa : '';
-    const noteVal  = existing ? (existing.notes || '') : '';
+  // Group by institution
+  const instKeys = ['MBS','VC','UNI','OTHER'];
+  const grouped  = {};
+  students.forEach(s => {
+    const key = instKeys.includes(s.Institution) ? s.Institution : 'OTHER';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(s);
+  });
 
-    return `<tr class="${existing ? 'graded' : ''}" style="border-bottom:1px solid #f1f5f9">
-      <td style="color:#9ca3af;font-size:11px;padding-left:12px">${i+1}</td>
+  container.innerHTML = instKeys
+    .filter(k => grouped[k] && grouped[k].length)
+    .map(grpKey => buildGroupCard(grpKey, grouped[grpKey], year, sem, isEN))
+    .join('');
+
+  lucide.createIcons();
+}
+
+function buildGroupCard(grpKey, students, year, sem, isEN) {
+  const color = INST_COLORS[grpKey] || '#6b7280';
+  const bg    = INST_BG[grpKey]    || '#f9fafb';
+  const label = INST_LABEL[grpKey] || grpKey;
+
+  const gradedCount = students.filter(s =>
+    _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === year && g.semester === sem)
+  ).length;
+
+  const rows = students.map((s, i) => {
+    const existing = _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === year && g.semester === sem);
+    const name = isEN
+      ? (`${s.EngFirstName||''} ${s.EngLastName||''}`.trim() || `${s.Title||''}${s.FirstName||''} ${s.LastName||''}`.trim())
+      : `${s.Title||''}${s.FirstName||''} ${s.LastName||''}`.trim();
+    const gpaVal  = existing != null && existing.gpa != null ? existing.gpa : '';
+    const noteVal = existing ? (existing.notes || '') : '';
+
+    return `<tr class="entry-row${existing?' graded':''}" data-search="${name.toLowerCase()} ${s.StipNo.toLowerCase()}" style="border-bottom:1px solid #f1f5f9">
+      <td style="color:#9ca3af;font-size:11px;padding-left:12px;width:32px">${i+1}</td>
       <td>
         <div class="font-semibold text-gray-800" style="font-size:12px">${name}</div>
         <div style="font-size:10px;color:#9ca3af">${s.StipNo}</div>
       </td>
-      <td><span class="text-xs font-bold" style="color:${INST_COLORS[s.Institution]||'#374151'}">${s.Institution||'—'}</span></td>
-      <td style="font-size:11px;color:#6b7280;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.CurrentLevel||'—'}</td>
+      <td style="font-size:11px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.CurrentLevel||'—'}</td>
       <td style="text-align:center">
         <input type="number" step="0.01" min="0" max="4"
                id="gpa_${s.StipNo}" value="${gpaVal}"
@@ -663,32 +673,76 @@ function buildEntryTable(year, sem, inst) {
       <td>
         <input type="text" id="gnote_${s.StipNo}" value="${noteVal}"
                class="no-print"
-               style="width:100%;min-width:90px;border:1px solid #e5e7eb;border-radius:6px;padding:4px 7px;font-size:11px;outline:none;font-family:inherit"
+               style="width:100%;min-width:80px;border:1px solid #e5e7eb;border-radius:6px;padding:4px 7px;font-size:11px;outline:none;font-family:inherit"
                onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'"
-               placeholder="${isEN?'Note':'หมายเหตุ (ถ้ามี)'}">
+               placeholder="${isEN?'Notes':'หมายเหตุ (ถ้ามี)'}">
         <span class="print-only text-xs text-gray-500">${noteVal}</span>
       </td>
-      <td class="text-center no-print">
+      <td class="text-center no-print" style="width:40px">
         ${existing ? `<button onclick="deleteGrade('${s.StipNo}',${year},'${sem}')"
           style="color:#dc2626;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:11px"
-          title="${isEN?'Remove grade record':'ลบผลการเรียน'}">
+          title="${isEN?'ลบผลการเรียน':'ลบผลการเรียน'}">
           <i data-lucide="trash-2" style="width:13px;height:13px;display:inline-block;vertical-align:middle"></i>
         </button>` : ''}
       </td>
     </tr>`;
   }).join('');
 
-  lucide.createIcons();
+  return `<div class="group-card" id="grp_${grpKey}">
+    <div class="group-header" style="background:${bg};border-bottom:2px solid ${color}22">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span style="background:${color};color:#fff;border-radius:8px;padding:3px 12px;font-size:13px;font-weight:800">${grpKey}</span>
+        <span style="font-size:13px;font-weight:600;color:#374151">${label}</span>
+        <span class="text-xs text-gray-500">${students.length} ${isEN?'student(s)':'นักเรียน'}</span>
+        ${gradedCount > 0 ? `<span style="font-size:11px;color:${color};background:${color}18;border-radius:6px;padding:2px 8px;font-weight:700">${gradedCount} ${isEN?'graded':'มีผลการเรียนแล้ว'}</span>` : ''}
+      </div>
+      <button onclick="clearGroupGPA('${grpKey}')" class="btn btn-secondary btn-sm text-xs no-print" style="font-size:11px;padding:4px 10px">
+        <i data-lucide="eraser" class="w-3 h-3"></i> ล้างกลุ่มนี้
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="ar-table">
+        <thead>
+          <tr>
+            <th style="width:32px">#</th>
+            <th>${isEN?'Name':'ชื่อ-สกุล'}</th>
+            <th>${isEN?'Class / Level':'ชั้น/ระดับ'}</th>
+            <th style="text-align:center;width:100px">GPA (0–4)</th>
+            <th>${isEN?'Notes':'หมายเหตุ'}</th>
+            <th class="no-print" style="width:40px"></th>
+          </tr>
+        </thead>
+        <tbody class="group-tbody" data-group="${grpKey}">${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── Search filter within entry rows ───────────────────────
+function filterEntryRows() {
+  const q = (document.getElementById('entrySearch')?.value || '').toLowerCase().trim();
+  document.querySelectorAll('.entry-row').forEach(tr => {
+    const text = (tr.dataset.search || '');
+    tr.classList.toggle('entry-hidden', q !== '' && !text.includes(q));
+  });
 }
 
 // ── Clear all GPA inputs ──────────────────────────────────
 function clearAllGPAInputs() {
-  document.querySelectorAll('[id^="gpa_"]').forEach(el => { el.value = ''; el.style.background = '#fff'; });
+  document.querySelectorAll('[id^="gpa_"]').forEach(el => { el.value = ''; el.style.background='#fff'; });
   document.querySelectorAll('[id^="gnote_"]').forEach(el => { el.value = ''; });
 }
 
+// ── Clear one institution group ───────────────────────────
+function clearGroupGPA(grpKey) {
+  const tbody = document.querySelector(`.group-tbody[data-group="${grpKey}"]`);
+  if (!tbody) return;
+  tbody.querySelectorAll('[id^="gpa_"]').forEach(el => { el.value = ''; el.style.background='#fff'; });
+  tbody.querySelectorAll('[id^="gnote_"]').forEach(el => { el.value = ''; });
+}
+
 // ══════════════════════════════════════════════════════════
-// HISTORY TABLE (read-only all grades)
+// HISTORY TABLE
 // ══════════════════════════════════════════════════════════
 function buildHistoryTable(year, sem, inst) {
   const isEN  = LANG === 'en';
@@ -697,8 +751,6 @@ function buildHistoryTable(year, sem, inst) {
   let filtered = [..._GRADES];
   if (year) filtered = filtered.filter(g => g.acadYear === year);
   if (sem)  filtered = filtered.filter(g => g.semester === sem);
-
-  // Filter by institution via student lookup
   if (inst) {
     const stipSet = new Set(_STUDENTS.filter(s => s.Institution === inst).map(s => s.StipNo));
     filtered = filtered.filter(g => stipSet.has(g.stipNo));
@@ -708,11 +760,10 @@ function buildHistoryTable(year, sem, inst) {
   if (countEl) countEl.textContent = `${filtered.length} ${isEN?'record(s)':'รายการ'}`;
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-10 text-xs">${t('noData')||'ไม่พบข้อมูล'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-10 text-xs">ไม่พบข้อมูลผลการเรียน</td></tr>`;
     return;
   }
 
-  // Sort by year desc, sem, then institution
   filtered.sort((a, b) => {
     if (b.acadYear !== a.acadYear) return b.acadYear - a.acadYear;
     if (a.semester !== b.semester) return String(a.semester).localeCompare(String(b.semester));
@@ -723,13 +774,13 @@ function buildHistoryTable(year, sem, inst) {
     const stu   = findStudent(g.stipNo);
     const name  = stu
       ? (isEN
-          ? (`${stu.EngFirstName||''} ${stu.EngLastName||''}`.trim() || `${stu.FirstName||''} ${stu.LastName||''}`.trim())
+          ? (`${stu.EngFirstName||''} ${stu.EngLastName||''}`.trim() || `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
           : `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
-      : `—`;
+      : g.stipNo;
+    const inst2 = stu?.Institution || '—';
     const level = stu?.CurrentLevel || '—';
-    const inst2 = stu?.Institution  || '—';
     const gpaV  = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
-    const upd   = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString() : '—';
+    const upd   = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '—';
     return `<tr style="border-bottom:1px solid #f1f5f9">
       <td style="color:#9ca3af;font-size:11px;padding-left:12px">${i+1}</td>
       <td>
@@ -737,7 +788,7 @@ function buildHistoryTable(year, sem, inst) {
         <div style="font-size:10px;color:#9ca3af">${g.stipNo}</div>
       </td>
       <td><span class="text-xs font-bold" style="color:${INST_COLORS[inst2]||'#374151'}">${inst2}</span></td>
-      <td style="font-size:11px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${level}</td>
+      <td style="font-size:11px;color:#6b7280">${level}</td>
       <td style="font-size:11px;font-weight:600;color:#374151">${g.acadYear||'—'}</td>
       <td style="font-size:11px;color:#374151">${semLabel(g.semester, isEN)}</td>
       <td style="text-align:center">
@@ -748,7 +799,7 @@ function buildHistoryTable(year, sem, inst) {
       <td class="no-print" style="text-align:center">
         <button onclick="deleteGrade('${g.stipNo}',${g.acadYear},'${g.semester}')"
           style="color:#dc2626;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:11px"
-          title="${isEN?'Delete':'ลบ'}">
+          title="ลบ">
           <i data-lucide="trash-2" style="width:13px;height:13px;display:inline-block;vertical-align:middle"></i>
         </button>
       </td>
@@ -762,14 +813,12 @@ function buildHistoryTable(year, sem, inst) {
 // SAVE GRADES (upsert — no duplicates)
 // ══════════════════════════════════════════════════════════
 async function saveGrades() {
-  const year  = parseInt(document.getElementById('fltYear').value) || 0;
-  const sem   = document.getElementById('fltSem').value;
-  const isEN  = LANG === 'en';
+  const year = parseInt(document.getElementById('fltYear').value) || 0;
+  const sem  = document.getElementById('fltSem').value;
+  const isEN = LANG === 'en';
 
   if (!year || year < 2560 || !sem) {
-    Swal.fire(t('warning')||'Warning',
-      isEN ? 'Select a valid academic year and semester first.'
-           : 'กรุณาเลือกปีการศึกษา (พ.ศ.) และภาคเรียนก่อนบันทึก', 'warning');
+    Swal.fire('คำเตือน', 'กรุณาเลือกปีการศึกษา (พ.ศ.) และภาคเรียนก่อนบันทึก', 'warning');
     return;
   }
 
@@ -785,8 +834,7 @@ async function saveGrades() {
   });
 
   if (!newEntries.length) {
-    Swal.fire(t('warning')||'Warning',
-      isEN ? 'No GPA values entered.' : 'ยังไม่ได้กรอก GPA ใดๆ', 'warning');
+    Swal.fire('คำเตือน', 'ยังไม่ได้กรอก GPA ใดๆ กรุณากรอกคะแนนก่อนบันทึก', 'warning');
     return;
   }
 
@@ -800,21 +848,21 @@ async function saveGrades() {
   });
   _GRADES = Object.values(gradeMap);
 
-  showLoader(true, t('saving'));
+  showLoader(true, 'กำลังบันทึก...');
   try {
     const r = await API.saveSetting('STUDENT_GRADES', _GRADES);
     showLoader(false);
-    if (r.status !== 'success') throw new Error(r.message || t('error'));
+    if (r.status !== 'success') throw new Error(r.message || 'บันทึกไม่สำเร็จ');
     _SETTINGS['STUDENT_GRADES'] = _GRADES;
     Swal.fire({
-      icon:'success', title: t('saved')||'บันทึกสำเร็จ',
-      text: `${isEN?'Saved':'บันทึก'} ${newEntries.length} ${isEN?'record(s)':'ผลการเรียน'} — ${year} ${semLabel(sem, isEN)}`,
+      icon:'success', title:'บันทึกสำเร็จ',
+      text:`บันทึก ${newEntries.length} รายการ — ปีการศึกษา ${year} ${semLabel(sem, false)}`,
       timer:2500, showConfirmButton:false,
     });
     applyFilters();
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error')||'Error', e.message, 'error');
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
   }
 }
 
@@ -826,10 +874,10 @@ async function deleteGrade(stipNo, acadYear, semester) {
   const stu  = findStudent(stipNo);
   const name = stu ? `${stu.FirstName||''} ${stu.LastName||''}`.trim() : stipNo;
   const cf = await Swal.fire({
-    title: t('deleteConfirm')||'ยืนยันการลบ?', icon:'warning',
+    title: 'ยืนยันการลบ?', icon:'warning',
     showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
-    confirmButtonText: t('confirmDelete')||'ลบ', cancelButtonText: t('cancel')||'ยกเลิก',
-    html: `${isEN?'Delete grade of':'ลบผลการเรียนของ'} <b>${name}</b> (${acadYear} ${semLabel(semester, isEN)})?`,
+    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก',
+    html:`ลบผลการเรียนของ <b>${name}</b> (${acadYear} ${semLabel(semester,false)})?`,
   });
   if (!cf.isConfirmed) return;
 
@@ -843,38 +891,98 @@ async function deleteGrade(stipNo, acadYear, semester) {
     applyFilters();
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error')||'Error', e.message, 'error');
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// EXPORT TO EXCEL
+// ══════════════════════════════════════════════════════════
+function exportToExcel() {
+  const year = parseInt(document.getElementById('fltYear').value) || 0;
+  const sem  = document.getElementById('fltSem').value;
+  const inst = document.getElementById('fltInst').value;
+
+  let filtered = [..._GRADES];
+  if (year) filtered = filtered.filter(g => g.acadYear === year);
+  if (sem)  filtered = filtered.filter(g => g.semester === sem);
+  if (inst) {
+    const stipSet = new Set(_STUDENTS.filter(s => s.Institution === inst).map(s => s.StipNo));
+    filtered = filtered.filter(g => stipSet.has(g.stipNo));
+  }
+
+  if (!filtered.length) {
+    Swal.fire('ไม่มีข้อมูล', 'ไม่พบผลการเรียนสำหรับเงื่อนไขที่เลือก', 'warning');
+    return;
+  }
+
+  // Sort by inst → year → sem
+  const instOrd = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  filtered.sort((a, b) => {
+    const sa = findStudent(a.stipNo);
+    const sb = findStudent(b.stipNo);
+    const io = (instOrd[sa?.Institution]??9) - (instOrd[sb?.Institution]??9);
+    if (io !== 0) return io;
+    if (b.acadYear !== a.acadYear) return b.acadYear - a.acadYear;
+    return String(a.semester).localeCompare(String(b.semester));
+  });
+
+  const data = filtered.map((g, i) => {
+    const stu = findStudent(g.stipNo);
+    const name = stu ? `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim() : g.stipNo;
+    return {
+      'ลำดับ': i+1,
+      'รหัสทุน': g.stipNo,
+      'ชื่อ-สกุล': name,
+      'สถานศึกษา': stu?.Institution || '—',
+      'ชั้น/ระดับ': stu?.CurrentLevel || '—',
+      'ปีการศึกษา (พ.ศ.)': g.acadYear,
+      'ภาคเรียน': semLabel(g.semester, false),
+      'GPA': g.gpa != null ? parseFloat(g.gpa) : '',
+      'หมายเหตุ': g.notes || '',
+      'บันทึกโดย': g.updatedBy || '',
+      'วันที่บันทึก': g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '',
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  // Set column widths
+  ws['!cols'] = [
+    {wch:6},{wch:12},{wch:30},{wch:12},{wch:20},
+    {wch:18},{wch:18},{wch:8},{wch:25},{wch:20},{wch:18},
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ผลการเรียน');
+
+  const parts = [];
+  if (year) parts.push(String(year));
+  if (sem)  parts.push(semLabel(sem, false));
+  if (inst) parts.push(inst);
+  const filename = `ผลการเรียน${parts.length?'_'+parts.join('_'):''}.xlsx`;
+  XLSX.writeFile(wb, filename);
 }
 
 // ══════════════════════════════════════════════════════════
 // PRINT MODAL
 // ══════════════════════════════════════════════════════════
 function openPrintModal() {
-  const isEN = LANG === 'en';
-
-  // Pre-fill from current filters
   const arAcadEl = document.getElementById('arPrAcad');
-  const arSemEl  = document.getElementById('arPrSem');
-  const arInstEl = document.getElementById('arPrInst');
-
   if (arAcadEl && !arAcadEl.value) {
     const y = document.getElementById('fltYear').value;
-    arAcadEl.value = y ? `${y}-${y+1}` : '';
+    arAcadEl.value = y ? `${y}` : '';
   }
+  const arSemEl  = document.getElementById('arPrSem');
+  const arInstEl = document.getElementById('arPrInst');
   if (arSemEl)  arSemEl.value  = document.getElementById('fltSem').value;
   if (arInstEl) arInstEl.value = document.getElementById('fltInst').value;
 
   const dateEl = document.getElementById('arPrDate');
   if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
 
-  // Sync language radio
   document.querySelectorAll('input[name="arPrLang"]').forEach(r => { r.checked = (r.value === LANG); });
 
-  // Load signatures
   const sigs = (Array.isArray(_SETTINGS['SIGNATURE_BLOCK']) && _SETTINGS['SIGNATURE_BLOCK'].length)
-    ? _SETTINGS['SIGNATURE_BLOCK']
-    : DEFAULT_SIG_SLOTS;
+    ? _SETTINGS['SIGNATURE_BLOCK'] : DEFAULT_SIG_SLOTS;
   window._arSigSlots = sigs;
 
   const sigList = document.getElementById('arPrSigList');
@@ -888,9 +996,9 @@ function openPrintModal() {
             <div class="flex items-center gap-2 flex-wrap">
               <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:#7c3aed">${i+1}</span>
               <span class="font-semibold text-gray-700 text-sm">${s.role||('ผู้ลงนาม '+(i+1))}</span>
-              ${s.name ? `<span class="text-gray-500 text-xs">${s.name}</span>` : '<span class="text-gray-300 text-xs italic">ยังไม่ระบุชื่อ</span>'}
+              ${s.name?`<span class="text-gray-500 text-xs">${s.name}</span>`:'<span class="text-gray-300 text-xs italic">ยังไม่ระบุชื่อ</span>'}
             </div>
-            ${s.position ? `<div class="text-gray-400 text-xs ml-7">${s.position}</div>` : ''}
+            ${s.position?`<div class="text-gray-400 text-xs ml-7">${s.position}</div>`:''}
           </div>
         </label>`).join('');
   }
@@ -904,24 +1012,22 @@ function closePrintModal() {
 }
 
 function doPrint() {
-  const lang     = document.querySelector('input[name="arPrLang"]:checked')?.value || LANG;
-  const isEN     = lang === 'en';
-  const acad     = document.getElementById('arPrAcad').value.trim();
-  const pDate    = document.getElementById('arPrDate').value;
-  const sem      = document.getElementById('arPrSem').value;
-  const inst     = document.getElementById('arPrInst').value;
-  const subject  = document.getElementById('arPrSubject').value.trim();
-  const sortBy   = document.querySelector('input[name="arPrSort"]:checked')?.value || 'inst';
+  const lang    = document.querySelector('input[name="arPrLang"]:checked')?.value || LANG;
+  const isEN    = lang === 'en';
+  const acad    = document.getElementById('arPrAcad').value.trim();
+  const pDate   = document.getElementById('arPrDate').value;
+  const sem     = document.getElementById('arPrSem').value;
+  const inst    = document.getElementById('arPrInst').value;
+  const subject = document.getElementById('arPrSubject').value.trim();
+  const sortBy  = document.querySelector('input[name="arPrSort"]:checked')?.value || 'inst';
 
-  const selIdxs  = new Set([...document.querySelectorAll('input[name="arPrSig"]:checked')].map(cb => +cb.value));
-  const selSigs  = (window._arSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selIdxs.has(i));
+  const selIdxs = new Set([...document.querySelectorAll('input[name="arPrSig"]:checked')].map(cb => +cb.value));
+  const selSigs = (window._arSigSlots || DEFAULT_SIG_SLOTS).filter((_,i) => selIdxs.has(i));
 
   const html = generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, sortBy, selSigs });
-  const win  = window.open('', '_blank', 'width=1200,height=850');
+  const win  = window.open('','_blank','width=1200,height=850');
   if (!win) {
-    Swal.fire(t('error')||'Error', isEN
-      ? 'Browser blocked popup. Allow popups for this site.'
-      : 'เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup', 'error');
+    Swal.fire('ข้อผิดพลาด','เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup','error');
     return;
   }
   win.document.open();
@@ -933,40 +1039,34 @@ function doPrint() {
 }
 
 // ══════════════════════════════════════════════════════════
-// FORMAL PRINT HTML (A4 landscape, matches promotion.html style)
+// GENERATE FORMAL PRINT HTML (A4 landscape)
 // ══════════════════════════════════════════════════════════
 function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, sortBy, selSigs }) {
-  const tL = key => (T[lang]||{})[key] || T['th'][key] || key;
-
   const SL = {
     org:      isEN ? 'Dr. Robert Dyckerhoff Foundation (Thailand)' : 'มูลนิธิ Dr. Robert Dyckerhoff (ประเทศไทย)',
     title:    isEN ? 'Academic Results Report' : 'รายงานผลการเรียน',
     date:     isEN ? 'Date' : 'วันที่',
     acad:     isEN ? 'Academic Year' : 'ปีการศึกษา',
     term:     isEN ? 'Term' : 'ภาคเรียน',
-    institution: isEN ? 'Institution' : 'สถานศึกษา',
+    inst:     isEN ? 'Institution' : 'สถานศึกษา',
     allInst:  isEN ? 'All Institutions' : 'ทุกสถานศึกษา',
     allTerm:  isEN ? 'All Terms' : 'ทุกภาคเรียน',
     total:    isEN ? 'Total' : 'รวม',
     person:   isEN ? 'student(s)' : 'นักเรียน',
     avg:      isEN ? 'Average GPA' : 'GPA เฉลี่ย',
-    highest:  isEN ? 'Highest' : 'สูงสุด',
-    lowest:   isEN ? 'Lowest' : 'ต่ำสุด',
+    highest:  isEN ? 'Highest GPA' : 'GPA สูงสุด',
+    lowest:   isEN ? 'Lowest GPA' : 'GPA ต่ำสุด',
     below2:   isEN ? 'Below 2.00' : 'ต่ำกว่า 2.00',
-    noGrade:  isEN ? 'N/A' : 'ไม่มีข้อมูล',
-    signedBy: isEN ? 'Certified by' : 'ลงนามรับรองข้อมูล',
-    position: isEN ? 'Position' : 'ตำแหน่ง',
     signDate: isEN ? 'Date' : 'วันที่',
     name:     isEN ? 'Name' : 'ชื่อ-สกุล',
     stipNo:   isEN ? 'Scholarship ID' : 'รหัสทุน',
     level:    isEN ? 'Level' : 'ชั้น/ระดับ',
     gpa:      'GPA',
     notes:    isEN ? 'Notes' : 'หมายเหตุ',
-    summary:  isEN ? 'Summary' : 'สรุป',
+    summary:  isEN ? 'Summary Statistics' : 'สรุปสถิติ',
     noData:   isEN ? 'No grade records found.' : 'ไม่พบข้อมูลผลการเรียน',
   };
 
-  // Filter grades
   let filtered = [..._GRADES];
   if (sem)  filtered = filtered.filter(g => g.semester === sem);
   if (inst) {
@@ -974,64 +1074,59 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
     filtered = filtered.filter(g => stipSet.has(g.stipNo));
   }
 
-  // Build display rows (join with student data)
   let rows = filtered.map(g => {
-    const stu  = findStudent(g.stipNo);
+    const stu = findStudent(g.stipNo);
     const name = stu
       ? (isEN
-          ? (`${stu.EngFirstName||''} ${stu.EngLastName||''}`.trim() || `${stu.FirstName||''} ${stu.LastName||''}`.trim())
+          ? (`${stu.EngFirstName||''} ${stu.EngLastName||''}`.trim() || `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
           : `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
       : g.stipNo;
     return {
-      stipNo:   g.stipNo,
-      name,
-      inst:     stu?.Institution || '—',
-      level:    stu?.CurrentLevel || '—',
+      stipNo: g.stipNo, name,
+      inst:   stu?.Institution || '—',
+      level:  stu?.CurrentLevel || '—',
       acadYear: g.acadYear,
       semester: g.semester,
-      gpa:      g.gpa != null ? parseFloat(g.gpa) : null,
-      notes:    g.notes || '',
+      gpa:    g.gpa != null ? parseFloat(g.gpa) : null,
+      notes:  g.notes || '',
     };
   });
 
-  // Sort
   const instOrd = { MBS:0, VC:1, UNI:2, OTHER:3 };
   if (sortBy === 'gpa') {
-    rows.sort((a, b) => (b.gpa ?? -1) - (a.gpa ?? -1));
+    rows.sort((a,b) => (b.gpa??-1) - (a.gpa??-1));
   } else if (sortBy === 'name') {
-    rows.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    rows.sort((a,b) => a.name.localeCompare(b.name,'th'));
   } else {
-    rows.sort((a, b) => {
+    rows.sort((a,b) => {
       const io = (instOrd[a.inst]??9) - (instOrd[b.inst]??9);
       if (io !== 0) return io;
-      if (a.level !== b.level) return String(a.level).localeCompare(String(b.level), 'th');
-      return a.name.localeCompare(b.name, 'th');
+      if (a.level !== b.level) return String(a.level).localeCompare(String(b.level),'th');
+      return a.name.localeCompare(b.name,'th');
     });
   }
 
-  // Stats
-  const gpas    = rows.map(r => r.gpa).filter(v => v != null);
-  const avg     = gpas.length ? (gpas.reduce((a,b) => a+b, 0)/gpas.length).toFixed(2) : '—';
+  const gpas    = rows.map(r=>r.gpa).filter(v=>v!=null);
+  const avg     = gpas.length ? (gpas.reduce((a,b)=>a+b,0)/gpas.length).toFixed(2) : '—';
   const highest = gpas.length ? Math.max(...gpas).toFixed(2) : '—';
   const lowest  = gpas.length ? Math.min(...gpas).toFixed(2) : '—';
-  const below2  = gpas.filter(v => v < 2).length;
+  const below2  = gpas.filter(v=>v<2).length;
 
-  const autoSubject = subject || `${inst ? inst : SL.allInst} ${acad ? acad : ''} (${SL.title}${sem ? ' — '+semLabel(sem,isEN) : ''})`.trim();
+  const autoSubject = subject || `${inst?inst:SL.allInst}${acad?' — ปีการศึกษา '+acad:''}${sem?' ('+semLabel(sem,isEN)+')':''}`;
 
-  // GPA cell color for print
   const gpaColor = v => {
-    if (v == null) return '#9ca3af';
-    if (v >= 3.5)  return '#15803d';
-    if (v >= 3.0)  return '#1d4ed8';
-    if (v >= 2.5)  return '#a16207';
-    if (v >= 2.0)  return '#c2410c';
+    if (v==null) return '#9ca3af';
+    if (v>=3.5)  return '#15803d';
+    if (v>=3.0)  return '#1d4ed8';
+    if (v>=2.5)  return '#a16207';
+    if (v>=2.0)  return '#c2410c';
     return '#be123c';
   };
 
   const tableRows = rows.length === 0
     ? `<tr><td colspan="7" style="text-align:center;padding:20px;color:#9ca3af;font-style:italic">${SL.noData}</td></tr>`
-    : rows.map((r, i) => {
-        const gpaStr = r.gpa != null ? r.gpa.toFixed(2) : SL.noGrade;
+    : rows.map((r,i) => {
+        const gpaStr = r.gpa!=null ? r.gpa.toFixed(2) : '—';
         return `<tr>
           <td class="tc" style="color:#9ca3af">${i+1}</td>
           <td>${r.name}</td>
@@ -1043,7 +1138,6 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
         </tr>`;
       }).join('');
 
-  // Summary table
   const summaryRows = [
     [SL.total,   rows.length + ' ' + SL.person],
     [SL.avg,     avg],
@@ -1053,7 +1147,6 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
   ].map(([k,v]) => `<tr><td style="padding:4px 14px;border:1px solid #d1d5db">${k}</td>
     <td style="padding:4px 14px;border:1px solid #d1d5db;font-weight:700;text-align:center">${v}</td></tr>`).join('');
 
-  // Signatures
   const sigHTML = selSigs && selSigs.length ? `
     <div style="margin-top:28px;page-break-inside:avoid">
       <div style="display:flex;justify-content:space-evenly;gap:16px;flex-wrap:wrap">
@@ -1091,7 +1184,6 @@ tr:nth-child(even) td{background:#faf5ff}
 .sum-title{font-weight:800;font-size:9pt;color:#7c3aed;margin-bottom:6px;border-left:3px solid #7c3aed;padding-left:8px}
 .sum-tbl{border-collapse:collapse;font-size:8.5pt;min-width:220px}
 .sum-tbl th{background:#374151;color:#fff;padding:4px 14px;border:1px solid #374151;font-size:8pt;text-align:left}
-.sum-tbl td{padding:4px 14px;border:1px solid #d1d5db}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head>
 <body>
@@ -1106,7 +1198,7 @@ tr:nth-child(even) td{background:#faf5ff}
     <div>${SL.date}: <b>${pDate||''}</b></div>
     ${acad ? `<div>${SL.acad}: <b>${acad}</b></div>` : ''}
     ${sem  ? `<div>${SL.term}: <b>${semLabel(sem,isEN)}</b></div>` : ''}
-    <div>${SL.institution}: <b>${inst ? inst : SL.allInst}</b></div>
+    <div>${SL.inst}: <b>${inst?inst:SL.allInst}</b></div>
     <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${SL.total}: ${rows.length} ${SL.person}</div>
   </div>
 </div>
@@ -1116,7 +1208,7 @@ tr:nth-child(even) td{background:#faf5ff}
     <th style="width:28px">#</th>
     <th style="text-align:left">${SL.name}</th>
     <th style="text-align:left;font-size:7.5pt">${SL.stipNo}</th>
-    <th>${SL.institution}</th>
+    <th>${SL.inst}</th>
     <th style="text-align:left">${SL.level}</th>
     <th style="width:60px">${SL.gpa}</th>
     <th style="text-align:left">${SL.notes}</th>
@@ -1128,7 +1220,7 @@ tr:nth-child(even) td{background:#faf5ff}
   <div>
     <div class="sum-title">${SL.summary}</div>
     <table class="sum-tbl">
-      <thead><tr><th>${SL.summary}</th><th style="text-align:center">Value</th></tr></thead>
+      <thead><tr><th>${SL.summary}</th><th style="text-align:center">ค่า / Value</th></tr></thead>
       <tbody>${summaryRows}</tbody>
     </table>
   </div>
@@ -1145,15 +1237,19 @@ function arToggleLang() {
   setLang(LANG === 'th' ? 'en' : 'th');
   const btn = document.getElementById('langBtn');
   if (btn) btn.textContent = LANG === 'th' ? 'EN' : 'TH';
-  // Refresh semester dropdown
+
   const sel = document.getElementById('fltSem');
   if (sel) {
     const curr = sel.value;
-    sel.innerHTML = `
-      <option value="">— ${LANG==='th'?'ทุกภาคเรียน':'All Terms'} —</option>
-      <option value="1">${LANG==='th'?'ภาคเรียนที่ 1':'Semester 1'}</option>
-      <option value="2">${LANG==='th'?'ภาคเรียนที่ 2':'Semester 2'}</option>
-      <option value="summer">${LANG==='th'?'ภาคฤดูร้อน':'Summer'}</option>`;
+    sel.innerHTML = LANG === 'th'
+      ? `<option value="">— ทุกภาคเรียน —</option>
+         <option value="1">ภาคเรียนที่ 1</option>
+         <option value="2">ภาคเรียนที่ 2</option>
+         <option value="summer">ภาคฤดูร้อน</option>`
+      : `<option value="">— All Terms —</option>
+         <option value="1">Semester 1</option>
+         <option value="2">Semester 2</option>
+         <option value="summer">Summer Term</option>`;
     populateTermDropdown();
     sel.value = curr;
   }
@@ -1164,11 +1260,9 @@ function arToggleLang() {
 // SCROLL TO TOP
 // ══════════════════════════════════════════════════════════
 window.addEventListener('scroll', () => {
-  const btn = document.getElementById('scrollTop');
-  if (btn) btn.classList.toggle('visible', window.scrollY > 300);
+  document.getElementById('scrollTop')?.classList.toggle('visible', window.scrollY > 300);
 });
 
-// ESC closes print modal
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePrintModal(); });
 
 // ══════════════════════════════════════════════════════════
