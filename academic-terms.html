@@ -491,8 +491,9 @@
 </div>
 
 <!-- ─── Notification Compose Modal ─── -->
-<div id="notifComposeModal" class="hidden"
-     style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;
+<div id="notifComposeModal"
+     onclick="if(event.target===this)closeNotifCompose()"
+     style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;
             padding:12px;background:rgba(15,23,42,.6);backdrop-filter:blur(3px)">
   <div class="bg-white rounded-2xl shadow-2xl w-full" style="max-width:480px">
     <div class="flex items-center justify-between px-6 py-4" style="background:#1e3a8a">
@@ -1234,8 +1235,17 @@ function _applyNotifCollapse(collapsed) {
   }
 }
 
-function openNotifCompose()  { document.getElementById('notifComposeModal').classList.remove('hidden'); lucide.createIcons(); }
-function closeNotifCompose() { document.getElementById('notifComposeModal').classList.add('hidden'); }
+function openNotifCompose()  {
+  const m = document.getElementById('notifComposeModal');
+  m.style.display = 'flex';
+  lucide.createIcons();
+}
+function closeNotifCompose() {
+  document.getElementById('notifComposeModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeNotifCompose();
+});
 
 // ── Toast Notification ─────────────────────────────────────────
 function showToast(title, body, type) {
