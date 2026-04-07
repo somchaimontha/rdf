@@ -93,7 +93,19 @@
   pointer-events:none;
 }
 #scrollTop.visible { opacity:1; pointer-events:all; }
-/* ── Print ── */
+/* ── Print Modal — same style as promotion.html ── */
+.pr-section { margin-bottom:14px; }
+.pr-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; display:block; margin-bottom:5px; }
+.pr-radio-row { display:flex; gap:16px; flex-wrap:wrap; }
+.pr-radio-row label { display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; }
+.pr-field { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:7px 10px; font-size:13px; outline:none; font-family:inherit; }
+.pr-field:focus { border-color:#1d4ed8; box-shadow:0 0 0 3px rgba(29,78,216,.08); }
+.pr-check-row { display:flex; flex-wrap:wrap; gap:10px; }
+.pr-check-row label { display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;
+  background:#f8faff; border:1.5px solid #e5e7eb; border-radius:8px; padding:5px 12px;
+  transition:border-color .15s; }
+.pr-check-row label:has(input:checked) { border-color:#1d4ed8; background:#eff6ff; }
+/* ── Print (browser print — fallback) ── */
 @media print {
   .no-print, .rdf-nav, .rdf-footer, #loader, .filters-bar { display:none !important; }
   body { background:#fff !important; }
@@ -161,9 +173,9 @@
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         <span data-t="promoReload">โหลดใหม่</span>
       </button>
-      <button onclick="window.print()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
+      <button onclick="openRptPrintModal()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        <span data-t="rptPrint">พิมพ์รายงาน</span>
+        <span data-t="rptPrint">พิมพ์รายงานทางการ</span>
       </button>
     </div>
   </div>
@@ -380,6 +392,139 @@
 
 </main>
 
+<!-- ═══ FORMAL PRINT REPORT MODAL ═══
+     Matches promotion.html print modal pattern exactly.
+     Chart images captured via canvas.toDataURL() — no extra libs needed.
+     Signatures loaded from SETTINGS['SIGNATURE_BLOCK'] (same source as promotion.html).
+-->
+<div id="rptPrintModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,.5)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:680px">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#1e3a8a">
+      <h3 class="font-bold text-white flex items-center gap-2 text-base">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="rptPrintModalTitle">พิมพ์รายงานทางการ / Print Formal Report</span>
+      </h3>
+      <button onclick="closeRptPrintModal()" class="text-white opacity-70 hover:opacity-100">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="p-5 space-y-0" style="max-height:82vh;overflow-y:auto">
+
+      <!-- Report Language -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="rptPrLang">ภาษารายงาน / Report Language</span>
+        <div class="pr-radio-row">
+          <label><input type="radio" name="rptPrLang" value="th" checked class="accent-blue-600"> ภาษาไทย</label>
+          <label><input type="radio" name="rptPrLang" value="en" class="accent-blue-600"> English</label>
+        </div>
+      </div>
+
+      <!-- Academic Year + Date -->
+      <div class="grid grid-cols-2 gap-3 pr-section">
+        <div>
+          <span class="pr-label" data-t="rptPrAcad">ปีการศึกษา / Academic Year</span>
+          <input type="text" id="rptPrAcad" class="pr-field" placeholder="2024-2025">
+        </div>
+        <div>
+          <span class="pr-label" data-t="rptPrDate">วันที่รายงาน / Report Date</span>
+          <input type="date" id="rptPrDate" class="pr-field">
+        </div>
+      </div>
+
+      <!-- Organization + Subject -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="rptPrSubject">เรื่อง / Document Subject</span>
+        <input type="text" id="rptPrSubject" class="pr-field"
+          placeholder="จะสร้างให้อัตโนมัติหากว่างไว้ / Auto-generated if blank">
+      </div>
+
+      <!-- Filter context display -->
+      <div class="pr-section">
+        <span class="pr-label">ตัวกรองที่ใช้ / Active Filters</span>
+        <div id="rptPrFilterCtx" class="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-200"></div>
+      </div>
+
+      <!-- Charts to include -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="rptPrCharts">แผนภูมิที่ต้องการในรายงาน / Charts to Include</span>
+        <div class="pr-check-row">
+          <label>
+            <input type="checkbox" name="rptPrChart" value="enroll" checked class="accent-blue-600">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5" style="color:#1e3a8a"></i>
+            <span data-t="rptChartEnrollShort">แนวโน้มการรับทุน</span>
+          </label>
+          <label>
+            <input type="checkbox" name="rptPrChart" value="status" checked class="accent-blue-600">
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5" style="color:#7c3aed"></i>
+            <span data-t="rptChartStatusShort">สถานะนักเรียน</span>
+          </label>
+          <label>
+            <input type="checkbox" name="rptPrChart" value="inst" class="accent-blue-600">
+            <i data-lucide="bar-chart" class="w-3.5 h-3.5" style="color:#ea580c"></i>
+            <span data-t="rptChartInstShort">สถาบัน</span>
+          </label>
+          <label>
+            <input type="checkbox" name="rptPrChart" value="withdraw" class="accent-blue-600">
+            <i data-lucide="trending-down" class="w-3.5 h-3.5" style="color:#9f1239"></i>
+            <span data-t="rptChartWithdrawShort">การลาออก/ถอนทุน</span>
+          </label>
+          <label>
+            <input type="checkbox" name="rptPrChart" value="compare" checked class="accent-blue-600">
+            <i data-lucide="line-chart" class="w-3.5 h-3.5" style="color:#16a34a"></i>
+            <span data-t="rptChartCompareShort">จบ vs ลาออก</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Data table -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="rptPrTable">ตารางข้อมูล / Data Table</span>
+        <div class="pr-radio-row">
+          <label><input type="radio" name="rptPrTable" value="summary" checked class="accent-blue-600">
+            <span data-t="rptPrTableSummary">ตารางสรุปรายปี</span></label>
+          <label><input type="radio" name="rptPrTable" value="none" class="accent-blue-600">
+            <span data-t="rptPrTableNone">ไม่ใส่ตาราง</span></label>
+        </div>
+      </div>
+
+      <!-- Signatories — loaded from SETTINGS (same source as promotion.html) -->
+      <div class="pr-section">
+        <div class="flex items-center justify-between mb-2">
+          <span class="pr-label" style="margin-bottom:0" data-t="rptPrSigs">ผู้ลงนามในเอกสาร / Signatories</span>
+          <a href="settings.html" target="_blank"
+             onclick="localStorage.setItem('settingsTab','print')"
+             class="text-xs text-blue-600 hover:underline flex items-center gap-1">
+            <i data-lucide="settings" class="w-3 h-3"></i>
+            <span data-t="rptPrSigSettings">ตั้งค่าผู้ลงนาม</span>
+          </a>
+        </div>
+        <div id="rptPrSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">ติ๊กเลือกผู้ลงนามที่ต้องการ • กำหนดรายชื่อได้ที่ การตั้งค่า → ผู้ลงนามในเอกสาร</p>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
+        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+        <span data-t="rptPrHint">รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน แผนภูมิฝังเป็นรูปภาพ พร้อมลายเซ็นท้ายเอกสาร</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
+      <button onclick="closeRptPrintModal()" class="btn btn-secondary btn-sm">
+        <span data-t="cancel">ยกเลิก</span>
+      </button>
+      <button onclick="doRptPrint()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="rptPrGenerate">สร้างและพิมพ์รายงาน</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
   <i data-lucide="arrow-up" class="w-4 h-4"></i>
 </button>
@@ -446,16 +591,29 @@ function statusLabel(key) {
   return (MAP[LANG] || MAP.th)[key] || key;
 }
 
+// ── Settings store (loaded once alongside student data) ──
+let _SETTINGS = {};
+
+// ── Default signature slots if none configured in settings ──
+const DEFAULT_SIG_SLOTS = [
+  { role: 'ผู้บันทึกข้อมูล',   name: '', position: '' },
+  { role: 'ผู้ตรวจสอบข้อมูล', name: '', position: '' },
+];
+
 // ═══════════════════════════════════════════════════════════
 // DATA LOADING — called once; result cached in _CACHE.raw
 // ═══════════════════════════════════════════════════════════
 async function loadReportData() {
   showLoader(true, t('loading'));
   try {
-    const res = await API.getStudents();
-    if (res.status !== 'success') throw new Error(res.message || t('promoLoadError'));
+    const [studRes, settRes] = await Promise.all([
+      API.getStudents(),
+      API.getSystemSettings().catch(() => ({ status:'success', data:{} })),
+    ]);
+    if (studRes.status !== 'success') throw new Error(studRes.message || t('promoLoadError'));
 
-    _CACHE.raw = res.data || [];
+    _CACHE.raw = studRes.data || [];
+    _SETTINGS  = settRes.data || {};
     _CACHE.loadedAt = new Date().toISOString();
 
     // Populate year filter dropdown (unique scholarship years, sorted)
@@ -1061,6 +1219,379 @@ function rptToggleLang() {
   buildAllCharts();
   buildSummaryTable();
 }
+
+// ═══════════════════════════════════════════════════════════
+// FORMAL PRINT REPORT MODAL
+// Matches promotion.html pattern: charts captured as PNG via
+// canvas.toDataURL(), embedded in A4-landscape print window.
+// Signatures loaded from _SETTINGS['SIGNATURE_BLOCK'].
+// ═══════════════════════════════════════════════════════════
+
+function openRptPrintModal() {
+  // Pre-fill date
+  const dateEl = document.getElementById('rptPrDate');
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+
+  // Pre-fill academic year from filter if set
+  const yearEl = document.getElementById('rptPrAcad');
+  if (yearEl) {
+    const fltYear = document.getElementById('fltYear').value;
+    yearEl.value = fltYear || '';
+  }
+
+  // Sync language radio to current UI language
+  document.querySelectorAll('input[name="rptPrLang"]').forEach(r => { r.checked = (r.value === LANG); });
+
+  // Show active filter context
+  const ctx = document.getElementById('rptPrFilterCtx');
+  if (ctx) {
+    const year   = document.getElementById('fltYear').value;
+    const inst   = document.getElementById('fltInst').value;
+    const status = document.getElementById('fltStatus').value;
+    const parts  = [];
+    if (year)   parts.push((LANG==='th'?'ปีทุน: ':'Year: ') + year);
+    if (inst)   parts.push((LANG==='th'?'สถาบัน: ':'Inst: ') + inst);
+    if (status) parts.push((LANG==='th'?'สถานะ: ':'Status: ') + status);
+    ctx.textContent = parts.length ? parts.join('  •  ')
+      : (LANG==='th'?'ไม่มีตัวกรอง — แสดงข้อมูลทั้งหมด':'No filters — showing all data');
+  }
+
+  // Load signature slots from _SETTINGS
+  const sigs = (Array.isArray(_SETTINGS['SIGNATURE_BLOCK']) && _SETTINGS['SIGNATURE_BLOCK'].length > 0)
+    ? _SETTINGS['SIGNATURE_BLOCK']
+    : DEFAULT_SIG_SLOTS;
+  window._rptSigSlots = sigs;
+
+  const sigList = document.getElementById('rptPrSigList');
+  if (sigList) {
+    if (sigs.length === 0) {
+      sigList.innerHTML = `<div class="text-xs text-gray-400 p-3 text-center">ยังไม่มีผู้ลงนาม — กำหนดที่ การตั้งค่า → ผู้ลงนามในเอกสาร</div>`;
+    } else {
+      sigList.innerHTML = sigs.map((s, i) => `
+        <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" name="rptPrSig" value="${i}" checked class="rounded accent-blue-600 flex-shrink-0">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:#0d9488">${i+1}</span>
+              <span class="font-semibold text-gray-700 text-sm">${s.role || ('ผู้ลงนาม '+(i+1))}</span>
+              ${s.name ? `<span class="text-gray-500 text-xs">${s.name}</span>` : '<span class="text-gray-300 text-xs italic">ยังไม่ระบุชื่อ</span>'}
+            </div>
+            ${s.position ? `<div class="text-gray-400 text-xs ml-7">${s.position}</div>` : ''}
+          </div>
+        </label>`).join('');
+    }
+  }
+
+  document.getElementById('rptPrintModal').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeRptPrintModal() {
+  document.getElementById('rptPrintModal').classList.add('hidden');
+}
+
+// ── Capture a chart canvas as base64 PNG (or '' if not visible) ──
+function _captureChart(canvasId) {
+  const el = document.getElementById(canvasId);
+  if (!el || el.style.display === 'none') return '';
+  try { return el.toDataURL('image/png'); } catch(e) { return ''; }
+}
+
+// ── Chart titles for report (bilingual) ──
+function _rptChartTitle(key, isEN) {
+  const M = {
+    enroll:   { th:'แนวโน้มนักเรียนรับทุนแยกตามปีการศึกษา', en:'Enrollment Trend by Scholarship Year' },
+    status:   { th:'สัดส่วนตามสถานะนักเรียน',               en:'Student Status Distribution' },
+    inst:     { th:'จำนวนนักเรียนแยกตามสถาบัน',             en:'Students by Institution' },
+    withdraw: { th:'แนวโน้มการลาออก / ถอนทุน',              en:'Withdrawal Trend' },
+    compare:  { th:'เปรียบเทียบ: จบการศึกษา vs ลาออก/ถอนทุน', en:'Graduated vs Withdrawal Comparison' },
+  };
+  return (M[key]||{})[isEN?'en':'th'] || key;
+}
+
+function doRptPrint() {
+  const lang  = document.querySelector('input[name="rptPrLang"]:checked')?.value || LANG;
+  const isEN  = lang === 'en';
+  const acad  = document.getElementById('rptPrAcad').value.trim();
+  const pDate = document.getElementById('rptPrDate').value;
+  const subjectInput = document.getElementById('rptPrSubject').value.trim();
+
+  // Collect selected chart keys
+  const selectedCharts = [...document.querySelectorAll('input[name="rptPrChart"]:checked')]
+    .map(cb => cb.value);
+
+  // Capture chart images (must be done while canvases are in DOM)
+  const chartImgs = {};
+  selectedCharts.forEach(key => {
+    const idMap = { enroll:'chartEnroll', status:'chartStatus', inst:'chartInst',
+                    withdraw:'chartWithdraw', compare:'chartCompare' };
+    chartImgs[key] = _captureChart(idMap[key] || ('chart' + key.charAt(0).toUpperCase() + key.slice(1)));
+  });
+
+  // Collect signatures
+  const selIdxs = new Set([...document.querySelectorAll('input[name="rptPrSig"]:checked')].map(cb => +cb.value));
+  const selSigs = (window._rptSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selIdxs.has(i));
+
+  // Active filter context string
+  const fltYear   = document.getElementById('fltYear').value;
+  const fltInst   = document.getElementById('fltInst').value;
+  const fltStatus = document.getElementById('fltStatus').value;
+  const filterParts = [];
+  if (fltYear)   filterParts.push((isEN?'Year: ':'ปีทุน: ') + fltYear);
+  if (fltInst)   filterParts.push((isEN?'Inst: ':'สถาบัน: ') + fltInst);
+  if (fltStatus) filterParts.push((isEN?'Status: ':'สถานะ: ') + fltStatus);
+  const filterCtx = filterParts.join(' • ') || (isEN ? 'All data (no filters)' : 'ข้อมูลทั้งหมด (ไม่มีตัวกรอง)');
+
+  const includeTable = document.querySelector('input[name="rptPrTable"]:checked')?.value === 'summary';
+
+  const opts = {
+    lang, isEN, acad, pDate, subjectInput, filterCtx,
+    chartImgs, selectedCharts, includeTable, selSigs,
+  };
+
+  const html = generateRptPrintHTML(opts);
+  const win  = window.open('', '_blank', 'width=1200,height=850');
+  if (!win) {
+    Swal.fire(t('error')||'Error', isEN
+      ? 'Browser blocked popup. Please allow popups for this site.'
+      : 'เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup สำหรับเว็บไซต์นี้', 'error');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { try { win.print(); } catch(e) {} }, 900);
+  closeRptPrintModal();
+}
+
+function generateRptPrintHTML(opts) {
+  const { isEN, acad, pDate, subjectInput, filterCtx, chartImgs, selectedCharts, includeTable, selSigs } = opts;
+
+  // KPI snapshot from _CACHE.filtered
+  const d = _CACHE.filtered;
+  const total    = d.length;
+  const active   = d.filter(s => s.status === 'Active').length;
+  const grad     = d.filter(s => s.status === 'Graduated' || s.status === 'University').length;
+  const withdraw = d.filter(s => WITHDRAW_STATUSES.has(s.status)).length;
+  const suspend  = d.filter(s => s.status === 'Suspended').length;
+  const uni      = d.filter(s => s.status === 'University').length;
+  const gradPct  = total ? Math.round(grad/total*100) : 0;
+  const wdPct    = total ? Math.round(withdraw/total*100) : 0;
+
+  // Bilingual string map
+  const S = {
+    th: {
+      org:      'มูลนิธิ Dr. Robert Dyckerhoff (ประเทศไทย)',
+      title:    'รายงานและสถิติทุนการศึกษา',
+      date:     'วันที่', acad:'ปีการศึกษา', filter:'ตัวกรองข้อมูล',
+      kpiTitle: 'ตัวชี้วัดสำคัญ', total:'นักเรียนทั้งหมด',
+      active:'กำลังศึกษา', grad:'จบการศึกษา', withdraw:'ลาออก/ถอนทุน',
+      suspend:'พักการเรียน', uni:'ต่อมหาวิทยาลัย',
+      pct:'%', person:'คน', charts:'แผนภูมิ', tableTitle:'ตารางสรุปรายปีการศึกษา',
+      year:'ปีการศึกษา (พ.ศ.)', mbs:'แม่สะเรียง (MBS)', vc:'วิทยาลัยฯ (VC)',
+      uniCol:'มหาวิทยาลัย (UNI)', totalCol:'รวม', gradCol:'จบ', wdCol:'ลาออก/ถอนทุน', activeCol:'กำลังศึกษา',
+      grandTotal:'รวมทั้งหมด', signedBy:'ลงนามรับรองข้อมูล', position:'ตำแหน่ง', signDate:'วันที่',
+    },
+    en: {
+      org:      'Dr. Robert Dyckerhoff Foundation (Thailand)',
+      title:    'Scholarship Reports & Statistics',
+      date:     'Date', acad:'Academic Year', filter:'Active Filters',
+      kpiTitle: 'Key Performance Indicators', total:'Total Students',
+      active:'Active', grad:'Graduated', withdraw:'Withdrawal',
+      suspend:'Suspended', uni:'University (cont.)',
+      pct:'%', person:'students', charts:'Charts', tableTitle:'Annual Summary Table',
+      year:'Scholarship Year (BE)', mbs:'Maesaring (MBS)', vc:'Vocational (VC)',
+      uniCol:'University (UNI)', totalCol:'Total', gradCol:'Graduated', wdCol:'Withdrawal', activeCol:'Active',
+      grandTotal:'Grand Total', signedBy:'Certified by', position:'Position', signDate:'Date',
+    },
+  };
+  const SL = S[isEN?'en':'th'];
+
+  const subject = subjectInput || `${SL.title}${acad?' '+acad:''}${filterCtx&&filterCtx!==''?' ('+filterCtx+')':''}`;
+
+  // ── KPI row HTML ──
+  const kpiRow = `
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="kpi-n">${total}</div><div class="kpi-l">${SL.total}</div></div>
+    <div class="kpi-box kpi-active"><div class="kpi-n">${active}</div><div class="kpi-l">${SL.active}</div></div>
+    <div class="kpi-box kpi-grad"><div class="kpi-n">${grad} <span class="kpi-pct">${gradPct}%</span></div><div class="kpi-l">${SL.grad}</div></div>
+    <div class="kpi-box kpi-uni"><div class="kpi-n">${uni}</div><div class="kpi-l">${SL.uni}</div></div>
+    <div class="kpi-box kpi-wd"><div class="kpi-n">${withdraw} <span class="kpi-pct">${wdPct}%</span></div><div class="kpi-l">${SL.withdraw}</div></div>
+    <div class="kpi-box kpi-sus"><div class="kpi-n">${suspend}</div><div class="kpi-l">${SL.suspend}</div></div>
+  </div>`;
+
+  // ── Chart images HTML — 2-column grid ──
+  const validCharts = selectedCharts.filter(k => chartImgs[k]);
+  let chartsHTML = '';
+  if (validCharts.length > 0) {
+    const fullWidthCharts = new Set(['enroll','withdraw','compare']); // these span full width
+    chartsHTML = `<div class="section-title">${SL.charts}</div><div class="chart-grid">`;
+    validCharts.forEach(key => {
+      const span = fullWidthCharts.has(key) ? ' chart-full' : '';
+      chartsHTML += `
+      <div class="chart-item${span}">
+        <div class="chart-caption">${_rptChartTitle(key, isEN)}</div>
+        <img src="${chartImgs[key]}" class="chart-img" alt="${key}">
+      </div>`;
+    });
+    chartsHTML += `</div>`;
+  }
+
+  // ── Summary table HTML ──
+  let tableHTML = '';
+  if (includeTable) {
+    const yearMap = {};
+    d.forEach(s => {
+      const y = parseInt(s.scholarshipYear);
+      if (!y || y < 2000 || y > 2100) return;
+      const be = String(y + 543);
+      if (!yearMap[be]) yearMap[be] = { MBS:0, VC:0, UNI:0, grad:0, withdraw:0, active:0, total:0 };
+      const row = yearMap[be];
+      row.total++;
+      if (s.institution === 'MBS') row.MBS++;
+      else if (s.institution === 'VC') row.VC++;
+      else if (s.institution === 'UNI') row.UNI++;
+      if (s.status === 'Graduated' || s.status === 'University') row.grad++;
+      if (WITHDRAW_STATUSES.has(s.status)) row.withdraw++;
+      if (s.status === 'Active') row.active++;
+    });
+    const years = Object.keys(yearMap).sort();
+    const totals = { MBS:0, VC:0, UNI:0, total:0, grad:0, withdraw:0, active:0 };
+    years.forEach(y => { const r = yearMap[y]; Object.keys(totals).forEach(k => { totals[k] += r[k]||0; }); });
+
+    const mkRow = (lbl, r, isTotal) => `<tr${isTotal?' class="tbl-total"':''}>
+      <td>${lbl}</td>
+      <td class="tc" style="color:#1d4ed8">${r.MBS||0}</td>
+      <td class="tc" style="color:#ea580c">${r.VC||0}</td>
+      <td class="tc" style="color:#7c3aed">${r.UNI||0}</td>
+      <td class="tc"><b>${r.total||0}</b></td>
+      <td class="tc" style="color:#16a34a">${r.grad||0}</td>
+      <td class="tc" style="color:#9f1239">${r.withdraw||0}</td>
+      <td class="tc" style="color:#10b981">${r.active||0}</td>
+    </tr>`;
+
+    tableHTML = `
+    <div class="section-title" style="margin-top:18px">${SL.tableTitle}</div>
+    <table>
+      <thead><tr>
+        <th>${SL.year}</th>
+        <th>MBS</th><th>VC</th><th>${SL.uniCol}</th>
+        <th>${SL.totalCol}</th><th>${SL.gradCol}</th>
+        <th>${SL.wdCol}</th><th>${SL.activeCol}</th>
+      </tr></thead>
+      <tbody>
+        ${years.map(y => mkRow(y, yearMap[y], false)).join('')}
+        ${mkRow(SL.grandTotal, totals, true)}
+      </tbody>
+    </table>`;
+  }
+
+  // ── Signature block HTML ──
+  let sigHTML = '';
+  if (selSigs && selSigs.length > 0) {
+    sigHTML = `
+    <div class="sig-sec">
+      <div class="sig-wrap">
+        ${selSigs.map(s => `
+        <div class="sig-blk">
+          <div class="sig-role">${s.role||''}</div>
+          <div class="sig-line"></div>
+          <div class="sig-name">${s.name||'.................................................'}</div>
+          ${s.position ? `<div class="sig-pos">${s.position}</div>` : ''}
+          <div class="sig-date">${SL.signDate}: ............................…</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="${opts.lang}">
+<head><meta charset="UTF-8">
+<title>${subject}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color:#000;background:#fff}
+@page{size:A4 landscape;margin:1.3cm 1.2cm}
+/* Header */
+.rpt-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+.rpt-logo{height:50px;width:50px;object-fit:contain;flex-shrink:0}
+.rpt-org{font-size:10pt;font-weight:800;color:#1e3a8a}
+.rpt-title{font-size:11pt;font-weight:700;margin-top:3px}
+.rpt-subj{font-size:8.5pt;color:#374151;margin-top:2px}
+.rpt-meta{margin-left:auto;text-align:right;font-size:8pt;color:#4b5563;line-height:1.7;flex-shrink:0}
+/* KPI row */
+.kpi-row{display:flex;gap:10px;margin-bottom:14px}
+.kpi-box{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px 10px;text-align:center}
+.kpi-n{font-size:16pt;font-weight:800;color:#0f172a;line-height:1}
+.kpi-l{font-size:7.5pt;color:#6b7280;margin-top:3px}
+.kpi-pct{font-size:9pt;font-weight:600;color:#9ca3af}
+.kpi-active{border-color:#bbf7d0;background:#f0fdf4}.kpi-active .kpi-n{color:#16a34a}
+.kpi-grad{border-color:#ddd6fe;background:#faf5ff}.kpi-grad .kpi-n{color:#7c3aed}
+.kpi-uni{border-color:#bae6fd;background:#e0f2fe}.kpi-uni .kpi-n{color:#0369a1}
+.kpi-wd{border-color:#fecdd3;background:#fff1f2}.kpi-wd .kpi-n{color:#9f1239}
+.kpi-sus{border-color:#fde68a;background:#fef9c3}.kpi-sus .kpi-n{color:#a16207}
+/* Section title */
+.section-title{font-size:9pt;font-weight:800;color:#1e3a8a;border-left:3px solid #1e3a8a;padding-left:7px;margin-bottom:8px}
+/* Chart grid — 2-column */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.chart-full{grid-column:1/-1}
+.chart-item{border:1px solid #e5e7eb;border-radius:8px;padding:8px;background:#fafafa}
+.chart-caption{font-size:8pt;font-weight:700;color:#374151;margin-bottom:5px}
+.chart-img{width:100%;height:auto;display:block;max-height:170px;object-fit:contain}
+.chart-full .chart-img{max-height:150px}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:8.5pt;page-break-inside:auto;margin-bottom:14px}
+thead{display:table-header-group}
+th{background:#1e3a8a;color:#fff;padding:5px 6px;border:1px solid #1e3a8a;font-weight:700;text-align:center;font-size:8pt}
+td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle}
+tr:nth-child(even) td{background:#f8faff}
+.tc{text-align:center}
+.tbl-total td{font-weight:800;background:#eff6ff!important;color:#1e3a8a;border-top:2px solid #bfdbfe}
+/* Signatures */
+.sig-sec{margin-top:24px;page-break-inside:avoid}
+.sig-wrap{display:flex;justify-content:space-evenly;gap:16px;flex-wrap:wrap}
+.sig-blk{text-align:center;min-width:160px;flex:1;max-width:220px}
+.sig-role{font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px}
+.sig-line{border-top:1px solid #374151;margin:38px 12px 6px}
+.sig-name{font-size:9pt;font-weight:700}
+.sig-pos{font-size:8pt;color:#6b7280;margin-top:2px}
+.sig-date{font-size:7.5pt;color:#9ca3af;margin-top:4px}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<!-- Header -->
+<div class="rpt-hdr">
+  <img class="rpt-logo" src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF">
+  <div style="flex:1">
+    <div class="rpt-org">${SL.org}</div>
+    <div class="rpt-title">${SL.title}</div>
+    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${subject}</div>
+    ${filterCtx ? `<div class="rpt-subj" style="color:#6b7280;margin-top:2px">${SL.filter}: ${filterCtx}</div>` : ''}
+  </div>
+  <div class="rpt-meta">
+    <div>${SL.date}: <b>${pDate||''}</b></div>
+    ${acad ? `<div>${SL.acad}: <b>${acad}</b></div>` : ''}
+    <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${SL.total}: ${total} ${SL.person}</div>
+  </div>
+</div>
+<!-- KPIs -->
+${kpiRow}
+<!-- Charts -->
+${chartsHTML}
+<!-- Summary Table -->
+${tableHTML}
+<!-- Signatures -->
+${sigHTML}
+</body></html>`;
+}
+
+// ── ESC key closes print modal ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeRptPrintModal();
+});
 
 // ═══════════════════════════════════════════════════════════
 // SCROLL-TO-TOP BUTTON
