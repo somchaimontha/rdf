@@ -288,6 +288,10 @@ img.student-avatar {
         <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
         <span data-t="promoViewStats">สถิติ</span>
       </button>
+      <button onclick="toggleGradesSection()" id="btnGrades" class="btn btn-secondary btn-sm">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span data-t="promoGradesBtn">ผลการเรียน</span>
+      </button>
       <button onclick="togglePromoSettings()" id="btnPromoSettings" class="btn btn-secondary btn-sm">
         <i data-lucide="settings" class="w-4 h-4"></i>
         <span data-t="promoSettings">ตั้งค่าเลื่อนชั้น</span>
@@ -480,6 +484,84 @@ img.student-avatar {
         <div id="statsCardGrid" class="grid grid-cols-2 gap-2 text-xs"></div>
       </div>
     </div>
+  </div>
+
+  <!-- ═══ GRADES SECTION ═══ -->
+  <div id="gradesSection" class="hidden no-print mb-4"
+       style="background:#fff;border:1.5px solid #e0d9f7;border-radius:14px;
+              padding:18px 20px;box-shadow:0 2px 12px rgba(124,58,237,.07)">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-700 flex items-center gap-2 text-sm">
+        <i data-lucide="book-open" class="w-4 h-4" style="color:#7c3aed"></i>
+        <span data-t="gradesSectionTitle">บันทึกผลการเรียน / Grade Management</span>
+      </h3>
+      <button onclick="toggleGradesSection()" class="text-gray-400 hover:text-gray-700">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Filters row -->
+    <div class="flex flex-wrap gap-3 items-end mb-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="gradesAcadYear">ปีการศึกษา (พ.ศ.)</label>
+        <input type="number" id="grdAcadYear" class="field-input text-sm" style="width:110px" placeholder="2568" min="2560" max="2590">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="gradesSemester">ภาคเรียน / Semester</label>
+        <select id="grdSemester" class="field-select text-sm">
+          <option value="1">ภาคเรียนที่ 1 / Semester 1</option>
+          <option value="2">ภาคเรียนที่ 2 / Semester 2</option>
+          <option value="summer">ภาคฤดูร้อน / Summer</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1" data-t="gradesFilterInst">สถานศึกษา</label>
+        <select id="grdInst" class="field-select text-sm">
+          <option value="" data-t="promoAllInst">ทุกสถานศึกษา</option>
+          <option value="MBS">MBS</option>
+          <option value="VC">VC</option>
+          <option value="UNI">University</option>
+        </select>
+      </div>
+      <button onclick="buildGradeTable()" class="btn btn-secondary btn-sm">
+        <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+        <span data-t="gradesLoad">แสดงรายชื่อ</span>
+      </button>
+      <button onclick="saveGrades()" class="btn btn-sm font-bold" style="background:#7c3aed;color:#fff;border:none;margin-left:auto">
+        <i data-lucide="save" class="w-4 h-4"></i>
+        <span data-t="gradesSave">บันทึกผลการเรียน</span>
+      </button>
+    </div>
+
+    <!-- Grade table -->
+    <div class="overflow-x-auto rounded-xl border border-gray-200">
+      <table class="w-full text-xs" id="gradeTable">
+        <thead>
+          <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
+            <th class="px-3 py-2 text-left text-gray-500 font-700 uppercase tracking-wide" style="width:32px">#</th>
+            <th class="px-3 py-2 text-left text-gray-500 font-700 uppercase tracking-wide" data-t="gradeColName">ชื่อ-สกุล</th>
+            <th class="px-3 py-2 text-left text-gray-500 font-700 uppercase tracking-wide" data-t="gradeColInst">สถานศึกษา</th>
+            <th class="px-3 py-2 text-left text-gray-500 font-700 uppercase tracking-wide" data-t="gradeColLevel">ชั้น</th>
+            <th class="px-3 py-2 text-center text-gray-500 font-700 uppercase tracking-wide" data-t="gradeColGPA">GPA (0–4)</th>
+            <th class="px-3 py-2 text-left text-gray-500 font-700 uppercase tracking-wide" data-t="gradeColNotes">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="gradeTableBody">
+          <tr>
+            <td colspan="6" class="text-center text-gray-400 py-8 text-xs">
+              กรอกปีการศึกษาและภาคเรียน แล้วกด "แสดงรายชื่อ"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs text-gray-400 mt-2 flex items-center gap-1">
+      <i data-lucide="info" class="w-3 h-3"></i>
+      <span data-t="gradesNote">ระบบป้องกันข้อมูลซ้ำอัตโนมัติ — หากมีผลการเรียนของนักเรียนคนเดิมในภาคเรียนเดียวกันอยู่แล้ว จะอัปเดตแทนการเพิ่มใหม่</span>
+    </p>
   </div>
 
   <!-- Groups container -->
@@ -766,6 +848,7 @@ RBAC.enforcePage(['viewPromotion']);
 // STATE
 // ─────────────────────────────────────────────
 let ALL_GROUPS    = [];
+let _GRADES       = [];   // STUDENT_GRADES from system settings
 let PROMO_RULES   = {};
 let SETTINGS      = {};
 let ROW_DECISIONS = {};
@@ -961,6 +1044,7 @@ async function loadPage() {
     ]);
 
     SETTINGS = settRes.data || {};
+    _GRADES  = Array.isArray(SETTINGS.STUDENT_GRADES) ? SETTINGS.STUDENT_GRADES : [];
     const ps = SETTINGS.promotionSettings || {};
 
     const today = new Date().toISOString().split('T')[0];
@@ -2348,6 +2432,178 @@ function buildWithdrawalTableHTML(dataRows, isEN) {
 // Shows bar chart of current session decisions.
 // ─────────────────────────────────────────────
 let _statsChart = null;
+// ─────────────────────────────────────────────
+// GRADE MANAGEMENT
+// Stores STUDENT_GRADES in system settings.
+// Upsert by (stipNo + acadYear + semester) — no duplicates.
+// ─────────────────────────────────────────────
+
+let _gradesSectionOpen = false;
+
+function toggleGradesSection() {
+  _gradesSectionOpen = !_gradesSectionOpen;
+  const sec = document.getElementById('gradesSection');
+  const btn = document.getElementById('btnGrades');
+  if (sec) sec.classList.toggle('hidden', !_gradesSectionOpen);
+  if (btn) btn.style.background = _gradesSectionOpen ? '#f5f3ff' : '';
+  if (_gradesSectionOpen) {
+    // Pre-fill year from promotion settings if blank
+    const yearEl = document.getElementById('grdAcadYear');
+    if (yearEl && !yearEl.value) {
+      const acad = (SETTINGS.promotionSettings || {}).academicYear || '';
+      const match = acad.match(/(\d{4})/);
+      yearEl.value = match ? parseInt(match[1]) + 543 : new Date().getFullYear() + 543;
+    }
+    buildGradeTable();
+    lucide.createIcons();
+  }
+}
+
+function buildGradeTable() {
+  const instFlt  = document.getElementById('grdInst').value;
+  const acadYear = parseInt(document.getElementById('grdAcadYear').value) || 0;
+  const semester = document.getElementById('grdSemester').value;
+  const isEN     = LANG === 'en';
+
+  // Flatten active students from ALL_GROUPS, sorted by institution/level order
+  const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const sortedGroups = [...ALL_GROUPS].sort((a, b) => {
+    const io = (instOrder[a.institution]??9) - (instOrder[b.institution]??9);
+    if (io !== 0) return io;
+    return (LEVEL_OPTIONS[a.institution]||[]).indexOf(a.level) -
+           (LEVEL_OPTIONS[b.institution]||[]).indexOf(b.level);
+  });
+
+  const students = [];
+  sortedGroups.forEach(g => {
+    if (instFlt && g.institution !== instFlt) return;
+    g.students.forEach(s => {
+      // Include Active and University students
+      if (s.Status !== 'Active' && s.Status !== 'University') return;
+      students.push({ ...s, institution: g.institution, level: g.level });
+    });
+  });
+
+  const tbody = document.getElementById('gradeTableBody');
+  if (!students.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-gray-400 py-8 text-xs">${t('noData')||'ไม่พบข้อมูล'}</td></tr>`;
+    return;
+  }
+
+  const instColors = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#6b7280' };
+
+  tbody.innerHTML = students.map((s, i) => {
+    // Look up existing grade record
+    const existing = (acadYear && semester)
+      ? _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === acadYear && g.semester === semester)
+      : null;
+    const name  = isEN
+      ? (`${s.EngFirstName||''} ${s.EngLastName||''}`.trim() || `${s.FirstName||''} ${s.LastName||''}`.trim())
+      : `${s.Title||''}${s.FirstName||''} ${s.LastName||''}`.trim();
+    const gpa   = existing != null ? (existing.gpa != null ? existing.gpa : '') : '';
+    const notes = existing ? (existing.notes || '') : '';
+    const rowBg = existing ? 'background:#f5f3ff' : '';
+
+    return `<tr style="border-bottom:1px solid #f1f5f9;${rowBg}">
+      <td class="px-3 py-1.5 text-gray-400 text-xs">${i+1}</td>
+      <td class="px-3 py-1.5">
+        <div class="font-semibold text-gray-800 text-xs">${name}</div>
+        <div class="text-gray-400 text-xs">${s.StipNo}</div>
+      </td>
+      <td class="px-3 py-1.5">
+        <span class="text-xs font-bold" style="color:${instColors[s.institution]||'#374151'}">${s.institution}</span>
+      </td>
+      <td class="px-3 py-1.5 text-xs text-gray-600 whitespace-nowrap" style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${s.level||'—'}</td>
+      <td class="px-3 py-1.5 text-center">
+        <input type="number" step="0.01" min="0" max="4"
+               id="gpa_${s.StipNo}" value="${gpa}"
+               style="width:70px;border:1.5px solid #e5e7eb;border-radius:6px;padding:4px 6px;
+                      font-size:12px;font-weight:700;text-align:center;outline:none;
+                      background:${existing?'#ede9fe':'#fff'}"
+               onfocus="this.style.borderColor='#7c3aed';this.style.background='#ede9fe'"
+               onblur="this.style.borderColor='#e5e7eb'"
+               placeholder="0.00">
+      </td>
+      <td class="px-3 py-1.5">
+        <input type="text" id="gnote_${s.StipNo}" value="${notes}"
+               style="width:100%;min-width:90px;border:1px solid #e5e7eb;border-radius:6px;
+                      padding:4px 7px;font-size:11px;outline:none"
+               onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'"
+               placeholder="${isEN?'Note (optional)':'หมายเหตุ (ถ้ามี)'}">
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveGrades() {
+  const acadYear = parseInt(document.getElementById('grdAcadYear').value);
+  const semester = document.getElementById('grdSemester').value;
+  const isEN     = LANG === 'en';
+
+  if (!acadYear || acadYear < 2560 || acadYear > 2600) {
+    Swal.fire(t('warning')||'Warning',
+      isEN ? 'Please enter a valid academic year (BE format, e.g. 2568).'
+           : 'กรุณากรอกปีการศึกษา (พ.ศ.) ให้ถูกต้อง เช่น 2568', 'warning');
+    return;
+  }
+
+  // Collect filled GPA inputs
+  const newEntries = [];
+  document.querySelectorAll('[id^="gpa_"]').forEach(input => {
+    const stipNo = input.id.replace('gpa_', '');
+    const raw    = input.value.trim();
+    if (!raw) return;  // skip empty — do not overwrite existing with blank
+    const gpa   = Math.min(4, Math.max(0, parseFloat(raw)));
+    if (isNaN(gpa)) return;
+    const notes = document.getElementById('gnote_' + stipNo)?.value.trim() || '';
+    newEntries.push({ stipNo, acadYear, semester, gpa, notes });
+  });
+
+  if (!newEntries.length) {
+    Swal.fire(t('warning')||'Warning',
+      isEN ? 'No grades entered. Fill in at least one GPA field before saving.'
+           : 'ยังไม่ได้กรอกเกรดใดๆ กรุณากรอกเกรดอย่างน้อย 1 คน', 'warning');
+    return;
+  }
+
+  // Upsert: build map by composite key, merge new entries on top of existing
+  const gradeMap = {};
+  _GRADES.forEach(g => { gradeMap[`${g.stipNo}__${g.acadYear}__${g.semester}`] = g; });
+
+  const updatedBy = (getUser()||{}).displayName || (getUser()||{}).username || 'Admin';
+  newEntries.forEach(e => {
+    gradeMap[`${e.stipNo}__${e.acadYear}__${e.semester}`] = {
+      ...e, updatedBy, updatedAt: new Date().toISOString(),
+    };
+  });
+
+  _GRADES = Object.values(gradeMap);
+
+  showLoader(true, t('saving')||'กำลังบันทึก...');
+  try {
+    const r = await API.saveSetting('STUDENT_GRADES', _GRADES);
+    showLoader(false);
+    if (r.status === 'success') {
+      SETTINGS['STUDENT_GRADES'] = _GRADES;
+      const semLabel = semester === '1' ? (isEN?'Sem 1':'ภาค 1')
+                     : semester === '2' ? (isEN?'Sem 2':'ภาค 2')
+                     : (isEN?'Summer':'ฤดูร้อน');
+      Swal.fire({
+        icon: 'success',
+        title: t('saved')||'บันทึกสำเร็จ',
+        text: `${isEN?'Saved':'บันทึก'} ${newEntries.length} ${isEN?'grade(s)':'ผลการเรียน'} — ${acadYear} ${semLabel}`,
+        timer: 2500, showConfirmButton: false,
+      });
+      buildGradeTable();  // Refresh to show highlighted rows
+    } else {
+      throw new Error(r.message || t('error'));
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error')||'Error', e.message, 'error');
+  }
+}
+
 let _statsSectionOpen = false;
 
 function toggleStatsSection() {

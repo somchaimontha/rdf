@@ -462,6 +462,53 @@
         <textarea id="tfNotes" rows="2" class="field-input text-sm" placeholder="ข้อมูลเพิ่มเติม..."></textarea>
       </div>
 
+      <!-- Per-institution open/close periods -->
+      <div class="bg-sky-50 border border-sky-100 rounded-xl p-4">
+        <div class="text-xs font-bold text-sky-700 flex items-center gap-1.5 mb-1">
+          <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
+          วันเปิด-ปิด แยกตามสถานศึกษา / Per-Institution Periods (ไม่บังคับ)
+        </div>
+        <p class="text-xs text-sky-600 opacity-80 mb-3">หากกำหนด วันเหล่านี้จะแสดงในตารางปฏิทินแทนวันเปิด-ปิดหลัก</p>
+        <div class="space-y-2">
+          <!-- MBS -->
+          <div class="grid items-center gap-2" style="grid-template-columns:52px 1fr 1fr">
+            <span class="text-xs font-bold" style="color:#1d4ed8">MBS</span>
+            <div>
+              <label class="text-xs text-gray-400 mb-0.5 block">เปิด</label>
+              <input type="date" id="tfIP_MBS_open" class="field-input text-xs py-1">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 mb-0.5 block">ปิด</label>
+              <input type="date" id="tfIP_MBS_close" class="field-input text-xs py-1">
+            </div>
+          </div>
+          <!-- VC -->
+          <div class="grid items-center gap-2" style="grid-template-columns:52px 1fr 1fr">
+            <span class="text-xs font-bold" style="color:#ea580c">VC</span>
+            <div>
+              <label class="text-xs text-gray-400 mb-0.5 block">เปิด</label>
+              <input type="date" id="tfIP_VC_open" class="field-input text-xs py-1">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 mb-0.5 block">ปิด</label>
+              <input type="date" id="tfIP_VC_close" class="field-input text-xs py-1">
+            </div>
+          </div>
+          <!-- UNI -->
+          <div class="grid items-center gap-2" style="grid-template-columns:52px 1fr 1fr">
+            <span class="text-xs font-bold" style="color:#7c3aed">UNI</span>
+            <div>
+              <label class="text-xs text-gray-400 mb-0.5 block">เปิด</label>
+              <input type="date" id="tfIP_UNI_open" class="field-input text-xs py-1">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 mb-0.5 block">ปิด</label>
+              <input type="date" id="tfIP_UNI_close" class="field-input text-xs py-1">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Auto-notifications -->
       <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2">
         <div class="text-xs font-bold text-blue-700 flex items-center gap-1.5 mb-2">
@@ -784,13 +831,20 @@ function _buildScheduleRows(isEN, insts) {
         if (!instTerms.length) return `<td style="padding:8px 12px;text-align:center;color:#d1d5db;border-bottom:1px solid #f3f4f6">—</td>`;
         return `<td style="padding:6px 12px;border-bottom:1px solid #f3f4f6;vertical-align:top">
           ${instTerms.map(tt => {
-            const st = termStatus(tt);
-            const bg = st==='active'?'#dcfce7':st==='upcoming'?'#dbeafe':'#f3f4f6';
+            const st  = termStatus(tt);
+            const bg  = st==='active'?'#dcfce7':st==='upcoming'?'#dbeafe':'#f3f4f6';
             const col = st==='active'?'#16a34a':st==='upcoming'?'#1d4ed8':'#9ca3af';
             const lbl = isEN ? tt.labelEN : tt.labelTH;
+            // Use per-institution period if defined, else fall back to term-level dates
+            const periods   = Array.isArray(tt.institutionPeriods) ? tt.institutionPeriods : [];
+            const period    = periods.find(p => p.inst === instKey);
+            const openDate  = (period?.openDate)  || tt.startDate;
+            const closeDate = (period?.closeDate) || tt.endDate;
+            const hasCustom = !!(period && (period.openDate || period.closeDate));
             return `<div style="background:${bg};color:${col};border-radius:6px;padding:3px 7px;margin-bottom:3px;font-weight:600;font-size:11px;white-space:nowrap">
               ${lbl||'—'}
-              <div style="font-size:10px;font-weight:400;color:${col};opacity:.8">${fmtDate(tt.startDate,isEN)} → ${fmtDate(tt.endDate,isEN)}</div>
+              <div style="font-size:10px;font-weight:400;color:${col};opacity:.85">${fmtDate(openDate,isEN)} → ${fmtDate(closeDate,isEN)}</div>
+              ${hasCustom ? `<div style="font-size:9px;background:rgba(255,255,255,.55);border-radius:4px;padding:1px 5px;margin-top:2px;display:inline-block;font-weight:700">${isEN?'Custom':'กำหนดเฉพาะ'}</div>` : ''}
             </div>`;
           }).join('')}
         </td>`;
@@ -831,6 +885,13 @@ function _clearTermForm() {
   document.getElementById('tfNotifStart').checked = true;
   document.getElementById('tfNotifEnd').checked   = true;
   document.getElementById('tfNotifExam').checked  = false;
+  // Clear per-institution period inputs
+  ['MBS','VC','UNI'].forEach(inst => {
+    ['open','close'].forEach(dir => {
+      const el = document.getElementById(`tfIP_${inst}_${dir}`);
+      if (el) el.value = '';
+    });
+  });
 }
 
 function _fillTermForm(t) {
@@ -848,6 +909,15 @@ function _fillTermForm(t) {
   document.getElementById('tfNotifStart').checked = !!t.notifStart;
   document.getElementById('tfNotifEnd').checked   = !!t.notifEnd;
   document.getElementById('tfNotifExam').checked  = !!t.notifExam;
+  // Fill per-institution periods
+  const periods = Array.isArray(t.institutionPeriods) ? t.institutionPeriods : [];
+  ['MBS','VC','UNI'].forEach(inst => {
+    const p = periods.find(p => p.inst === inst) || {};
+    const openEl  = document.getElementById(`tfIP_${inst}_open`);
+    const closeEl = document.getElementById(`tfIP_${inst}_close`);
+    if (openEl)  openEl.value  = p.openDate  || '';
+    if (closeEl) closeEl.value = p.closeDate || '';
+  });
 }
 
 function editTerm(id) { openTermForm(id); }
@@ -885,6 +955,12 @@ async function saveTerm() {
     notifExam:   document.getElementById('tfNotifExam').checked,
     createdBy:   (user||{}).displayName || (user||{}).username || 'Admin',
     createdAt:   new Date().toISOString(),
+    // Collect per-institution open/close periods (only save if at least one date set)
+    institutionPeriods: ['MBS','VC','UNI'].map(inst => ({
+      inst,
+      openDate:  document.getElementById(`tfIP_${inst}_open`)?.value  || '',
+      closeDate: document.getElementById(`tfIP_${inst}_close`)?.value || '',
+    })).filter(p => p.openDate || p.closeDate),
   };
 
   // Upsert into TERMS array
