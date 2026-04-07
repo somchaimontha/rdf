@@ -58,10 +58,10 @@
 </nav>
 
 <!-- Notification Panel (dropdown) — collapsible, never blocks UI -->
-<div id="notifPanel" class="hidden"
-     style="position:fixed;top:60px;right:12px;z-index:9990;width:340px;
+<div id="notifPanel"
+     style="display:none;position:fixed;top:60px;right:12px;z-index:9990;width:340px;
             background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);
-            overflow:hidden;display:flex;flex-direction:column;
+            overflow:hidden;flex-direction:column;
             transition:max-height .25s cubic-bezier(.4,0,.2,1);max-height:480px">
   <!-- Header — click to collapse/expand -->
   <div onclick="collapseNotifPanel(event)"
@@ -378,8 +378,9 @@
 </footer>
 
 <!-- ─── Term Form Modal ─── -->
-<div id="termFormModal" class="hidden"
-     style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;
+<div id="termFormModal"
+     onclick="if(event.target===this)closeTermForm()"
+     style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;
             padding:12px;background:rgba(15,23,42,.6);backdrop-filter:blur(3px)">
   <div class="bg-white rounded-2xl shadow-2xl w-full"
        style="max-width:560px;max-height:calc(100vh - 24px);overflow:hidden;display:flex;flex-direction:column;margin:auto">
@@ -818,7 +819,7 @@ function openTermForm(id) {
     document.getElementById('tfAcadYear').value = today.getFullYear() + 543;
     document.getElementById('tfStart').value    = today.toISOString().split('T')[0];
   }
-  document.getElementById('termFormModal').classList.remove('hidden');
+  document.getElementById('termFormModal').style.display = 'flex';
   lucide.createIcons();
 }
 
@@ -852,7 +853,7 @@ function _fillTermForm(t) {
 function editTerm(id) { openTermForm(id); }
 
 function closeTermForm() {
-  document.getElementById('termFormModal').classList.add('hidden');
+  document.getElementById('termFormModal').style.display = 'none';
 }
 
 async function saveTerm() {
@@ -1203,11 +1204,11 @@ function toggleNotifPanel() {
   _notifPanelOpen = !_notifPanelOpen;
   const panel = document.getElementById('notifPanel');
   if (_notifPanelOpen) {
-    panel.classList.remove('hidden');
+    panel.style.display = 'flex';
     _notifPanelCollapsed = false;
     _applyNotifCollapse(false);
   } else {
-    panel.classList.add('hidden');
+    panel.style.display = 'none';
   }
 }
 
@@ -1244,7 +1245,7 @@ function closeNotifCompose() {
   document.getElementById('notifComposeModal').style.display = 'none';
 }
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeNotifCompose();
+  if (e.key === 'Escape') { closeNotifCompose(); closeTermForm(); }
 });
 
 // ── Toast Notification ─────────────────────────────────────────
@@ -1308,7 +1309,7 @@ document.addEventListener('click', e => {
       !document.getElementById('notifBell').contains(e.target) &&
       !document.getElementById('notifPanel').contains(e.target)) {
     _notifPanelOpen = false;
-    document.getElementById('notifPanel').classList.add('hidden');
+    document.getElementById('notifPanel').style.display = 'none';
   }
 });
 
