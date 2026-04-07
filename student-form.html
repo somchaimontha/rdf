@@ -619,6 +619,85 @@
     </div>
   </div>
 
+  <!-- ─── SECTION H: Grade Records (edit mode only, shared STUDENT_GRADES DB) ─── -->
+  <div class="form-section mb-5" id="sectionGrades" style="display:none">
+    <div class="form-section-header" style="background:linear-gradient(90deg,#7c3aed,#6d28d9);justify-content:space-between">
+      <div class="flex items-center gap-2">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span>8. ผลการเรียน / Academic Results</span>
+      </div>
+      <a href="academic-results.html" target="_blank"
+         style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px">
+        <i data-lucide="external-link" class="w-3 h-3"></i> จัดการผลการเรียนทั้งหมด
+      </a>
+    </div>
+    <div class="form-section-body">
+
+      <!-- Add new grade row -->
+      <div class="flex flex-wrap gap-3 items-end mb-4 p-3 bg-purple-50 border border-purple-100 rounded-xl">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af">ปีการศึกษา (พ.ศ.) <span style="color:#ef4444">*</span></label>
+          <input type="number" id="ng_year" placeholder="2568" min="2560" max="2600"
+                 class="field-input" style="width:110px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af">ภาคเรียน <span style="color:#ef4444">*</span></label>
+          <select id="ng_sem" class="field-select" style="min-width:160px">
+            <option value="">-- เลือกภาคเรียน --</option>
+            <option value="1">ภาคเรียนที่ 1</option>
+            <option value="2">ภาคเรียนที่ 2</option>
+            <option value="summer">ภาคฤดูร้อน</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af">GPA (0.00 – 4.00) <span style="color:#ef4444">*</span></label>
+          <input type="number" id="ng_gpa" placeholder="3.50" step="0.01" min="0" max="4"
+                 class="field-input" style="width:90px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px">
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af">หมายเหตุ</label>
+          <input type="text" id="ng_notes" placeholder="หมายเหตุ (ถ้ามี)" class="field-input">
+        </div>
+        <button type="button" onclick="addGradeRow()"
+                class="btn btn-sm font-bold flex-shrink-0"
+                style="background:#7c3aed;color:#fff;border:none;align-self:flex-end">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มผลการเรียน
+        </button>
+      </div>
+
+      <!-- Grade table -->
+      <div class="overflow-x-auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="gradeFormTable">
+          <thead>
+            <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">ปีการศึกษา</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">ภาคเรียน</th>
+              <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">GPA</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">หมายเหตุ</th>
+              <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">บันทึกโดย</th>
+              <th style="padding:8px 10px;width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="gradeFormBody">
+            <tr id="gradeEmptyRow"><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;font-size:12px">ยังไม่มีผลการเรียนที่บันทึกไว้</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px">
+        <p style="font-size:11px;color:#6b7280;display:flex;align-items:center;gap:5px">
+          <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0" style="color:#7c3aed"></i>
+          ข้อมูลนี้ใช้ฐานข้อมูลร่วมกับ academic-results.html — การแก้ไขที่นี่จะอัปเดตระบบทั้งหมดทันที ป้องกันข้อมูลซ้ำโดยอัตโนมัติ
+        </p>
+        <button type="button" onclick="saveGradesFromForm()"
+                class="btn btn-sm font-bold"
+                style="background:#7c3aed;color:#fff;border:none;min-width:140px">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกผลการเรียน
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Submit Buttons -->
   <div class="flex flex-col-reverse md:flex-row justify-end gap-3 pb-6">
     <a href="students.html" class="btn btn-secondary">
@@ -929,6 +1008,178 @@ const urlParams = new URLSearchParams(window.location.search);
 const editStipNo = urlParams.get('stipNo');
 let ocrStream = null;
 
+// ── Grade section state (shared STUDENT_GRADES DB) ──────────
+let _formGrades   = [];   // full array from system settings
+let _formStipNo   = '';   // current student's StipNo
+let _gradesDirty  = false;
+
+function semLabelTH(v) {
+  if (v === '1')      return 'ภาคเรียนที่ 1';
+  if (v === '2')      return 'ภาคเรียนที่ 2';
+  if (v === 'summer') return 'ภาคฤดูร้อน';
+  return v || '—';
+}
+
+function gpaColorStyle(v) {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '#9ca3af';
+  if (n >= 3.5) return '#15803d';
+  if (n >= 3.0) return '#1d4ed8';
+  if (n >= 2.5) return '#a16207';
+  if (n >= 2.0) return '#c2410c';
+  return '#be123c';
+}
+
+async function loadGradesForStudent(stipNo) {
+  _formStipNo = stipNo;
+  try {
+    const res = await API.getSystemSettings();
+    const sett = res.data || {};
+    _formGrades = Array.isArray(sett.STUDENT_GRADES) ? sett.STUDENT_GRADES : [];
+    renderGradeFormTable();
+    document.getElementById('sectionGrades').style.display = '';
+    lucide.createIcons();
+  } catch(e) {
+    // silently fail — grade section stays hidden
+    console.warn('Grade load failed:', e.message);
+  }
+}
+
+function renderGradeFormTable() {
+  const tbody   = document.getElementById('gradeFormBody');
+  const emptyTr = document.getElementById('gradeEmptyRow');
+  const myGrades = _formGrades
+    .filter(g => g.stipNo === _formStipNo)
+    .sort((a, b) => {
+      if (b.acadYear !== a.acadYear) return b.acadYear - a.acadYear;
+      return String(a.semester).localeCompare(String(b.semester));
+    });
+
+  if (!myGrades.length) {
+    tbody.innerHTML = `<tr id="gradeEmptyRow"><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;font-size:12px">ยังไม่มีผลการเรียนที่บันทึกไว้</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = myGrades.map((g, i) => {
+    const gpaV  = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
+    const gpaC  = gpaColorStyle(g.gpa);
+    const upd   = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '—';
+    return `<tr style="border-bottom:1px solid #f1f5f9">
+      <td style="padding:8px 10px;font-weight:700;font-size:12px">${g.acadYear || '—'}</td>
+      <td style="padding:8px 10px;font-size:12px">${semLabelTH(g.semester)}</td>
+      <td style="padding:8px 10px;text-align:center">
+        <span style="font-weight:900;font-size:14px;color:${gpaC}">${gpaV}</span>
+      </td>
+      <td style="padding:8px 10px;font-size:11px;color:#6b7280;max-width:200px">${g.notes || '—'}</td>
+      <td style="padding:8px 10px;font-size:10px;color:#9ca3af;text-align:center">${g.updatedBy||'—'}<br>${upd}</td>
+      <td style="padding:8px 10px;text-align:center">
+        <button type="button" onclick="removeGradeRow('${g.stipNo}',${g.acadYear},'${g.semester}')"
+                style="color:#dc2626;background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px"
+                title="ลบรายการนี้">
+          <i data-lucide="trash-2" style="width:13px;height:13px;display:inline-block;vertical-align:middle"></i>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function addGradeRow() {
+  const yearEl  = document.getElementById('ng_year');
+  const semEl   = document.getElementById('ng_sem');
+  const gpaEl   = document.getElementById('ng_gpa');
+  const noteEl  = document.getElementById('ng_notes');
+
+  const year = parseInt(yearEl.value);
+  const sem  = semEl.value.trim();
+  const raw  = gpaEl.value.trim();
+
+  // Validation
+  if (!year || year < 2560 || year > 2600) {
+    Swal.fire('คำเตือน', 'กรุณากรอกปีการศึกษา (พ.ศ.) ให้ถูกต้อง เช่น 2568', 'warning');
+    yearEl.focus(); return;
+  }
+  if (!sem) {
+    Swal.fire('คำเตือน', 'กรุณาเลือกภาคเรียน', 'warning');
+    semEl.focus(); return;
+  }
+  if (!raw) {
+    Swal.fire('คำเตือน', 'กรุณากรอก GPA (0.00 – 4.00)', 'warning');
+    gpaEl.focus(); return;
+  }
+  const gpa = Math.round(Math.min(4, Math.max(0, parseFloat(raw))) * 100) / 100;
+  if (isNaN(gpa)) {
+    Swal.fire('คำเตือน', 'GPA ต้องเป็นตัวเลข 0.00 – 4.00 เท่านั้น', 'warning');
+    gpaEl.focus(); return;
+  }
+
+  // Upsert: build key map then overwrite
+  const gradeMap = {};
+  _formGrades.forEach(g => { gradeMap[`${g.stipNo}__${g.acadYear}__${g.semester}`] = g; });
+  const user      = getUser() || {};
+  const updatedBy = user.displayName || user.username || 'Admin';
+  const key       = `${_formStipNo}__${year}__${sem}`;
+
+  const existed = !!gradeMap[key];
+  gradeMap[key] = {
+    stipNo:     _formStipNo,
+    acadYear:   year,          // stored as number
+    semester:   sem,
+    gpa:        gpa,           // stored as number (never string)
+    notes:      noteEl.value.trim(),
+    updatedBy,
+    updatedAt:  new Date().toISOString(),
+  };
+  _formGrades = Object.values(gradeMap);
+  _gradesDirty = true;
+
+  // Clear inputs
+  yearEl.value  = '';
+  semEl.value   = '';
+  gpaEl.value   = '';
+  noteEl.value  = '';
+
+  renderGradeFormTable();
+  const action = existed ? 'อัปเดตแล้ว' : 'เพิ่มแล้ว';
+  Swal.fire({ icon:'success', title:`${action} ผลการเรียน`, text:`ปีการศึกษา ${year} ${semLabelTH(sem)} — GPA ${gpa.toFixed(2)}`, timer:1800, showConfirmButton:false });
+}
+
+function removeGradeRow(stipNo, acadYear, semester) {
+  Swal.fire({
+    title:'ยืนยันการลบ?', icon:'warning',
+    html:`ลบผลการเรียนปีการศึกษา <b>${acadYear}</b> ${semLabelTH(semester)} — GPA นี้?`,
+    showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
+    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก',
+  }).then(cf => {
+    if (!cf.isConfirmed) return;
+    _formGrades = _formGrades.filter(g =>
+      !(g.stipNo === stipNo && g.acadYear === acadYear && g.semester === semester)
+    );
+    _gradesDirty = true;
+    renderGradeFormTable();
+  });
+}
+
+async function saveGradesFromForm() {
+  if (!_gradesDirty) {
+    Swal.fire({ icon:'info', title:'ไม่มีการเปลี่ยนแปลง', timer:1200, showConfirmButton:false });
+    return;
+  }
+  showLoader(true, 'กำลังบันทึกผลการเรียน...');
+  try {
+    const r = await API.saveSetting('STUDENT_GRADES', _formGrades);
+    showLoader(false);
+    if (r.status !== 'success') throw new Error(r.message || 'บันทึกไม่สำเร็จ');
+    _gradesDirty = false;
+    Swal.fire({ icon:'success', title:'บันทึกผลการเรียนสำเร็จ',
+      text:`ข้อมูลอัปเดตในฐานข้อมูลกลางแล้ว ใช้ร่วมกับ academic-results.html`,
+      timer:2500, showConfirmButton:false });
+  } catch(e) {
+    showLoader(false);
+    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+  }
+}
+
 // ── Load existing data if editing ──
 if (editStipNo) {
   document.getElementById('pageTitle').innerHTML =
@@ -950,6 +1201,8 @@ async function loadStudentForEdit(stipNo) {
       return;
     }
     fillForm(result.data);
+    // Load grade records for this student (separate call to avoid slowing form load)
+    loadGradesForStudent(stipNo);
   } catch(e) {
     showLoader(false);
     Swal.fire(t('error'), e.message || t('network_error'), 'error')
