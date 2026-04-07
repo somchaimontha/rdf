@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายงานและสถิติ / Reports — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Layout ── */
+.rpt-card {
+  background:#fff; border:1px solid #e5e7eb; border-radius:14px;
+  overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.rpt-card-header {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 16px; font-size:12px; font-weight:700;
+  color:#fff; letter-spacing:.3px;
+}
+.rpt-card-body {
+  padding:16px; position:relative;
+}
+/* ── KPI cards ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+@media(min-width:640px){ .kpi-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:1024px){ .kpi-grid { grid-template-columns:repeat(6,1fr); } }
+.kpi-card {
+  background:#fff; border-radius:12px; border:1px solid #e5e7eb;
+  padding:14px 16px; display:flex; flex-direction:column; gap:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04); transition:box-shadow .2s;
+  cursor:default;
+}
+.kpi-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.kpi-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+.kpi-val { font-size:24px; font-weight:800; color:#0f172a; line-height:1; }
+.kpi-label { font-size:11px; color:#6b7280; font-weight:500; }
+.kpi-sub { font-size:10px; color:#9ca3af; }
+/* ── Filters bar ── */
+.filters-bar {
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  padding:12px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  margin-bottom:20px;
+}
+.filter-group { display:flex; flex-direction:column; gap:3px; }
+.filter-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; }
+.filter-select, .filter-input {
+  border:1.5px solid #e5e7eb; border-radius:8px; padding:5px 10px;
+  font-size:12px; font-weight:600; background:#fff; outline:none; cursor:pointer;
+  font-family:inherit;
+}
+.filter-select:focus, .filter-input:focus { border-color:#1d4ed8; }
+/* ── Chart canvas wrapper ── */
+.chart-wrap { position:relative; }
+/* ── Empty state ── */
+.empty-chart {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; min-height:120px; color:#d1d5db; font-size:12px; gap:8px;
+}
+/* ── Section title ── */
+.section-title {
+  font-size:13px; font-weight:700; color:#374151;
+  display:flex; align-items:center; gap:8px; margin-bottom:14px;
+}
+/* ── Badge ── */
+.rpt-badge {
+  display:inline-flex; align-items:center; gap:4px; padding:2px 10px;
+  border-radius:20px; font-size:10px; font-weight:700;
+}
+/* ── Trend indicator ── */
+.trend-up   { color:#16a34a; font-size:10px; font-weight:700; }
+.trend-down { color:#dc2626; font-size:10px; font-weight:700; }
+/* ── Legend dots ── */
+.leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+/* ── Chart grid ── */
+.charts-grid {
+  display:grid; grid-template-columns:1fr; gap:16px;
+}
+@media(min-width:768px){
+  .charts-grid { grid-template-columns:repeat(2,1fr); }
+  .charts-grid .col-span-2 { grid-column:span 2; }
+}
+/* ── Scroll to top ── */
+#scrollTop {
+  position:fixed; bottom:24px; right:24px; z-index:50;
+  width:40px; height:40px; border-radius:50%;
+  background:#1e3a8a; color:#fff; border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,.2); opacity:0; transition:opacity .3s;
+  pointer-events:none;
+}
+#scrollTop.visible { opacity:1; pointer-events:all; }
+/* ── Print ── */
+@media print {
+  .no-print, .rdf-nav, .rdf-footer, #loader, .filters-bar { display:none !important; }
+  body { background:#fff !important; }
+  .rpt-card { break-inside:avoid; margin-bottom:12px; border:1px solid #ccc; }
+  @page { size:A4; margin:1.5cm; }
+}
+/* ── Animations ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.fade-up { animation:fadeUp .4s ease both; }
+.delay-1 { animation-delay:.08s; }
+.delay-2 { animation-delay:.16s; }
+.delay-3 { animation-delay:.24s; }
+</style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText" data-t="loading">กำลังโหลด...</p></div>
+
+<!-- Navbar -->
+<nav class="rdf-nav no-print">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile">
+        <div class="nav-title">
+          <h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1>
+          <p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p>
+        </div>
+      </div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="rptToggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user">
+        <img id="navAvatar" src="" alt="User" class="nav-avatar">
+        <div class="hide-mobile">
+          <div id="navUserName" class="nav-user-name">—</div>
+          <div id="navUserRole" class="nav-user-role">—</div>
+        </div>
+      </div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content">
+
+  <!-- Back link + Page header -->
+  <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit no-print">
+    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+    <span data-t="promoBackDash">กลับหน้าหลัก</span>
+  </a>
+
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 no-print fade-up">
+    <div>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <i data-lucide="bar-chart-2" class="w-5 h-5" style="color:#1e3a8a"></i>
+        <span data-t="rptTitle">รายงานและสถิติ / Reports & Statistics</span>
+      </h2>
+      <p class="text-xs text-gray-400 mt-0.5" data-t="rptSubtitle">ภาพรวมข้อมูลนักเรียนทุน แนวโน้ม และการวิเคราะห์</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button onclick="loadReportData()" class="btn btn-secondary btn-sm">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        <span data-t="promoReload">โหลดใหม่</span>
+      </button>
+      <button onclick="window.print()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="rptPrint">พิมพ์รายงาน</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ FILTERS BAR ═══
+       All filters update charts in-memory from _CACHE.
+       No extra API calls triggered. -->
+  <div class="filters-bar no-print fade-up delay-1">
+    <i data-lucide="filter" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+    <!-- Academic year multi-select -->
+    <div class="filter-group">
+      <span class="filter-label" data-t="rptFilterYear">ปีทุนการศึกษา (พ.ศ.)</span>
+      <select id="fltYear" class="filter-select" onchange="applyFilters()" style="min-width:140px">
+        <option value="" data-t="rptAllYears">ทุกปี</option>
+      </select>
+    </div>
+    <!-- Institution -->
+    <div class="filter-group">
+      <span class="filter-label" data-t="rptFilterInst">สถาบัน</span>
+      <select id="fltInst" class="filter-select" onchange="applyFilters()">
+        <option value="" data-t="promoAllInst">ทุกสถาบัน</option>
+        <option value="MBS">MBS</option>
+        <option value="VC">VC</option>
+        <option value="UNI">University</option>
+        <option value="OTHER">Other</option>
+      </select>
+    </div>
+    <!-- Status -->
+    <div class="filter-group">
+      <span class="filter-label" data-t="rptFilterStatus">สถานะ</span>
+      <select id="fltStatus" class="filter-select" onchange="applyFilters()">
+        <option value="" data-t="rptAllStatus">ทุกสถานะ</option>
+        <option value="Active"               data-t="statusActive">กำลังศึกษา</option>
+        <option value="Graduated"            data-t="statusGraduated">สำเร็จการศึกษา</option>
+        <option value="University"           data-t="statusUniversity">ต่อมหาวิทยาลัย</option>
+        <option value="Suspended"            data-t="statusSuspended">พักการเรียน</option>
+        <option value="Resigned"             data-t="statusResigned">ลาออกจากสถาบัน</option>
+        <option value="WithdrawnScholarship" data-t="rptStatusWithdrawn">ถอนทุน</option>
+      </select>
+    </div>
+    <!-- Reset -->
+    <button onclick="resetFilters()" class="btn btn-secondary btn-sm mt-auto" style="height:32px">
+      <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      <span data-t="rptReset">ล้างตัวกรอง</span>
+    </button>
+    <!-- Data timestamp -->
+    <div class="ml-auto text-xs text-gray-400 mt-auto flex items-center gap-1.5">
+      <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+      <span id="rptDataTimestamp">—</span>
+    </div>
+  </div>
+
+  <!-- ═══ KPI CARDS ═══
+       Computed from centralized _CACHE; no extra API calls. -->
+  <div class="kpi-grid mb-5 fade-up delay-1" id="kpiGrid">
+    <!-- Rendered by buildKPICards() -->
+    <div class="kpi-card"><div class="kpi-icon" style="background:#eff6ff"><i data-lucide="users" class="w-5 h-5" style="color:#1d4ed8"></i></div><div class="kpi-val" id="kpiTotal">—</div><div class="kpi-label" data-t="rptKpiTotal">นักเรียนทั้งหมด</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#f0fdf4"><i data-lucide="check-circle" class="w-5 h-5" style="color:#16a34a"></i></div><div class="kpi-val" id="kpiActive">—</div><div class="kpi-label" data-t="rptKpiActive">กำลังศึกษา</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#faf5ff"><i data-lucide="award" class="w-5 h-5" style="color:#7c3aed"></i></div><div class="kpi-val" id="kpiGrad">—</div><div class="kpi-label" data-t="rptKpiGrad">สำเร็จการศึกษา</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#e0f2fe"><i data-lucide="building-2" class="w-5 h-5" style="color:#0369a1"></i></div><div class="kpi-val" id="kpiUni">—</div><div class="kpi-label" data-t="rptKpiUni">ต่อมหาวิทยาลัย</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#fff1f2"><i data-lucide="shield-off" class="w-5 h-5" style="color:#9f1239"></i></div><div class="kpi-val" id="kpiWithdraw">—</div><div class="kpi-label" data-t="rptKpiWithdraw">ลาออก / ถอนทุน</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#fef9c3"><i data-lucide="pause-circle" class="w-5 h-5" style="color:#a16207"></i></div><div class="kpi-val" id="kpiSuspend">—</div><div class="kpi-label" data-t="rptKpiSuspend">พักการเรียน</div></div>
+  </div>
+
+  <!-- ═══ CHARTS GRID ═══ -->
+  <div class="charts-grid">
+
+    <!-- 1. Enrollment Trend (line) — full width -->
+    <div class="rpt-card col-span-2 fade-up delay-2">
+      <div class="rpt-card-header" style="background:#1e3a8a">
+        <i data-lucide="trending-up" class="w-4 h-4"></i>
+        <span data-t="rptChartEnroll">แนวโน้มนักเรียนรับทุนแยกตามปีการศึกษา</span>
+        <span class="ml-auto text-blue-200 text-xs font-normal" id="enrollYearRange"></span>
+      </div>
+      <div class="rpt-card-body">
+        <div class="chart-wrap" style="height:240px">
+          <canvas id="chartEnroll"></canvas>
+          <div id="emptyEnroll" class="empty-chart hidden">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+            <span data-t="noData">ไม่พบข้อมูล</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2" data-t="rptEnrollNote">แสดงจำนวนนักเรียนที่เริ่มรับทุนในแต่ละปีการศึกษา (พ.ศ.) แยกตามสถาบัน</p>
+      </div>
+    </div>
+
+    <!-- 2. Status Distribution (donut) -->
+    <div class="rpt-card fade-up delay-2">
+      <div class="rpt-card-header" style="background:#7c3aed">
+        <i data-lucide="pie-chart" class="w-4 h-4"></i>
+        <span data-t="rptChartStatus">สัดส่วนตามสถานะนักเรียน</span>
+      </div>
+      <div class="rpt-card-body">
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="chartStatus"></canvas>
+          <div id="emptyStatus" class="empty-chart hidden">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+            <span data-t="noData">ไม่พบข้อมูล</span>
+          </div>
+        </div>
+        <div id="statusLegend" class="flex flex-wrap gap-2 mt-3"></div>
+      </div>
+    </div>
+
+    <!-- 3. Institution Distribution (horizontal bar) -->
+    <div class="rpt-card fade-up delay-2">
+      <div class="rpt-card-header" style="background:#ea580c">
+        <i data-lucide="bar-chart" class="w-4 h-4"></i>
+        <span data-t="rptChartInst">จำนวนนักเรียนแยกตามสถาบัน</span>
+      </div>
+      <div class="rpt-card-body">
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="chartInst"></canvas>
+          <div id="emptyInst" class="empty-chart hidden">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+            <span data-t="noData">ไม่พบข้อมูล</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Withdrawal Trend (line) — full width -->
+    <div class="rpt-card col-span-2 fade-up delay-3">
+      <div class="rpt-card-header" style="background:#9f1239">
+        <i data-lucide="trending-down" class="w-4 h-4"></i>
+        <span data-t="rptChartWithdraw">แนวโน้มการลาออก / ถอนทุน แยกตามปีที่รับทุน</span>
+        <span class="ml-auto text-rose-200 text-xs font-normal" id="withdrawNote"></span>
+      </div>
+      <div class="rpt-card-body">
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chartWithdraw"></canvas>
+          <div id="emptyWithdraw" class="empty-chart hidden">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+            <span data-t="rptNoWithdrawData">ยังไม่มีข้อมูลการลาออก / ถอนทุน</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2" data-t="rptWithdrawNote">แสดงนักเรียนที่มีสถานะ "ลาออกจากสถาบัน" หรือ "ถอนทุน" จัดกลุ่มตามปีที่เริ่มรับทุน</p>
+      </div>
+    </div>
+
+    <!-- 5. Level Distribution per institution (grouped bar) -->
+    <div class="rpt-card col-span-2 fade-up delay-3">
+      <div class="rpt-card-header" style="background:#0369a1">
+        <i data-lucide="layers" class="w-4 h-4"></i>
+        <span data-t="rptChartLevel">การกระจายระดับชั้นนักเรียนปัจจุบัน</span>
+        <div class="ml-auto flex items-center gap-2 no-print">
+          <span class="text-blue-100 text-xs font-normal" data-t="rptFilterInstLabel">สถาบัน:</span>
+          <select id="fltLevelInst" class="text-xs rounded-lg px-2 py-1 text-gray-700 border-0 outline-none" onchange="applyFilters()">
+            <option value="" data-t="promoAllInst">ทุกสถาบัน</option>
+            <option value="MBS">MBS</option>
+            <option value="VC">VC</option>
+            <option value="UNI">University</option>
+          </select>
+        </div>
+      </div>
+      <div class="rpt-card-body">
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chartLevel"></canvas>
+          <div id="emptyLevel" class="empty-chart hidden">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+            <span data-t="noData">ไม่พบข้อมูล</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Graduation vs Withdrawal comparison (line chart) — full width -->
+    <div class="rpt-card col-span-2 fade-up delay-3">
+      <div class="rpt-card-header" style="background:#16a34a">
+        <i data-lucide="line-chart" class="w-4 h-4"></i>
+        <span data-t="rptChartCompare">เปรียบเทียบ: จบการศึกษา vs ลาออก/ถอนทุน ตามปีที่รับทุน</span>
+      </div>
+      <div class="rpt-card-body">
+        <div class="chart-wrap" style="height:240px">
+          <canvas id="chartCompare"></canvas>
+          <div id="emptyCompare" class="empty-chart hidden">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+            <span data-t="noData">ไม่พบข้อมูล</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2" data-t="rptCompareNote">เปรียบเทียบอัตราจบการศึกษากับอัตราออกกลางคัน จัดกลุ่มตามปีที่เริ่มรับทุน (พ.ศ.)</p>
+      </div>
+    </div>
+
+  </div><!-- /charts-grid -->
+
+  <!-- ═══ DATA TABLE ═══ — Summary table for printing -->
+  <div class="rpt-card mt-5 fade-up delay-3">
+    <div class="rpt-card-header" style="background:#374151">
+      <i data-lucide="table" class="w-4 h-4"></i>
+      <span data-t="rptTableTitle">ตารางสรุปรายปีการศึกษา</span>
+      <span class="ml-auto text-gray-300 text-xs font-normal no-print" data-t="rptTableHint">แสดงตามตัวกรองที่เลือก</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs" id="summaryTable">
+        <thead>
+          <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
+            <th class="px-3 py-2 text-left font-700 text-gray-500 uppercase tracking-wide whitespace-nowrap" data-t="rptTblYear">ปีการศึกษา (พ.ศ.)</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide">MBS</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide">VC</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide">UNI</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide" data-t="rptTblTotal">รวม</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide" data-t="rptTblGrad">จบ</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide" data-t="rptTblWithdraw">ลาออก/ถอนทุน</th>
+            <th class="px-3 py-2 text-center font-700 text-gray-500 uppercase tracking-wide" data-t="rptTblActive">กำลังศึกษา</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody">
+          <tr><td colspan="8" class="text-center text-gray-400 py-8">กำลังโหลด...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <i data-lucide="arrow-up" class="w-4 h-4"></i>
+</button>
+
+<footer class="rdf-footer no-print">
+  <span>RDF Scholarship Management System — Reports</span>
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบ">
+    <span class="db-dot"></span>
+    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/rbac.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+// RBAC: Manager+ can view reports
+RBAC.enforcePage(['viewReports']);
+
+// ═══════════════════════════════════════════════════════════
+// CENTRALIZED DATA STORE
+// All charts read from _CACHE. No duplicate fetches.
+// API is called ONCE in loadReportData(); filters re-compute
+// derived datasets in-memory without re-fetching.
+// ═══════════════════════════════════════════════════════════
+const _CACHE = {
+  raw: [],           // Original student array from API
+  filtered: [],      // Subset after filters applied
+  loadedAt: null,    // ISO timestamp of last fetch
+};
+
+// ── Withdrawal statuses (centralized definition) ──
+const WITHDRAW_STATUSES = new Set(['Resigned','WithdrawnScholarship']);
+
+// ── Chart instances (held for destroy-before-rebuild pattern) ──
+const _CHARTS = {
+  enroll: null, status: null, inst: null,
+  withdraw: null, level: null, compare: null,
+};
+
+// ── Chart color palette ──
+const PALETTE = {
+  MBS:  { line:'#1d4ed8', fill:'rgba(29,78,216,0.10)' },
+  VC:   { line:'#ea580c', fill:'rgba(234,88,12,0.10)'  },
+  UNI:  { line:'#7c3aed', fill:'rgba(124,58,237,0.10)' },
+  OTHER:{ line:'#64748b', fill:'rgba(100,116,139,0.10)' },
+  grad:     { line:'#16a34a', fill:'rgba(22,163,74,0.10)' },
+  withdraw: { line:'#9f1239', fill:'rgba(159,18,57,0.10)' },
+};
+
+// ── Status labels (bilingual) ──
+function statusLabel(key) {
+  const MAP = {
+    th: { Active:'กำลังศึกษา', Graduated:'สำเร็จการศึกษา', University:'ต่อมหาวิทยาลัย',
+          Suspended:'พักการเรียน', Resigned:'ลาออกจากสถาบัน', WithdrawnScholarship:'ถอนทุน',
+          Incomplete:'ไม่สำเร็จ', Other:'อื่นๆ' },
+    en: { Active:'Active', Graduated:'Graduated', University:'University (cont.)',
+          Suspended:'Suspended', Resigned:'Resign (Inst.)', WithdrawnScholarship:'Withdrawn (Sch.)',
+          Incomplete:'Incomplete', Other:'Other' },
+  };
+  return (MAP[LANG] || MAP.th)[key] || key;
+}
+
+// ═══════════════════════════════════════════════════════════
+// DATA LOADING — called once; result cached in _CACHE.raw
+// ═══════════════════════════════════════════════════════════
+async function loadReportData() {
+  showLoader(true, t('loading'));
+  try {
+    const res = await API.getStudents();
+    if (res.status !== 'success') throw new Error(res.message || t('promoLoadError'));
+
+    _CACHE.raw = res.data || [];
+    _CACHE.loadedAt = new Date().toISOString();
+
+    // Populate year filter dropdown (unique scholarship years, sorted)
+    populateYearFilter();
+
+    // Apply current filter settings → updates _CACHE.filtered
+    applyFilters();
+
+    // Show timestamp
+    const ts = document.getElementById('rptDataTimestamp');
+    if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + new Date(_CACHE.loadedAt).toLocaleString();
+
+    showLoader(false);
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error')||'Error', e.message||'Failed to load data', 'error');
+  }
+}
+
+// ── Populate year dropdown from data ──
+function populateYearFilter() {
+  const years = new Set();
+  _CACHE.raw.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (y >= 2000 && y <= 2100) years.add(y + 543); // Convert CE → BE
+  });
+  const sel = document.getElementById('fltYear');
+  const current = sel.value;
+  // Keep the "All" option, rebuild the rest
+  const firstOpt = sel.options[0];
+  sel.innerHTML = '';
+  sel.appendChild(firstOpt);
+  [...years].sort().forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y + (LANG==='th'?' พ.ศ.':' BE');
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+// ═══════════════════════════════════════════════════════════
+// FILTERS
+// Reads filter state, slices _CACHE.raw → _CACHE.filtered,
+// then rebuilds ALL charts + KPIs + table from filtered data.
+// No extra API calls triggered.
+// ═══════════════════════════════════════════════════════════
+function applyFilters() {
+  const yearBE = document.getElementById('fltYear').value;
+  const inst   = document.getElementById('fltInst').value;
+  const status = document.getElementById('fltStatus').value;
+
+  _CACHE.filtered = _CACHE.raw.filter(s => {
+    if (yearBE && (parseInt(s.scholarshipYear) + 543) !== parseInt(yearBE)) return false;
+    if (inst   && s.institution !== inst) return false;
+    if (status && s.status      !== status) return false;
+    return true;
+  });
+
+  buildKPICards();
+  buildAllCharts();
+  buildSummaryTable();
+}
+
+function resetFilters() {
+  document.getElementById('fltYear').value  = '';
+  document.getElementById('fltInst').value  = '';
+  document.getElementById('fltStatus').value = '';
+  document.getElementById('fltLevelInst').value = '';
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════════
+// KPI CARDS — computed from _CACHE.filtered
+// ═══════════════════════════════════════════════════════════
+function buildKPICards() {
+  const d = _CACHE.filtered;
+  const count = (pred) => d.filter(pred).length;
+
+  document.getElementById('kpiTotal').textContent    = d.length;
+  document.getElementById('kpiActive').textContent   = count(s => s.status === 'Active');
+  document.getElementById('kpiGrad').textContent     = count(s => s.status === 'Graduated' || s.status === 'University');
+  document.getElementById('kpiUni').textContent      = count(s => s.status === 'University');
+  document.getElementById('kpiWithdraw').textContent = count(s => WITHDRAW_STATUSES.has(s.status));
+  document.getElementById('kpiSuspend').textContent  = count(s => s.status === 'Suspended');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHART BUILDER — dispatches to individual chart builders
+// Destroy-before-rebuild prevents canvas context leaks
+// ═══════════════════════════════════════════════════════════
+function buildAllCharts() {
+  buildEnrollChart();
+  buildStatusChart();
+  buildInstChart();
+  buildWithdrawChart();
+  buildLevelChart();
+  buildCompareChart();
+}
+
+// ── Destroy helper ──
+function destroyChart(key) {
+  if (_CHARTS[key]) { _CHARTS[key].destroy(); _CHARTS[key] = null; }
+}
+
+// ── Show/hide empty state ──
+function setEmpty(emptyId, chartId, isEmpty) {
+  const e = document.getElementById(emptyId);
+  const c = document.getElementById(chartId);
+  if (e) e.classList.toggle('hidden', !isEmpty);
+  if (c) c.style.display = isEmpty ? 'none' : 'block';
+}
+
+// ── Default Chart.js options (shared) ──
+function baseLineOpts(yLabel) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { font:{size:11}, usePointStyle:true, pointStyleWidth:8, padding:14 },
+      },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        titleFont: { size:11 },
+        bodyFont:  { size:11 },
+        padding: 10,
+        cornerRadius: 8,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize:1, font:{size:10} },
+        grid:  { color:'#f1f5f9' },
+        title: { display:!!yLabel, text:yLabel||'', font:{size:10}, color:'#9ca3af' },
+      },
+      x: { ticks:{font:{size:10}}, grid:{display:false} },
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// 1. ENROLLMENT TREND — line chart, split by institution
+//    X: scholarship year (BE); Y: count of students who started
+//    Data source: _CACHE.filtered
+// ═══════════════════════════════════════════════════════════
+function buildEnrollChart() {
+  destroyChart('enroll');
+  const d = _CACHE.filtered;
+
+  // Group by year × institution
+  const yearMap = {};
+  d.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (!y || y < 2000 || y > 2100) return;
+    const be = String(y + 543);
+    if (!yearMap[be]) yearMap[be] = { MBS:0, VC:0, UNI:0 };
+    if (s.institution === 'MBS')      yearMap[be].MBS++;
+    else if (s.institution === 'VC')  yearMap[be].VC++;
+    else if (s.institution === 'UNI') yearMap[be].UNI++;
+  });
+
+  const years = Object.keys(yearMap).sort();
+  setEmpty('emptyEnroll','chartEnroll', years.length === 0);
+  if (years.length === 0) return;
+
+  // Year range note
+  const note = document.getElementById('enrollYearRange');
+  if (note) note.textContent = years[0] + ' – ' + years[years.length-1];
+
+  const instLabel = { MBS:'MBS', VC:'VC', UNI:LANG==='th'?'มหาวิทยาลัย':'University' };
+
+  _CHARTS.enroll = new Chart(document.getElementById('chartEnroll'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: ['MBS','VC','UNI'].map(inst => ({
+        label: instLabel[inst],
+        data: years.map(y => yearMap[y][inst] || 0),
+        borderColor: PALETTE[inst].line,
+        backgroundColor: PALETTE[inst].fill,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: PALETTE[inst].line,
+        tension: 0.4,
+        fill: true,
+      })),
+    },
+    options: {
+      ...baseLineOpts(LANG==='th'?'จำนวนนักเรียน (คน)':'Students'),
+      plugins: {
+        ...baseLineOpts().plugins,
+        tooltip: {
+          ...baseLineOpts().plugins.tooltip,
+          callbacks: {
+            title: (items) => (LANG==='th'?'ปีที่รับทุน พ.ศ. ':'Scholarship Year BE ') + items[0]?.label,
+            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} ${LANG==='th'?'คน':'students'}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 2. STATUS DISTRIBUTION — doughnut chart
+//    Shows proportion of each student status in filtered set
+// ═══════════════════════════════════════════════════════════
+function buildStatusChart() {
+  destroyChart('status');
+  const d = _CACHE.filtered;
+
+  const statusMap = {};
+  d.forEach(s => { statusMap[s.status] = (statusMap[s.status]||0) + 1; });
+  const keys = Object.keys(statusMap).sort((a,b) => statusMap[b] - statusMap[a]);
+
+  setEmpty('emptyStatus','chartStatus', keys.length === 0);
+  if (keys.length === 0) return;
+
+  const STATUS_COLORS = {
+    Active:'#10b981', Graduated:'#7c3aed', University:'#0369a1',
+    Suspended:'#f59e0b', Resigned:'#be123c', WithdrawnScholarship:'#9f1239',
+    Incomplete:'#ef4444', Other:'#94a3b8',
+  };
+
+  const colors = keys.map(k => STATUS_COLORS[k] || '#94a3b8');
+
+  _CHARTS.status = new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: keys.map(statusLabel),
+      datasets:[{
+        data: keys.map(k => statusMap[k]),
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor: colors,
+        borderWidth: 2,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a', padding:10, cornerRadius:8,
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} ${LANG==='th'?'คน':''}  (${Math.round(ctx.parsed/d.length*100)}%)`,
+          },
+        },
+      },
+    },
+  });
+
+  // Custom legend
+  const legend = document.getElementById('statusLegend');
+  if (legend) {
+    legend.innerHTML = keys.map((k, i) => `
+      <div class="flex items-center gap-1.5 text-xs text-gray-600">
+        <span class="leg-dot" style="background:${colors[i]}"></span>
+        <span>${statusLabel(k)}: <b>${statusMap[k]}</b></span>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 3. INSTITUTION DISTRIBUTION — horizontal bar
+//    Active students per institution, shows level detail
+// ═══════════════════════════════════════════════════════════
+function buildInstChart() {
+  destroyChart('inst');
+  const d = _CACHE.filtered;
+
+  const instMap = { MBS:0, VC:0, UNI:0, OTHER:0 };
+  d.forEach(s => {
+    if (instMap[s.institution] !== undefined) instMap[s.institution]++;
+    else instMap.OTHER++;
+  });
+
+  const labels = [
+    LANG==='th'?'แม่สะเรียง (MBS)':'Maesaring (MBS)',
+    LANG==='th'?'วิทยาลัยฯ (VC)':'Vocational (VC)',
+    LANG==='th'?'มหาวิทยาลัย (UNI)':'University (UNI)',
+    LANG==='th'?'อื่นๆ':'Other',
+  ];
+  const values = [instMap.MBS, instMap.VC, instMap.UNI, instMap.OTHER];
+  const colors = ['#1d4ed8','#ea580c','#7c3aed','#64748b'];
+
+  setEmpty('emptyInst','chartInst', values.every(v => v === 0));
+  if (values.every(v => v === 0)) return;
+
+  _CHARTS.inst = new Chart(document.getElementById('chartInst'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets:[{
+        label: LANG==='th'?'จำนวนนักเรียน':'Students',
+        data: values,
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 8,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          backgroundColor:'#0f172a', padding:10, cornerRadius:8,
+          callbacks: {
+            label: (ctx) => ` ${ctx.parsed.x} ${LANG==='th'?'คน':'students'}`,
+          },
+        },
+      },
+      scales: {
+        x: { beginAtZero:true, ticks:{stepSize:1, font:{size:10}}, grid:{color:'#f1f5f9'} },
+        y: { ticks:{font:{size:11}}, grid:{display:false} },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 4. WITHDRAWAL TREND — line chart
+//    Resigned + WithdrawnScholarship grouped by scholarship year
+//    Two lines: resign (inst) vs withdraw (sch)
+// ═══════════════════════════════════════════════════════════
+function buildWithdrawChart() {
+  destroyChart('withdraw');
+  const d = _CACHE.filtered;
+
+  const resignMap  = {};
+  const withdrawMap = {};
+
+  d.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (!y || y < 2000 || y > 2100) return;
+    const be = String(y + 543);
+    if (s.status === 'Resigned') {
+      resignMap[be] = (resignMap[be]||0) + 1;
+    } else if (s.status === 'WithdrawnScholarship') {
+      withdrawMap[be] = (withdrawMap[be]||0) + 1;
+    }
+  });
+
+  const years = [...new Set([...Object.keys(resignMap), ...Object.keys(withdrawMap)])].sort();
+  const total  = years.reduce((s, y) => s + (resignMap[y]||0) + (withdrawMap[y]||0), 0);
+
+  setEmpty('emptyWithdraw','chartWithdraw', years.length === 0);
+  const noteEl = document.getElementById('withdrawNote');
+  if (noteEl) noteEl.textContent = total > 0
+    ? (LANG==='th'?'รวม ':'Total ') + total + (LANG==='th'?' คน':' students')
+    : '';
+  if (years.length === 0) return;
+
+  _CHARTS.withdraw = new Chart(document.getElementById('chartWithdraw'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: LANG==='th'?'ลาออกจากสถาบัน':'Withdraw (Institution)',
+          data: years.map(y => resignMap[y]||0),
+          borderColor: '#be123c',
+          backgroundColor: 'rgba(190,18,60,0.10)',
+          borderWidth: 2.5, pointRadius:4, pointBackgroundColor:'#be123c', tension:0.4, fill:true,
+        },
+        {
+          label: LANG==='th'?'ถอนทุนการศึกษา':'Withdraw (Scholarship)',
+          data: years.map(y => withdrawMap[y]||0),
+          borderColor: '#9f1239',
+          backgroundColor: 'rgba(159,18,57,0.06)',
+          borderWidth: 2.5, pointRadius:4, pointBackgroundColor:'#9f1239', tension:0.4,
+          borderDash: [6,3], fill:false,
+        },
+      ],
+    },
+    options: {
+      ...baseLineOpts(LANG==='th'?'จำนวนนักเรียน (คน)':'Students'),
+      plugins: {
+        ...baseLineOpts().plugins,
+        tooltip: {
+          backgroundColor:'#0f172a', padding:10, cornerRadius:8,
+          callbacks: {
+            title: (items) => (LANG==='th'?'ปีที่รับทุน พ.ศ. ':'Scholarship Year BE ') + items[0]?.label,
+            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} ${LANG==='th'?'คน':'students'}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 5. LEVEL DISTRIBUTION — grouped bar chart
+//    Students per level, filtered by institution selector
+//    Only shows ACTIVE students
+// ═══════════════════════════════════════════════════════════
+function buildLevelChart() {
+  destroyChart('level');
+  const instFlt = document.getElementById('fltLevelInst').value;
+  const d = _CACHE.filtered.filter(s =>
+    s.status === 'Active' && (!instFlt || s.institution === instFlt)
+  );
+
+  const levelMap = {};
+  d.forEach(s => {
+    const key = s.institution + '|' + (s.level || '—');
+    if (!levelMap[key]) levelMap[key] = { inst:s.institution, level:s.level||'—', count:0 };
+    levelMap[key].count++;
+  });
+
+  const rows = Object.values(levelMap).sort((a,b) => {
+    const io = {MBS:0,VC:1,UNI:2,OTHER:3};
+    return (io[a.inst]??9)-(io[b.inst]??9) || a.level.localeCompare(b.level);
+  });
+
+  setEmpty('emptyLevel','chartLevel', rows.length === 0);
+  if (rows.length === 0) return;
+
+  const INST_COLORS = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#64748b' };
+
+  _CHARTS.level = new Chart(document.getElementById('chartLevel'), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.level.length > 28 ? r.level.substring(0,26)+'…' : r.level),
+      datasets:[{
+        label: LANG==='th'?'จำนวนนักเรียนกำลังศึกษา':'Active Students',
+        data: rows.map(r => r.count),
+        backgroundColor: rows.map(r => (INST_COLORS[r.inst]||'#64748b') + 'bb'),
+        borderColor:     rows.map(r => INST_COLORS[r.inst]||'#64748b'),
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          backgroundColor:'#0f172a', padding:10, cornerRadius:8,
+          callbacks: {
+            label: (ctx) => ` ${ctx.parsed.y} ${LANG==='th'?'คน':'students'} (${rows[ctx.dataIndex]?.inst})`,
+          },
+        },
+      },
+      scales: {
+        y: { beginAtZero:true, ticks:{stepSize:1, font:{size:10}}, grid:{color:'#f1f5f9'} },
+        x: { ticks:{font:{size:9}, maxRotation:40}, grid:{display:false} },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 6. GRADUATION vs WITHDRAWAL COMPARISON — multi-line chart
+//    For each scholarship year: count graduated vs withdrawn
+//    Helps visualize outcome quality per cohort
+// ═══════════════════════════════════════════════════════════
+function buildCompareChart() {
+  destroyChart('compare');
+  const d = _CACHE.filtered;
+
+  const gradMap     = {};  // graduated or university
+  const withdrawMap = {};  // resigned or withdrawn scholarship
+  const enrollMap   = {};  // total enrolled that year
+
+  d.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (!y || y < 2000 || y > 2100) return;
+    const be = String(y + 543);
+    enrollMap[be]  = (enrollMap[be]||0) + 1;
+    if (s.status === 'Graduated' || s.status === 'University')
+      gradMap[be] = (gradMap[be]||0) + 1;
+    if (WITHDRAW_STATUSES.has(s.status))
+      withdrawMap[be] = (withdrawMap[be]||0) + 1;
+  });
+
+  const years = Object.keys(enrollMap).sort();
+  setEmpty('emptyCompare','chartCompare', years.length === 0);
+  if (years.length === 0) return;
+
+  _CHARTS.compare = new Chart(document.getElementById('chartCompare'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: LANG==='th'?'จบการศึกษา (รวมต่อม.)':'Graduated (incl. Uni)',
+          data: years.map(y => gradMap[y]||0),
+          borderColor: PALETTE.grad.line,
+          backgroundColor: PALETTE.grad.fill,
+          borderWidth: 2.5, pointRadius:5, pointBackgroundColor: PALETTE.grad.line,
+          tension: 0.4, fill: true,
+        },
+        {
+          label: LANG==='th'?'ลาออก / ถอนทุน':'Withdrawal (all types)',
+          data: years.map(y => withdrawMap[y]||0),
+          borderColor: PALETTE.withdraw.line,
+          backgroundColor: PALETTE.withdraw.fill,
+          borderWidth: 2.5, pointRadius:5, pointBackgroundColor: PALETTE.withdraw.line,
+          tension: 0.4, fill: false,
+          borderDash: [6,3],
+        },
+        {
+          label: LANG==='th'?'รับทุนทั้งหมด':'Total Enrolled',
+          data: years.map(y => enrollMap[y]||0),
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148,163,184,0.06)',
+          borderWidth: 1.5, pointRadius:3, pointBackgroundColor:'#94a3b8',
+          tension: 0.4, fill: true,
+          borderDash: [3,3],
+        },
+      ],
+    },
+    options: {
+      ...baseLineOpts(LANG==='th'?'จำนวนนักเรียน (คน)':'Students'),
+      plugins: {
+        ...baseLineOpts().plugins,
+        tooltip: {
+          backgroundColor:'#0f172a', padding:10, cornerRadius:8,
+          callbacks: {
+            title: (items) => (LANG==='th'?'ปีที่รับทุน พ.ศ. ':'Cohort Year BE ') + items[0]?.label,
+            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} ${LANG==='th'?'คน':'students'}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUMMARY TABLE — tabular view for printing / data review
+// ═══════════════════════════════════════════════════════════
+function buildSummaryTable() {
+  const d = _CACHE.filtered;
+  const yearMap = {};
+
+  d.forEach(s => {
+    const y = parseInt(s.scholarshipYear);
+    if (!y || y < 2000 || y > 2100) return;
+    const be = String(y + 543);
+    if (!yearMap[be]) yearMap[be] = { MBS:0, VC:0, UNI:0, grad:0, withdraw:0, active:0, total:0 };
+    const row = yearMap[be];
+    row.total++;
+    if (s.institution === 'MBS') row.MBS++;
+    else if (s.institution === 'VC') row.VC++;
+    else if (s.institution === 'UNI') row.UNI++;
+    if (s.status === 'Graduated' || s.status === 'University') row.grad++;
+    if (WITHDRAW_STATUSES.has(s.status)) row.withdraw++;
+    if (s.status === 'Active') row.active++;
+  });
+
+  const years = Object.keys(yearMap).sort();
+  const tbody = document.getElementById('summaryTableBody');
+  if (!years.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-400 py-6 text-xs">${t('noData')||'ไม่พบข้อมูล'}</td></tr>`;
+    return;
+  }
+
+  // Grand totals
+  const totals = { MBS:0, VC:0, UNI:0, total:0, grad:0, withdraw:0, active:0 };
+  years.forEach(y => {
+    const r = yearMap[y];
+    Object.keys(totals).forEach(k => { totals[k] += r[k]||0; });
+  });
+
+  const rowHtml = (y, r, isTotal=false) => `
+    <tr class="${isTotal ? 'bg-blue-50 font-bold' : 'hover:bg-gray-50'}" style="${isTotal?'border-top:2px solid #bfdbfe':'border-bottom:1px solid #f1f5f9'}">
+      <td class="px-3 py-2 text-xs ${isTotal?'text-blue-700':'text-gray-700'} font-semibold whitespace-nowrap">
+        ${isTotal?(LANG==='th'?'รวมทั้งหมด':'Grand Total'):y}
+      </td>
+      <td class="px-3 py-2 text-center text-xs" style="color:#1d4ed8">${r.MBS||0}</td>
+      <td class="px-3 py-2 text-center text-xs" style="color:#ea580c">${r.VC||0}</td>
+      <td class="px-3 py-2 text-center text-xs" style="color:#7c3aed">${r.UNI||0}</td>
+      <td class="px-3 py-2 text-center text-xs font-bold text-gray-700">${r.total||0}</td>
+      <td class="px-3 py-2 text-center text-xs" style="color:#16a34a">${r.grad||0}</td>
+      <td class="px-3 py-2 text-center text-xs" style="color:#9f1239">${r.withdraw||0}</td>
+      <td class="px-3 py-2 text-center text-xs" style="color:#10b981">${r.active||0}</td>
+    </tr>`;
+
+  tbody.innerHTML = years.map(y => rowHtml(y, yearMap[y])).join('') + rowHtml('total', totals, true);
+}
+
+// ═══════════════════════════════════════════════════════════
+// BILINGUAL — re-builds all charts + UI on language switch
+// ═══════════════════════════════════════════════════════════
+function rptToggleLang() {
+  setLang(LANG === 'th' ? 'en' : 'th');
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = LANG === 'th' ? 'EN' : 'TH';
+  // Refresh year filter labels
+  populateYearFilter();
+  // Refresh timestamp label
+  if (_CACHE.loadedAt) {
+    const ts = document.getElementById('rptDataTimestamp');
+    if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + new Date(_CACHE.loadedAt).toLocaleString();
+  }
+  // Rebuild all charts with new language labels
+  buildAllCharts();
+  buildSummaryTable();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCROLL-TO-TOP BUTTON
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scrollTop');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 300);
+});
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+document.getElementById('footerYear')?.textContent === undefined;
+initDBStatus();
+
+(function boot() {
+  const u = requireAuth('index.html');
+  if (!u) return;
+  renderNavUser(u);
+  // Sync lang button
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = (localStorage.getItem('rdfLang')||'th') === 'th' ? 'EN' : 'TH';
+  setLang(localStorage.getItem('rdfLang') || 'th');
+  lucide.createIcons();
+  loadReportData();
+})();
+</script>
+</body>
+</html>
