@@ -483,13 +483,17 @@ async function loadAll() {
   try {
     const [settRes, studRes] = await Promise.all([
       API.getSystemSettings(),
-      API.getStudents(),
+      API.getStudentsForPromotion(),
     ]);
 
     _SETTINGS = settRes.data || {};
     _GRADES   = Array.isArray(_SETTINGS.STUDENT_GRADES) ? _SETTINGS.STUDENT_GRADES : [];
     _TERMS    = Array.isArray(_SETTINGS.ACADEMIC_TERMS)  ? _SETTINGS.ACADEMIC_TERMS  : [];
-    _STUDENTS = studRes.status === 'success' ? (studRes.data || []) : [];
+
+    // getStudentsForPromotion returns { groups: [{institution, level, students:[...]}] }
+    // Flatten all groups into a single array — fields are PascalCase (StipNo, Status, etc.)
+    const groups = studRes.status === 'success' ? (studRes.groups || []) : [];
+    _STUDENTS = groups.flatMap(g => g.students || []);
 
     populateTermDropdown();
 
