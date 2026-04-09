@@ -185,7 +185,7 @@
           <th data-t="phone">โทรศัพท์</th>
           <th>สถานะ</th>
           <th class="hide-mobile text-center">ปีเกิด ค.ศ.</th>
-          <th class="text-center hide-mobile" style="color:#7c3aed">ผลการเรียน</th>
+          <th class="text-center hide-mobile" style="color:#7c3aed" data-t="arGradeHeader">ผลการเรียน</th>
           <th class="text-center" data-t="actions">จัดการ</th>
         </tr>
       </thead>
@@ -806,7 +806,7 @@ function renderTable() {
           const col  = parseFloat(avg) >= 3.5 ? '#15803d' : parseFloat(avg) >= 3.0 ? '#1d4ed8' : parseFloat(avg) >= 2.5 ? '#a16207' : parseFloat(avg) >= 2.0 ? '#c2410c' : '#be123c';
           return `<button onclick="openGradeModal('${s.stipNo}')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px">
             <span style="font-weight:800;font-size:13px;color:${col}">${avg}</span>
-            <span style="font-size:9px;color:#9ca3af">${sg.length} ภาคเรียน</span>
+            <span style="font-size:9px;color:#9ca3af">${sg.length} ${t('arSemCount')}</span>
           </button>`;
         })()}
       </td>
@@ -820,7 +820,7 @@ function renderTable() {
              class="btn btn-icon btn-warning">
             <i data-lucide="edit" class="w-3.5 h-3.5"></i>
           </a>
-          <button onclick="openGradeModal('${s.stipNo}')" title="ผลการเรียน"
+          <button onclick="openGradeModal('${s.stipNo}')" title="${t('arGradeHeader')}"
                   class="btn btn-icon" style="background:#faf5ff;color:#7c3aed">
             <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
           </button>
@@ -900,9 +900,9 @@ function updateActiveFilters(f) {
 
 // ── Grade Modal ──────────────────────────────────────────
 function semLabelTH(v) {
-  if (v === '1') return 'ภาคเรียนที่ 1';
-  if (v === '2') return 'ภาคเรียนที่ 2';
-  if (v === 'summer') return 'ภาคฤดูร้อน';
+  if (v === '1') return t('arSem1');
+  if (v === '2') return t('arSem2');
+  if (v === 'summer') return t('arSemSummer');
   return v;
 }
 function gpaClass(gpa) {
@@ -936,8 +936,8 @@ function openGradeModal(stipNo) {
   let rowsHTML = '';
   if (!grades.length) {
     rowsHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af;font-size:12px">
-      ยังไม่มีผลการเรียนที่บันทึกไว้<br>
-      <a href="academic-results.html" style="color:#7c3aed;font-size:11px;font-weight:600">ไปที่หน้าบันทึกผลการเรียน →</a>
+      ${t('arNoGrades')}<br>
+      <a href="academic-results.html" style="color:#7c3aed;font-size:11px;font-weight:600">${t('arGoToGradePage')}</a>
     </td></tr>`;
   } else {
     rowsHTML = grades.map((g, i) => {
@@ -952,7 +952,7 @@ function openGradeModal(stipNo) {
         <td style="text-align:center;padding:8px 10px">${gpaBadge}</td>
         <td style="font-size:11px;color:#6b7280;padding:8px 10px">
           ${g.notes ? `<span>${g.notes}</span><br>` : ''}
-          <span style="font-size:10px;color:#9ca3af">บันทึกโดย ${g.updatedBy||'—'} · ${upd}</span>
+          <span style="font-size:10px;color:#9ca3af">${t('arColRecordedBy')}: ${g.updatedBy||'—'} · ${upd}</span>
         </td>
       </tr>`;
     }).join('');
@@ -972,15 +972,15 @@ function openGradeModal(stipNo) {
       ${grades.length ? `
       <div style="text-align:center;background:#faf5ff;border:1px solid #ddd6fe;border-radius:10px;padding:6px 14px">
         <div style="font-size:18px;font-weight:900;color:#7c3aed">${avg}</div>
-        <div style="font-size:10px;color:#6b7280">GPA เฉลี่ย</div>
+        <div style="font-size:10px;color:#6b7280">${t('arKpiAvg')}</div>
       </div>
       <div style="text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:6px 14px">
         <div style="font-size:18px;font-weight:900;color:#16a34a">${high}</div>
-        <div style="font-size:10px;color:#6b7280">GPA สูงสุด</div>
+        <div style="font-size:10px;color:#6b7280">${t('arKpiHighest')}</div>
       </div>
       <div style="text-align:center;background:#f8faff;border:1px solid #e5e7eb;border-radius:10px;padding:6px 14px">
         <div style="font-size:18px;font-weight:900;color:#374151">${grades.length}</div>
-        <div style="font-size:10px;color:#6b7280">ภาคเรียน</div>
+        <div style="font-size:10px;color:#6b7280">${t('arSemCount')}</div>
       </div>` : ''}
     </div>
     <div style="overflow-x:auto">
@@ -988,24 +988,24 @@ function openGradeModal(stipNo) {
         <thead>
           <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
             <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;width:32px">#</th>
-            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">ปีการศึกษา</th>
-            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">ภาคเรียน</th>
-            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">GPA</th>
-            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">หมายเหตุ / บันทึกโดย</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('arColAcadYear')}</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('arColSemester')}</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('gradeColGPA')}</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('gradeColNotes')} / ${t('arColRecordedBy')}</th>
           </tr>
         </thead>
         <tbody>${rowsHTML}</tbody>
       </table>
     </div>
     <div style="padding:10px 18px;background:#f8faff;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6b7280">
-      <span>ข้อมูลจาก STUDENT_GRADES — ใช้ร่วมกันทุกโมดูล</span>
+      <span>${t('arGradeSharedDB')}</span>
       <a href="academic-results.html" style="color:#7c3aed;font-weight:700;display:flex;align-items:center;gap:4px;text-decoration:none">
         <i data-lucide="external-link" style="width:12px;height:12px"></i>
-        จัดการผลการเรียน
+        ${t('arManageGrades')}
       </a>
     </div>`;
 
-  document.getElementById('gradeModalStudentName').textContent = `ผลการเรียน — ${name}`;
+  document.getElementById('gradeModalStudentName').textContent = `${t('arGradeModalTitle')} — ${name}`;
   document.getElementById('gradeModal').classList.remove('hidden');
   lucide.createIcons();
 }

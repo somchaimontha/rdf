@@ -150,9 +150,9 @@
     <div>
       <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
         <i data-lucide="book-open" class="w-5 h-5" style="color:#7c3aed"></i>
-        <span>ผลการเรียน / Academic Results</span>
+        <span data-t="arTitle">ผลการเรียน</span>
       </h2>
-      <p class="text-xs text-gray-400 mt-0.5">บันทึก แก้ไข และพิมพ์ผลการเรียนรายภาคเรียน แยกตามสถาบัน</p>
+      <p class="text-xs text-gray-400 mt-0.5" data-t="arSubtitle">บันทึก แก้ไข และพิมพ์ผลการเรียนรายภาคเรียน แยกตามสถาบัน</p>
     </div>
     <div class="flex gap-2 flex-wrap">
       <button onclick="loadAll()" class="btn btn-secondary btn-sm">
@@ -161,11 +161,11 @@
       </button>
       <button onclick="exportToExcel()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
         <i data-lucide="download" class="w-4 h-4"></i>
-        <span>ส่งออก Excel</span>
+        <span data-t="arExportExcel">ส่งออก Excel</span>
       </button>
       <button onclick="openPrintModal()" class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        <span>พิมพ์รายงานทางการ</span>
+        <span data-t="arPrintReport">พิมพ์รายงานทางการ</span>
       </button>
     </div>
   </div>
@@ -175,25 +175,25 @@
     <i data-lucide="filter" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
 
     <div class="ar-filter-group">
-      <span class="ar-filter-lbl">ปีการศึกษา (พ.ศ.)</span>
+      <span class="ar-filter-lbl" data-t="arAcadYearLabel">ปีการศึกษา (พ.ศ.)</span>
       <input type="number" id="fltYear" class="field-input text-sm" style="width:110px"
              placeholder="2568" min="2560" max="2600" onchange="applyFilters()">
     </div>
 
     <div class="ar-filter-group">
-      <span class="ar-filter-lbl">ภาคเรียน</span>
+      <span class="ar-filter-lbl" data-t="arSemLabel">ภาคเรียน</span>
       <select id="fltSem" class="field-select text-sm" style="min-width:170px" onchange="applyFilters()">
-        <option value="">— ทุกภาคเรียน —</option>
-        <option value="1">ภาคเรียนที่ 1</option>
-        <option value="2">ภาคเรียนที่ 2</option>
-        <option value="summer">ภาคฤดูร้อน</option>
+        <option value="" data-t="arAllSem">— ทุกภาคเรียน —</option>
+        <option value="1" data-t="arSem1">ภาคเรียนที่ 1</option>
+        <option value="2" data-t="arSem2">ภาคเรียนที่ 2</option>
+        <option value="summer" data-t="arSemSummer">ภาคฤดูร้อน</option>
       </select>
     </div>
 
     <div class="ar-filter-group">
-      <span class="ar-filter-lbl">สถานศึกษา</span>
+      <span class="ar-filter-lbl" data-t="arInstLabel">สถานศึกษา</span>
       <select id="fltInst" class="field-select text-sm" onchange="applyFilters()">
-        <option value="">ทุกสถานศึกษา</option>
+        <option value="" data-t="arAllInst">ทุกสถานศึกษา</option>
         <option value="MBS">MBS</option>
         <option value="VC">VC</option>
         <option value="UNI">University</option>
@@ -202,7 +202,7 @@
 
     <button onclick="resetFilters()" class="btn btn-secondary btn-sm" style="align-self:flex-end">
       <i data-lucide="x" class="w-3.5 h-3.5"></i>
-      <span>ล้างตัวกรอง</span>
+      <span data-t="arResetFilters">ล้างตัวกรอง</span>
     </button>
 
     <div class="ml-auto text-xs text-gray-400 flex items-center gap-1.5" style="align-self:flex-end">
@@ -215,27 +215,27 @@
   <div class="ar-kpi-grid fade-up delay-1">
     <div class="ar-kpi" style="border-left:4px solid #7c3aed">
       <div class="ar-kpi-val" id="kpiGraded" style="color:#7c3aed">—</div>
-      <div class="ar-kpi-lbl">นักเรียนที่มีผลการเรียน</div>
+      <div class="ar-kpi-lbl" data-t="arKpiGraded">นักเรียนที่มีผลการเรียน</div>
     </div>
     <div class="ar-kpi" style="border-left:4px solid #16a34a">
       <div class="ar-kpi-val" id="kpiAvg" style="color:#16a34a">—</div>
-      <div class="ar-kpi-lbl">GPA เฉลี่ย</div>
+      <div class="ar-kpi-lbl" data-t="arKpiAvg">GPA เฉลี่ย</div>
     </div>
     <div class="ar-kpi" style="border-left:4px solid #1d4ed8">
       <div class="ar-kpi-val" id="kpiHighest" style="color:#1d4ed8">—</div>
-      <div class="ar-kpi-lbl">GPA สูงสุด</div>
+      <div class="ar-kpi-lbl" data-t="arKpiHighest">GPA สูงสุด</div>
     </div>
     <div class="ar-kpi" style="border-left:4px solid #be123c">
       <div class="ar-kpi-val" id="kpiBelow2" style="color:#be123c">—</div>
-      <div class="ar-kpi-lbl">ต่ำกว่า 2.00</div>
+      <div class="ar-kpi-lbl" data-t="arKpiBelow2">ต่ำกว่า 2.00</div>
     </div>
   </div>
 
   <!-- ── View Mode Toggle ── -->
   <div class="flex items-center gap-3 mb-4 no-print fade-up delay-2">
-    <span class="text-xs font-semibold text-gray-500">มุมมอง:</span>
-    <button id="modeEntry"   class="mode-tab active" onclick="setMode('entry')">บันทึกผลการเรียน</button>
-    <button id="modeHistory" class="mode-tab"         onclick="setMode('history')">ประวัติผลการเรียน</button>
+    <span class="text-xs font-semibold text-gray-500" data-t="arViewLabel">มุมมอง:</span>
+    <button id="modeEntry"   class="mode-tab active" onclick="setMode('entry')"   data-t="arModeEntry">บันทึกผลการเรียน</button>
+    <button id="modeHistory" class="mode-tab"         onclick="setMode('history')" data-t="arModeHistory">ประวัติผลการเรียน</button>
   </div>
 
   <!-- ══════════════════ ENTRY MODE ══════════════════ -->
@@ -248,18 +248,20 @@
           <div class="search-wrap">
             <i data-lucide="search" class="w-4 h-4"></i>
             <input type="text" id="entrySearch" class="field-input search-input"
+              data-t="arSearchPlaceholder" data-t-attr="placeholder"
               placeholder="ค้นหาชื่อหรือรหัสทุน..." style="width:210px"
               oninput="filterEntryRows()">
           </div>
-          <span class="text-xs text-gray-400" id="entryCount">กรุณาเลือกปีการศึกษาและภาคเรียน</span>
+          <span class="text-xs text-gray-400" id="entryCount" data-t="arEntrySelectHint">กรุณาเลือกปีการศึกษาและภาคเรียน</span>
         </div>
         <div class="flex gap-2">
           <button onclick="clearAllGPAInputs()" class="btn btn-secondary btn-sm text-xs">
-            <i data-lucide="eraser" class="w-3.5 h-3.5"></i> ล้างทั้งหมด
+            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+            <span data-t="arClearAll">ล้างทั้งหมด</span>
           </button>
           <button onclick="saveGrades()" class="btn btn-sm font-bold" style="background:#7c3aed;color:#fff;border:none;min-width:150px">
             <i data-lucide="save" class="w-3.5 h-3.5"></i>
-            <span>บันทึกผลการเรียน</span>
+            <span data-t="arModeEntry">บันทึกผลการเรียน</span>
           </button>
         </div>
       </div>
@@ -268,8 +270,8 @@
     <!-- Prompt when no year/sem selected -->
     <div id="entryPrompt" class="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-400 text-sm">
       <i data-lucide="book-open" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
-      <p class="font-semibold">กรุณาเลือกปีการศึกษาและภาคเรียนด้านบนเพื่อเริ่มกรอกผลการเรียน</p>
-      <p class="text-xs mt-1">ระบบจะแสดงรายชื่อนักเรียนทั้งหมดพร้อมช่องกรอก GPA โดยอัตโนมัติ</p>
+      <p class="font-semibold" data-t="arEntryPromptMsg">กรุณาเลือกปีการศึกษาและภาคเรียนด้านบนเพื่อเริ่มกรอกผลการเรียน</p>
+      <p class="text-xs mt-1" data-t="arEntryPromptHint">ระบบจะแสดงรายชื่อนักเรียนทั้งหมดพร้อมช่องกรอก GPA โดยอัตโนมัติ</p>
     </div>
 
     <!-- Group cards container -->
@@ -278,7 +280,7 @@
     <!-- Save hint -->
     <div id="entrySaveHint" class="hidden flex items-center gap-1.5 text-xs text-gray-400 py-3 no-print">
       <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0"></i>
-      <span>ระบบป้องกันข้อมูลซ้ำอัตโนมัติ — หากมีผลการเรียนอยู่แล้วจะอัปเดตแทนการเพิ่มใหม่ • แถวสีม่วง = มีผลการเรียนแล้ว</span>
+      <span data-t="arSaveHint">ระบบป้องกันข้อมูลซ้ำอัตโนมัติ — หากมีผลการเรียนอยู่แล้วจะอัปเดตแทนการเพิ่มใหม่ • แถวสีม่วง = มีผลการเรียนแล้ว</span>
     </div>
   </div>
 
@@ -286,7 +288,7 @@
   <div id="panelHistory" class="ar-card hidden fade-up delay-2">
     <div class="ar-card-hdr" style="background:#374151">
       <i data-lucide="history" class="w-4 h-4"></i>
-      <span>ประวัติผลการเรียนทั้งหมด</span>
+      <span data-t="arHistoryTitle">ประวัติผลการเรียนทั้งหมด</span>
       <span class="ml-auto text-gray-300 text-xs font-normal" id="historyCount">—</span>
     </div>
     <div class="ar-card-body overflow-x-auto">
@@ -294,14 +296,14 @@
         <thead>
           <tr>
             <th style="width:32px">#</th>
-            <th>ชื่อ-สกุล</th>
-            <th>สถานศึกษา</th>
-            <th>ชั้น/ระดับ</th>
-            <th>ปีการศึกษา</th>
-            <th>ภาคเรียน</th>
-            <th class="text-center">GPA</th>
-            <th>หมายเหตุ</th>
-            <th>บันทึกโดย</th>
+            <th data-t="gradeColName">ชื่อ-สกุล</th>
+            <th data-t="gradeColInst">สถานศึกษา</th>
+            <th data-t="arColLevel">ชั้น/ระดับ</th>
+            <th data-t="arColAcadYear">ปีการศึกษา</th>
+            <th data-t="arColSemester">ภาคเรียน</th>
+            <th class="text-center" data-t="gradeColGPA">GPA</th>
+            <th data-t="gradeColNotes">หมายเหตุ</th>
+            <th data-t="arColRecordedBy">บันทึกโดย</th>
             <th class="no-print" style="width:40px"></th>
           </tr>
         </thead>
@@ -320,7 +322,7 @@
     <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#7c3aed">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        พิมพ์รายงานผลการเรียน / Print Grade Report
+        <span data-t="arPrintTitle">พิมพ์รายงานผลการเรียน</span>
       </h3>
       <button onclick="closePrintModal()" class="text-white opacity-70 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -329,7 +331,7 @@
 
     <div class="p-5 space-y-0" style="max-height:82vh;overflow-y:auto">
       <div class="pr-section">
-        <span class="pr-label">ภาษารายงาน / Report Language</span>
+        <span class="pr-label" data-t="rptPrLang">ภาษารายงาน / Report Language</span>
         <div class="pr-radio-row">
           <label><input type="radio" name="arPrLang" value="th" checked class="accent-purple-600"> ภาษาไทย</label>
           <label><input type="radio" name="arPrLang" value="en" class="accent-purple-600"> English</label>
@@ -338,17 +340,17 @@
 
       <div class="grid grid-cols-2 gap-3 pr-section">
         <div>
-          <span class="pr-label">ปีการศึกษา / Academic Year</span>
+          <span class="pr-label" data-t="gradesAcadYear">ปีการศึกษา / Academic Year</span>
           <input type="text" id="arPrAcad" class="pr-field" placeholder="2024-2025">
         </div>
         <div>
-          <span class="pr-label">วันที่รายงาน / Report Date</span>
+          <span class="pr-label" data-t="rptPrDate">วันที่รายงาน / Report Date</span>
           <input type="date" id="arPrDate" class="pr-field">
         </div>
       </div>
 
       <div class="pr-section">
-        <span class="pr-label">ภาคเรียน / Term</span>
+        <span class="pr-label" data-t="arSemLabel">ภาคเรียน / Term</span>
         <select id="arPrSem" class="pr-field">
           <option value="">— ทุกภาคเรียน / All Terms —</option>
           <option value="1">ภาคเรียนที่ 1 / Semester 1</option>
@@ -358,7 +360,7 @@
       </div>
 
       <div class="pr-section">
-        <span class="pr-label">สถานศึกษา / Institution</span>
+        <span class="pr-label" data-t="arInstLabel">สถานศึกษา / Institution</span>
         <select id="arPrInst" class="pr-field">
           <option value="">ทุกสถานศึกษา / All</option>
           <option value="MBS">MBS</option>
@@ -368,26 +370,26 @@
       </div>
 
       <div class="pr-section">
-        <span class="pr-label">เรื่อง / Document Subject</span>
+        <span class="pr-label" data-t="rptPrSubject">เรื่อง / Document Subject</span>
         <input type="text" id="arPrSubject" class="pr-field" placeholder="จะสร้างให้อัตโนมัติ / Auto-generated if blank">
       </div>
 
       <div class="pr-section">
-        <span class="pr-label">เรียงลำดับ / Sort Order</span>
+        <span class="pr-label" data-t="arPrSortLabel">เรียงลำดับ</span>
         <div class="pr-radio-row">
-          <label><input type="radio" name="arPrSort" value="inst" checked class="accent-purple-600"> <span>สถาบัน → ชั้น → ชื่อ</span></label>
-          <label><input type="radio" name="arPrSort" value="gpa"  class="accent-purple-600"> <span>GPA (สูง→ต่ำ)</span></label>
-          <label><input type="radio" name="arPrSort" value="name" class="accent-purple-600"> <span>ชื่อ A→Z</span></label>
+          <label><input type="radio" name="arPrSort" value="inst" checked class="accent-purple-600"> <span data-t="arPrSortInst">สถาบัน → ชั้น → ชื่อ</span></label>
+          <label><input type="radio" name="arPrSort" value="gpa"  class="accent-purple-600"> <span data-t="arPrSortGpa">GPA (สูง→ต่ำ)</span></label>
+          <label><input type="radio" name="arPrSort" value="name" class="accent-purple-600"> <span data-t="arPrSortName">ชื่อ A→Z</span></label>
         </div>
       </div>
 
       <div class="pr-section">
         <div class="flex items-center justify-between mb-2">
-          <span class="pr-label" style="margin-bottom:0">ผู้ลงนามในเอกสาร / Signatories</span>
+          <span class="pr-label" style="margin-bottom:0" data-t="rptPrSigs">ผู้ลงนามในเอกสาร / Signatories</span>
           <a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')"
              class="text-xs text-purple-600 hover:underline flex items-center gap-1">
             <i data-lucide="settings" class="w-3 h-3"></i>
-            ตั้งค่าผู้ลงนาม
+            <span data-t="arPrSigSettings">ตั้งค่าผู้ลงนาม</span>
           </a>
         </div>
         <div id="arPrSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
@@ -397,15 +399,15 @@
 
       <div class="bg-purple-50 border border-purple-100 rounded-lg p-3 text-xs text-purple-700 flex gap-2 items-start">
         <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <span>รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน พร้อมลายเซ็นท้ายเอกสาร</span>
+        <span data-t="arPrHint">รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน พร้อมลายเซ็นท้ายเอกสาร</span>
       </div>
     </div>
 
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
-      <button onclick="closePrintModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
+      <button onclick="closePrintModal()" class="btn btn-secondary btn-sm" data-t="arPrCancel">ยกเลิก</button>
       <button onclick="doPrint()" class="btn btn-sm font-bold" style="background:#7c3aed;color:#fff;border:none">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        สร้างและพิมพ์รายงาน
+        <span data-t="arPrGenerate">สร้างและพิมพ์รายงาน</span>
       </button>
     </div>
   </div>
@@ -462,10 +464,11 @@ const LEVEL_OPTIONS = {
 
 // ── Semester label ─────────────────────────────────────────
 function semLabel(val, isEN) {
-  if (val === '1')      return isEN ? 'Semester 1'  : 'ภาคเรียนที่ 1';
-  if (val === '2')      return isEN ? 'Semester 2'  : 'ภาคเรียนที่ 2';
-  if (val === 'summer') return isEN ? 'Summer Term' : 'ภาคฤดูร้อน';
-  const term = _TERMS.find(t => t.semester === val);
+  const L = isEN ? 'en' : 'th';
+  if (val === '1')      return T[L].arSem1;
+  if (val === '2')      return T[L].arSem2;
+  if (val === 'summer') return T[L].arSemSummer;
+  const term = _TERMS.find(x => x.semester === val);
   return term ? (isEN ? term.labelEN : term.labelTH) : val;
 }
 
@@ -488,7 +491,7 @@ function findStudent(stipNo) {
 // DATA LOADING
 // ══════════════════════════════════════════════════════════
 async function loadAll() {
-  showLoader(true, 'กำลังโหลดข้อมูล...');
+  showLoader(true, t('loading'));
   try {
     const [settRes, studRes] = await Promise.all([
       API.getSystemSettings(),
@@ -616,7 +619,7 @@ function buildEntryGroups(year, sem, inst) {
     container.innerHTML = '';
     prompt.classList.remove('hidden');
     hint.classList.add('hidden');
-    countEl.textContent = isEN ? 'Select year + semester to start' : 'กรุณาเลือกปีการศึกษาและภาคเรียน';
+    countEl.textContent = t('arEntrySelectHint');
     return;
   }
   prompt.classList.add('hidden');
@@ -837,7 +840,7 @@ async function saveGrades() {
   const isEN = LANG === 'en';
 
   if (!year || year < 2560 || !sem) {
-    Swal.fire('คำเตือน', 'กรุณาเลือกปีการศึกษา (พ.ศ.) และภาคเรียนก่อนบันทึก', 'warning');
+    Swal.fire(t('warning'), t('arEntrySelectHint'), 'warning');
     return;
   }
 
@@ -949,18 +952,18 @@ function exportToExcel() {
   const data = filtered.map((g, i) => {
     const stu = findStudent(g.stipNo);
     const name = stu ? `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim() : g.stipNo;
+    const isEN = LANG === 'en';
     return {
-      'ลำดับ': i+1,
-      'รหัสทุน': g.stipNo,
-      'ชื่อ-สกุล': name,
-      'สถานศึกษา': stu?.Institution || '—',
-      'ชั้น/ระดับ': stu?.CurrentLevel || '—',
-      'ปีการศึกษา (พ.ศ.)': g.acadYear,
-      'ภาคเรียน': semLabel(g.semester, false),
-      'GPA': g.gpa != null ? parseFloat(g.gpa) : '',
-      'หมายเหตุ': g.notes || '',
-      'บันทึกโดย': g.updatedBy || '',
-      'วันที่บันทึก': g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '',
+      [t('exportNo')]:                 i+1,
+      [t('stipNo')]:                   g.stipNo,
+      [t('gradeColName')]:             name,
+      [t('gradeColInst')]:             stu?.Institution || '—',
+      [t('arColLevel')]:               stu?.CurrentLevel || '—',
+      [t('arAcadYearLabel')]:          g.acadYear,
+      [t('arColSemester')]:            semLabel(g.semester, isEN),
+      'GPA':                           g.gpa != null ? parseFloat(g.gpa) : '',
+      [t('gradeColNotes')]:            g.notes || '',
+      [t('arColRecordedBy')]:          g.updatedBy || '',
     };
   });
 
@@ -1064,12 +1067,12 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
   const SL = {
     org:      isEN ? 'Dr. Robert Dyckerhoff Foundation (Thailand)' : 'มูลนิธิ Dr. Robert Dyckerhoff (ประเทศไทย)',
     title:    isEN ? 'Academic Results Report' : 'รายงานผลการเรียน',
-    date:     isEN ? 'Date' : 'วันที่',
-    acad:     isEN ? 'Academic Year' : 'ปีการศึกษา',
-    term:     isEN ? 'Term' : 'ภาคเรียน',
-    inst:     isEN ? 'Institution' : 'สถานศึกษา',
-    allInst:  isEN ? 'All Institutions' : 'ทุกสถานศึกษา',
-    allTerm:  isEN ? 'All Terms' : 'ทุกภาคเรียน',
+    date:     T[lang].exportDate || (isEN ? 'Date' : 'วันที่'),
+    acad:     T[lang].arColAcadYear,
+    term:     T[lang].arColSemester,
+    inst:     T[lang].arInstLabel,
+    allInst:  T[lang].arAllInst,
+    allTerm:  T[lang].arAllSem,
     total:    isEN ? 'Total' : 'รวม',
     person:   isEN ? 'student(s)' : 'นักเรียน',
     avg:      isEN ? 'Average GPA' : 'GPA เฉลี่ย',
@@ -1257,18 +1260,15 @@ function arToggleLang() {
   const btn = document.getElementById('langBtn');
   if (btn) btn.textContent = LANG === 'th' ? 'EN' : 'TH';
 
+  // Rebuild semester dropdown with current language
   const sel = document.getElementById('fltSem');
   if (sel) {
     const curr = sel.value;
-    sel.innerHTML = LANG === 'th'
-      ? `<option value="">— ทุกภาคเรียน —</option>
-         <option value="1">ภาคเรียนที่ 1</option>
-         <option value="2">ภาคเรียนที่ 2</option>
-         <option value="summer">ภาคฤดูร้อน</option>`
-      : `<option value="">— All Terms —</option>
-         <option value="1">Semester 1</option>
-         <option value="2">Semester 2</option>
-         <option value="summer">Summer Term</option>`;
+    sel.innerHTML =
+      `<option value="">${t('arAllSem')}</option>
+       <option value="1">${t('arSem1')}</option>
+       <option value="2">${t('arSem2')}</option>
+       <option value="summer">${t('arSemSummer')}</option>`;
     populateTermDropdown();
     sel.value = curr;
   }
