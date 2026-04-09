@@ -1133,9 +1133,9 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-4">
-          เลือกช่องที่อนุญาตให้นักเรียนทุนแก้ไขข้อมูลของตนเองได้
-          ช่องที่ไม่ได้เลือกจะเป็น Read-Only สำหรับนักเรียน<br>
-          <span class="text-gray-400">Fields not selected will be read-only for Students. Only StipNo is permanently locked and cannot be unlocked.</span>
+          เลือกสิทธิ์ที่อนุญาตให้นักเรียนทุนทำได้กับข้อมูลของตนเอง
+          ช่องที่ไม่ได้เลือกจะเป็น <b>Read-Only</b> สำหรับนักเรียน รวมถึงการบันทึก/แก้ไขผลการเรียน<br>
+          <span class="text-gray-400">Unchecked fields are read-only for Students. StipNo is permanently protected. The Grade section can be toggled on/off for students independently.</span>
         </p>
         <div id="studentFieldsGrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
           <!-- Rendered by buildStudentFieldsUI() -->
@@ -2184,6 +2184,8 @@ async function forceLogout(username) {
 // ─────────────────────────────────────────────
 const STUDENT_FIELD_OPTIONS = [
   // [fieldId, labelTH, labelEN, group]
+  // ── ผลการเรียน — ควบคุมว่านักเรียนบันทึก/แก้ไขเกรดตนเองได้หรือไม่ ──
+  ['f_gradeEdit',     'บันทึก/แก้ไขผลการเรียน',  'Record / Edit Grades',  'grades'],
   // ── ข้อมูลการศึกษา (admin-configurable — StipNo remains always locked separately) ──
   ['f_idCard',        'เลขบัตรประชาชน',           'National ID',           'academic'],
   ['f_institution',   'สถาบัน',                   'Institution',           'academic'],
@@ -2232,28 +2234,51 @@ function buildStudentFieldsUI() {
   if (!grid) return;
   const current = new Set(_studentEditableFields || RBAC.getDefaultEditableFields());
   const groupColors = {
-    academic:'#fef9c3', contact:'#eff6ff', address:'#f0fdf4', family:'#faf5ff', photo:'#fff7ed'
+    grades:'#faf5ff', academic:'#fef9c3', contact:'#eff6ff', address:'#f0fdf4', family:'#faf5ff', photo:'#fff7ed'
   };
-  const groupTH = { academic:'ข้อมูลการศึกษา / Academic', contact:'ข้อมูลติดต่อ', address:'ที่อยู่', family:'ครอบครัว', photo:'รูปโปรไฟล์' };
+  const groupBorder = {
+    grades:'#ddd6fe', academic:'#fde68a', contact:'#bfdbfe', address:'#bbf7d0', family:'#e9d5ff', photo:'#fed7aa'
+  };
+  const groupTH = {
+    grades:   'ผลการเรียน / Academic Results',
+    academic: 'ข้อมูลการศึกษา / Academic',
+    contact:  'ข้อมูลติดต่อ',
+    address:  'ที่อยู่',
+    family:   'ครอบครัว',
+    photo:    'รูปโปรไฟล์'
+  };
+  const groupDesc = {
+    grades: 'เปิด = นักเรียนสามารถเพิ่ม/แก้ไขผลการเรียนของตนเองได้ใน student-form.html  •  ปิด = ดูได้อย่างเดียว ห้ามแก้ไข',
+  };
+  const groupIcon = {
+    grades: '📚', academic: '🎓', contact: '📞', address: '🏠', family: '👨‍👩‍👧', photo: '🖼'
+  };
+
   const groups = [...new Set(STUDENT_FIELD_OPTIONS.map(f => f[3]))];
 
   grid.innerHTML = groups.map(g => {
-    // Academic group spans all columns (has 8 fields — display in 2-col inner grid)
-    const isAcademic = g === 'academic';
-    const fields = STUDENT_FIELD_OPTIONS.filter(f => f[3] === g);
+    const isWide    = ['grades','academic'].includes(g);
+    const isGrades  = g === 'grades';
+    const fields    = STUDENT_FIELD_OPTIONS.filter(f => f[3] === g);
+    const accentColor = isGrades ? '#7c3aed' : '#64748b';
     return `
-    <div style="grid-column:${isAcademic?'1/-1':'span 1'};margin-bottom:4px">
-      <div style="background:${groupColors[g]||'#f8fafc'};border-radius:8px;padding:8px 10px">
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:6px;letter-spacing:.5px">
-          ${groupTH[g]||g}
-        </p>
-        <div style="${isAcademic?'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0 12px':''}">
+    <div style="grid-column:${isWide?'1/-1':'span 1'};margin-bottom:6px">
+      <div style="background:${groupColors[g]||'#f8fafc'};border:1.5px solid ${groupBorder[g]||'#e5e7eb'};border-radius:10px;padding:10px 14px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:${groupDesc[g]?'4px':'8px'}">
+          <span style="font-size:14px">${groupIcon[g]||'•'}</span>
+          <span style="font-size:11px;font-weight:800;text-transform:uppercase;color:${accentColor};letter-spacing:.5px">${groupTH[g]||g}</span>
+        </div>
+        ${groupDesc[g] ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px;padding-left:22px">${groupDesc[g]}</p>` : ''}
+        <div style="${isWide?'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 12px':''}">
         ${fields.map(([fid,lth,len]) => `
-          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 0;font-size:12px;color:#374151">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 0;font-size:12px;color:#374151;${isGrades?'font-weight:700':''}">
             <input type="checkbox" id="sef_${fid}" value="${fid}"
                    ${current.has(fid)?'checked':''}
-                   style="width:14px;height:14px;accent-color:#0ea5e9;cursor:pointer">
-            <span>${lth}<span style="color:#94a3b8;font-size:10px;margin-left:4px">${len}</span></span>
+                   style="width:15px;height:15px;accent-color:${isGrades?'#7c3aed':'#0ea5e9'};cursor:pointer;flex-shrink:0">
+            <span>${lth}
+              <span style="color:#94a3b8;font-size:10px;margin-left:4px">${len}</span>
+              ${isGrades ? `<span style="margin-left:6px;background:#7c3aed;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px">ระบบเกรด</span>` : ''}
+            </span>
           </label>`).join('')}
         </div>
       </div>

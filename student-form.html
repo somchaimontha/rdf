@@ -1033,15 +1033,61 @@ function gpaColorStyle(v) {
 async function loadGradesForStudent(stipNo) {
   _formStipNo = stipNo;
   try {
-    const res = await API.getSystemSettings();
+    const res  = await API.getSystemSettings();
     const sett = res.data || {};
     _formGrades = Array.isArray(sett.STUDENT_GRADES) ? sett.STUDENT_GRADES : [];
+    RBAC.cacheStudentFields(sett);   // keep cache in sync
+
     renderGradeFormTable();
-    document.getElementById('sectionGrades').style.display = '';
+
+    const section  = document.getElementById('sectionGrades');
+    const canEdit  = RBAC.canStudentEditGrades();
+    const isStudent = RBAC.isStudent();
+
+    section.style.display = '';
+
+    if (isStudent && !canEdit) {
+      // Student, grade editing disabled → show read-only view
+      _applyGradeReadOnly(section, true);
+    } else if (isStudent && canEdit) {
+      // Student, editing enabled → show full section, applyFieldGuards will fine-tune
+    }
+    // Admin: full access, no restrictions
+
     lucide.createIcons();
   } catch(e) {
-    // silently fail — grade section stays hidden
     console.warn('Grade load failed:', e.message);
+  }
+}
+
+function _applyGradeReadOnly(section, hideEntirely) {
+  if (!section) return;
+  const isEN = (localStorage.getItem('rdfLang') || 'th') === 'en';
+  if (hideEntirely) {
+    section.style.display = 'none';
+    return;
+  }
+  // Disable add inputs and buttons
+  ['ng_year','ng_sem','ng_gpa','ng_notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = true; el.style.opacity = '.45'; }
+  });
+  section.querySelectorAll('button[type="button"]').forEach(btn => {
+    if (btn.textContent.includes('เพิ่ม') || btn.textContent.includes('บันทึก')) {
+      btn.disabled = true; btn.style.opacity = '.45'; btn.style.cursor = 'not-allowed';
+    }
+    if (btn.textContent.trim() === '' || btn.title === 'ลบรายการนี้') {
+      btn.style.display = 'none';
+    }
+  });
+  // Badge on header
+  const hdr = section.querySelector('.form-section-header');
+  if (hdr && !hdr.querySelector('.ro-badge')) {
+    const b = document.createElement('span');
+    b.className = 'ro-badge';
+    b.style.cssText = 'background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:8px';
+    b.textContent = isEN ? 'View Only' : 'ดูได้เท่านั้น';
+    hdr.appendChild(b);
   }
 }
 

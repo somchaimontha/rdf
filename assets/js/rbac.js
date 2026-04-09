@@ -250,12 +250,48 @@ const RBAC = {
 
     const editableFields = new Set(this.getStudentEditableFields());
 
+    // ── Grade section guard ──────────────────────────────────
+    // 'f_gradeEdit' controls whether student can see/use the grade entry section.
+    const canEditGrades = editableFields.has('f_gradeEdit');
+    const gradeSection  = document.getElementById('sectionGrades');
+    if (gradeSection) {
+      if (canEditGrades) {
+        // Show section but make it read-only: hide add/delete controls
+        gradeSection.querySelectorAll(
+          '#ng_year,#ng_sem,#ng_gpa,#ng_notes,button[onclick="addGradeRow()"],button[onclick="saveGradesFromForm()"]'
+        ).forEach(el => {
+          el.disabled = true;
+          el.style.opacity = '0.4';
+          el.style.cursor  = 'not-allowed';
+          el.title = 'นักเรียนสามารถดูผลการเรียนได้ แต่ไม่สามารถแก้ไขได้';
+        });
+        // Hide delete buttons within grade table
+        gradeSection.querySelectorAll('button[onclick*="removeGradeRow"]').forEach(el => {
+          el.style.display = 'none';
+        });
+        // Add read-only badge to section header
+        const hdr = gradeSection.querySelector('.form-section-header');
+        if (hdr && !hdr.querySelector('.grade-readonly-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'grade-readonly-badge';
+          badge.style.cssText = 'background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:auto';
+          const isEN = (localStorage.getItem('rdfLang') || 'th') === 'en';
+          badge.textContent = isEN ? 'View Only' : 'ดูได้เท่านั้น';
+          hdr.appendChild(badge);
+        }
+      } else {
+        // Hide grade section entirely
+        gradeSection.style.display = 'none';
+      }
+    }
+
     // Lock all form inputs/selects/textareas
     document.querySelectorAll(
       'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=checkbox]),' +
       'select, textarea'
     ).forEach(el => {
       const fid = el.id || '';
+      if (['ng_year','ng_sem','ng_gpa','ng_notes'].includes(fid)) return; // handled above
       const isProtected = STUDENT_PROTECTED_FIELDS.has(fid);
       const isEditable  = editableFields.has(fid) && !isProtected;
 
@@ -286,6 +322,16 @@ const RBAC = {
 
     // Show student notice banner
     _rbacShowStudentFormNotice();
+  },
+
+  /**
+   * Check if current student is allowed to edit their grades.
+   * Used by student-form.html to conditionally enable grade add/delete controls.
+   * Always returns true for admin roles.
+   */
+  canStudentEditGrades() {
+    if (!this.isStudent()) return true; // admins: always allowed
+    return this.getStudentEditableFields().includes('f_gradeEdit');
   },
 
   // ── Dashboard UI control ──────────────────────
