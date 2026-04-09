@@ -56,8 +56,8 @@
         <span data-t="addStudentTitle">เพิ่มนักเรียนใหม่</span>
       </h2>
     </div>
-    <!-- Bulk Import -->
-    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
+    <!-- Bulk Import (admin only) -->
+    <div id="bulkImportSection" class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
       <div>
         <p class="text-xs font-bold text-blue-800" data-t="bulkInsert">นำเข้าข้อมูลจำนวนมาก</p>
         <p class="text-xs text-blue-500">Excel template พร้อมข้อมูลตัวอย่าง</p>
@@ -1001,6 +1001,9 @@ if (user) renderNavUser(user);
       RBAC._showAccessDenied(user);
       return;
     }
+    // Hide bulk import — admin-only feature
+    const bulkSec = document.getElementById('bulkImportSection');
+    if (bulkSec) bulkSec.style.display = 'none';
     // Student opening own form: apply field locks after DOM is ready
     window.addEventListener('load', () => RBAC.applyFieldGuards());
   } else if (!RBAC.has('editStudents') && !RBAC.has('viewStudents')) {
