@@ -209,7 +209,12 @@
 
       <div class="login-hint">
         <span data-t="loginHint">นักเรียน: เลขบัตร/รหัสนักเรียน/เบอร์โทร | รหัสผ่าน: ปีเกิด ค.ศ.</span>
-        <br><span class="text-blue-500 font-semibold" data-t="loginContact">โปรดติดต่อผู้ดูแลระบบหากต้องการความช่วยเหลือ</span>
+        <br>
+        <a id="adminContactLink" href="#" target="_blank" rel="noopener"
+           class="text-blue-500 font-semibold hover:underline"
+           style="display:none" data-t="loginContact">ติดต่อผู้ดูแลระบบ</a>
+        <span id="adminContactText" class="text-blue-400 font-semibold"
+              data-t="loginContact" style="display:none">ติดต่อผู้ดูแลระบบ</span>
       </div>
     </div>
   </div>
@@ -229,6 +234,25 @@
 document.getElementById('appVersion').textContent = RDF.VERSION;
 // Redirect if already logged in
 if (getUser()) window.location.href = 'dashboard.html';
+
+// Load admin contact link from system settings
+(async function loadAdminContact() {
+  try {
+    const r = await API.getSystemSettings();
+    const url = (r.data || {}).ADMIN_CONTACT_URL || '';
+    const linkEl = document.getElementById('adminContactLink');
+    const textEl = document.getElementById('adminContactText');
+    if (url) {
+      linkEl.href = url;
+      linkEl.style.display = 'inline';
+      if (textEl) textEl.style.display = 'none';
+    } else {
+      // No URL configured: show plain text (no link)
+      if (textEl) textEl.style.display = 'inline';
+      if (linkEl) linkEl.style.display = 'none';
+    }
+  } catch(e) { /* silently ignore — contact text stays hidden */ }
+})();
 </script>
 </body>
 </html>
