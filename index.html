@@ -10,15 +10,13 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-/* ── Login Page Specific ── */
+/* ── Login Page ── */
 .login-bg {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 40%, #1d4ed8 70%, #3b82f6 100%);
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden;
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
-/* Animated background circles */
 .bg-circle {
   position: absolute; border-radius: 50%;
   background: rgba(255,255,255,0.04);
@@ -29,13 +27,11 @@
 .bg-circle:nth-child(3) { width:200px;height:200px; top:30%; left:10%; animation-delay:4s; }
 .bg-circle:nth-child(4) { width:150px;height:150px; bottom:20%; right:15%; animation-delay:1s; }
 @keyframes floatCircle {
-  0%,100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-20px) scale(1.05); }
+  0%,100% { transform:translateY(0) scale(1); }
+  50% { transform:translateY(-20px) scale(1.05); }
 }
-
-/* Login card */
 .login-card {
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.96);
   backdrop-filter: blur(24px);
   border: 1px solid rgba(255,255,255,0.3);
   border-radius: 24px;
@@ -46,101 +42,128 @@
 }
 .login-header {
   background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
-  padding: 32px 28px 24px;
-  text-align: center;
-  position: relative;
+  padding: 28px 28px 22px;
+  text-align: center; position: relative;
 }
 .login-header::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; left: 0; right: 0;
-  height: 20px;
-  background: rgba(255,255,255,0.95);
+  content:''; position:absolute; bottom:-1px; left:0; right:0;
+  height:20px; background:rgba(255,255,255,0.96);
   border-radius: 100% 100% 0 0 / 20px 20px 0 0;
 }
 .logo-ring {
-  width: 80px; height: 80px;
+  width:76px; height:76px;
   background: rgba(255,255,255,0.15);
   border: 2px solid rgba(255,255,255,0.4);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 14px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  margin: 0 auto 12px;
   box-shadow: 0 0 0 6px rgba(255,255,255,0.08);
 }
-.login-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 50%; background: white; padding: 4px; }
-.login-header h1 { color: #fff; font-size: 15px; font-weight: 700; line-height: 1.4; }
-.login-header p  { color: rgba(255,255,255,0.75); font-size: 12px; margin-top: 4px; }
+.login-logo { width:52px; height:52px; object-fit:contain; border-radius:50%; background:white; padding:4px; }
+.login-header h1 { color:#fff; font-size:14.5px; font-weight:700; line-height:1.4; }
+.login-header p  { color:rgba(255,255,255,0.75); font-size:11.5px; margin-top:3px; }
+.login-body { padding:24px 28px 20px; }
 
-.login-body { padding: 28px 28px 24px; }
+/* ── Role tabs ── */
+.role-tabs { display:flex; background:#f1f5f9; border-radius:12px; padding:3px; margin-bottom:20px; gap:3px; }
+.role-tab {
+  flex:1; padding:9px 6px; border:none; border-radius:9px;
+  font-size:13px; font-weight:600; font-family:inherit;
+  cursor:pointer; transition:all .2s; color:#64748b; background:transparent;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+}
+.role-tab.active {
+  background:#fff; color:#1e3a8a;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+.role-tab.active.admin-tab { color:#7c3aed; }
+.role-tab svg { width:14px; height:14px; flex-shrink:0; }
 
-/* Input with icon */
-.input-group { position: relative; margin-bottom: 16px; }
-.input-group svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; width:18px;height:18px; }
+/* ── Inputs ── */
+.input-group { position:relative; margin-bottom:14px; }
+.input-group svg { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; width:17px;height:17px; }
 .login-input {
-  width: 100%; padding: 13px 14px 13px 44px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px; font-family: inherit; color: #1e293b;
-  background: #f8fafc;
-  transition: all 0.2s;
-  outline: none;
+  width:100%; padding:12px 13px 12px 42px;
+  border:1.5px solid #e2e8f0; border-radius:11px;
+  font-size:14px; font-family:inherit; color:#1e293b;
+  background:#f8fafc; transition:all .2s; outline:none;
 }
-.login-input:focus {
-  border-color: #1d4ed8;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
-}
-.login-input::placeholder { color: #94a3b8; font-size: 13px; }
+.login-input:focus { border-color:#1d4ed8; background:#fff; box-shadow:0 0 0 3px rgba(29,78,216,0.1); }
+.login-input::placeholder { color:#94a3b8; font-size:13px; }
+.field-label-login { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:5px; }
 
-.login-select {
-  width: 100%; padding: 13px 14px 13px 44px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px; font-family: inherit; color: #1e293b;
-  background: #f8fafc;
-  transition: all 0.2s;
-  outline: none; cursor: pointer;
-  appearance: none;
-}
-.login-select:focus { border-color: #1d4ed8; background: #fff; box-shadow: 0 0 0 3px rgba(29,78,216,0.1); }
-
-.field-label-login { display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px; }
-
+/* ── Login button ── */
 .login-btn {
-  width: 100%; padding: 14px;
+  width:100%; padding:13px;
   background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
-  color: #fff; border: none; border-radius: 12px;
-  font-size: 15px; font-weight: 700; font-family: inherit;
-  cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(30,58,138,0.35);
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 20px;
+  color:#fff; border:none; border-radius:11px;
+  font-size:14.5px; font-weight:700; font-family:inherit;
+  cursor:pointer; transition:all .2s;
+  box-shadow: 0 4px 15px rgba(30,58,138,0.3);
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  margin-top:16px;
 }
-.login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(30,58,138,0.45); }
-.login-btn:active { transform: translateY(0); }
+.login-btn:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(30,58,138,0.4); }
+.login-btn:active { transform:translateY(0); }
+.login-btn.admin-btn {
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+  box-shadow: 0 4px 15px rgba(124,58,237,0.3);
+}
+.login-btn.admin-btn:hover { box-shadow:0 8px 25px rgba(124,58,237,0.4); }
 
+/* ── Google Sign-In button ── */
+.google-btn {
+  width:100%; padding:12px 16px;
+  background:#fff; color:#374151;
+  border:1.5px solid #e2e8f0; border-radius:11px;
+  font-size:14px; font-weight:600; font-family:inherit;
+  cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.google-btn:hover { background:#f8fafc; border-color:#d1d5db; box-shadow:0 3px 10px rgba(0,0,0,0.12); transform:translateY(-1px); }
+.google-btn:active { transform:translateY(0); }
+.google-btn svg { flex-shrink:0; }
+
+/* ── Divider ── */
+.or-divider {
+  display:flex; align-items:center; gap:10px;
+  margin:14px 0; color:#94a3b8; font-size:12px; font-weight:600;
+}
+.or-divider::before,.or-divider::after {
+  content:''; flex:1; height:1px; background:#e2e8f0;
+}
+
+/* ── Admin section transition ── */
+#adminSection { overflow:hidden; transition:all .3s ease; }
+
+/* ── Hint ── */
 .login-hint {
-  text-align: center; font-size: 11.5px; color: #94a3b8;
-  margin-top: 14px; line-height: 1.6;
-  background: #f8fafc; padding: 10px 12px; border-radius: 8px;
-  border: 1px dashed #e2e8f0;
+  text-align:center; font-size:11.5px; color:#94a3b8;
+  margin-top:12px; line-height:1.6;
+  background:#f8fafc; padding:9px 12px; border-radius:8px;
+  border:1px dashed #e2e8f0;
 }
 .login-lang {
-  position: absolute; top: 16px; right: 16px;
-  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35);
-  color: #fff; border-radius: 8px; padding: 5px 12px;
-  font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  position:absolute; top:14px; right:14px;
+  background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.35);
+  color:#fff; border-radius:8px; padding:4px 11px;
+  font-size:12px; font-weight:700; cursor:pointer; transition:all .2s;
 }
-.login-lang:hover { background: rgba(255,255,255,0.3); }
-
-/* Bottom bar */
+.login-lang:hover { background:rgba(255,255,255,0.3); }
 .login-footer-bar {
-  position: absolute; bottom: 18px; left: 0; right: 0;
-  text-align: center;
-  color: rgba(255,255,255,0.5); font-size: 11.5px;
-  pointer-events: none;
+  position:absolute; bottom:16px; left:0; right:0;
+  text-align:center; color:rgba(255,255,255,0.5); font-size:11px;
+  pointer-events:none;
 }
-.login-footer-bar strong { color: rgba(255,255,255,0.8); }
+.login-footer-bar strong { color:rgba(255,255,255,0.8); }
+
+/* ── Google not configured notice ── */
+.google-not-cfg {
+  text-align:center; font-size:11.5px; color:#a78bfa;
+  background:#faf5ff; border:1px dashed #ddd6fe;
+  border-radius:8px; padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:6px;
+}
 </style>
 </head>
 <body>
@@ -153,18 +176,15 @@
 
 <!-- Login Background -->
 <div class="login-bg">
-  <!-- Animated circles -->
   <div class="bg-circle"></div>
   <div class="bg-circle"></div>
   <div class="bg-circle"></div>
   <div class="bg-circle"></div>
 
-  <!-- Language Toggle (absolute) -->
   <button class="login-lang" onclick="toggleLang()" id="langBtn">EN</button>
 
-  <!-- Login Card -->
   <div class="login-card">
-    <!-- Header with logo -->
+    <!-- Header -->
     <div class="login-header">
       <div class="logo-ring">
         <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png"
@@ -176,45 +196,87 @@
 
     <!-- Body -->
     <div class="login-body">
-      <form onsubmit="event.preventDefault(); handleLogin();">
-        <div class="mb-4">
+
+      <!-- Role Tabs (Student default) -->
+      <div class="role-tabs" id="roleTabs">
+        <button class="role-tab active" id="tabStudent" onclick="setLoginRole('student')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+          <span data-t="roleStudent">นักเรียนทุน</span>
+        </button>
+        <button class="role-tab admin-tab" id="tabAdmin" onclick="setLoginRole('admin')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span data-t="roleAdmin">ผู้ดูแลระบบ</span>
+        </button>
+      </div>
+
+      <!-- Admin Google section (hidden by default) -->
+      <div id="adminSection" style="display:none;margin-bottom:4px">
+        <!-- Google Sign-In button -->
+        <div id="googleBtnWrap">
+          <button class="google-btn" onclick="triggerGoogleLogin()" id="googleSignInBtn">
+            <!-- Google Logo SVG -->
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span data-t="loginWithGoogle">เข้าสู่ระบบด้วย Google</span>
+          </button>
+        </div>
+        <!-- Google not configured notice -->
+        <div id="googleNotCfg" class="google-not-cfg" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+          <span data-t="googleNotConfigured">ยังไม่ได้ตั้งค่า Google Client ID — ติดต่อผู้ดูแลระบบ</span>
+        </div>
+
+        <div class="or-divider">
+          <span data-t="orLoginWith">หรือเข้าด้วย Username</span>
+        </div>
+      </div>
+
+      <!-- Username / Password form (always shown) -->
+      <form onsubmit="event.preventDefault(); handleLogin();" id="loginForm">
+        <input type="hidden" id="loginRole" value="student">
+
+        <div>
           <label class="field-label-login" data-t="username">ชื่อผู้ใช้ / เลขบัตรประชาชน</label>
           <div class="input-group mb-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <input type="text" id="loginId" class="login-input" data-t="username" data-t-attr="placeholder" required autocomplete="username">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="loginId" class="login-input"
+                   data-t="username" data-t-attr="placeholder" required autocomplete="username">
           </div>
         </div>
-        <div class="mb-4">
+        <div style="margin-top:12px">
           <label class="field-label-login" data-t="password">รหัสผ่าน</label>
           <div class="input-group mb-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input type="password" id="loginPass" class="login-input" data-t="password" data-t-attr="placeholder" required autocomplete="current-password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="loginPass" class="login-input"
+                   data-t="password" data-t-attr="placeholder" required autocomplete="current-password">
           </div>
         </div>
-        <div>
-          <label class="field-label-login" data-t="loginAs">เข้าสู่ระบบในฐานะ</label>
-          <div class="input-group mb-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75"/></svg>
-            <select id="loginRole" class="login-select">
-              <option value="admin" data-t="roleAdmin">ผู้ดูแลระบบ</option>
-              <option value="student" data-t="roleStudent">นักเรียนทุน</option>
-            </select>
-          </div>
-        </div>
-        <button type="submit" class="login-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+
+        <button type="submit" class="login-btn" id="loginSubmitBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           <span data-t="loginBtn">เข้าสู่ระบบ</span>
         </button>
       </form>
 
-      <div class="login-hint">
-        <span data-t="loginHint">นักเรียน: เลขบัตร/รหัสนักเรียน/เบอร์โทร | รหัสผ่าน: ปีเกิด ค.ศ.</span>
-        <br>
-        <a id="adminContactLink" href="#" target="_blank" rel="noopener"
-           class="text-blue-500 font-semibold hover:underline"
-           style="display:none" data-t="loginContact">ติดต่อผู้ดูแลระบบ</a>
-        <span id="adminContactText" class="text-blue-400 font-semibold"
-              data-t="loginContact" style="display:none">ติดต่อผู้ดูแลระบบ</span>
+      <!-- Hint -->
+      <div class="login-hint" id="loginHintBox">
+        <span id="hintStudent" data-t="loginHint">นักเรียน: เลขบัตร/รหัสนักเรียน/เบอร์โทร | รหัสผ่าน: ปีเกิด ค.ศ.</span>
+        <span id="hintAdmin" style="display:none" data-t="loginHintAdmin">ผู้ดูแล: Username และรหัสผ่านที่ตั้งค่าในระบบ หรือเข้าด้วย Google Account ที่ผูกไว้</span>
+        <span id="adminContactWrap" style="display:block;margin-top:4px">
+          <a id="adminContactLink" href="#" target="_blank" rel="noopener"
+             class="text-blue-500 font-semibold hover:underline"
+             style="display:none" data-t="loginContact">ติดต่อผู้ดูแลระบบ</a>
+          <span id="adminContactText" class="text-blue-400 font-semibold"
+                style="display:none" data-t="loginContact">ติดต่อผู้ดูแลระบบ</span>
+        </span>
       </div>
     </div>
   </div>
@@ -232,26 +294,140 @@
 <script src="assets/js/auth.js"></script>
 <script>
 document.getElementById('appVersion').textContent = RDF.VERSION;
-// Redirect if already logged in
 if (getUser()) window.location.href = 'dashboard.html';
 
-// Load admin contact link from system settings
-(async function loadAdminContact() {
+// ═══════════════════════════════════════════
+// ROLE TOGGLE
+// ═══════════════════════════════════════════
+let _currentRole = 'student';
+
+function setLoginRole(role) {
+  _currentRole = role;
+  document.getElementById('loginRole').value = role;
+
+  // Update tabs
+  document.getElementById('tabStudent').classList.toggle('active', role === 'student');
+  document.getElementById('tabAdmin').classList.toggle('active', role === 'admin');
+
+  // Show/hide admin Google section
+  const adminSec = document.getElementById('adminSection');
+  adminSec.style.display = role === 'admin' ? 'block' : 'none';
+
+  // Update login button color
+  const btn = document.getElementById('loginSubmitBtn');
+  btn.classList.toggle('admin-btn', role === 'admin');
+
+  // Update hints
+  document.getElementById('hintStudent').style.display = role === 'student' ? '' : 'none';
+  document.getElementById('hintAdmin').style.display   = role === 'admin'   ? '' : 'none';
+
+  // Re-apply i18n (in case language is EN)
+  setLang(LANG);
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE SIGN-IN
+// ═══════════════════════════════════════════
+let _gClientId = '';
+
+function _loadGIS() {
+  if (typeof google !== 'undefined' && google.accounts) { _initGIS(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true; s.defer = true;
+  s.onload = _initGIS;
+  s.onerror = () => {
+    document.getElementById('googleBtnWrap').style.display = 'none';
+    document.getElementById('googleNotCfg').style.display = 'flex';
+    document.getElementById('googleNotCfg').querySelector('span').textContent =
+      'โหลด Google Sign-In ไม่ได้ — ตรวจสอบการเชื่อมต่อ';
+  };
+  document.head.appendChild(s);
+}
+
+function _initGIS() {
+  if (!_gClientId) return;
+  google.accounts.id.initialize({
+    client_id:   _gClientId,
+    callback:    handleGoogleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+  });
+}
+
+function triggerGoogleLogin() {
+  if (!_gClientId) {
+    Swal.fire('แจ้งเตือน', 'ยังไม่ได้ตั้งค่า Google Client ID\nกรุณาติดต่อผู้ดูแลระบบ', 'warning');
+    return;
+  }
+  if (typeof google === 'undefined' || !google.accounts) {
+    Swal.fire('ข้อผิดพลาด', 'โหลด Google Sign-In ไม่สำเร็จ กรุณารีเฟรชหน้า', 'error');
+    return;
+  }
+  // Use prompt (One Tap) — falls back gracefully
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      // Fallback: OAuth popup
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: _gClientId,
+        scope: 'openid email profile',
+        callback: () => {},
+      });
+      client.requestAccessToken();
+    }
+  });
+}
+
+async function handleGoogleCredential(response) {
+  // response.credential = JWT id_token
+  showLoader(true, 'กำลังตรวจสอบบัญชี Google...');
+  try {
+    await handleGoogleLogin(response.credential);
+  } catch(e) {
+    showLoader(false);
+    Swal.fire('ผิดพลาด', 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════
+// LOAD SETTINGS (Client ID + Contact URL)
+// ═══════════════════════════════════════════
+(async function init() {
   try {
     const r = await API.getSystemSettings();
-    const url = (r.data || {}).ADMIN_CONTACT_URL || '';
+    const data = r.data || {};
+
+    // Admin contact link
+    const url = data.ADMIN_CONTACT_URL || '';
     const linkEl = document.getElementById('adminContactLink');
     const textEl = document.getElementById('adminContactText');
     if (url) {
       linkEl.href = url;
       linkEl.style.display = 'inline';
-      if (textEl) textEl.style.display = 'none';
     } else {
-      // No URL configured: show plain text (no link)
-      if (textEl) textEl.style.display = 'inline';
-      if (linkEl) linkEl.style.display = 'none';
+      textEl.style.display = 'inline';
     }
-  } catch(e) { /* silently ignore — contact text stays hidden */ }
+
+    // Google Client ID
+    _gClientId = data.GOOGLE_CLIENT_ID || '';
+    if (_gClientId) {
+      document.getElementById('googleBtnWrap').style.display = 'block';
+      document.getElementById('googleNotCfg').style.display = 'none';
+      _loadGIS();
+    } else {
+      // No Client ID configured — hide Google button, show notice
+      document.getElementById('googleBtnWrap').style.display = 'none';
+      document.getElementById('googleNotCfg').style.display = 'flex';
+    }
+  } catch(e) {
+    // On network error: hide Google section gracefully
+    document.getElementById('googleBtnWrap').style.display = 'none';
+    document.getElementById('googleNotCfg').style.display = 'none';
+  }
+
+  // Apply i18n & set default role
+  setLang(localStorage.getItem('rdfLang') || 'th');
+  setLoginRole('student');
 })();
 </script>
 </body>

@@ -43,6 +43,7 @@ const API = {
   async updateStudent(data)    { return apiPost({ action: 'updateStudent', student: data }); },
   async getAdmins()               { return apiGet({ action: 'getAdmins' }); },
   async saveAdmin(data)            { return apiPost({ action: 'saveAdmin',   admin: data,   reqUser: (getUser()||{}).username||'' }); },
+  async loginWithGoogle(idToken)   { return apiPost({ action: 'loginWithGoogle', idToken }); },
   async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }); },
   async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }); },
   async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }); },

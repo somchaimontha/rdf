@@ -76,6 +76,41 @@ async function handleLogin() {
   }
 }
 
+async function handleGoogleLogin(idToken) {
+  showLoader(true, 'กำลังตรวจสอบบัญชี Google...');
+  try {
+    const result = await API.loginWithGoogle(idToken);
+    showLoader(false);
+    if (result.status === 'success') {
+      setUser({
+        name:       result.name,
+        role:       result.role,
+        stipNo:     result.stipNo     || '',
+        pic:        result.pic        || '',
+        username:   result.username   || result.email || '',
+        loginTime:  Date.now(),
+        loginCount: result.loginCount || 0,
+        lastLogin:  result.lastLogin  || '',
+        authMethod: 'google'
+      });
+      if (result.duplicateSession) {
+        await Swal.fire({
+          icon: 'warning',
+          title: t('warning'),
+          text: t('duplicateLogin'),
+          confirmButtonText: t('confirm')
+        });
+      }
+      window.location.href = 'dashboard.html';
+    } else {
+      Swal.fire(t('error'), result.message || t('loginFailed'), 'error');
+    }
+  } catch (e) {
+    showLoader(false);
+    Swal.fire(t('error'), t('network_error'), 'error');
+  }
+}
+
 function logout() {
   Swal.fire({
     title: t('logoutConfirm'), icon: 'question', showCancelButton: true,
