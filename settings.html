@@ -1186,20 +1186,39 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="m_editMode" value="new">
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
+      <input type="hidden" id="m_adminId" value="">
+
+      <!-- Row 1: Title + FirstName + LastName -->
+      <div class="grid grid-cols-12 gap-2 mb-3">
+        <div class="col-span-3">
+          <label class="field-label">คำนำหน้า</label>
+          <select id="m_title" class="field-select">
+            <option value="">—</option>
+            <option value="นาย">นาย</option>
+            <option value="นาง">นาง</option>
+            <option value="นางสาว">นางสาว</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+          </select>
+        </div>
+        <div class="col-span-5">
           <label class="field-label">ชื่อ <span class="text-red-500">*</span></label>
           <input type="text" id="m_fname" class="field-input" placeholder="ชื่อ">
         </div>
-        <div>
+        <div class="col-span-4">
           <label class="field-label">นามสกุล</label>
           <input type="text" id="m_lname" class="field-input" placeholder="นามสกุล">
         </div>
       </div>
+
+      <!-- Row 2: Username -->
       <div class="mb-3">
         <label class="field-label">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
         <input type="text" id="m_username" class="field-input" placeholder="username" autocomplete="off">
       </div>
+
+      <!-- Row 3: Password -->
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
           <label class="field-label" id="m_passLabel">รหัสผ่าน <span class="text-red-500">*</span></label>
@@ -1210,25 +1229,38 @@
           <input type="password" id="m_password2" class="field-input" placeholder="ยืนยันอีกครั้ง">
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-3 mb-1">
+
+      <!-- Row 4: Role + SubRole + Status -->
+      <div class="grid grid-cols-3 gap-2 mb-1">
         <div>
           <label class="field-label">สิทธิ์ <span class="text-red-500">*</span></label>
           <select id="m_role" class="field-select">
-            <option value="Manager">Manager — ผู้จัดการ</option>
-            <option value="Finance">Finance — การเงิน</option>
-            <option value="Committee">Committee — คณะกรรมการ</option>
-            <option value="DormTeacher">DormTeacher — ครูหอพัก</option>
-            <option value="SuperAdmin">SuperAdmin — สิทธิ์สูงสุด</option>
+            <option value="Manager">Manager</option>
+            <option value="Finance">Finance</option>
+            <option value="Committee">Committee</option>
+            <option value="DormTeacher">DormTeacher</option>
+            <option value="SuperAdmin">SuperAdmin</option>
           </select>
         </div>
         <div>
-          <label class="field-label">สถานะบัญชี</label>
+          <label class="field-label">SubRole</label>
+          <select id="m_subrole" class="field-select">
+            <option value="All">All — ทุกสิทธิ์</option>
+            <option value="View">View — ดูอย่างเดียว</option>
+            <option value="Edit">Edit — แก้ไขได้</option>
+            <option value="Finance">Finance</option>
+            <option value="Report">Report</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">สถานะ</label>
           <select id="m_status" class="field-select">
-            <option value="Active">Active — เปิดใช้งาน</option>
-            <option value="Inactive">Inactive — ปิดใช้งาน</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
           </select>
         </div>
       </div>
+
       <p id="m_editHint" class="text-xs text-blue-500 mt-2 hidden flex items-center gap-1">
         <i data-lucide="info" class="w-3 h-3"></i>
         เว้นรหัสผ่านว่างไว้หากไม่ต้องการเปลี่ยน
@@ -1410,13 +1442,16 @@ function openAdminModal(adminData) {
   if (typeof adminData === 'string') adminData = JSON.parse(adminData);
   const isEdit = !!adminData;
   document.getElementById('m_editMode').value    = isEdit ? 'edit' : 'new';
+  document.getElementById('m_adminId').value     = adminData?.AdminID  || '';
+  document.getElementById('m_title').value       = adminData?.Title    || '';
   document.getElementById('m_fname').value       = adminData?.FirstName || '';
   document.getElementById('m_lname').value       = adminData?.LastName  || '';
   document.getElementById('m_username').value    = adminData?.Username  || '';
   document.getElementById('m_username').readOnly = isEdit;
   document.getElementById('m_username').style.background = isEdit ? '#f8fafc' : '';
-  document.getElementById('m_role').value        = adminData?.Role   || 'Manager';
-  document.getElementById('m_status').value      = adminData?.Status || 'Active';
+  document.getElementById('m_role').value        = adminData?.Role    || 'Manager';
+  document.getElementById('m_subrole').value     = adminData?.SubRole || 'All';
+  document.getElementById('m_status').value      = adminData?.Status  || 'Active';
   document.getElementById('m_password').value    = '';
   document.getElementById('m_password2').value   = '';
   document.getElementById('modalTitle').querySelector('span').textContent =
@@ -1434,24 +1469,48 @@ function closeAdminModal(e) {
   document.getElementById('adminModal').classList.add('hidden');
 }
 
+function _generateAdminID() {
+  // Generate next AdminID based on existing admins (format: ADM_001)
+  const nums = allAdmins
+    .map(a => { const m = (a.AdminID||'').match(/\d+$/); return m ? parseInt(m[0]) : 0; })
+    .filter(n => n > 0);
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  return 'ADM_' + String(next).padStart(3, '0');
+}
+
 async function submitAdminForm() {
-  const isEdit = document.getElementById('m_editMode').value === 'edit';
-  const fname  = document.getElementById('m_fname').value.trim();
-  const uname  = document.getElementById('m_username').value.trim();
-  const pass   = document.getElementById('m_password').value.trim();
-  const pass2  = document.getElementById('m_password2').value.trim();
-  const role   = document.getElementById('m_role').value;
-  const status = document.getElementById('m_status').value;
-  const lname  = document.getElementById('m_lname').value.trim();
+  const isEdit   = document.getElementById('m_editMode').value === 'edit';
+  const adminId  = document.getElementById('m_adminId').value.trim();
+  const title    = document.getElementById('m_title').value;
+  const fname    = document.getElementById('m_fname').value.trim();
+  const lname    = document.getElementById('m_lname').value.trim();
+  const uname    = document.getElementById('m_username').value.trim();
+  const pass     = document.getElementById('m_password').value.trim();
+  const pass2    = document.getElementById('m_password2').value.trim();
+  const role     = document.getElementById('m_role').value;
+  const subrole  = document.getElementById('m_subrole').value;
+  const status   = document.getElementById('m_status').value;
 
   if (!fname || !uname) { Swal.fire('แจ้งเตือน','กรุณากรอกชื่อและชื่อผู้ใช้','warning'); return; }
   if (!isEdit && !pass) { Swal.fire('แจ้งเตือน','กรุณากรอกรหัสผ่าน','warning'); return; }
   if (pass && pass !== pass2) { Swal.fire('แจ้งเตือน','รหัสผ่านไม่ตรงกัน','warning'); return; }
 
+  // Generate AdminID for new admins
+  const resolvedAdminId = isEdit ? adminId : (adminId || _generateAdminID());
+
   const btn = document.getElementById('m_submitBtn');
   btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...';
   try {
-    const payload = { Username:uname, FirstName:fname, LastName:lname, Role:role, Status:status };
+    const payload = {
+      AdminID:   resolvedAdminId,
+      Username:  uname,
+      Title:     title,
+      FirstName: fname,
+      LastName:  lname,
+      Role:      role,
+      SubRole:   subrole,
+      Status:    status,
+    };
     if (pass) payload.Password = pass;
     const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
     const r = await Promise.race([API.saveAdmin(payload), _t]);
