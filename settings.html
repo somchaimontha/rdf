@@ -2193,10 +2193,16 @@ async function saveUniList() {
 // ─────────────────────────────────────────────
 async function loadApiKeyStatus() {
   try {
-    const r = await API.getApiKeyStatus();
-    const dot  = document.getElementById('geminiKeyDot');
-    const txt  = document.getElementById('geminiKeyStatusText');
-    const box  = document.getElementById('geminiCurrentKey');
+    // Load Gemini key status + SystemSettings (for GOOGLE_CLIENT_ID) in parallel
+    const [r, rs] = await Promise.all([
+      API.getApiKeyStatus(),
+      API.getSystemSettings()
+    ]);
+
+    // Gemini API Key
+    const dot    = document.getElementById('geminiKeyDot');
+    const txt    = document.getElementById('geminiKeyStatusText');
+    const box    = document.getElementById('geminiCurrentKey');
     const masked = document.getElementById('geminiMaskedKey');
     const status = document.getElementById('geminiKeyStatus');
     if (r.set) {
@@ -2211,6 +2217,11 @@ async function loadApiKeyStatus() {
       status.style.background = '#fffbeb'; status.style.color = '#92400e';
       box.classList.add('hidden');
     }
+
+    // Google Client ID
+    const gcid = (rs.data && rs.data['GOOGLE_CLIENT_ID']) ? rs.data['GOOGLE_CLIENT_ID'] : '';
+    _renderGcidState(gcid);
+
   } catch(e) { /* skip */ }
 }
 
