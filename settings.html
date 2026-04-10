@@ -189,11 +189,11 @@
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 fade-in-up">
     <div>
       <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-1 font-semibold transition">
-        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> กลับหน้าหลัก
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> <span data-t="stBackToMain">กลับหน้าหลัก</span>
       </a>
       <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
         <i data-lucide="settings" class="w-5 h-5" style="color:#1e3a8a"></i>
-        ตั้งค่าระบบ
+        <span data-t="stPageTitle">ตั้งค่าระบบ</span>
       </h2>
     </div>
     <div id="superAdminBadge" class="hidden">
@@ -206,28 +206,28 @@
   <!-- Tabs -->
   <div class="settings-tab-bar fade-in-up">
     <button class="s-tab active" id="tabAdmins" onclick="switchTab('admins')">
-      <i data-lucide="users" class="w-4 h-4"></i> ผู้ดูแลระบบ
+      <i data-lucide="users" class="w-4 h-4"></i> <span data-t="stTabAdmins">ผู้ดูแลระบบ</span>
     </button>
     <button class="s-tab" id="tabOverview" onclick="window.location.href='dashboard.html'" title="ดูภาพรวมระบบที่หน้าหลัก">
-      <i data-lucide="bar-chart-2" class="w-4 h-4"></i> ภาพรวมระบบ <i data-lucide="external-link" class="w-3 h-3 opacity-60"></i>
+      <i data-lucide="bar-chart-2" class="w-4 h-4"></i> <span data-t="stTabOverview">ภาพรวมระบบ</span> <i data-lucide="external-link" class="w-3 h-3 opacity-60"></i>
     </button>
     <button class="s-tab" id="tabMajors" onclick="switchTab('majors')">
-      <i data-lucide="book-open" class="w-4 h-4"></i> สาขาวิชา
+      <i data-lucide="book-open" class="w-4 h-4"></i> <span data-t="stTabMajors">สาขาวิชา</span>
     </button>
     <button class="s-tab" id="tabGeneral" onclick="switchTab('general')">
-      <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> ตั้งค่าทั่วไป
+      <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> <span data-t="stTabGeneral">ตั้งค่าทั่วไป</span>
     </button>
     <button class="s-tab" id="tabLogs" onclick="switchTab('logs')">
-      <i data-lucide="scroll-text" class="w-4 h-4"></i> ประวัติการใช้งาน
+      <i data-lucide="scroll-text" class="w-4 h-4"></i> <span data-t="stTabLogs">ประวัติการใช้งาน</span>
     </button>
     <button class="s-tab" id="tabApikeys" onclick="switchTab('apikeys')">
-      <i data-lucide="key" class="w-4 h-4"></i> API Keys
+      <i data-lucide="key" class="w-4 h-4"></i> <span data-t="stTabApiKeys">API Keys</span>
     </button>
     <button class="s-tab" id="tabSessions" onclick="switchTab('sessions')">
-      <i data-lucide="activity" class="w-4 h-4"></i> เซสชัน
+      <i data-lucide="activity" class="w-4 h-4"></i> <span data-t="stTabSessions">เซสชัน</span>
     </button>
     <button class="s-tab" id="tabRoles" onclick="switchTab('roles')">
-      <i data-lucide="shield" class="w-4 h-4"></i> สิทธิ์ผู้ใช้
+      <i data-lucide="shield" class="w-4 h-4"></i> <span data-t="stTabRoles">สิทธิ์ผู้ใช้</span>
     </button>
   </div>
 
@@ -242,11 +242,11 @@
           <div class="flex flex-wrap gap-2 items-center">
             <div class="search-wrap">
               <i data-lucide="search" class="w-4 h-4"></i>
-              <input type="text" id="adminSearch" class="field-input search-input" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้..."
+              <input type="text" id="adminSearch" class="field-input search-input" data-t="stAdminSearch" data-t-attr="placeholder" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้..."
                      oninput="renderAdmins()" style="width:210px">
             </div>
             <select id="adminRoleFilter" class="field-select" onchange="renderAdmins()" style="width:155px">
-              <option value="">ทุกสิทธิ์</option>
+              <option value="" data-t="stAdminAllRoles">ทุกสิทธิ์</option>
               <option value="SuperAdmin">SuperAdmin</option>
               <option value="Manager">Manager</option>
               <option value="Finance">Finance</option>
@@ -254,13 +254,13 @@
               <option value="DormTeacher">DormTeacher</option>
             </select>
             <select id="adminStatusFilter" class="field-select" onchange="renderAdmins()" style="width:130px">
-              <option value="">ทุกสถานะ</option>
+              <option value="" data-t="stAdminAllStatus">ทุกสถานะ</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
           </div>
           <button id="btnAddAdmin" class="btn btn-primary btn-sm" onclick="openAdminModal()">
-            <i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ดูแล
+            <i data-lucide="user-plus" class="w-4 h-4"></i> <span data-t="stAdminAdd">เพิ่มผู้ดูแล</span>
           </button>
         </div>
       </div>
@@ -271,7 +271,7 @@
 
     <!-- Admin Cards Grid -->
     <div id="adminGrid" class="admin-grid fade-in-up delay-1">
-      <div class="text-center text-gray-400 py-12 col-span-full">กำลังโหลด...</div>
+      <div class="text-center text-gray-400 py-12 col-span-full" data-t="stLoading">กำลังโหลด...</div>
     </div>
   </div>
 
@@ -288,7 +288,7 @@
         </div>
         <div>
           <div class="ov-stat-num" id="ovTotal">—</div>
-          <div class="ov-stat-label">นักเรียนทั้งหมด</div>
+          <div class="ov-stat-label" data-t="stOvTotal">นักเรียนทั้งหมด</div>
         </div>
       </div>
       <div class="ov-stat">
@@ -297,7 +297,7 @@
         </div>
         <div>
           <div class="ov-stat-num" id="ovActive">—</div>
-          <div class="ov-stat-label">กำลังศึกษา</div>
+          <div class="ov-stat-label" data-t="stOvActive">กำลังศึกษา</div>
         </div>
       </div>
       <div class="ov-stat">
@@ -306,7 +306,7 @@
         </div>
         <div>
           <div class="ov-stat-num" id="ovGrad">—</div>
-          <div class="ov-stat-label">สำเร็จการศึกษา</div>
+          <div class="ov-stat-label" data-t="stOvGrad">สำเร็จการศึกษา</div>
         </div>
       </div>
       <div class="ov-stat">
@@ -315,7 +315,7 @@
         </div>
         <div>
           <div class="ov-stat-num" id="ovAdmins">—</div>
-          <div class="ov-stat-label">ผู้ดูแลระบบ</div>
+          <div class="ov-stat-label" data-t="stOvAdmins">ผู้ดูแลระบบ</div>
         </div>
       </div>
     </div>
@@ -324,7 +324,7 @@
     <div class="chart-card mb-5 fade-in-up delay-1">
       <div class="chart-title">
         <i data-lucide="trending-up" class="w-4 h-4" style="color:#1d4ed8"></i>
-        จำนวนนักเรียนแยกตามปีการศึกษา (พ.ศ.)
+        <span data-t="stOvChartYear">จำนวนนักเรียนแยกตามปีการศึกษา (พ.ศ.)</span>
         <span class="ml-auto text-xs text-gray-400 font-normal" id="lineChartNote"></span>
       </div>
       <div style="position:relative; height:240px">
@@ -337,7 +337,7 @@
       <div class="chart-card">
         <div class="chart-title">
           <i data-lucide="pie-chart" class="w-4 h-4" style="color:#7c3aed"></i>
-          สัดส่วนนักเรียนตามสถานศึกษา
+          <span data-t="stOvChartInst">สัดส่วนนักเรียนตามสถานศึกษา</span>
         </div>
         <div style="position:relative; height:220px">
           <canvas id="chartDonut"></canvas>
@@ -346,7 +346,7 @@
       <div class="chart-card">
         <div class="chart-title">
           <i data-lucide="bar-chart" class="w-4 h-4" style="color:#16a34a"></i>
-          จำนวนนักเรียนแยกตามสถานะ
+          <span data-t="stOvChartStatus">จำนวนนักเรียนแยกตามสถานะ</span>
         </div>
         <div style="position:relative; height:220px">
           <canvas id="chartStatus"></canvas>
@@ -365,28 +365,28 @@
     <div class="flex flex-wrap items-center gap-3 mb-5">
       <!-- Institution filter -->
       <div class="flex gap-1.5" id="apInstFilter">
-        <button onclick="apSetInst('')"    id="apInstAll"  class="btn btn-sm btn-primary ap-inst-btn">ทั้งหมด</button>
+        <button onclick="apSetInst('')"    id="apInstAll"  class="btn btn-sm btn-primary ap-inst-btn" data-t="stMajAll">ทั้งหมด</button>
         <button onclick="apSetInst('MBS')" id="apInstMBS"  class="btn btn-sm btn-secondary ap-inst-btn">MBS</button>
         <button onclick="apSetInst('VC')"  id="apInstVC"   class="btn btn-sm btn-secondary ap-inst-btn">VC</button>
       </div>
       <!-- Category filter -->
       <div class="flex gap-1.5" id="apCatFilter">
-        <button onclick="apSetCat('')"          id="apCatAll"  class="btn btn-sm btn-primary ap-cat-btn">ทุกประเภท</button>
-        <button onclick="apSetCat('plan')"      id="apCatPlan" class="btn btn-sm btn-secondary ap-cat-btn">แผนการเรียน</button>
-        <button onclick="apSetCat('program')"   id="apCatProg" class="btn btn-sm btn-secondary ap-cat-btn">สาขาวิชา</button>
-        <button onclick="apSetCat('department')" id="apCatDept" class="btn btn-sm btn-secondary ap-cat-btn">แผนกวิชา</button>
+        <button onclick="apSetCat('')"          id="apCatAll"  class="btn btn-sm btn-primary ap-cat-btn" data-t="stMajAllTypes">ทุกประเภท</button>
+        <button onclick="apSetCat('plan')"      id="apCatPlan" class="btn btn-sm btn-secondary ap-cat-btn" data-t="stMajPlan">แผนการเรียน</button>
+        <button onclick="apSetCat('program')"   id="apCatProg" class="btn btn-sm btn-secondary ap-cat-btn" data-t="stMajProgram">สาขาวิชา</button>
+        <button onclick="apSetCat('department')" id="apCatDept" class="btn btn-sm btn-secondary ap-cat-btn" data-t="stMajDept">แผนกวิชา</button>
       </div>
       <!-- Search -->
       <div class="flex-1 min-w-0" style="max-width:260px">
         <input type="text" id="apSearch" oninput="apRender()" class="field-input text-sm"
-               placeholder="ค้นหา / Search...">
+               data-t="stMajSearch" data-t-attr="placeholder" placeholder="ค้นหา / Search...">
       </div>
       <div class="ml-auto flex gap-2">
         <button onclick="apOpenAdd()" class="btn btn-primary btn-sm">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการ
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-t="stMajAddItem">เพิ่มรายการ</span>
         </button>
         <button onclick="apSaveAll()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกทั้งหมด
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stMajSaveAll">บันทึกทั้งหมด</span>
         </button>
       </div>
     </div>
@@ -400,23 +400,23 @@
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb">
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap">สถานศึกษา</th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap">ประเภท / Type</th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">ชื่อภาษาไทย</th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">English Name</th>
-              <th style="padding:10px 14px;text-align:center;font-weight:700;color:#374151;white-space:nowrap">จัดการ</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap" data-t="stMajColInst">สถานศึกษา</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap" data-t="stMajColType">ประเภท / Type</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151" data-t="stMajColNameTH">ชื่อภาษาไทย</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151" data-t="stMajColNameEN">English Name</th>
+              <th style="padding:10px 14px;text-align:center;font-weight:700;color:#374151;white-space:nowrap" data-t="stMajColManage">จัดการ</th>
             </tr>
           </thead>
           <tbody id="apTableBody">
-            <tr><td colspan="5" class="text-center text-gray-400 py-12">กำลังโหลด...</td></tr>
+            <tr><td colspan="5" class="text-center text-gray-400 py-12" data-t="stLoading">กำลังโหลด...</td></tr>
           </tbody>
         </table>
       </div>
       <div id="apEmpty" class="hidden text-center py-12 text-gray-400">
         <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
-        <p class="font-semibold">ไม่พบรายการ</p>
+        <p class="font-semibold" data-t="stNotFound">ไม่พบรายการ</p>
         <button onclick="apOpenAdd()" class="btn btn-primary btn-sm mt-3">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการแรก
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-t="stMajAddFirst">เพิ่มรายการแรก</span>
         </button>
       </div>
     </div>
@@ -428,24 +428,24 @@
         <span id="uniListCount" class="ml-auto text-xs font-normal opacity-70">0 รายการ</span>
       </div>
       <div class="card-body">
-        <p class="text-xs text-gray-500 mb-4">รายชื่อมหาวิทยาลัยที่ใช้ใน dropdown ฟอร์มนักเรียนและรายงาน — รองรับทั้งสองภาษา</p>
+        <p class="text-xs text-gray-500 mb-4" data-t="stMajUniListDesc">รายชื่อมหาวิทยาลัยที่ใช้ใน dropdown ฟอร์มนักเรียนและรายงาน — รองรับทั้งสองภาษา</p>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;font-size:11px;font-weight:700;
                     color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding:0 4px">
           <span>ชื่อภาษาไทย</span><span>English Name</span><span></span>
         </div>
         <div id="uniListRows" class="space-y-2 mb-4">
-          <div class="text-center text-gray-400 py-4 text-sm">กำลังโหลด...</div>
+          <div class="text-center text-gray-400 py-4 text-sm" data-t="stLoading">กำลังโหลด...</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center" class="mb-4">
           <input type="text" id="uniInputTH" class="field-input text-sm" placeholder="ชื่อมหาวิทยาลัย (ไทย)">
           <input type="text" id="uniInputEN" class="field-input text-sm" placeholder="University Name (EN)">
           <button onclick="addUniEntry()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd;white-space:nowrap">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-t="stAdd">เพิ่ม</span>
           </button>
         </div>
         <div class="flex justify-end pt-3 border-t border-gray-100">
           <button onclick="saveUniList()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกรายชื่อมหาวิทยาลัย
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stMajUniSave">บันทึกรายชื่อมหาวิทยาลัย</span>
           </button>
         </div>
       </div>
@@ -466,14 +466,14 @@
         <input type="hidden" id="apModalId">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="field-label">สถานศึกษา / Institution <span class="text-red-500">*</span></label>
+            <label class="field-label"><span data-t="stMajModalInst">สถานศึกษา / Institution</span> <span class="text-red-500">*</span></label>
             <select id="apModalInst" class="field-select text-sm" onchange="apUpdateCategoryOptions()">
               <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
               <option value="VC">VC — Maesariang Industrial and Community Education College</option>
             </select>
           </div>
           <div>
-            <label class="field-label">ประเภท / Category <span class="text-red-500">*</span></label>
+            <label class="field-label"><span data-t="stMajModalCat">ประเภท / Category</span> <span class="text-red-500">*</span></label>
             <select id="apModalCat" class="field-select text-sm">
               <option value="plan">แผนการเรียน (Study Plan)</option>
               <option value="program">สาขาวิชา (Program)</option>
@@ -491,13 +491,13 @@
         </div>
         <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
           <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-          รายการนี้จะแสดงใน dropdown ของฟอร์มนักเรียน, ระบบเลื่อนชั้น และรายงาน ตามสถาบันและภาษาที่เลือก
+          <span data-t="stMajModalNote">รายการนี้จะแสดงใน dropdown ของฟอร์มนักเรียน, ระบบเลื่อนชั้น และรายงาน ตามสถาบันและภาษาที่เลือก</span>
         </div>
       </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px">
-        <button onclick="apCloseModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
+        <button onclick="apCloseModal()" class="btn btn-secondary btn-sm" data-t="stCancel">ยกเลิก</button>
         <button onclick="apSaveEntry()" class="btn btn-primary btn-sm font-bold">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stSave">บันทึก</span>
         </button>
       </div>
     </div>
@@ -511,16 +511,16 @@
     <!-- StipNo Prefix Card -->
     <div class="card fade-in-up mb-5">
       <div class="card-header" style="background:#1e3a8a">
-        <i data-lucide="hash" class="w-4 h-4"></i> อักษรนำหน้าหมายเลขนักเรียนทุน (StipNo Prefix)
+        <i data-lucide="hash" class="w-4 h-4"></i> <span data-t="stGenStipHeader">อักษรนำหน้าหมายเลขนักเรียนทุน (StipNo Prefix)</span>
       </div>
       <div class="card-body">
-        <p class="text-xs text-gray-500 mb-4">กำหนดอักษรนำหน้าหมายเลขทุนของแต่ละสถาบัน • หากปิดใช้งาน ระบบจะออกหมายเลขเป็นตัวเลขล้วนๆ แทน (เช่น 001, 002)</p>
+        <p class="text-xs text-gray-500 mb-4" data-t="stGenStipDesc">กำหนดอักษรนำหน้าหมายเลขทุนของแต่ละสถาบัน • หากปิดใช้งาน ระบบจะออกหมายเลขเป็นตัวเลขล้วนๆ แทน (เช่น 001, 002)</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="stipPrefixRows">
-          <div class="text-center text-gray-400 py-6 col-span-full text-sm">กำลังโหลด...</div>
+          <div class="text-center text-gray-400 py-6 col-span-full text-sm" data-t="stLoading">กำลังโหลด...</div>
         </div>
         <div class="flex justify-end mt-4 pt-3 border-t border-gray-100">
           <button onclick="saveStipPrefixes()" class="btn btn-primary btn-sm">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกการตั้งค่า StipNo
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stGenStipSave">บันทึกการตั้งค่า StipNo</span>
           </button>
         </div>
       </div>
@@ -529,12 +529,12 @@
     <!-- System Notice Card -->
     <div class="card fade-in-up delay-1">
       <div class="card-header" style="background:#7c3aed">
-        <i data-lucide="megaphone" class="w-4 h-4"></i> ข้อความแจ้งเตือนระบบ
+        <i data-lucide="megaphone" class="w-4 h-4"></i> <span data-t="stGenNoticeHeader">ข้อความแจ้งเตือนระบบ</span>
       </div>
       <div class="card-body">
-        <p class="text-xs text-gray-500 mb-4">แสดงแบนเนอร์ข้อความที่หน้า Dashboard — ใช้แจ้งข่าวสาร, กำหนดการ, หรือแจ้งเตือนผู้ใช้ทุกคน</p>
+        <p class="text-xs text-gray-500 mb-4" data-t="stGenNoticeDesc">แสดงแบนเนอร์ข้อความที่หน้า Dashboard — ใช้แจ้งข่าวสาร, กำหนดการ, หรือแจ้งเตือนผู้ใช้ทุกคน</p>
         <div class="flex items-center gap-3 mb-4">
-          <span class="text-xs font-semibold text-gray-600">สถานะ:</span>
+          <span class="text-xs font-semibold text-gray-600" data-t="stGenNoticeStatus">สถานะ:</span>
           <button type="button" onclick="toggleNoticeActive()" class="flex items-center gap-2 focus:outline-none">
             <div style="position:relative;width:42px;height:24px">
               <div id="noticeToggleTrack" style="width:42px;height:24px;border-radius:12px;background:#e2e8f0;transition:background .2s"></div>
@@ -545,25 +545,25 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div class="md:col-span-2">
-            <label class="field-label">ข้อความ</label>
+            <label class="field-label" data-t="stGenNoticeText">ข้อความ</label>
             <textarea id="noticeText" class="field-input" rows="3"
               placeholder="เช่น: ระบบจะปิดปรับปรุงในวันที่ 5 เม.ย. 2568 เวลา 22:00 น."
               style="resize:vertical" oninput="updateNoticePreview()"></textarea>
           </div>
           <div>
-            <label class="field-label">ประเภท (สี)</label>
+            <label class="field-label" data-t="stGenNoticeType">ประเภท (สี)</label>
             <select id="noticeType" class="field-select" onchange="updateNoticePreview()">
-              <option value="info">ℹ️ ข้อมูล (น้ำเงิน)</option>
-              <option value="warning">⚠️ คำเตือน (เหลือง)</option>
-              <option value="success">✅ ข่าวดี (เขียว)</option>
-              <option value="danger">🚨 ด่วน (แดง)</option>
+              <option value="info" data-t="stGenNoticeInfo">ℹ️ ข้อมูล (น้ำเงิน)</option>
+              <option value="warning" data-t="stGenNoticeWarn">⚠️ คำเตือน (เหลือง)</option>
+              <option value="success" data-t="stGenNoticeSuccess">✅ ข่าวดี (เขียว)</option>
+              <option value="danger" data-t="stGenNoticeDanger">🚨 ด่วน (แดง)</option>
             </select>
             <div id="noticePreviewBox" class="mt-3 p-3 rounded-lg text-xs font-semibold hidden"></div>
           </div>
         </div>
         <div class="flex justify-end">
           <button onclick="saveSystemNotice()" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #ddd6fe">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกข้อความ
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stGenNoticeSave">บันทึกข้อความ</span>
           </button>
         </div>
       </div>
@@ -572,31 +572,31 @@
     <!-- Print Form Title Card -->
     <div class="card fade-in-up delay-2 mb-5">
       <div class="card-header" style="background:#0f172a">
-        <i data-lucide="file-text" class="w-4 h-4"></i> ชื่อแบบฟอร์มการพิมพ์ (Print Form Title)
+        <i data-lucide="file-text" class="w-4 h-4"></i> <span data-t="stGenPrintHeader">ชื่อแบบฟอร์มการพิมพ์ (Print Form Title)</span>
       </div>
       <div class="card-body">
-        <p class="text-xs text-gray-500 mb-4">ข้อความที่แสดงในหัวเอกสารเมื่อพิมพ์ประวัตินักเรียน</p>
+        <p class="text-xs text-gray-500 mb-4" data-t="stGenPrintDesc">ข้อความที่แสดงในหัวเอกสารเมื่อพิมพ์ประวัตินักเรียน</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <div>
-            <label class="field-label">ชื่อองค์กร (ภาษาไทย)</label>
+            <label class="field-label" data-t="stGenPrintOrgTH">ชื่อองค์กร (ภาษาไทย)</label>
             <input type="text" id="ptOrgTh" class="field-input"
               placeholder="มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย"
               oninput="updatePrintTitlePreview()">
           </div>
           <div>
-            <label class="field-label">ชื่อองค์กร (English)</label>
+            <label class="field-label" data-t="stGenPrintOrgEN">ชื่อองค์กร (English)</label>
             <input type="text" id="ptOrgEn" class="field-input"
               placeholder="THE DR. ROBERT DYCKERHOFF FOUNDATION, THAILAND"
               oninput="updatePrintTitlePreview()">
           </div>
           <div>
-            <label class="field-label">ชื่อแบบฟอร์ม / หัวข้อหลัก (ภาษาไทย)</label>
+            <label class="field-label" data-t="stGenPrintFormTH">ชื่อแบบฟอร์ม / หัวข้อหลัก (ภาษาไทย)</label>
             <input type="text" id="ptTitleTh" class="field-input"
               placeholder="ทะเบียนประวัตินักเรียนทุนการศึกษา"
               oninput="updatePrintTitlePreview()">
           </div>
           <div>
-            <label class="field-label">หัวข้อย่อย (English)</label>
+            <label class="field-label" data-t="stGenPrintFormEN">หัวข้อย่อย (English)</label>
             <input type="text" id="ptTitleEn" class="field-input"
               placeholder="SCHOLARSHIP STUDENT REGISTRATION RECORD"
               oninput="updatePrintTitlePreview()">
@@ -617,7 +617,7 @@
         </div>
         <div class="flex justify-end pt-2 border-t border-gray-100">
           <button onclick="savePrintTitle()" class="btn btn-sm" style="background:#0f172a;color:#fff">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกชื่อแบบฟอร์ม
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stGenPrintSave">บันทึกชื่อแบบฟอร์ม</span>
           </button>
         </div>
       </div>
@@ -626,16 +626,16 @@
     <!-- Print Layout Card -->
     <div class="card fade-in-up delay-2 mb-5">
       <div class="card-header" style="background:#334155">
-        <i data-lucide="sliders" class="w-4 h-4"></i> ขนาดและระยะห่างในเอกสาร (Print Layout)
+        <i data-lucide="sliders" class="w-4 h-4"></i> <span data-t="stGenLayoutHeader">ขนาดและระยะห่างในเอกสาร (Print Layout)</span>
       </div>
       <div class="card-body">
-        <p class="text-xs text-gray-500 mb-4">ปรับขนาดกราฟิก ตัวอักษร และระยะห่างทุก Element ในแบบฟอร์มพิมพ์ประวัตินักเรียน</p>
+        <p class="text-xs text-gray-500 mb-4" data-t="stGenLayoutDesc">ปรับขนาดกราฟิก ตัวอักษร และระยะห่างทุก Element ในแบบฟอร์มพิมพ์ประวัตินักเรียน</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
 
           <!-- หน้ากระดาษ -->
           <div class="mb-4">
             <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#1e3a8a">
-              <i data-lucide="layout" class="w-3.5 h-3.5"></i> หน้ากระดาษ &amp; ทั่วไป
+              <i data-lucide="layout" class="w-3.5 h-3.5"></i> <span data-t="stGenLayoutPage">หน้ากระดาษ &amp; ทั่วไป</span>
             </div>
             <div id="plGroup_page"></div>
           </div>
@@ -643,7 +643,7 @@
           <!-- กราฟิก -->
           <div class="mb-4">
             <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#7c3aed">
-              <i data-lucide="image" class="w-3.5 h-3.5"></i> กราฟิก
+              <i data-lucide="image" class="w-3.5 h-3.5"></i> <span data-t="stGenLayoutGraphic">กราฟิก</span>
             </div>
             <div id="plGroup_graphic"></div>
           </div>
@@ -651,7 +651,7 @@
           <!-- ตัวอักษร -->
           <div class="mb-4">
             <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#0d9488">
-              <i data-lucide="type" class="w-3.5 h-3.5"></i> ตัวอักษร
+              <i data-lucide="type" class="w-3.5 h-3.5"></i> <span data-t="stGenLayoutFont">ตัวอักษร</span>
             </div>
             <div id="plGroup_font"></div>
           </div>
@@ -659,7 +659,7 @@
           <!-- ระยะห่าง -->
           <div class="mb-4">
             <div class="text-xs font-bold mb-2 flex items-center gap-1.5" style="color:#ea580c">
-              <i data-lucide="move" class="w-3.5 h-3.5"></i> ระยะห่าง (Spacing)
+              <i data-lucide="move" class="w-3.5 h-3.5"></i> <span data-t="stGenLayoutSpacing">ระยะห่าง (Spacing)</span>
             </div>
             <div id="plGroup_spacing"></div>
           </div>
@@ -667,10 +667,10 @@
         </div>
         <div class="flex items-center justify-between pt-3 border-t border-gray-100">
           <button onclick="resetPrintLayout()" class="btn btn-secondary btn-sm text-xs">
-            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset ค่าเริ่มต้น
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span data-t="stGenLayoutReset">Reset ค่าเริ่มต้น</span>
           </button>
           <button onclick="savePrintLayout()" class="btn btn-sm" style="background:#334155;color:#fff">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก Layout
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stGenLayoutSave">บันทึก Layout</span>
           </button>
         </div>
       </div>
@@ -679,19 +679,19 @@
     <!-- Signature Block Card -->
     <div class="card fade-in-up delay-2">
       <div class="card-header" style="background:#0d9488">
-        <i data-lucide="pen-line" class="w-4 h-4"></i> ผู้ลงนามในเอกสาร (Signature Block)
+        <i data-lucide="pen-line" class="w-4 h-4"></i> <span data-t="stGenSigHeader">ผู้ลงนามในเอกสาร (Signature Block)</span>
       </div>
       <div class="card-body">
-        <p class="text-xs text-gray-500 mb-4">กำหนดชื่อและตำแหน่งของผู้ลงนามในแบบฟอร์มทะเบียนประวัตินักเรียน • สามารถเพิ่ม/ลบช่องลงนามได้</p>
+        <p class="text-xs text-gray-500 mb-4" data-t="stGenSigDesc">กำหนดชื่อและตำแหน่งของผู้ลงนามในแบบฟอร์มทะเบียนประวัตินักเรียน • สามารถเพิ่ม/ลบช่องลงนามได้</p>
         <div id="sigBlockEditor" class="space-y-3 mb-4">
-          <div class="text-center text-gray-400 py-4 text-sm">กำลังโหลด...</div>
+          <div class="text-center text-gray-400 py-4 text-sm" data-t="stLoading">กำลังโหลด...</div>
         </div>
         <div class="flex items-center justify-between pt-3 border-t border-gray-100">
           <button onclick="addSigSlot()" class="btn btn-secondary btn-sm">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มช่องลงนาม
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-t="stGenSigAdd">เพิ่มช่องลงนาม</span>
           </button>
           <button onclick="saveSignatureBlock()" class="btn btn-sm" style="background:#f0fdfa;color:#0d9488;border:1.5px solid #99f6e4">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกผู้ลงนาม
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stGenSigSave">บันทึกผู้ลงนาม</span>
           </button>
         </div>
       </div>
@@ -700,7 +700,7 @@
     <!-- Developer Info Card -->
     <div class="card fade-in-up delay-3 mt-5">
       <div class="card-header" style="background:linear-gradient(90deg,#1e3a8a 0%,#7c3aed 100%)">
-        <i data-lucide="code-2" class="w-4 h-4"></i> เกี่ยวกับระบบ / About System
+        <i data-lucide="code-2" class="w-4 h-4"></i> <span data-t="stGenAboutHeader">เกี่ยวกับระบบ / About System</span>
       </div>
       <div class="card-body">
         <div class="flex flex-col md:flex-row gap-6 items-start">
@@ -754,11 +754,12 @@
         <div class="border-t border-gray-100 pt-4 mt-4">
           <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <i data-lucide="link" class="w-3.5 h-3.5" style="color:#7c3aed"></i>
-            ลิงก์ติดต่อผู้ดูแลระบบ (แสดงที่หน้าเข้าสู่ระบบ)
+            <span data-t="stGenContactHeader">ลิงก์ติดต่อผู้ดูแลระบบ (แสดงที่หน้าเข้าสู่ระบบ)</span>
           </p>
-          <p class="text-xs text-gray-400 mb-3">หากกรอกลิงก์ ปุ่ม "ติดต่อผู้ดูแลระบบ" จะปรากฏที่หน้า Login — เช่น ลิงก์ Line, Facebook, อีเมล (mailto:), หรือ Google Form</p>
+          <p class="text-xs text-gray-400 mb-3" data-t="stGenContactDesc">หากกรอกลิงก์ ปุ่ม "ติดต่อผู้ดูแลระบบ" จะปรากฏที่หน้า Login — เช่น ลิงก์ Line, Facebook, อีเมล (mailto:), หรือ Google Form</p>
           <div class="flex gap-2 items-center">
             <input type="url" id="adminContactUrl" class="field-input flex-1 text-sm"
+                   data-t="stGenContactPlaceholder" data-t-attr="placeholder"
                    placeholder="https://line.me/ti/g/... หรือ mailto:admin@example.com"
                    value="">
             <button onclick="saveAdminContactUrl()" class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;white-space:nowrap">
@@ -767,7 +768,7 @@
           </div>
           <p class="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
             <i data-lucide="info" class="w-3 h-3 flex-shrink-0"></i>
-            ปล่อยว่างเพื่อซ่อนลิงก์ที่หน้า Login
+            <span data-t="stGenContactHint">ปล่อยว่างเพื่อซ่อนลิงก์ที่หน้า Login</span>
           </p>
 
         </div>
@@ -788,20 +789,20 @@
           <div class="flex flex-wrap gap-2 items-center">
             <div class="search-wrap">
               <i data-lucide="search" class="w-4 h-4"></i>
-              <input type="text" id="logSearch" class="field-input search-input" placeholder="ค้นหาผู้ใช้ / รายละเอียด..."
+              <input type="text" id="logSearch" class="field-input search-input" data-t="stLogSearch" data-t-attr="placeholder" placeholder="ค้นหาผู้ใช้ / รายละเอียด..."
                      oninput="renderLogs()" style="width:220px">
             </div>
             <select id="logTypeFilter" class="field-select" onchange="renderLogs()" style="width:160px">
-              <option value="">ทุกประเภท</option>
-              <option value="ADD">➕ เพิ่มข้อมูล</option>
-              <option value="UPDATE">✏️ แก้ไขข้อมูล</option>
-              <option value="DELETE">🗑️ ลบข้อมูล</option>
-              <option value="LOGIN">🔑 เข้าสู่ระบบ</option>
-              <option value="SETTING">⚙️ ตั้งค่า</option>
+              <option value="" data-t="stLogAllTypes">ทุกประเภท</option>
+              <option value="ADD" data-t="stLogAdd">➕ เพิ่มข้อมูล</option>
+              <option value="UPDATE" data-t="stLogUpdate">✏️ แก้ไขข้อมูล</option>
+              <option value="DELETE" data-t="stLogDelete">🗑️ ลบข้อมูล</option>
+              <option value="LOGIN" data-t="stLogLogin">🔑 เข้าสู่ระบบ</option>
+              <option value="SETTING" data-t="stLogSetting">⚙️ ตั้งค่า</option>
             </select>
           </div>
           <button onclick="loadLogs()" class="btn btn-secondary btn-sm">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> รีเฟรช
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-t="stRefresh">รีเฟรช</span>
           </button>
         </div>
       </div>
@@ -816,14 +817,14 @@
         <table class="rdf-table">
           <thead>
             <tr>
-              <th style="width:160px">เวลา</th>
-              <th style="width:110px">ผู้ดำเนินการ</th>
-              <th style="width:130px">ประเภท</th>
-              <th>รายละเอียด</th>
+              <th style="width:160px" data-t="stLogColTime">เวลา</th>
+              <th style="width:110px" data-t="stLogColUser">ผู้ดำเนินการ</th>
+              <th style="width:130px" data-t="stLogColType">ประเภท</th>
+              <th data-t="stLogColDetail">รายละเอียด</th>
             </tr>
           </thead>
           <tbody id="logTableBody">
-            <tr><td colspan="4" class="text-center text-gray-400 py-10">กำลังโหลด...</td></tr>
+            <tr><td colspan="4" class="text-center text-gray-400 py-10" data-t="stLoading">กำลังโหลด...</td></tr>
           </tbody>
         </table>
       </div>
@@ -849,9 +850,9 @@
               <i data-lucide="sparkles" class="w-5 h-5" style="color:#1d4ed8"></i>
             </div>
             <div>
-              <p class="font-bold text-gray-800 mb-1">Gemini AI — ฟรี</p>
-              <p class="text-sm text-gray-500">ใช้สำหรับ OCR อัจฉริยะ: แปลข้อความจากบัตรประชาชนให้เป็นข้อมูลที่ถูกต้อง</p>
-              <p class="text-xs text-gray-400 mt-1">Gemini 1.5 Flash — ฟรี 15 requests/นาที ไม่ต้องใช้บัตรเครดิต</p>
+              <p class="font-bold text-gray-800 mb-1" data-t="stApiGeminiTitle">Gemini AI — ฟรี</p>
+              <p class="text-sm text-gray-500" data-t="stApiGeminiDesc">ใช้สำหรับ OCR อัจฉริยะ: แปลข้อความจากบัตรประชาชนให้เป็นข้อมูลที่ถูกต้อง</p>
+              <p class="text-xs text-gray-400 mt-1" data-t="stApiGeminiInfo">Gemini 1.5 Flash — ฟรี 15 requests/นาที ไม่ต้องใช้บัตรเครดิต</p>
             </div>
           </div>
         </div>
@@ -866,7 +867,7 @@
           </div>
           <div id="geminiKeyStatus" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style="background:#f1f5f9;color:#64748b">
             <span id="geminiKeyDot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
-            <span id="geminiKeyStatusText">กำลังตรวจสอบ...</span>
+            <span id="geminiKeyStatusText" data-t="stChecking">กำลังตรวจสอบ...</span>
           </div>
         </div>
         <div class="card-body">
@@ -875,14 +876,14 @@
           <div id="geminiCurrentKey" class="hidden mb-4 p-3 rounded-lg flex items-center gap-3" style="background:#f0fdf4;border:1px solid #bbf7d0">
             <i data-lucide="check-circle" class="w-4 h-4" style="color:#16a34a;flex-shrink:0"></i>
             <div>
-              <p class="text-xs font-semibold text-green-700">ตั้งค่าแล้ว</p>
+              <p class="text-xs font-semibold text-green-700" data-t="stConfigured">ตั้งค่าแล้ว</p>
               <p class="text-sm font-mono text-green-800" id="geminiMaskedKey">—</p>
             </div>
           </div>
 
           <!-- Input -->
           <div class="mb-4">
-            <label class="field-label">วาง API Key ใหม่</label>
+            <label class="field-label" data-t="stApiGeminiPaste">วาง API Key ใหม่</label>
             <div class="flex gap-2">
               <div class="relative flex-1">
                 <input type="password" id="geminiKeyInput" class="field-input pr-10" placeholder="AIza...">
@@ -901,7 +902,7 @@
           <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"
              class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition group">
             <i data-lucide="external-link" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
-            รับ API Key ฟรีจาก Google AI Studio
+            <span data-t="stApiGeminiGet">รับ API Key ฟรีจาก Google AI Studio</span>
           </a>
 
         </div>
@@ -921,32 +922,32 @@
           </div>
           <div id="gcidStatus" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style="background:#f1f5f9;color:#64748b">
             <span id="gcidDot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
-            <span id="gcidStatusText">ยังไม่ตั้งค่า</span>
+            <span id="gcidStatusText" data-t="stNotConfigured">ยังไม่ตั้งค่า</span>
           </div>
         </div>
         <div class="card-body">
-          <p class="text-sm text-gray-500 mb-4">ใช้สำหรับเปิดใช้งาน "เข้าสู่ระบบด้วย Google" สำหรับผู้ดูแลระบบ — ได้จาก Google Cloud Console</p>
+          <p class="text-sm text-gray-500 mb-4" data-t="stApiGcidDesc">ใช้สำหรับเปิดใช้งาน "เข้าสู่ระบบด้วย Google" สำหรับผู้ดูแลระบบ — ได้จาก Google Cloud Console</p>
 
           <!-- Configured state -->
           <div id="gcidConfigured" class="hidden mb-4 p-3 rounded-lg flex items-center gap-3" style="background:#f0fdf4;border:1px solid #bbf7d0">
             <i data-lucide="check-circle" class="w-4 h-4 flex-shrink-0" style="color:#16a34a"></i>
             <div class="flex-1 min-w-0">
-              <p class="text-xs font-semibold text-green-700">ตั้งค่าแล้ว</p>
+              <p class="text-xs font-semibold text-green-700" data-t="stConfigured">ตั้งค่าแล้ว</p>
               <p class="text-sm font-mono text-green-800" id="gcidMasked">—</p>
             </div>
             <div class="flex gap-2 flex-shrink-0">
               <button onclick="_gcidShowInput()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:none">
-                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> เปลี่ยน
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> <span data-t="stChange">เปลี่ยน</span>
               </button>
               <button onclick="deleteGoogleClientId()" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:none">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> ลบ
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span data-t="stDelete">ลบ</span>
               </button>
             </div>
           </div>
 
           <!-- Input state -->
           <div id="gcidInputWrap">
-            <label class="field-label">วาง Client ID ใหม่</label>
+            <label class="field-label" data-t="stApiGcidPaste">วาง Client ID ใหม่</label>
             <div class="flex gap-2">
               <div class="relative flex-1">
                 <input type="password" id="googleClientId" class="field-input pr-10 font-mono text-sm"
@@ -962,7 +963,7 @@
                 ยกเลิก
               </button>
             </div>
-            <p class="text-xs text-gray-400 mt-1.5">Client ID ไม่ใช่ความลับ แต่ระบบซ่อนไว้เพื่อความเป็นระเบียบ — ใช้งานได้เฉพาะ domain ที่ระบุใน Authorized Origins เท่านั้น</p>
+            <p class="text-xs text-gray-400 mt-1.5" data-t="stApiGcidNote">Client ID ไม่ใช่ความลับ แต่ระบบซ่อนไว้เพื่อความเป็นระเบียบ — ใช้งานได้เฉพาะ domain ที่ระบุใน Authorized Origins เท่านั้น</p>
           </div>
 
         </div>
@@ -979,16 +980,16 @@
       <div class="card-header flex items-center justify-between">
         <div class="flex items-center gap-2 font-bold text-gray-700">
           <i data-lucide="activity" class="w-4 h-4" style="color:#1e3a8a"></i>
-          เซสชันที่กำลังใช้งาน
+          <span data-t="stSessTitle">เซสชันที่กำลังใช้งาน</span>
         </div>
         <button onclick="loadActiveSessions()" class="btn btn-secondary btn-sm">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> รีเฟรช
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-t="stRefresh">รีเฟรช</span>
         </button>
       </div>
       <div class="card-body">
         <div class="mb-3 p-3 rounded-lg text-xs text-blue-700 font-medium flex items-start gap-2" style="background:#eff6ff;border:1px solid #bfdbfe">
           <i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
-          <span>เซสชันจะหมดอายุอัตโนมัติหลัง 5 ชั่วโมง • อัปเดตทุก 30 วินาที</span>
+          <span data-t="stSessInfo">เซสชันจะหมดอายุอัตโนมัติหลัง 5 ชั่วโมง • อัปเดตทุก 30 วินาที</span>
         </div>
         <div id="sessionsBody">
           <div class="text-center py-8 text-gray-400">
@@ -1001,7 +1002,7 @@
 
     <!-- Login stats from Admins sheet -->
     <div class="card fade-in-up delay-1">
-      <div class="card-header"><span class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="bar-chart" class="w-4 h-4" style="color:#1e3a8a"></i> สถิติการเข้าระบบ</span></div>
+      <div class="card-header"><span class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="bar-chart" class="w-4 h-4" style="color:#1e3a8a"></i> <span data-t="stSessStatsTitle">สถิติการเข้าระบบ</span></span></div>
       <div class="card-body">
         <div id="loginStatsBody" class="text-gray-400 text-sm text-center py-4">กำลังโหลด...</div>
       </div>
@@ -1017,8 +1018,8 @@
         <div class="flex gap-3 items-center">
           <i data-lucide="shield-check" class="w-7 h-7" style="color:#1e3a8a;flex-shrink:0"></i>
           <div>
-            <p class="font-bold text-gray-800">ระบบสิทธิ์ผู้ใช้งาน (Role-Based Access Control)</p>
-            <p class="text-xs text-gray-500 mt-0.5">ผู้ดูแลระบบแต่ละประเภทมีสิทธิ์เข้าถึงข้อมูลและฟังก์ชันที่แตกต่างกัน</p>
+            <p class="font-bold text-gray-800" data-t="stRolesTitle">ระบบสิทธิ์ผู้ใช้งาน (Role-Based Access Control)</p>
+            <p class="text-xs text-gray-500 mt-0.5" data-t="stRolesDesc">ผู้ดูแลระบบแต่ละประเภทมีสิทธิ์เข้าถึงข้อมูลและฟังก์ชันที่แตกต่างกัน</p>
           </div>
         </div>
       </div>
@@ -1035,15 +1036,15 @@
             </div>
             <div>
               <p class="font-bold text-gray-800">SuperAdmin</p>
-              <span class="role-badge role-superadmin">สิทธิ์สูงสุด</span>
+              <span class="role-badge role-superadmin" data-t="stRoleSuperBadge">สิทธิ์สูงสุด</span>
             </div>
           </div>
           <ul class="space-y-1.5 text-xs text-gray-600">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>จัดการผู้ดูแลระบบทั้งหมด</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ตั้งค่าระบบ, API Keys, สาขาวิชา</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>เพิ่ม / แก้ไข / ลบนักเรียน</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูประวัติการใช้งานทั้งหมด</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>จัดการเซสชัน / ผู้ใช้งาน</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleSuperP1">จัดการผู้ดูแลระบบทั้งหมด</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleSuperP2">ตั้งค่าระบบ, API Keys, สาขาวิชา</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleSuperP3">เพิ่ม / แก้ไข / ลบนักเรียน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleSuperP4">ดูประวัติการใช้งานทั้งหมด</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleSuperP5">จัดการเซสชัน / ผู้ใช้งาน</span></li>
           </ul>
         </div>
       </div>
@@ -1057,15 +1058,15 @@
             </div>
             <div>
               <p class="font-bold text-gray-800">Manager</p>
-              <span class="role-badge role-manager">ผู้จัดการ</span>
+              <span class="role-badge role-manager" data-t="stRoleManagerBadge">ผู้จัดการ</span>
             </div>
           </div>
           <ul class="space-y-1.5 text-xs text-gray-600">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>เพิ่ม / แก้ไข / ลบนักเรียน</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูข้อมูลนักเรียนทั้งหมด</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>พิมพ์โปรไฟล์และรายงาน</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>นำเข้า CSV / จัดการข้อมูล</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ตั้งค่าระบบ / จัดการ Admin</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleManagerP1">เพิ่ม / แก้ไข / ลบนักเรียน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleManagerP2">ดูข้อมูลนักเรียนทั้งหมด</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleManagerP3">พิมพ์โปรไฟล์และรายงาน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleManagerP4">นำเข้า CSV / จัดการข้อมูล</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleManagerP5">ตั้งค่าระบบ / จัดการ Admin</span></li>
           </ul>
         </div>
       </div>
@@ -1079,15 +1080,15 @@
             </div>
             <div>
               <p class="font-bold text-gray-800">Finance</p>
-              <span class="role-badge role-finance">การเงิน</span>
+              <span class="role-badge role-finance" data-t="stRoleFinanceBadge">การเงิน</span>
             </div>
           </div>
           <ul class="space-y-1.5 text-xs text-gray-600">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูข้อมูลนักเรียนทั้งหมด</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูข้อมูลการเงิน / ทุนการศึกษา</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>พิมพ์รายงานการเงิน</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>แก้ไขข้อมูลนักเรียน</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ตั้งค่าระบบ / จัดการ Admin</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleFinanceP1">ดูข้อมูลนักเรียนทั้งหมด</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleFinanceP2">ดูข้อมูลการเงิน / ทุนการศึกษา</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleFinanceP3">พิมพ์รายงานการเงิน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleFinanceP4">แก้ไขข้อมูลนักเรียน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleFinanceP5">ตั้งค่าระบบ / จัดการ Admin</span></li>
           </ul>
         </div>
       </div>
@@ -1101,15 +1102,15 @@
             </div>
             <div>
               <p class="font-bold text-gray-800">Committee</p>
-              <span class="role-badge role-committee">คณะกรรมการ</span>
+              <span class="role-badge role-committee" data-t="stRoleCommitteeBadge">คณะกรรมการ</span>
             </div>
           </div>
           <ul class="space-y-1.5 text-xs text-gray-600">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูข้อมูลนักเรียนทั้งหมด</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>พิมพ์โปรไฟล์นักเรียน</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูสถิติและภาพรวมระบบ</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>แก้ไขข้อมูลนักเรียน</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ตั้งค่าระบบ / จัดการ Admin</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleCommitteeP1">ดูข้อมูลนักเรียนทั้งหมด</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleCommitteeP2">พิมพ์โปรไฟล์นักเรียน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleCommitteeP3">ดูสถิติและภาพรวมระบบ</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleCommitteeP4">แก้ไขข้อมูลนักเรียน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleCommitteeP5">ตั้งค่าระบบ / จัดการ Admin</span></li>
           </ul>
         </div>
       </div>
@@ -1123,15 +1124,15 @@
             </div>
             <div>
               <p class="font-bold text-gray-800">DormTeacher</p>
-              <span class="role-badge role-dormteacher">ครูหอพัก</span>
+              <span class="role-badge role-dormteacher" data-t="stRoleDormBadge">ครูหอพัก</span>
             </div>
           </div>
           <ul class="space-y-1.5 text-xs text-gray-600">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูข้อมูลนักเรียน (เฉพาะ MBS/VC)</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ข้อมูลติดต่อ / ผู้ปกครอง</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>แก้ไขข้อมูลเบื้องต้น</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ดูข้อมูลการเงิน</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ตั้งค่าระบบ / จัดการ Admin</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleDormP1">ดูข้อมูลนักเรียน (เฉพาะ MBS/VC)</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleDormP2">ข้อมูลติดต่อ / ผู้ปกครอง</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleDormP3">แก้ไขข้อมูลเบื้องต้น</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleDormP4">ดูข้อมูลการเงิน</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleDormP5">ตั้งค่าระบบ / จัดการ Admin</span></li>
           </ul>
         </div>
       </div>
@@ -1145,15 +1146,15 @@
             </div>
             <div>
               <p class="font-bold text-gray-800">Student</p>
-              <span class="role-badge" style="background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd">นักเรียนทุน</span>
+              <span class="role-badge" style="background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd" data-t="stRoleStudentBadge">นักเรียนทุน</span>
             </div>
           </div>
           <ul class="space-y-1.5 text-xs text-gray-600">
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>ดูข้อมูลโปรไฟล์ตนเอง</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>อัปเดตข้อมูลส่วนตัว</li>
-            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>อัปโหลดรูปโปรไฟล์</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ดูข้อมูลนักเรียนคนอื่น</li>
-            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i>ตั้งค่าระบบ</li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleStudentP1">ดูข้อมูลโปรไฟล์ตนเอง</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleStudentP2">อัปเดตข้อมูลส่วนตัว</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i><span data-t="stRoleStudentP3">อัปโหลดรูปโปรไฟล์</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleStudentP4">ดูข้อมูลนักเรียนคนอื่น</span></li>
+            <li class="flex items-center gap-2"><i data-lucide="x" class="w-3.5 h-3.5 text-red-400 flex-shrink-0"></i><span data-t="stRoleStudentP5">ตั้งค่าระบบ</span></li>
           </ul>
         </div>
       </div>
@@ -1164,17 +1165,17 @@
       <div class="card-header flex items-center justify-between">
         <span class="font-bold text-gray-700 flex items-center gap-2">
           <i data-lucide="table" class="w-4 h-4" style="color:#1e3a8a"></i>
-          ตาราง Permission Matrix
-          <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-weight:600">คลิกเซลล์เพื่อแก้ไข</span>
+          <span data-t="stRolesMatrixTitle">ตาราง Permission Matrix</span>
+          <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-weight:600" data-t="stRolesMatrixHint">คลิกเซลล์เพื่อแก้ไข</span>
         </span>
         <div class="flex gap-2">
           <button onclick="resetPermMatrix()"
                   class="btn btn-secondary btn-sm text-xs">
-            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> คืนค่าเริ่มต้น
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span data-t="stRolesMatrixReset">คืนค่าเริ่มต้น</span>
           </button>
           <button onclick="savePermMatrix()"
                   class="btn btn-sm text-xs" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก Permission
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stRolesMatrixSave">บันทึก Permission</span>
           </button>
         </div>
       </div>
@@ -1187,13 +1188,13 @@
         <table class="w-full text-xs min-w-max" id="permMatrixTable">
           <thead>
             <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
-              <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;min-width:200px">ฟังก์ชัน / Permission</th>
-              <th style="padding:10px 12px;text-align:center;color:#dc2626;font-weight:800;min-width:90px">SuperAdmin<br><span style="font-size:9px;font-weight:400;color:#9ca3af">ล็อค</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#1d4ed8;font-weight:800;min-width:90px">Manager<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#16a34a;font-weight:800;min-width:90px">Finance<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#7c3aed;font-weight:800;min-width:90px">Committee<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#ea580c;font-weight:800;min-width:100px">DormTeacher<br><span style="font-size:9px;font-weight:400;color:#9ca3af">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#0ea5e9;font-weight:800;min-width:90px">Student<br><span style="font-size:9px;font-weight:400;color:#9ca3af">ล็อค</span></th>
+              <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;min-width:200px" data-t="stRolesMatrixFn">ฟังก์ชัน / Permission</th>
+              <th style="padding:10px 12px;text-align:center;color:#dc2626;font-weight:800;min-width:90px">SuperAdmin<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixLocked">ล็อค</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#1d4ed8;font-weight:800;min-width:90px">Manager<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#16a34a;font-weight:800;min-width:90px">Finance<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#7c3aed;font-weight:800;min-width:90px">Committee<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#ea580c;font-weight:800;min-width:100px">DormTeacher<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+              <th style="padding:10px 12px;text-align:center;color:#0ea5e9;font-weight:800;min-width:90px">Student<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixLocked">ล็อค</span></th>
             </tr>
           </thead>
           <tbody id="permMatrix"></tbody>
@@ -1206,7 +1207,7 @@
       <div class="card-header flex items-center justify-between">
         <span class="font-bold text-gray-700 flex items-center gap-2">
           <i data-lucide="shield-check" class="w-4 h-4" style="color:#0ea5e9"></i>
-          กำหนดสิทธิ์นักเรียน / Student Editable Fields
+          <span data-t="stRolesStudentTitle">กำหนดสิทธิ์นักเรียน / Student Editable Fields</span>
         </span>
         <button onclick="saveStudentEditableFields()"
                 class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1.5px solid #bae6fd">
@@ -1224,8 +1225,7 @@
         </div>
         <div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
           <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i>
-          <b>ช่องที่ล็อคเสมอ (Always Protected):</b>
-          รหัสทุน (StipNo) — ไม่สามารถอนุญาตให้นักเรียนแก้ไขได้ไม่ว่ากรณีใด
+          <span data-t="stRolesStudentProtected">ช่องที่ล็อคเสมอ (Always Protected): รหัสทุน (StipNo) — ไม่สามารถอนุญาตให้นักเรียนแก้ไขได้ไม่ว่ากรณีใด</span>
         </div>
       </div>
     </div>
@@ -1253,7 +1253,7 @@
       <!-- Row 1: Title + FirstName + LastName -->
       <div class="grid grid-cols-12 gap-2 mb-3">
         <div class="col-span-3">
-          <label class="field-label">คำนำหน้า</label>
+          <label class="field-label" data-t="stAdminTitle">คำนำหน้า</label>
           <select id="m_title" class="field-select">
             <option value="">—</option>
             <option value="นาย">นาย</option>
@@ -1265,37 +1265,37 @@
           </select>
         </div>
         <div class="col-span-5">
-          <label class="field-label">ชื่อ <span class="text-red-500">*</span></label>
-          <input type="text" id="m_fname" class="field-input" placeholder="ชื่อ">
+          <label class="field-label"><span data-t="stAdminFname">ชื่อ</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="m_fname" class="field-input" data-t="stAdminFname" data-t-attr="placeholder" placeholder="ชื่อ">
         </div>
         <div class="col-span-4">
-          <label class="field-label">นามสกุล</label>
-          <input type="text" id="m_lname" class="field-input" placeholder="นามสกุล">
+          <label class="field-label" data-t="stAdminLname">นามสกุล</label>
+          <input type="text" id="m_lname" class="field-input" data-t="stAdminLname" data-t-attr="placeholder" placeholder="นามสกุล">
         </div>
       </div>
 
       <!-- Row 2: Username -->
       <div class="mb-3">
-        <label class="field-label">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
+        <label class="field-label"><span data-t="stAdminUsername">ชื่อผู้ใช้ (Username)</span> <span class="text-red-500">*</span></label>
         <input type="text" id="m_username" class="field-input" placeholder="username" autocomplete="off">
       </div>
 
       <!-- Row 3: Password -->
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label class="field-label" id="m_passLabel">รหัสผ่าน <span class="text-red-500">*</span></label>
-          <input type="password" id="m_password" class="field-input" placeholder="รหัสผ่าน" autocomplete="new-password">
+          <label class="field-label" id="m_passLabel"><span data-t="stAdminPassword">รหัสผ่าน</span> <span class="text-red-500">*</span></label>
+          <input type="password" id="m_password" class="field-input" data-t="stAdminPassword" data-t-attr="placeholder" placeholder="รหัสผ่าน" autocomplete="new-password">
         </div>
         <div>
-          <label class="field-label">ยืนยันรหัสผ่าน</label>
-          <input type="password" id="m_password2" class="field-input" placeholder="ยืนยันอีกครั้ง">
+          <label class="field-label" data-t="stAdminConfirmPass">ยืนยันรหัสผ่าน</label>
+          <input type="password" id="m_password2" class="field-input" data-t="stAdminConfirmPass" data-t-attr="placeholder" placeholder="ยืนยันอีกครั้ง">
         </div>
       </div>
 
       <!-- Row 4: Role + SubRole + Status -->
       <div class="grid grid-cols-3 gap-2 mb-1">
         <div>
-          <label class="field-label">สิทธิ์ <span class="text-red-500">*</span></label>
+          <label class="field-label"><span data-t="stAdminRole">สิทธิ์</span> <span class="text-red-500">*</span></label>
           <select id="m_role" class="field-select">
             <option value="Manager">Manager</option>
             <option value="Finance">Finance</option>
@@ -1315,7 +1315,7 @@
           </select>
         </div>
         <div>
-          <label class="field-label">สถานะ</label>
+          <label class="field-label" data-t="stAdminStatus">สถานะ</label>
           <select id="m_status" class="field-select">
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
@@ -1325,13 +1325,13 @@
 
       <p id="m_editHint" class="text-xs text-blue-500 mt-2 hidden flex items-center gap-1">
         <i data-lucide="info" class="w-3 h-3"></i>
-        เว้นรหัสผ่านว่างไว้หากไม่ต้องการเปลี่ยน
+        <span data-t="stAdminEditHint">เว้นรหัสผ่านว่างไว้หากไม่ต้องการเปลี่ยน</span>
       </p>
     </div>
     <div class="modal-footer">
-      <button onclick="closeAdminModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
+      <button onclick="closeAdminModal()" class="btn btn-secondary btn-sm" data-t="stCancel">ยกเลิก</button>
       <button onclick="submitAdminForm()" class="btn btn-primary btn-sm" id="m_submitBtn">
-        <i data-lucide="save" class="w-4 h-4"></i> บันทึก
+        <i data-lucide="save" class="w-4 h-4"></i> <span data-t="stSave">บันทึก</span>
       </button>
     </div>
   </div>
@@ -1418,11 +1418,11 @@ async function loadAdmins() {
       renderAdmins();
     } else {
       document.getElementById('adminGrid').innerHTML =
-        `<div class="col-span-full text-center text-red-400 py-10">${r.message||'เกิดข้อผิดพลาด'}</div>`;
+        `<div class="col-span-full text-center text-red-400 py-10">${r.message||t('error')}</div>`;
     }
   } catch(e) {
     document.getElementById('adminGrid').innerHTML =
-      `<div class="col-span-full text-center text-red-400 py-10">ไม่สามารถโหลดข้อมูลได้</div>`;
+      `<div class="col-span-full text-center text-red-400 py-10">${t('stLoadError')}</div>`;
   }
 }
 
@@ -1445,13 +1445,13 @@ function renderAdmins() {
         ${r} <strong>${c}</strong>
       </span>`
     ).join('') +
-    `<span class="badge badge-gray ml-auto">${t('total')||'ทั้งหมด'}: <strong>${allAdmins.length}</strong></span>`;
+    `<span class="badge badge-gray ml-auto">${t('stTotal')}: <strong>${allAdmins.length}</strong></span>`;
 
   const isSuperAdmin = user && user.role === 'SuperAdmin';
 
   if (!filtered.length) {
     document.getElementById('adminGrid').innerHTML =
-      `<div class="col-span-full text-center text-gray-400 py-12">ไม่พบผู้ดูแลระบบ</div>`;
+      `<div class="col-span-full text-center text-gray-400 py-12">${t('stAdminNotFound')}</div>`;
     return;
   }
 
@@ -1465,8 +1465,8 @@ function renderAdmins() {
     const lc = parseInt(a.LoginCount) || 0;
     const loginInfo = lc || a.LastLogin ? `
       <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
-        ${lc ? `<span class="text-xs text-blue-600 font-semibold"><i data-lucide="log-in" class="w-3 h-3 inline mr-0.5"></i>${lc} ครั้ง</span>` : '<span></span>'}
-        ${a.LastLogin ? `<span class="text-xs text-gray-400">ล่าสุด: ${a.LastLogin.split(',')[0]||a.LastLogin}</span>` : ''}
+        ${lc ? `<span class="text-xs text-blue-600 font-semibold"><i data-lucide="log-in" class="w-3 h-3 inline mr-0.5"></i>${lc} ${t('stTimes')}</span>` : '<span></span>'}
+        ${a.LastLogin ? `<span class="text-xs text-gray-400">${t('stLastSeen')}: ${a.LastLogin.split(',')[0]||a.LastLogin}</span>` : ''}
       </div>` : '';
     return `
     <div class="admin-card ${roleClass}">
@@ -1517,10 +1517,10 @@ function openAdminModal(adminData) {
   document.getElementById('m_password').value    = '';
   document.getElementById('m_password2').value   = '';
   document.getElementById('modalTitle').querySelector('span').textContent =
-    isEdit ? 'แก้ไขผู้ดูแลระบบ' : 'เพิ่มผู้ดูแลระบบ';
+    isEdit ? t('stAdminModalEdit') : t('stAdminModalAdd');
   document.getElementById('m_passLabel').innerHTML =
-    isEdit ? 'รหัสผ่านใหม่ <span class="text-gray-400 font-normal">(เว้นว่างถ้าไม่เปลี่ยน)</span>'
-           : 'รหัสผ่าน <span class="text-red-500">*</span>';
+    isEdit ? `${t('stAdminNewPass')} <span class="text-gray-400 font-normal">(${t('stAdminNewPassHint')})</span>`
+           : `${t('stAdminPassword')} <span class="text-red-500">*</span>`;
   document.getElementById('m_editHint').classList.toggle('hidden', !isEdit);
   document.getElementById('adminModal').classList.remove('hidden');
   lucide.createIcons();
@@ -1553,15 +1553,15 @@ async function submitAdminForm() {
   const subrole  = document.getElementById('m_subrole').value;
   const status   = document.getElementById('m_status').value;
 
-  if (!fname || !uname) { Swal.fire('แจ้งเตือน','กรุณากรอกชื่อและชื่อผู้ใช้','warning'); return; }
-  if (!isEdit && !pass) { Swal.fire('แจ้งเตือน','กรุณากรอกรหัสผ่าน','warning'); return; }
-  if (pass && pass !== pass2) { Swal.fire('แจ้งเตือน','รหัสผ่านไม่ตรงกัน','warning'); return; }
+  if (!fname || !uname) { Swal.fire(t('warning'), t('stAdminFillNameUser'), 'warning'); return; }
+  if (!isEdit && !pass) { Swal.fire(t('warning'), t('stAdminFillPass'), 'warning'); return; }
+  if (pass && pass !== pass2) { Swal.fire(t('warning'), t('stAdminPassMismatch'), 'warning'); return; }
 
   // Generate AdminID for new admins
   const resolvedAdminId = isEdit ? adminId : (adminId || _generateAdminID());
 
   const btn = document.getElementById('m_submitBtn');
-  btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...';
+  btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${t('saving')}`;
   try {
     const payload = {
       AdminID:   resolvedAdminId,
@@ -1576,34 +1576,34 @@ async function submitAdminForm() {
     if (pass) payload.Password = pass;
     const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
     const r = await Promise.race([API.saveAdmin(payload), _t]);
-    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> บันทึก';
+    btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> ${t('stSave')}`;
     if (r.status === 'success') {
       document.getElementById('adminModal').classList.add('hidden');
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1500, showConfirmButton:false });
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), timer:1500, showConfirmButton:false });
       loadAdmins();
-    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
+    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
   } catch(e) {
-    btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> บันทึก';
-    Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error');
+    btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> ${t('stSave')}`;
+    Swal.fire(t('error'), t('network_error'), 'error');
   }
   lucide.createIcons();
 }
 
 async function confirmDeleteAdmin(username) {
   const res = await Swal.fire({
-    title:'ลบผู้ดูแล?',
-    html:`ลบบัญชี <b>${username}</b> ออกจากระบบ?<br><small class="text-red-500">ไม่สามารถยกเลิกได้</small>`,
+    title: t('stAdminDeleteTitle'),
+    html:`ลบบัญชี <b>${username}</b> ออกจากระบบ?<br><small class="text-red-500">${t('stAdminDeleteIrreversible')}</small>`,
     icon:'warning', showCancelButton:true,
-    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#dc2626'
+    confirmButtonText: t('stDelete'), cancelButtonText: t('stCancel'), confirmButtonColor:'#dc2626'
   });
   if (!res.isConfirmed) return;
   try {
     const r = await API.deleteAdmin(username);
     if (r.status === 'success') {
-      Swal.fire({ icon:'success', title:'ลบสำเร็จ', timer:1500, showConfirmButton:false });
+      Swal.fire({ icon:'success', title: t('stDeleteSuccess'), timer:1500, showConfirmButton:false });
       loadAdmins();
-    } else { Swal.fire('ผิดพลาด', r.message, 'error'); }
-  } catch(e) { Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
+    } else { Swal.fire(t('error'), r.message, 'error'); }
+  } catch(e) { Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -1613,7 +1613,7 @@ let chartsBuilt = false;
 let chartLine, chartDonut, chartStatus;
 
 async function loadOverview() {
-  showLoader(true, 'กำลังโหลดข้อมูล...');
+  showLoader(true, t('loading'));
   try {
     const r = await API.getStudents();
     showLoader(false);
@@ -1744,7 +1744,7 @@ const LOG_PER_PAGE = 50;
 async function loadLogs() {
   logsLoaded = false;
   document.getElementById('logTableBody').innerHTML =
-    `<tr><td colspan="4" class="text-center text-gray-400 py-10">กำลังโหลด...</td></tr>`;
+    `<tr><td colspan="4" class="text-center text-gray-400 py-10">${t('stLoading')}</td></tr>`;
   try {
     const r = await API.getLogs(500);
     if (r.status === 'success') {
@@ -1754,11 +1754,11 @@ async function loadLogs() {
       logsLoaded = true;
     } else {
       document.getElementById('logTableBody').innerHTML =
-        `<tr><td colspan="4" class="text-center text-red-400 py-8">${r.message||'ไม่สามารถโหลดข้อมูลได้'}</td></tr>`;
+        `<tr><td colspan="4" class="text-center text-red-400 py-8">${r.message||t('stLoadError')}</td></tr>`;
     }
   } catch(e) {
     document.getElementById('logTableBody').innerHTML =
-      `<tr><td colspan="4" class="text-center text-red-400 py-8">ไม่สามารถเชื่อมต่อได้</td></tr>`;
+      `<tr><td colspan="4" class="text-center text-red-400 py-8">${t('network_error')}</td></tr>`;
   }
 }
 
@@ -1804,11 +1804,13 @@ function renderLogs() {
     else                           typeCounts.OTHER++;
   });
   document.getElementById('logSummary').innerHTML = [
-    ['ADD','log-add','เพิ่ม'],['UPDATE','log-update','แก้ไข'],
-    ['DELETE','log-delete','ลบ'],['LOGIN','log-login','Login']
+    ['ADD','log-add', () => t('stLogSummaryAdd')],
+    ['UPDATE','log-update', () => t('stLogSummaryUpdate')],
+    ['DELETE','log-delete', () => t('stLogSummaryDelete')],
+    ['LOGIN','log-login','Login']
   ].map(([k,c,label]) => typeCounts[k]
-    ? `<span class="log-action-badge ${c}">${label} ${typeCounts[k]}</span>` : ''
-  ).join('') + `<span class="text-xs text-gray-400 ml-1">รวม ${filtered.length} รายการ</span>`;
+    ? `<span class="log-action-badge ${c}">${typeof label==='function'?label():label} ${typeCounts[k]}</span>` : ''
+  ).join('') + `<span class="text-xs text-gray-400 ml-1">${t('stLogTotal')} ${filtered.length} ${t('stLogItems')}</span>`;
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / LOG_PER_PAGE));
@@ -1816,7 +1818,7 @@ function renderLogs() {
   const sliced = filtered.slice((logPage-1)*LOG_PER_PAGE, logPage*LOG_PER_PAGE);
 
   document.getElementById('logCount').textContent =
-    `แสดง ${((logPage-1)*LOG_PER_PAGE)+1}–${Math.min(logPage*LOG_PER_PAGE, filtered.length)} จาก ${filtered.length}`;
+    `${t('stLogShowing')} ${((logPage-1)*LOG_PER_PAGE)+1}–${Math.min(logPage*LOG_PER_PAGE, filtered.length)} ${t('stLogOf')} ${filtered.length}`;
 
   // Pager buttons
   document.getElementById('logPagerBtns').innerHTML = Array.from({length:Math.min(totalPages,8)},(_,i) => {
@@ -1826,7 +1828,7 @@ function renderLogs() {
 
   if (!sliced.length) {
     document.getElementById('logTableBody').innerHTML =
-      `<tr><td colspan="4" class="text-center text-gray-400 py-10">ไม่พบรายการ</td></tr>`;
+      `<tr><td colspan="4" class="text-center text-gray-400 py-10">${t('stNotFound')}</td></tr>`;
     return;
   }
 
@@ -1866,7 +1868,7 @@ function _genApId() {
 async function apLoad() {
   const tableBody = document.getElementById('apTableBody');
   const emptyEl   = document.getElementById('apEmpty');
-  if (tableBody) tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 py-10">กำลังโหลด...</td></tr>`;
+  if (tableBody) tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400 py-10">${t('stLoading')}</td></tr>`;
   try {
     const r = await API.getSystemSettings();
     if (r.status === 'success' && r.data) {
@@ -1917,10 +1919,10 @@ function apRender() {
   if (summary) summary.innerHTML = `
     <span style="background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">MBS ${mbsCount}</span>
     <span style="background:#fce7f3;color:#9d174d;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">VC ${vcCount}</span>
-    <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">แผน ${planCount}</span>
-    <span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">โปรแกรม ${progCount}</span>
-    <span style="background:#ede9fe;color:#5b21b6;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">ภาควิชา ${deptCount}</span>
-    <span style="color:#6b7280;font-size:11px">รวม ${_apState.length} รายการ (แสดง ${filtered.length})</span>`;
+    <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">${t('stApPlanLabel')} ${planCount}</span>
+    <span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">${t('stApProgLabel')} ${progCount}</span>
+    <span style="background:#ede9fe;color:#5b21b6;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">${t('stApDeptLabel')} ${deptCount}</span>
+    <span style="color:#6b7280;font-size:11px">${t('stLogTotal')} ${_apState.length} ${t('stLogItems')} (${t('stLogShowing')} ${filtered.length})</span>`;
 
   if (!filtered.length) {
     tableBody.innerHTML = '';
@@ -1930,7 +1932,7 @@ function apRender() {
   if (emptyEl) emptyEl.classList.add('hidden');
 
   const instLabel = { MBS:'MBS', VC:'VC' };
-  const catLabel  = { plan:'แผนการศึกษา', program:'หลักสูตร', department:'ภาควิชา/สาขา' };
+  const catLabel  = { plan: t('stApCatPlan'), program: t('stApCatProgram'), department: t('stApCatDept') };
   const catColor  = { plan:'background:#dbeafe;color:#1e40af', program:'background:#fce7f3;color:#9d174d', department:'background:#ede9fe;color:#5b21b6' };
   const instColor = { MBS:'background:#dbeafe;color:#1d4ed8', VC:'background:#fce7f3;color:#be185d' };
 
@@ -1987,8 +1989,8 @@ function apUpdateCategoryOptions() {
   const sel  = document.getElementById('apModalCat');
   if (!sel) return;
   const opts = inst === 'MBS'
-    ? [['plan','แผนการศึกษา / Study Plan']]
-    : [['program','หลักสูตร / Program'], ['department','ภาควิชา/สาขา / Department']];
+    ? [['plan', t('stApCatPlan') + ' / Study Plan']]
+    : [['program', t('stApCatProgram') + ' / Program'], ['department', t('stApCatDept') + ' / Department']];
   sel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
 }
 
@@ -2002,7 +2004,7 @@ function apOpenAdd() {
   if (_apCat) document.getElementById('apModalCat').value = _apCat;
   document.getElementById('apModalNameTH').value = '';
   document.getElementById('apModalNameEN').value = '';
-  if (title) title.textContent = 'เพิ่มรายการใหม่';
+  if (title) title.textContent = t('stMajModalAdd');
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
 }
@@ -2019,7 +2021,7 @@ function apOpenEdit(id) {
   document.getElementById('apModalCat').value    = p.category;
   document.getElementById('apModalNameTH').value = p.nameTH || '';
   document.getElementById('apModalNameEN').value = p.nameEN || '';
-  if (title) title.textContent = 'แก้ไขรายการ';
+  if (title) title.textContent = t('stMajModalEdit');
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
 }
@@ -2036,7 +2038,7 @@ function apSaveEntry() {
   const nameTH = document.getElementById('apModalNameTH').value.trim();
   const nameEN = document.getElementById('apModalNameEN').value.trim();
   if (!nameTH && !nameEN) {
-    Swal.fire('แจ้งเตือน', 'กรุณากรอกชื่ออย่างน้อย 1 ภาษา', 'warning'); return;
+    Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return;
   }
   // Duplicate check (same inst+cat+name)
   const dup = _apState.find(p =>
@@ -2047,7 +2049,7 @@ function apSaveEntry() {
      (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase()))
   );
   if (dup) {
-    Swal.fire('แจ้งเตือน', `มีรายการ "${dup.nameTH||dup.nameEN}" อยู่แล้วในกลุ่มเดียวกัน`, 'warning'); return;
+    Swal.fire(t('warning'), `"${dup.nameTH||dup.nameEN}" — ${t('stMajDuplicate')}`, 'warning'); return;
   }
   if (id) {
     const idx = _apState.findIndex(p => p.id === id);
@@ -2063,13 +2065,13 @@ function apDelete(id) {
   const p = _apState.find(x => x.id === id);
   if (!p) return;
   Swal.fire({
-    title: 'ยืนยันการลบ',
-    text: `ลบ "${p.nameTH || p.nameEN}" ?`,
+    title: t('stMajConfirmDelete'),
+    text: `${t('stDelete')} "${p.nameTH || p.nameEN}" ?`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#dc2626',
-    confirmButtonText: 'ลบ',
-    cancelButtonText: 'ยกเลิก'
+    confirmButtonText: t('stDelete'),
+    cancelButtonText: t('stCancel')
   }).then(res => {
     if (res.isConfirmed) {
       _apState = _apState.filter(x => x.id !== id);
@@ -2079,15 +2081,15 @@ function apDelete(id) {
 }
 
 async function apSaveAll() {
-  showLoader(true, 'กำลังบันทึก...');
+  showLoader(true, t('saving'));
   try {
-    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
     const r  = await Promise.race([API.saveSetting('ACADEMIC_PROGRAMS', _apState), _t]);
     showLoader(false);
     if (r.status === 'success') {
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:`${_apState.length} รายการ`, timer:2000, showConfirmButton:false });
-    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้', 'error'); }
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), text:`${_apState.length} ${t('stLogItems')}`, timer:2000, showConfirmButton:false });
+    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), e.message||t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -2114,9 +2116,9 @@ function renderUniListRows() {
   const el = document.getElementById('uniListRows');
   const cnt = document.getElementById('uniListCount');
   if (!el) return;
-  if (cnt) cnt.textContent = `${uniListState.length} รายการ`;
+  if (cnt) cnt.textContent = `${uniListState.length} ${t('stMajUniItems')}`;
   if (!uniListState.length) {
-    el.innerHTML = `<div class="text-center text-gray-400 py-3 text-sm">ยังไม่มีรายการมหาวิทยาลัย — เพิ่มด้านล่าง</div>`;
+    el.innerHTML = `<div class="text-center text-gray-400 py-3 text-sm">${t('stUniEmpty')}</div>`;
     return;
   }
   el.innerHTML = uniListState.map((u, i) => `
@@ -2142,7 +2144,7 @@ function addUniEntry() {
   const th = document.getElementById('uniInputTH').value.trim();
   const en = document.getElementById('uniInputEN').value.trim();
   if (!th && !en) {
-    Swal.fire('แจ้งเตือน', 'กรุณากรอกชื่อมหาวิทยาลัยอย่างน้อย 1 ภาษา', 'warning'); return;
+    Swal.fire(t('warning'), t('stUniFillName'), 'warning'); return;
   }
   // Duplicate check (case-insensitive)
   const dup = uniListState.find(u =>
@@ -2150,7 +2152,7 @@ function addUniEntry() {
     (en && u.nameEN.toLowerCase() === en.toLowerCase())
   );
   if (dup) {
-    Swal.fire('แจ้งเตือน', `มีรายการ "${dup.nameTH||dup.nameEN}" อยู่แล้ว`, 'warning'); return;
+    Swal.fire(t('warning'), `${t('stUniDuplicate')}: "${dup.nameTH||dup.nameEN}"`, 'warning'); return;
   }
   uniListState.push({ nameTH: th, nameEN: en });
   document.getElementById('uniInputTH').value = '';
@@ -2171,21 +2173,21 @@ async function saveUniList() {
   for (const u of clean) {
     const key = (u.nameTH+'|'+u.nameEN).toLowerCase();
     if (seen.has(key)) {
-      Swal.fire('แจ้งเตือน', `พบรายการซ้ำ: "${u.nameTH||u.nameEN}"`, 'warning'); return;
+      Swal.fire(t('warning'), `${t('stUniDuplicate')}: "${u.nameTH||u.nameEN}"`, 'warning'); return;
     }
     seen.add(key);
   }
   uniListState = clean;
-  showLoader(true, 'กำลังบันทึก...');
+  showLoader(true, t('saving'));
   try {
-    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('หมดเวลา (30s)')), 30000));
+    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')), 30000));
     const r  = await Promise.race([API.saveSetting('UNIVERSITY_LIST', uniListState), _t]);
     showLoader(false);
     if (r.status === 'success') {
       renderUniListRows();
-      Swal.fire({ icon:'success', title:'บันทึกรายชื่อมหาวิทยาลัยสำเร็จ', timer:1800, showConfirmButton:false });
-    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้', 'error'); }
+      Swal.fire({ icon:'success', title: t('stUniSaveSuccess'), timer:1800, showConfirmButton:false });
+    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), e.message||t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -2207,13 +2209,13 @@ async function loadApiKeyStatus() {
     const status = document.getElementById('geminiKeyStatus');
     if (r.set) {
       dot.style.background = '#22c55e';
-      txt.textContent = 'ตั้งค่าแล้ว';
+      txt.textContent = t('stConfigured');
       status.style.background = '#f0fdf4'; status.style.color = '#15803d';
       box.classList.remove('hidden');
       masked.textContent = r.masked;
     } else {
       dot.style.background = '#f59e0b';
-      txt.textContent = 'ยังไม่ได้ตั้งค่า';
+      txt.textContent = t('stNotConfigured');
       status.style.background = '#fffbeb'; status.style.color = '#92400e';
       box.classList.add('hidden');
     }
@@ -2227,21 +2229,21 @@ async function loadApiKeyStatus() {
 
 async function saveGeminiKey() {
   const key = document.getElementById('geminiKeyInput').value.trim();
-  if (!key) { Swal.fire('แจ้งเตือน','กรุณากรอก API Key','warning'); return; }
+  if (!key) { Swal.fire(t('warning'), t('stApiKeyFill'), 'warning'); return; }
   const btn = document.getElementById('saveKeyBtn');
   btn.disabled = true;
   try {
-    showLoader(true, 'กำลังบันทึก...');
-    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
+    showLoader(true, t('saving'));
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
     const r = await Promise.race([API.saveApiKey(key), _t]);
     showLoader(false);
     btn.disabled = false;
     if (r.status === 'success') {
       document.getElementById('geminiKeyInput').value = '';
-      Swal.fire({ icon:'success', title:'บันทึก API Key สำเร็จ', timer:1800, showConfirmButton:false });
+      Swal.fire({ icon:'success', title: t('stApiKeySaved'), timer:1800, showConfirmButton:false });
       loadApiKeyStatus();
-    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); btn.disabled = false; Swal.fire('ผิดพลาด','ไม่สามารถเชื่อมต่อได้','error'); }
+    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
+  } catch(e) { showLoader(false); btn.disabled = false; Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 function toggleKeyVisibility() {
@@ -2271,7 +2273,7 @@ async function loadActiveSessions() {
     const sessions = r.sessions || {};
     const keys = Object.keys(sessions);
     if (!keys.length) {
-      body.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm"><i data-lucide="users" class="w-8 h-8 mx-auto mb-2 opacity-30"></i><p>ไม่มีเซสชันที่กำลังใช้งาน</p></div>`;
+      body.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm"><i data-lucide="users" class="w-8 h-8 mx-auto mb-2 opacity-30"></i><p>${t('stSessNoActive')}</p></div>`;
     } else {
       const now = Date.now();
       body.innerHTML = `<div class="space-y-2">` + keys.map(u => {
@@ -2285,12 +2287,12 @@ async function loadActiveSessions() {
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-bold text-gray-800 text-sm">${u}</p>
-            <p class="text-xs text-gray-400">${s.role} • เข้าระบบ ${elapsed} นาทีที่แล้ว • เหลือ ${remaining} นาที</p>
+            <p class="text-xs text-gray-400">${s.role} • ${elapsed} ${t('stSessMinAgo')} • ${t('stSessRemain')} ${remaining} ${t('stSessMin')}</p>
             <div class="mt-1.5" style="height:4px;background:#e2e8f0;border-radius:2px">
               <div style="height:100%;width:${pct}%;background:${pct>50?'#22c55e':pct>20?'#f59e0b':'#ef4444'};border-radius:2px;transition:width .3s"></div>
             </div>
           </div>
-          <button onclick="forceLogout('${u}')" class="btn btn-secondary btn-sm text-red-600 border-red-200 flex-shrink-0" title="บังคับออก">
+          <button onclick="forceLogout('${u}')" class="btn btn-secondary btn-sm text-red-600 border-red-200 flex-shrink-0" title="${t('stSessForceOut')}">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
           </button>
         </div>`;
@@ -2303,11 +2305,11 @@ async function loadActiveSessions() {
         .sort((a,b) => (parseInt(b.LoginCount)||0) - (parseInt(a.LoginCount)||0))
         .slice(0, 10);
       if (rows.length) {
-        statsBody.innerHTML = `<table class="w-full text-xs"><thead><tr class="border-b"><th class="py-1.5 px-3 text-left text-gray-400">ผู้ดูแล</th><th class="py-1.5 px-3 text-center text-gray-400">จำนวนครั้ง</th><th class="py-1.5 px-3 text-left text-gray-400">ล่าสุด</th></tr></thead><tbody>` +
+        statsBody.innerHTML = `<table class="w-full text-xs"><thead><tr class="border-b"><th class="py-1.5 px-3 text-left text-gray-400">${t('stSessAdminCol')}</th><th class="py-1.5 px-3 text-center text-gray-400">${t('stSessCountCol')}</th><th class="py-1.5 px-3 text-left text-gray-400">${t('stSessLastCol')}</th></tr></thead><tbody>` +
           rows.map(a => `<tr class="border-b border-gray-50"><td class="py-2 px-3 font-medium text-gray-700">${a.FirstName||''} ${a.LastName||''} <span class="text-gray-400">(${a.Username})</span></td><td class="py-2 px-3 text-center font-bold text-blue-600">${a.LoginCount}</td><td class="py-2 px-3 text-gray-400">${a.LastLogin||'—'}</td></tr>`).join('') +
           `</tbody></table>`;
       } else {
-        statsBody.textContent = 'ยังไม่มีข้อมูลการเข้าระบบ';
+        statsBody.textContent = t('stSessNoStats');
       }
     }
     lucide.createIcons();
@@ -2320,12 +2322,12 @@ async function loadActiveSessions() {
 }
 
 async function forceLogout(username) {
-  const r = await Swal.fire({ title:'บังคับออกจากระบบ?', text:`จะล้างเซสชันของ "${username}"`, icon:'warning', showCancelButton:true, confirmButtonText:'ใช่', cancelButtonText:'ยกเลิก', confirmButtonColor:'#dc2626' });
+  const r = await Swal.fire({ title: t('stSessForceTitle'), text:`${t('stSessForceText')} "${username}"`, icon:'warning', showCancelButton:true, confirmButtonText: t('stSessForceYes'), cancelButtonText: t('stCancel'), confirmButtonColor:'#dc2626' });
   if (!r.isConfirmed) return;
   try {
     await API.clearSession(username);
     loadActiveSessions();
-    Swal.fire({ toast:true, position:'top-end', icon:'success', title:`ล้างเซสชัน "${username}" แล้ว`, timer:2000, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:`${t('stDeleteSuccess')} "${username}"`, timer:2000, showConfirmButton:false });
   } catch(e) { Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
@@ -2392,15 +2394,15 @@ function buildStudentFieldsUI() {
     grades:'#ddd6fe', academic:'#fde68a', contact:'#bfdbfe', address:'#bbf7d0', family:'#e9d5ff', photo:'#fed7aa'
   };
   const groupTH = {
-    grades:   'ผลการเรียน / Academic Results',
-    academic: 'ข้อมูลการศึกษา / Academic',
-    contact:  'ข้อมูลติดต่อ',
-    address:  'ที่อยู่',
-    family:   'ครอบครัว',
-    photo:    'รูปโปรไฟล์'
+    grades:   t('sfGroupGrades'),
+    academic: t('sfGroupAcademic'),
+    contact:  t('sfGroupContact'),
+    address:  t('sfGroupAddress'),
+    family:   t('sfGroupFamily'),
+    photo:    t('sfGroupPhoto')
   };
   const groupDesc = {
-    grades: 'เปิด = นักเรียนสามารถเพิ่ม/แก้ไขผลการเรียนของตนเองได้ใน student-form.html  •  ปิด = ดูได้อย่างเดียว ห้ามแก้ไข',
+    grades: t('sfGradesDesc'),
   };
   const groupIcon = {
     grades: '📚', academic: '🎓', contact: '📞', address: '🏠', family: '👨‍👩‍👧', photo: '🖼'
@@ -2427,9 +2429,9 @@ function buildStudentFieldsUI() {
             <input type="checkbox" id="sef_${fid}" value="${fid}"
                    ${current.has(fid)?'checked':''}
                    style="width:15px;height:15px;accent-color:${isGrades?'#7c3aed':'#0ea5e9'};cursor:pointer;flex-shrink:0">
-            <span>${lth}
-              <span style="color:#94a3b8;font-size:10px;margin-left:4px">${len}</span>
-              ${isGrades ? `<span style="margin-left:6px;background:#7c3aed;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px">ระบบเกรด</span>` : ''}
+            <span>${LANG==='en'?len:lth}
+              <span style="color:#94a3b8;font-size:10px;margin-left:4px">${LANG==='en'?lth:len}</span>
+              ${isGrades ? `<span style="margin-left:6px;background:#7c3aed;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px">${t('sfGradesBadge')}</span>` : ''}
             </span>
           </label>`).join('')}
         </div>
@@ -2442,22 +2444,22 @@ async function saveStudentEditableFields() {
   const selected = [...document.querySelectorAll('#studentFieldsGrid input[type=checkbox]:checked')]
     .map(cb => cb.value);
   if (selected.length === 0) {
-    Swal.fire('แจ้งเตือน', 'กรุณาเลือกอย่างน้อย 1 ช่องที่นักเรียนสามารถแก้ไขได้', 'warning');
+    Swal.fire(t('warning'), t('stFieldFill'), 'warning');
     return;
   }
   _studentEditableFields = selected;
-  showLoader(true, 'กำลังบันทึก...');
+  showLoader(true, t('saving'));
   try {
-    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('หมดเวลา')),30000));
+    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),30000));
     const r  = await Promise.race([API.saveSetting('STUDENT_EDITABLE_FIELDS', selected), _t]);
     showLoader(false);
     if (r.status === 'success') {
       // Also update localStorage cache used by rbac.js
       localStorage.setItem('rdfStudentEditableFields', JSON.stringify(selected));
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ',
-        text:`นักเรียนสามารถแก้ไข ${selected.length} ช่องข้อมูล`, timer:2000, showConfirmButton:false });
-    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด','error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'ไม่สามารถเชื่อมต่อได้','error'); }
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'),
+        text:`${selected.length} ${t('stFieldsEditable')}`, timer:2000, showConfirmButton:false });
+    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), e.message||t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -2514,9 +2516,17 @@ function buildPermMatrix() {
     'นักเรียน(ตนเอง)': '#f0f9ff',
   };
 
+  // Group display labels (bilingual)
+  const GROUP_LABEL_MAP = {
+    'นักเรียน':        t('pmGroupStudents'),
+    'รายงาน':          t('pmGroupReports'),
+    'เลื่อนชั้น':     t('pmGroupPromotion'),
+    'ตั้งค่า':         t('pmGroupSettings'),
+    'นักเรียน(ตนเอง)': t('pmGroupOwnProfile'),
+  };
   // Locked cells — icons only, no interaction
-  const lockedOn  = `<span title="สิทธิ์สูงสุด — ล็อค" style="cursor:default;font-size:16px">✅</span>`;
-  const lockedOff = `<span title="ไม่มีสิทธิ์ — ล็อค" style="cursor:default;font-size:15px;opacity:.35">⛔</span>`;
+  const lockedOn  = `<span title="${t('pmLockedOn')}" style="cursor:default;font-size:16px">✅</span>`;
+  const lockedOff = `<span title="${t('pmLockedOff')}" style="cursor:default;font-size:15px;opacity:.35">⛔</span>`;
 
   // Student fixed permissions
   const STUDENT_PERMS = new Set(['viewOwnProfile','editOwnProfile']);
@@ -2530,7 +2540,7 @@ function buildPermMatrix() {
     html += `<tr style="background:${bgColor}">
       <td colspan="7" style="padding:5px 12px;font-size:10px;font-weight:800;
           text-transform:uppercase;letter-spacing:.7px;color:#64748b;border-top:1px solid #e5e7eb">
-        ${g}
+        ${GROUP_LABEL_MAP[g] || g}
       </td>
     </tr>`;
 
@@ -2580,13 +2590,13 @@ function togglePermCell(role, perm, btn) {
   if (nowOn) {
     _permState[role].delete(perm);
     btn.textContent = '❌';
-    btn.title = `${role}: ไม่มีสิทธิ์ — คลิกเพื่อเปิด`;
+    btn.title = `${role}: ${t('stPermNoAccess')}`;
     btn.style.background = '#fff5f5';
     btn.classList.replace('pmc-on','pmc-off');
   } else {
     _permState[role].add(perm);
     btn.textContent = '✅';
-    btn.title = `${role}: มีสิทธิ์ — คลิกเพื่อยกเลิก`;
+    btn.title = `${role}: ${t('stPermHasAccess')}`;
     btn.style.background = '#f0fdf4';
     btn.classList.replace('pmc-off','pmc-on');
   }
@@ -2594,11 +2604,11 @@ function togglePermCell(role, perm, btn) {
 
 function resetPermMatrix() {
   Swal.fire({
-    title:'คืนค่าเริ่มต้น?',
-    text:'Permission ทุก Role จะถูกรีเซ็ตเป็นค่าเริ่มต้นของระบบ',
+    title: t('stPermResetTitle'),
+    text: t('stPermResetText'),
     icon:'warning', showCancelButton:true,
-    confirmButtonColor:'#dc2626', confirmButtonText:'รีเซ็ต',
-    cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#dc2626', confirmButtonText: t('stPermResetBtn'),
+    cancelButtonText: t('stCancel'),
   }).then(r => {
     if (!r.isConfirmed) return;
     const defaults = RBAC.getDefaultMap();
@@ -2619,21 +2629,21 @@ async function savePermMatrix() {
   toSave.SuperAdmin = ['*'];
   toSave.Student    = ['viewOwnProfile','editOwnProfile'];
 
-  showLoader(true, 'กำลังบันทึก Permission...');
+  showLoader(true, t('stPermSaving'));
   try {
-    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('หมดเวลา (30s)')),30000));
+    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),30000));
     const r  = await Promise.race([API.saveSetting('RBAC_PERMISSIONS', toSave), _t]);
     showLoader(false);
     if (r.status === 'success') {
       // Update in-memory cache so the current page respects new permissions
       RBAC.cachePermissions({ RBAC_PERMISSIONS: toSave });
       Swal.fire({
-        icon:'success', title:'บันทึก Permission สำเร็จ',
-        text:'การตั้งค่าสิทธิ์จะมีผลทันทีสำหรับทุกผู้ใช้ที่เข้าสู่ระบบใหม่',
+        icon:'success', title: t('stPermSaveSuccess'),
+        text: t('stPermSaveEffect'),
         timer:2500, showConfirmButton:false,
       });
-    } else { Swal.fire('ผิดพลาด', r.message||'เกิดข้อผิดพลาด','error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด', e.message||'บันทึกไม่สำเร็จ','error'); }
+    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), e.message||t('error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -2739,10 +2749,10 @@ async function saveAdminContactUrl() {
   try {
     await API.saveSetting('ADMIN_CONTACT_URL', url);
     Swal.fire({ toast:true, position:'top-end', icon:'success',
-      title: url ? 'บันทึกลิงก์ติดต่อแล้ว' : 'ลบลิงก์ติดต่อแล้ว',
+      title: url ? t('stContactSaved') : t('stContactRemoved'),
       timer:2000, showConfirmButton:false });
   } catch(e) {
-    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'บันทึกไม่สำเร็จ', timer:2500, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title: t('error'), timer:2500, showConfirmButton:false });
   }
 }
 
@@ -2773,7 +2783,7 @@ function _renderGcidState(clientId) {
     if (masked)     masked.textContent = _maskGcid(clientId);
     if (inputEl)    inputEl.value = ''; // never show actual value
     if (statusDot)  statusDot.style.background = '#16a34a';
-    if (statusTxt)  statusTxt.textContent = 'ตั้งค่าแล้ว';
+    if (statusTxt)  statusTxt.textContent = t('stConfigured');
     document.getElementById('gcidStatus').style.background = '#f0fdf4';
     document.getElementById('gcidStatus').style.color = '#15803d';
   } else {
@@ -2781,7 +2791,7 @@ function _renderGcidState(clientId) {
     if (inputWrap)  inputWrap.classList.remove('hidden');
     if (inputEl)    inputEl.value = '';
     if (statusDot)  statusDot.style.background = '#94a3b8';
-    if (statusTxt)  statusTxt.textContent = 'ยังไม่ตั้งค่า';
+    if (statusTxt)  statusTxt.textContent = t('stNotConfigured');
     document.getElementById('gcidStatus').style.background = '#f1f5f9';
     document.getElementById('gcidStatus').style.color = '#64748b';
   }
@@ -2813,32 +2823,32 @@ function _gcidToggleShow() {
 async function saveGoogleClientId() {
   const clientId = (document.getElementById('googleClientId')?.value || '').trim();
   if (!clientId) {
-    Swal.fire({ toast:true, position:'top-end', icon:'warning', title:'กรุณาวาง Client ID ก่อน', timer:2000, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'warning', title: t('stGcidFill'), timer:2000, showConfirmButton:false });
     return;
   }
   try {
     await API.saveSetting('GOOGLE_CLIENT_ID', clientId);
     _renderGcidState(clientId);
-    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'บันทึก Google Client ID แล้ว', timer:2500, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title: t('stGcidSaved'), timer:2500, showConfirmButton:false });
   } catch(e) {
-    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'บันทึกไม่สำเร็จ', timer:2500, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title: t('error'), timer:2500, showConfirmButton:false });
   }
 }
 
 async function deleteGoogleClientId() {
   const result = await Swal.fire({
-    icon: 'warning', title: 'ยืนยันการลบ?',
-    text: 'ผู้ดูแลระบบจะไม่สามารถ Login ด้วย Google ได้จนกว่าจะตั้งค่าใหม่',
-    showCancelButton: true, confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก',
+    icon: 'warning', title: t('warning'),
+    text: t('stApiDeleteConfirm'),
+    showCancelButton: true, confirmButtonText: t('stDelete'), cancelButtonText: t('stCancel'),
     confirmButtonColor: '#dc2626'
   });
   if (!result.isConfirmed) return;
   try {
     await API.saveSetting('GOOGLE_CLIENT_ID', '');
     _renderGcidState('');
-    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'ลบ Google Client ID แล้ว', timer:2000, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title: t('stGcidRemoved'), timer:2000, showConfirmButton:false });
   } catch(e) {
-    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'ลบไม่สำเร็จ', timer:2500, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title: t('error'), timer:2500, showConfirmButton:false });
   }
 }
 
@@ -2861,18 +2871,18 @@ function renderStipRows() {
             <div id="stipTrack_${inst.key}" style="width:40px;height:22px;border-radius:11px;background:${s.enabled ? inst.color : '#cbd5e1'};transition:background .2s"></div>
             <div id="stipThumb_${inst.key}" style="position:absolute;top:2px;left:${s.enabled ? '20px' : '2px'};width:18px;height:18px;background:white;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s"></div>
           </div>
-          <span id="stipLabel_${inst.key}" class="text-xs font-bold" style="color:${s.enabled ? inst.color : '#94a3b8'}">${s.enabled ? 'เปิด' : 'ปิด'}</span>
+          <span id="stipLabel_${inst.key}" class="text-xs font-bold" style="color:${s.enabled ? inst.color : '#94a3b8'}">${s.enabled ? t('stOn') : t('stOff')}</span>
         </button>
       </div>
       <div class="flex items-center gap-2 mb-2">
-        <span class="text-xs text-gray-500 font-semibold whitespace-nowrap">อักษรนำหน้า</span>
+        <span class="text-xs text-gray-500 font-semibold whitespace-nowrap">${t('stPrefix')}</span>
         <input type="text" id="stipInput_${inst.key}" value="${s.prefix}" maxlength="12"
                class="field-input text-sm font-mono" style="max-width:110px"
                placeholder="${inst.def}" oninput="updateStipPreview('${inst.key}')"
                ${!s.enabled ? 'disabled style="opacity:.4;pointer-events:none"' : ''}>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="text-xs text-gray-400">ตัวอย่าง:</span>
+        <span class="text-xs text-gray-400">${t('stPreview')}:</span>
         <code id="stipPreview_${inst.key}" class="px-2 py-0.5 rounded text-xs font-bold"
               style="background:${s.enabled ? inst.color+'18' : '#f1f5f9'};color:${s.enabled ? inst.color : '#94a3b8'}">${preview}</code>
       </div>
@@ -2889,7 +2899,7 @@ function toggleStipPrefix(key) {
   document.getElementById('stipTrack_' + key).style.background = s.enabled ? inst.color : '#cbd5e1';
   document.getElementById('stipThumb_' + key).style.left = s.enabled ? '20px' : '2px';
   const lbl = document.getElementById('stipLabel_' + key);
-  lbl.textContent = s.enabled ? 'เปิด' : 'ปิด'; lbl.style.color = s.enabled ? inst.color : '#94a3b8';
+  lbl.textContent = s.enabled ? t('stOn') : t('stOff'); lbl.style.color = s.enabled ? inst.color : '#94a3b8';
   const inp = document.getElementById('stipInput_' + key);
   if (inp) { inp.disabled = !s.enabled; inp.style.opacity = s.enabled ? '1' : '.4'; }
   const card = document.getElementById('stipCard_' + key);
@@ -2916,14 +2926,14 @@ async function saveStipPrefixes() {
     if (inp) stipPrefixState[inst.key].prefix = inp.value.trim() || inst.def;
   });
   try {
-    showLoader(true, 'กำลังบันทึก...');
+    showLoader(true, t('saving'));
     await Promise.all(STIP_INST.map(inst => {
       const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
       return Promise.race([API.saveSetting('STIP_PREFIX_' + inst.key, stipPrefixState[inst.key]), _t]);
     }));
     showLoader(false);
-    Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'การตั้งค่าหมายเลขทุนอัปเดตแล้ว', timer:2000, showConfirmButton:false });
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+    Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stStipSaved'), timer:2000, showConfirmButton:false });
+  } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 function renderNoticeForm() {
@@ -2946,7 +2956,7 @@ function _updateNoticeToggle(active) {
   const lbl   = document.getElementById('noticeActiveLabel');
   if (track) track.style.background = active ? '#7c3aed' : '#e2e8f0';
   if (thumb) thumb.style.left = active ? '21px' : '3px';
-  if (lbl)   { lbl.textContent = active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'; lbl.style.color = active ? '#7c3aed' : '#94a3b8'; }
+  if (lbl)   { lbl.textContent = active ? t('stGenNoticeActive') : t('stGenNoticeInactive'); lbl.style.color = active ? '#7c3aed' : '#94a3b8'; }
 }
 
 function updateNoticePreview() {
@@ -2973,14 +2983,14 @@ async function saveSystemNotice() {
   const active = noticeState.active;
   noticeState = { active, text, type };
   try {
-    showLoader(true, 'กำลังบันทึก...');
+    showLoader(true, t('saving'));
     const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
     const res = await Promise.race([API.saveSetting('SYSTEM_NOTICE', noticeState), _t]);
     showLoader(false);
     if (res.status === 'success') {
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', timer:1800, showConfirmButton:false });
-    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stNoticeSaved'), timer:1800, showConfirmButton:false });
+    } else { Swal.fire(t('error'), res.message || t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -3028,15 +3038,15 @@ async function savePrintLayout() {
     if (el) printLayoutState[key] = parseFloat(el.value);
   });
   try {
-    showLoader(true, 'กำลังบันทึก...');
+    showLoader(true, t('saving'));
     const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
     const res = await Promise.race([API.saveSetting('PRINT_LAYOUT', printLayoutState), _t]);
     showLoader(false);
     if (res.status === 'success') {
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'ขนาดเอกสารอัปเดตแล้ว', timer:2000, showConfirmButton:false });
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stLayoutSaved'), timer:2000, showConfirmButton:false });
       renderPrintLayoutForm(); // refresh highlight states
-    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+    } else { Swal.fire(t('error'), res.message || t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -3074,14 +3084,14 @@ async function savePrintTitle() {
     titleEn: document.getElementById('ptTitleEn')?.value.trim() || printTitleState.titleEn,
   };
   try {
-    showLoader(true, 'กำลังบันทึก...');
+    showLoader(true, t('saving'));
     const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
     const res = await Promise.race([API.saveSetting('PRINT_TITLE', printTitleState), _t]);
     showLoader(false);
     if (res.status === 'success') {
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'ชื่อแบบฟอร์มการพิมพ์อัปเดตแล้ว', timer:2000, showConfirmButton:false });
-    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stPrintTitleSaved'), timer:2000, showConfirmButton:false });
+    } else { Swal.fire(t('error'), res.message || t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
@@ -3095,17 +3105,17 @@ function renderSigEditor() {
       <div style="width:22px;height:22px;border-radius:50%;background:#0d9488;color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:2px">${i+1}</div>
       <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
         <div>
-          <label class="text-xs font-semibold text-gray-500 block mb-1">ตำแหน่งในเอกสาร (Role)</label>
+          <label class="text-xs font-semibold text-gray-500 block mb-1">${t('stSigRoleLabel')}</label>
           <input type="text" class="field-input text-sm" placeholder="เช่น ผู้บันทึกข้อมูล"
             value="${slot.role || ''}" oninput="sigBlockState[${i}].role=this.value">
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-500 block mb-1">ชื่อ-นามสกุล</label>
+          <label class="text-xs font-semibold text-gray-500 block mb-1">${t('stSigNameLabel')}</label>
           <input type="text" class="field-input text-sm" placeholder="เว้นว่างให้พิมพ์ขีดเส้น"
             value="${slot.name || ''}" oninput="sigBlockState[${i}].name=this.value">
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-500 block mb-1">ตำแหน่ง/แผนก</label>
+          <label class="text-xs font-semibold text-gray-500 block mb-1">${t('stSigPosLabel')}</label>
           <input type="text" class="field-input text-sm" placeholder="เช่น ผู้อำนวยการฝ่าย..."
             value="${slot.position || ''}" oninput="sigBlockState[${i}].position=this.value">
         </div>
@@ -3130,14 +3140,14 @@ function removeSigSlot(i) {
 
 async function saveSignatureBlock() {
   try {
-    showLoader(true, 'กำลังบันทึก...');
+    showLoader(true, t('saving'));
     const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
     const res = await Promise.race([API.saveSetting('SIGNATURE_BLOCK', sigBlockState), _t]);
     showLoader(false);
     if (res.status === 'success') {
-      Swal.fire({ icon:'success', title:'บันทึกสำเร็จ', text:'ข้อมูลผู้ลงนามอัปเดตแล้ว', timer:2000, showConfirmButton:false });
-    } else { Swal.fire('ผิดพลาด', res.message || 'เกิดข้อผิดพลาด', 'error'); }
-  } catch(e) { showLoader(false); Swal.fire('ผิดพลาด','ไม่สามารถบันทึกได้','error'); }
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stSigSaved'), timer:2000, showConfirmButton:false });
+    } else { Swal.fire(t('error'), res.message || t('error'), 'error'); }
+  } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 // ─────────────────────────────────────────────
