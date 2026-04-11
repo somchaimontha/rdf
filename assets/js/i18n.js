@@ -566,6 +566,7 @@ const T = {
     stGmailLinkedEmpty:   "ยังไม่มีผู้ดูแลระบบที่กำหนด Email ไว้",
     stGmailLinkedHint:    "เพิ่ม/แก้ไข Email ได้ที่ ตั้งค่า → ผู้ดูแลระบบ → แก้ไขบัญชี",
     /* ── Settings — Admins: email field ── */
+    stAdminPhoto:            "รูปโปรไฟล์",
     stAdminEmail:            "อีเมล (สำหรับ Login ด้วย Google)",
     stAdminEmailPlaceholder: "admin@gmail.com (ไม่บังคับ)",
     stAdminEmailHint:        "กำหนดเพื่อให้บัญชีนี้เข้าสู่ระบบด้วย Google ได้ — ต้องตรงกับ Gmail ที่ใช้",
@@ -1222,6 +1223,7 @@ const T = {
     stGmailLinkedEmpty:   "No admin accounts have an Email configured yet",
     stGmailLinkedHint:    "Add/edit Email under Settings → Admins → Edit account",
     /* ── Settings — Admins: email field ── */
+    stAdminPhoto:            "Profile Photo",
     stAdminEmail:            "Email (for Google Login)",
     stAdminEmailPlaceholder: "admin@gmail.com (optional)",
     stAdminEmailHint:        "Set this to allow Google sign-in for this account — must match the Gmail address used.",

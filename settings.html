@@ -1285,6 +1285,32 @@
     <div class="modal-body">
       <input type="hidden" id="m_editMode" value="new">
       <input type="hidden" id="m_adminId" value="">
+      <input type="hidden" id="m_picUrl" value="">
+
+      <!-- Photo row -->
+      <div class="flex items-center gap-4 bg-gray-50 rounded-xl p-3 border border-gray-200 mb-4">
+        <div class="flex-shrink-0 text-center">
+          <img id="m_picPreview" src="" alt=""
+               class="w-20 h-20 rounded-full object-cover border-2 border-gray-300 shadow-sm bg-gray-100">
+          <p class="text-xs text-gray-400 mt-1" data-t="stAdminPhoto">รูปโปรไฟล์</p>
+        </div>
+        <div class="flex-1 space-y-2">
+          <div>
+            <label class="field-label text-xs" data-t="uploadPhoto">อัปโหลดรูปภาพ</label>
+            <input type="file" id="m_picFile" accept="image/*"
+                   onchange="_adminPreviewPhoto(event)"
+                   class="field-input text-xs file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0
+                          file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700
+                          hover:file:bg-blue-100 cursor-pointer">
+          </div>
+          <div>
+            <label class="field-label text-xs" data-t="driveUrl">หรือวาง Google Drive URL</label>
+            <input type="url" id="m_driveUrl" class="field-input text-xs"
+                   placeholder="https://drive.google.com/..."
+                   oninput="_adminSetDriveUrl(this.value)">
+          </div>
+        </div>
+      </div>
 
       <!-- Row 1: Title + FirstName + LastName -->
       <div class="grid grid-cols-12 gap-2 mb-3">
@@ -1513,7 +1539,10 @@ function renderAdmins() {
     const isActive  = a.Status === 'Active';
     const isSelf    = user && user.username === a.Username;
     const canDelete = isSuperAdmin && !isSelf;
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${(ROLE_COLORS[a.Role]||'#1e3a8a').replace('#','')}&color=fff&bold=true&size=64`;
+    const _fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${(ROLE_COLORS[a.Role]||'#1e3a8a').replace('#','')}&color=fff&bold=true&size=64`;
+    const _picSrc = a.ProfilePicURL ? driveImgUrl(a.ProfilePicURL, 'w64') : _fallbackAvatar;
+    const avatarHtml = `<img src="${_picSrc}" class="admin-avatar" alt="${name}"
+      onerror="this.onerror=null;this.src='${_fallbackAvatar}'">`;
     const lc = parseInt(a.LoginCount) || 0;
     const loginInfo = lc || a.LastLogin ? `
       <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
@@ -1524,7 +1553,7 @@ function renderAdmins() {
     <div class="admin-card ${roleClass}">
       <div class="flex items-start justify-between mb-3">
         <div class="relative inline-block">
-          <img src="${avatarUrl}" class="admin-avatar" alt="${name}">
+          ${avatarHtml}
           <span class="admin-status-dot ${isActive ? 'active' : 'inactive'}"></span>
         </div>
         <div class="flex gap-1">
@@ -1556,6 +1585,37 @@ function renderAdmins() {
   lucide.createIcons();
 }
 
+let _adminPhotoFile = null; // pending photo File for admin modal
+
+function _adminPreviewPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  _adminPhotoFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('m_picPreview');
+    img.src = ev.target.result;
+    img.onerror = null;
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('m_picUrl').value    = ''; // will be set after upload
+  document.getElementById('m_driveUrl').value  = ''; // clear drive URL input
+}
+
+function _adminSetDriveUrl(url) {
+  const img = document.getElementById('m_picPreview');
+  const hidden = document.getElementById('m_picUrl');
+  if (!url) {
+    hidden.value = '';
+    return;
+  }
+  const src = driveImgUrl(url, 'w200');
+  img.src = src;
+  img.onerror = () => { img.onerror = null; img.src = url; };
+  hidden.value = url;
+  _adminPhotoFile = null; // drive URL takes precedence
+}
+
 function openAdminModal(adminData) {
   if (typeof adminData === 'string') adminData = JSON.parse(adminData);
   const isEdit = !!adminData;
@@ -1573,6 +1633,24 @@ function openAdminModal(adminData) {
   document.getElementById('m_email').value       = adminData?.Email   || '';
   document.getElementById('m_password').value    = '';
   document.getElementById('m_password2').value   = '';
+
+  // Photo
+  _adminPhotoFile = null;
+  document.getElementById('m_picFile').value  = '';
+  document.getElementById('m_driveUrl').value = adminData?.ProfilePicURL || '';
+  const _picHidden = document.getElementById('m_picUrl');
+  const _picPreview = document.getElementById('m_picPreview');
+  const _existingPic = adminData?.ProfilePicURL || '';
+  _picHidden.value = _existingPic;
+  if (_existingPic) {
+    const _src = driveImgUrl(_existingPic, 'w200');
+    _picPreview.src = _src;
+    _picPreview.onerror = () => { _picPreview.onerror = null; _picPreview.src = _existingPic; };
+  } else {
+    const _name = (adminData?.FirstName || adminData?.Username || '?');
+    _picPreview.src = avatarUrl(_name, 80);
+    _picPreview.onerror = null;
+  }
   document.getElementById('modalTitle').querySelector('span').textContent =
     isEdit ? t('stAdminModalEdit') : t('stAdminModalAdd');
   document.getElementById('m_passLabel').innerHTML =
@@ -1586,6 +1664,7 @@ function openAdminModal(adminData) {
 function closeAdminModal(e) {
   if (e && e.target !== document.getElementById('adminModal')) return;
   document.getElementById('adminModal').classList.add('hidden');
+  _adminPhotoFile = null;
 }
 
 function _generateAdminID() {
@@ -1633,16 +1712,40 @@ async function submitAdminForm() {
   const btn = document.getElementById('m_submitBtn');
   btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${t('saving')}`;
   try {
+    // ── Upload profile photo first if a new file was selected ──
+    let picUrl = document.getElementById('m_picUrl').value.trim();
+    if (_adminPhotoFile) {
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> อัปโหลดรูป...`;
+      try {
+        const b64 = await new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onload = e => res(e.target.result.split(',')[1]);
+          reader.onerror = rej;
+          reader.readAsDataURL(_adminPhotoFile);
+        });
+        const safeName = (uname || 'admin') + '_photo_' + Date.now() + '.' + (_adminPhotoFile.name.split('.').pop() || 'jpg');
+        const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
+        const pr = await Promise.race([API.uploadPhoto(b64, _adminPhotoFile.type, safeName, 'Admin'), _pt]);
+        if (pr.status === 'success') {
+          picUrl = pr.url;
+          document.getElementById('m_picUrl').value = picUrl;
+          _adminPhotoFile = null;
+        }
+      } catch(pe) { /* non-fatal: proceed without photo */ }
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${t('saving')}`;
+    }
+
     const payload = {
-      AdminID:   resolvedAdminId,
-      Username:  uname,
-      Title:     title,
-      FirstName: fname,
-      LastName:  lname,
-      Role:      role,
-      SubRole:   subrole,
-      Status:    status,
-      Email:     email,
+      AdminID:        resolvedAdminId,
+      Username:       uname,
+      Title:          title,
+      FirstName:      fname,
+      LastName:       lname,
+      Role:           role,
+      SubRole:        subrole,
+      Status:         status,
+      Email:          email,
+      ProfilePicURL:  picUrl,
     };
     if (pass) payload.Password = pass;
     const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
