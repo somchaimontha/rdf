@@ -969,62 +969,38 @@
         </div>
       </div>
 
-      <!-- Google Allowed Emails card -->
+      <!-- Google Authorized Emails — linked to Admin accounts (no separate storage) -->
       <div class="card fade-in-up delay-2 mt-4">
         <div class="card-header flex items-center justify-between">
           <div class="flex items-center gap-2 font-bold text-gray-700">
             <i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i>
-            <span data-t="stGmailWhitelistTitle">อีเมลที่อนุญาตให้เข้าสู่ระบบด้วย Google</span>
+            <span data-t="stGmailLinkedTitle">อีเมลที่อนุญาต (ผูกกับบัญชีผู้ดูแลระบบ)</span>
           </div>
-          <div id="gmailWhitelistBadge" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style="background:#f1f5f9;color:#64748b">
+          <div id="gmailLinkedBadge" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style="background:#f1f5f9;color:#64748b">
             <i data-lucide="mail" class="w-3 h-3"></i>
-            <span id="gmailWhitelistCount">0</span> <span data-t="stGmailWhitelistEmails">อีเมล</span>
+            <span id="gmailLinkedCount">0</span> <span data-t="stGmailLinkedUnit">บัญชี</span>
           </div>
         </div>
         <div class="card-body">
-          <p class="text-sm text-gray-500 mb-1" data-t="stGmailWhitelistDesc">กำหนด Gmail ที่ได้รับอนุญาตให้ Login ด้วย Google — เฉพาะอีเมลในรายการนี้เท่านั้นที่จะผ่านการยืนยัน</p>
-          <p class="text-xs text-amber-600 mb-4 flex items-center gap-1.5">
-            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 flex-shrink-0"></i>
-            <span data-t="stGmailWhitelistNote">หากรายการว่างเปล่า จะไม่มีใครเข้าสู่ระบบด้วย Google ได้ แม้จะมี Client ID แล้ว</span>
-          </p>
-
-          <!-- Email tag display -->
-          <div id="gmailTagsWrap" class="mb-3 min-h-[40px] p-2 rounded-lg border border-gray-200 bg-gray-50 flex flex-wrap gap-1.5">
-            <span id="gmailTagsEmpty" class="text-xs text-gray-400 self-center" data-t="stGmailWhitelistEmpty">ยังไม่มีอีเมลที่อนุญาต</span>
-          </div>
-
-          <!-- Add email input -->
-          <div class="flex gap-2 mb-3">
-            <input type="email" id="gmailAddInput" class="field-input flex-1 text-sm"
-                   data-t="stGmailWhitelistPlaceholder" data-t-attr="placeholder"
-                   placeholder="กรอก Gmail เช่น admin@gmail.com"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault();_gmailAddTag()}">
-            <button onclick="_gmailAddTag()" class="btn btn-secondary btn-sm whitespace-nowrap">
-              <i data-lucide="plus" class="w-4 h-4"></i> <span data-t="stAdd">เพิ่ม</span>
-            </button>
-          </div>
-
-          <!-- Bulk paste area (collapsed) -->
-          <details class="mb-3">
-            <summary class="text-xs text-blue-600 cursor-pointer select-none hover:underline" data-t="stGmailWhitelistBulk">เพิ่มหลายอีเมลพร้อมกัน (วางแบบ CSV หรือขึ้นบรรทัดใหม่)</summary>
-            <div class="mt-2">
-              <textarea id="gmailBulkInput" rows="4" class="field-input text-xs font-mono w-full"
-                        data-t="stGmailWhitelistBulkHint" data-t-attr="placeholder"
-                        placeholder="admin@gmail.com&#10;manager@gmail.com&#10;หรือ admin@gmail.com, manager@gmail.com"></textarea>
-              <button onclick="_gmailImportBulk()" class="btn btn-secondary btn-sm mt-1.5">
-                <i data-lucide="list-plus" class="w-4 h-4"></i> <span data-t="stGmailWhitelistImport">นำเข้ารายการ</span>
-              </button>
+          <!-- Architecture note -->
+          <div class="flex gap-2 p-3 rounded-lg mb-4" style="background:#eff6ff;border:1px solid #bfdbfe">
+            <i data-lucide="info" class="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5"></i>
+            <div class="text-xs text-blue-700">
+              <p class="font-semibold mb-0.5" data-t="stGmailLinkedInfo">อีเมลสำหรับ Google Login ถูกจัดการผ่านบัญชีผู้ดูแลระบบแต่ละราย</p>
+              <p data-t="stGmailLinkedDesc">ไม่มีการจัดเก็บซ้ำซ้อน — ตั้งค่า Email ของแต่ละ Admin ในแท็บ "ผู้ดูแลระบบ" เพื่ออนุญาตให้ Login ด้วย Google ได้ทันที</p>
             </div>
-          </details>
+          </div>
 
-          <div class="flex items-center justify-between">
-            <button onclick="_gmailClearAll()" class="btn btn-sm text-red-500 border-red-200 hover:bg-red-50"
-                    style="background:transparent;border:1px solid #fecaca">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span data-t="stGmailWhitelistClear">ล้างทั้งหมด</span>
-            </button>
-            <button onclick="saveGmailWhitelist()" class="btn btn-primary btn-sm">
-              <i data-lucide="save" class="w-4 h-4"></i> <span data-t="stSave">บันทึก</span>
-            </button>
+          <!-- Live list of admins with email set -->
+          <div id="gmailLinkedList" class="space-y-1.5 mb-4">
+            <p class="text-xs text-gray-400 text-center py-3" data-t="stGmailLinkedEmpty">ยังไม่มีผู้ดูแลระบบที่กำหนด Email ไว้</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+            <p class="text-xs text-gray-400" data-t="stGmailLinkedHint">เพิ่ม/แก้ไข Email ได้ที่ ตั้งค่า → ผู้ดูแลระบบ → แก้ไขบัญชี</p>
+            <a onclick="switchTab('tabAdmins')" class="btn btn-secondary btn-sm cursor-pointer">
+              <i data-lucide="users" class="w-3.5 h-3.5"></i> <span data-t="stTabAdmins">ผู้ดูแลระบบ</span>
+            </a>
           </div>
         </div>
       </div>
@@ -1340,6 +1316,21 @@
         <input type="text" id="m_username" class="field-input" placeholder="username" autocomplete="off">
       </div>
 
+      <!-- Row 2b: Email (for Google Login) -->
+      <div class="mb-3">
+        <label class="field-label flex items-center gap-1.5">
+          <span data-t="stAdminEmail">อีเมล (สำหรับ Login ด้วย Google)</span>
+          <span class="inline-flex items-center gap-0.5 text-xs font-normal text-gray-400 ml-1">
+            <svg viewBox="0 0 48 48" style="width:12px;height:12px"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Google OAuth
+          </span>
+        </label>
+        <input type="email" id="m_email" class="field-input"
+               data-t="stAdminEmailPlaceholder" data-t-attr="placeholder"
+               placeholder="admin@gmail.com (ไม่บังคับ)" autocomplete="off">
+        <p class="text-xs text-gray-400 mt-1" data-t="stAdminEmailHint">กำหนดเพื่อให้บัญชีนี้เข้าสู่ระบบด้วย Google ได้ — ต้องตรงกับ Gmail ที่ใช้</p>
+      </div>
+
       <!-- Row 3: Password -->
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
@@ -1476,6 +1467,7 @@ async function loadAdmins() {
     if (r.status === 'success') {
       allAdmins = r.data || [];
       renderAdmins();
+      _renderGmailLinkedList(); // keep linked-emails panel in sync
     } else {
       document.getElementById('adminGrid').innerHTML =
         `<div class="col-span-full text-center text-red-400 py-10">${r.message||t('error')}</div>`;
@@ -1492,7 +1484,7 @@ function renderAdmins() {
   const status = document.getElementById('adminStatusFilter').value;
 
   const filtered = allAdmins.filter(a => {
-    const name = ((a.FirstName||'') + ' ' + (a.LastName||'') + ' ' + (a.Username||'')).toLowerCase();
+    const name = ((a.FirstName||'') + ' ' + (a.LastName||'') + ' ' + (a.Username||'') + ' ' + (a.Email||'')).toLowerCase();
     return (!q || name.includes(q)) && (!role || a.Role === role) && (!status || a.Status === status);
   });
 
@@ -1547,7 +1539,11 @@ function renderAdmins() {
         </div>
       </div>
       <div class="font-bold text-gray-800 text-sm leading-tight">${name}</div>
-      <div class="text-xs text-gray-400 font-mono mb-2">${a.Username||'—'}</div>
+      <div class="text-xs text-gray-400 font-mono mb-1">${a.Username||'—'}</div>
+      ${a.Email ? `<div class="flex items-center gap-1 mb-2">
+        <svg viewBox="0 0 48 48" style="width:11px;height:11px;flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        <span class="text-xs text-gray-500 truncate" style="max-width:140px" title="${a.Email}">${a.Email}</span>
+      </div>` : '<div class="mb-2"></div>'}
       <div class="flex items-center justify-between">
         <span class="role-badge ${roleClass}">${a.Role||'—'}</span>
         <span class="badge ${isActive ? 'badge-green' : 'badge-gray'}" style="font-size:10.5px">
@@ -1574,6 +1570,7 @@ function openAdminModal(adminData) {
   document.getElementById('m_role').value        = adminData?.Role    || 'Manager';
   document.getElementById('m_subrole').value     = adminData?.SubRole || 'All';
   document.getElementById('m_status').value      = adminData?.Status  || 'Active';
+  document.getElementById('m_email').value       = adminData?.Email   || '';
   document.getElementById('m_password').value    = '';
   document.getElementById('m_password2').value   = '';
   document.getElementById('modalTitle').querySelector('span').textContent =
@@ -1612,6 +1609,19 @@ async function submitAdminForm() {
   const role     = document.getElementById('m_role').value;
   const subrole  = document.getElementById('m_subrole').value;
   const status   = document.getElementById('m_status').value;
+  const email    = (document.getElementById('m_email').value || '').trim().toLowerCase();
+
+  // Email format check (only if provided)
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    Swal.fire(t('warning'), t('stAdminEmailInvalid'), 'warning'); return;
+  }
+  // Duplicate email check across other admins
+  if (email) {
+    const dup = allAdmins.find(a => (a.Email||'').toLowerCase() === email && a.Username !== uname);
+    if (dup) {
+      Swal.fire(t('warning'), `${t('stAdminEmailDup')}: ${dup.FirstName||''} ${dup.LastName||''} (${dup.Username})`, 'warning'); return;
+    }
+  }
 
   if (!fname || !uname) { Swal.fire(t('warning'), t('stAdminFillNameUser'), 'warning'); return; }
   if (!isEdit && !pass) { Swal.fire(t('warning'), t('stAdminFillPass'), 'warning'); return; }
@@ -1632,6 +1642,7 @@ async function submitAdminForm() {
       Role:      role,
       SubRole:   subrole,
       Status:    status,
+      Email:     email,
     };
     if (pass) payload.Password = pass;
     const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (30s)')), 30000));
@@ -2284,13 +2295,8 @@ async function loadApiKeyStatus() {
     const gcid = (rs.data && rs.data['GOOGLE_CLIENT_ID']) ? rs.data['GOOGLE_CLIENT_ID'] : '';
     _renderGcidState(gcid);
 
-    // Google Allowed Emails whitelist
-    if (rs.data && Array.isArray(rs.data['GOOGLE_ALLOWED_EMAILS'])) {
-      _gmailWhitelist = rs.data['GOOGLE_ALLOWED_EMAILS'];
-    } else {
-      _gmailWhitelist = [];
-    }
-    _gmailRenderTags();
+    // Linked admin emails — derived from allAdmins, no separate storage
+    _renderGmailLinkedList();
 
   } catch(e) { /* skip */ }
 }
@@ -2922,109 +2928,29 @@ async function deleteGoogleClientId() {
 
 // ─────────────────────────────────────────────
 // GOOGLE ALLOWED EMAILS (Gmail Whitelist)
-// Stored as GOOGLE_ALLOWED_EMAILS[] in SystemSettings
+// Linked emails derived from allAdmins — no separate storage
 // ─────────────────────────────────────────────
-let _gmailWhitelist = []; // internal state
+function _renderGmailLinkedList() {
+  const list  = document.getElementById('gmailLinkedList');
+  const count = document.getElementById('gmailLinkedCount');
+  if (!list) return;
 
-function _gmailRenderTags() {
-  const wrap      = document.getElementById('gmailTagsWrap');
-  const emptyMsg  = document.getElementById('gmailTagsEmpty');
-  const badge     = document.getElementById('gmailWhitelistCount');
-  if (!wrap) return;
+  const withEmail = (allAdmins || []).filter(a => a.Email && a.Email.trim());
+  if (count) count.textContent = String(withEmail.length);
 
-  // Remove existing tags (keep emptyMsg node)
-  [...wrap.querySelectorAll('.gmail-tag')].forEach(el => el.remove());
-
-  if (!_gmailWhitelist.length) {
-    if (emptyMsg) emptyMsg.classList.remove('hidden');
-    if (badge) badge.textContent = '0';
-    if (wrap) { wrap.style.background = '#f9fafb'; wrap.style.borderColor = '#e5e7eb'; }
+  if (!withEmail.length) {
+    list.innerHTML = `<p class="text-xs text-gray-400 text-center py-3" data-t="stGmailLinkedEmpty">${t('stGmailLinkedEmpty')}</p>`;
     return;
   }
 
-  if (emptyMsg) emptyMsg.classList.add('hidden');
-  if (badge) badge.textContent = String(_gmailWhitelist.length);
-  if (wrap) { wrap.style.background = '#f0fdf4'; wrap.style.borderColor = '#bbf7d0'; }
+  const GOOGLE_SVG = `<svg viewBox="0 0 48 48" style="width:14px;height:14px;flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
 
-  _gmailWhitelist.forEach((email, i) => {
-    const tag = document.createElement('span');
-    tag.className = 'gmail-tag';
-    tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:999px;padding:2px 10px 2px 8px;font-size:12px;font-weight:500';
-    tag.innerHTML = `<svg viewBox="0 0 48 48" style="width:12px;height:12px;flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-    ${email}
-    <button onclick="_gmailRemoveTag(${i})" style="background:none;border:none;padding:0;cursor:pointer;color:#16a34a;line-height:1;margin-left:2px;font-size:13px" title="${t('stDelete')}">×</button>`;
-    wrap.appendChild(tag);
-  });
-}
-
-function _gmailAddTag() {
-  const input = document.getElementById('gmailAddInput');
-  const raw   = (input?.value || '').trim().toLowerCase();
-  if (!raw) return;
-  // Basic email validation
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
-    Swal.fire({ toast:true, position:'top-end', icon:'warning', title: t('stGmailInvalidEmail'), timer:2000, showConfirmButton:false });
-    return;
-  }
-  if (_gmailWhitelist.includes(raw)) {
-    Swal.fire({ toast:true, position:'top-end', icon:'info', title: t('stGmailAlreadyAdded'), timer:1800, showConfirmButton:false });
-    if (input) input.value = '';
-    return;
-  }
-  _gmailWhitelist.push(raw);
-  _gmailRenderTags();
-  if (input) input.value = '';
-}
-
-function _gmailRemoveTag(i) {
-  _gmailWhitelist.splice(i, 1);
-  _gmailRenderTags();
-}
-
-function _gmailImportBulk() {
-  const textarea = document.getElementById('gmailBulkInput');
-  const raw = textarea?.value || '';
-  // Split by comma, semicolon, or newline
-  const candidates = raw.split(/[,;\n]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
-  let added = 0, skipped = 0;
-  candidates.forEach(email => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { skipped++; return; }
-    if (_gmailWhitelist.includes(email)) { skipped++; return; }
-    _gmailWhitelist.push(email);
-    added++;
-  });
-  _gmailRenderTags();
-  if (textarea) textarea.value = '';
-  Swal.fire({ toast:true, position:'top-end', icon: added ? 'success' : 'info',
-    title: `${t('stAdd')} ${added} ${t('stGmailWhitelistEmails')}${skipped ? ` (${t('stGmailSkipped')}: ${skipped})` : ''}`,
-    timer:2500, showConfirmButton:false });
-}
-
-function _gmailClearAll() {
-  if (!_gmailWhitelist.length) return;
-  Swal.fire({
-    title: t('stGmailClearTitle'), text: t('stGmailClearText'),
-    icon:'warning', showCancelButton:true,
-    confirmButtonColor:'#dc2626', confirmButtonText: t('stDelete'), cancelButtonText: t('stCancel'),
-  }).then(r => {
-    if (!r.isConfirmed) return;
-    _gmailWhitelist = [];
-    _gmailRenderTags();
-  });
-}
-
-async function saveGmailWhitelist() {
-  showLoader(true, t('saving'));
-  try {
-    const _t = new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),30000));
-    const r  = await Promise.race([API.saveSetting('GOOGLE_ALLOWED_EMAILS', _gmailWhitelist), _t]);
-    showLoader(false);
-    if (r.status === 'success') {
-      Swal.fire({ icon:'success', title: t('stGmailSaved'),
-        text: `${_gmailWhitelist.length} ${t('stGmailWhitelistEmails')}`,
-        timer:2000, showConfirmButton:false });
-    } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
-  } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
+  list.innerHTML = withEmail.map(a => `
+    <div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background:#f0fdf4;border:1px solid #bbf7d0">
+      ${GOOGLE_SVG}
+      <span class="text-sm font-medium text-gray-700 truncate flex-1">${a.Email.toLowerCase()}</span>
+      <span class="text-xs text-gray-400 truncate" style="max-width:110px">${(a.FirstName||'')} ${(a.LastName||'')} (${a.Username||''})</span>
+    </div>`).join('');
 }
 
 function renderStipRows() {

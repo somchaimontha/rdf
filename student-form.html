@@ -456,6 +456,14 @@
           </div>
         </div>
       </div>
+      <div class="mb-4">
+        <label class="field-label"><span data-t="emailField">อีเมล (สำหรับเข้าสู่ระบบ) / Email (for login)</span></label>
+        <div class="relative">
+          <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+          <input type="email" id="f_email" class="field-input" style="padding-left:38px"
+                 placeholder="example@gmail.com" autocomplete="off">
+        </div>
+      </div>
       <!-- Address split -->
       <p class="field-label mb-3 text-teal-700 font-bold" data-t="currentAddress">ที่อยู่ปัจจุบัน</p>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-teal-50 rounded-xl p-4 border border-teal-100">
@@ -1287,6 +1295,7 @@ function fillForm(d) {
   sv('f_talent', d.Talent); sv('f_weight', d.Weight);
   sv('f_height', d.Height); sv('f_blood', d.BloodType); sv('f_disease', d.Disease);
   sv('f_phone1', d.Phone1); sv('f_phone2', d.Phone2);
+  sv('f_email', d.Email);
   sv('f_village', d.Village); sv('f_houseNo', d.HouseNo);
   sv('f_moo', d.Moo); sv('f_tambon', d.Tambon);
   sv('f_amphoe', d.Amphoe); sv('f_province', d.Province);
@@ -1776,6 +1785,7 @@ function collectForm() {
     Talent: get('f_talent'), Weight: get('f_weight'), Height: get('f_height'),
     BloodType: get('f_blood'), Disease: get('f_disease'),
     Phone1: get('f_phone1'), Phone2: get('f_phone2'),
+    Email: get('f_email'),
     Village: get('f_village'), HouseNo: get('f_houseNo'), Moo: get('f_moo'),
     Tambon: get('f_tambon'), Amphoe: get('f_amphoe'), Province: get('f_province'),
     ParentStatus: get('f_parentStatus'), ParentStatusOther: get('f_parentStatusOther'),

@@ -201,6 +201,7 @@ const T = {
     bloodType: "หมู่เลือด", disease: "โรคประจำตัว",
     /* Contact */
     phone1: "หมายเลขโทรศัพท์ 1", phone2: "หมายเลขโทรศัพท์ 2",
+    emailField: "อีเมล (สำหรับเข้าสู่ระบบ) / Email (for login)",
     currentAddress: "ที่อยู่ปัจจุบัน",
     village: "ชื่อหมู่บ้าน", houseNo: "บ้านเลขที่",
     moo: "หมู่ที่", tambon: "ตำบล/แขวง",
@@ -557,6 +558,19 @@ const T = {
     stGmailSaved: "บันทึกรายชื่ออีเมลสำเร็จ",
     stGmailClearTitle: "ล้างรายการอีเมลทั้งหมด?",
     stGmailClearText: "อีเมลทุกรายการจะถูกลบออก — ต้องบันทึกอีกครั้งเพื่อให้มีผล",
+    /* ── Settings — API Keys: linked accounts panel ── */
+    stGmailLinkedTitle:   "อีเมลที่อนุญาต (ผูกกับบัญชีผู้ดูแลระบบ)",
+    stGmailLinkedUnit:    "บัญชี",
+    stGmailLinkedInfo:    "อีเมลสำหรับ Google Login ถูกจัดการผ่านบัญชีผู้ดูแลระบบแต่ละราย",
+    stGmailLinkedDesc:    "ไม่มีการจัดเก็บซ้ำซ้อน — ตั้งค่า Email ของแต่ละ Admin ในแท็บ \"ผู้ดูแลระบบ\" เพื่ออนุญาตให้ Login ด้วย Google ได้ทันที",
+    stGmailLinkedEmpty:   "ยังไม่มีผู้ดูแลระบบที่กำหนด Email ไว้",
+    stGmailLinkedHint:    "เพิ่ม/แก้ไข Email ได้ที่ ตั้งค่า → ผู้ดูแลระบบ → แก้ไขบัญชี",
+    /* ── Settings — Admins: email field ── */
+    stAdminEmail:            "อีเมล (สำหรับ Login ด้วย Google)",
+    stAdminEmailPlaceholder: "admin@gmail.com (ไม่บังคับ)",
+    stAdminEmailHint:        "กำหนดเพื่อให้บัญชีนี้เข้าสู่ระบบด้วย Google ได้ — ต้องตรงกับ Gmail ที่ใช้",
+    stAdminEmailInvalid:     "รูปแบบอีเมลไม่ถูกต้อง",
+    stAdminEmailDup:         "อีเมลนี้ถูกใช้งานโดยบัญชีอื่นแล้ว",
     /* ── Settings — sessions panel ── */
     stSessTitle: "เซสชันที่กำลังใช้งาน",
     stSessInfo: "เซสชันจะหมดอายุอัตโนมัติหลัง 5 ชั่วโมง • อัปเดตทุก 30 วินาที",
@@ -849,6 +863,7 @@ const T = {
     weight: "Weight (kg)", height: "Height (cm)",
     bloodType: "Blood Type", disease: "Congenital Disease",
     phone1: "Phone 1", phone2: "Phone 2",
+    emailField: "Email (for login)",
     currentAddress: "Current Address",
     village: "Village Name", houseNo: "House No.",
     moo: "Moo (Village No.)", tambon: "Sub-district",
@@ -1199,6 +1214,19 @@ const T = {
     stGmailSaved: "Email whitelist saved",
     stGmailClearTitle: "Clear all emails?",
     stGmailClearText: "All emails will be removed — save again to apply.",
+    /* ── Settings — API Keys: linked accounts panel ── */
+    stGmailLinkedTitle:   "Authorized Emails (linked to Admin accounts)",
+    stGmailLinkedUnit:    "accounts",
+    stGmailLinkedInfo:    "Google Login emails are managed per Admin account",
+    stGmailLinkedDesc:    "No data duplication — set each Admin's Email in the \"Admins\" tab to allow Google Login immediately.",
+    stGmailLinkedEmpty:   "No admin accounts have an Email configured yet",
+    stGmailLinkedHint:    "Add/edit Email under Settings → Admins → Edit account",
+    /* ── Settings — Admins: email field ── */
+    stAdminEmail:            "Email (for Google Login)",
+    stAdminEmailPlaceholder: "admin@gmail.com (optional)",
+    stAdminEmailHint:        "Set this to allow Google sign-in for this account — must match the Gmail address used.",
+    stAdminEmailInvalid:     "Invalid email format",
+    stAdminEmailDup:         "This email is already used by another account",
     /* ── Settings — sessions panel ── */
     stSessTitle: "Active Sessions",
     stSessInfo: "Sessions expire automatically after 5 hours • Updated every 30 seconds",
