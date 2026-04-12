@@ -1835,9 +1835,9 @@ async function saveStudent() {
   const data = collectForm();
   if (!data) return;
   const isEdit = document.getElementById('f_editMode').value === 'edit';
-  showLoader(true, t('saving'));
+  // showLoader is called AFTER all confirmation dialogs to avoid loader + popup overlap
   try {
-    // Profile completion check — role-based
+    // ── Profile completion check — role-based ──
     const _completionCheck = calcProfileCompletion(data);
     const _userRole = (getUser()||{}).role || '';
     const _isStudent = _userRole === 'Student';
@@ -1856,20 +1856,18 @@ async function saveStudent() {
         cancelButtonText: 'กลับไปกรอก',
         confirmButtonColor: '#f59e0b',
       });
-      if (!_skipResult.isConfirmed) { showLoader(false); return; }
+      if (!_skipResult.isConfirmed) return;
     } else if (!_isStudent && _completionCheck.pct < 80) {
-      // Admin warning toast (non-blocking)
+      // Admin: non-blocking toast (no await — continue immediately)
       Swal.fire({ toast:true, position:'top-end', icon:'warning', title:`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}% — ข้อมูลยังไม่ครบ`, timer:3000, showConfirmButton:false });
     }
 
     // ── Warn if optional-but-important fields are empty ──
     const _emptyWarnings = [];
-    if (!data.EntryTerm) _emptyWarnings.push('ภาคการศึกษา (Entry Term)');
     if (!data.Weight)    _emptyWarnings.push('น้ำหนัก (Weight)');
     if (!data.Height)    _emptyWarnings.push('ส่วนสูง (Height)');
     if (!_photoFile && !data.ProfilePicURL) _emptyWarnings.push('รูปโปรไฟล์ (Profile Photo)');
     if (_emptyWarnings.length > 0) {
-      showLoader(false);
       const _warnHtml = _emptyWarnings.map(w =>
         `<div class="flex items-center gap-2 py-0.5"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;display:inline-block"></span><span class="text-sm">${w}</span></div>`
       ).join('');
@@ -1881,8 +1879,10 @@ async function saveStudent() {
         confirmButtonColor: '#f59e0b',
       });
       if (!_warnRes.isConfirmed) return;
-      showLoader(true, t('saving'));
     }
+
+    // ── All dialogs done — now show loader and begin save ──
+    showLoader(true, t('saving'));
 
     // ── Compress + upload profile photo to Drive first ──
     let _photoErrMsg = '';
