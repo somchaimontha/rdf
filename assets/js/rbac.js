@@ -73,11 +73,24 @@ const STUDENT_PROTECTED_FIELDS = new Set([
 ]);
 
 // Default editable fields for Students (admin can change in settings)
+// Add new field IDs here when adding new form fields to student-form.html
 const STUDENT_EDITABLE_DEFAULTS = [
-  'f_phone1','f_phone2','f_email',
-  'f_village','f_houseNo','f_moo','f_tambon','f_amphoe','f_province',
-  'f_fatherFname','f_fatherLname','f_motherFname','f_motherLname',
-  'f_profilePicUrl','f_picUrl',
+  // D: Contact
+  'f_phone1', 'f_phone2', 'f_email',
+  // D: Address
+  'f_village', 'f_houseNo', 'f_moo', 'f_tambon', 'f_amphoe', 'f_province',
+  // C: Personal (self-updatable)
+  'f_engFname', 'f_engLname', 'f_nickname',
+  'f_nationality', 'f_religion', 'f_talent',
+  'f_weight', 'f_height', 'f_blood', 'f_disease',
+  // C: Photo
+  'f_picFile', 'f_picUrl',
+  // E: Family
+  'f_parentStatus', 'f_parentStatusOther',
+  'f_fatherFname', 'f_fatherLname',
+  'f_motherFname', 'f_motherLname',
+  // F: Remarks
+  'f_remarks',
 ];
 
 // ─────────────────────────────────────────────

@@ -2604,54 +2604,115 @@ async function forceLogout(username) {
 // Saved as STUDENT_EDITABLE_FIELDS[] in system settings.
 // read by rbac.js → RBAC.getStudentEditableFields()
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// STUDENT FIELD OPTIONS — master list of all configurable form fields
+// Format: [fieldId, labelTH, labelEN, group]
+//
+// HOW TO ADD A NEW FIELD:
+//   1. Add the input/select in student-form.html with a unique id="f_xxx"
+//   2. Add a row here: ['f_xxx', 'ชื่อภาษาไทย', 'English Label', 'group']
+//   3. Add 'f_xxx' to STUDENT_EDITABLE_DEFAULTS in assets/js/rbac.js if it
+//      should be editable by default
+//   4. Run setupMissingColumns() in GAS if the field maps to a new DB column
+// ─────────────────────────────────────────────────────────────────────────────
 const STUDENT_FIELD_OPTIONS = [
-  // [fieldId, labelTH, labelEN, group]
-  // ── ผลการเรียน — ควบคุมว่านักเรียนบันทึก/แก้ไขเกรดตนเองได้หรือไม่ ──
-  ['f_gradeEdit',       'บันทึก/แก้ไขผลการเรียน',          'Record / Edit Grades',    'grades'],
-  // ── ข้อมูลการศึกษา (admin-configurable — StipNo remains always locked separately) ──
-  ['f_idcard',          'เลขบัตรประชาชน',                  'National ID',             'academic'],
-  ['f_institution',     'สถาบัน',                          'Institution',             'academic'],
-  ['f_level',           'ชั้นเรียน',                       'Class / Level',           'academic'],
-  ['f_scholarshipYear', 'ปีทุน (พ.ศ.)',                   'Scholarship Year',        'academic'],
-  ['f_entryYear',       'ปีที่เข้า (พ.ศ.)',               'Entry Year',              'academic'],
-  ['f_status',          'สถานะนักเรียน',                   'Student Status',          'academic'],
-  ['f_major',           'สาขาวิชา',                        'Major / Field',           'academic'],
-  // ── ข้อมูลติดต่อ ──
-  ['f_phone1',          'เบอร์โทรศัพท์ 1',                 'Phone 1',                 'contact'],
-  ['f_phone2',          'เบอร์โทรศัพท์ 2',                 'Phone 2',                 'contact'],
-  ['f_email',           'อีเมล',                           'Email',                   'contact'],
-  // ── ที่อยู่ ──
-  ['f_village',         'ชื่อหมู่บ้าน / ชุมชน',            'Village / Community',     'address'],
-  ['f_houseNo',         'บ้านเลขที่',                      'House No.',               'address'],
-  ['f_moo',             'หมู่',                            'Moo',                     'address'],
-  ['f_tambon',          'ตำบล',                            'Sub-district',            'address'],
-  ['f_amphoe',          'อำเภอ',                           'District',                'address'],
-  ['f_province',        'จังหวัด',                         'Province',                'address'],
-  // ── ครอบครัว ──
-  ['f_fatherFname',     'ชื่อบิดา',                        'Father First Name',       'family'],
-  ['f_fatherLname',     'นามสกุลบิดา',                     'Father Last Name',        'family'],
-  ['f_motherFname',     'ชื่อมารดา',                       'Mother First Name',       'family'],
-  ['f_motherLname',     'นามสกุลมารดา',                    'Mother Last Name',        'family'],
-  // ── รูปโปรไฟล์ ──
-  ['f_profilePicUrl',   'รูปโปรไฟล์',                      'Profile Photo',           'photo'],
-  ['f_picUrl',          'URL รูปโปรไฟล์',                  'Profile Photo URL',       'photo'],
+  // ── ผลการเรียน (grades) — special: controls grade section access ──
+  ['f_gradeEdit',         'บันทึก/แก้ไขผลการเรียน',            'Record / Edit Grades',           'grades'],
+
+  // ── A: ข้อมูลการระบุตัวตน (identity) ──
+  // Note: f_stipNo is always locked — it is not listed here
+  ['f_status',            'สถานะทุนการศึกษา',                  'Scholarship Status',             'identity'],
+  ['f_idcard',            'เลขบัตรประชาชน',                    'National ID Card',               'identity'],
+  ['f_birthDay',          'วันเกิด',                           'Birth Day',                      'identity'],
+  ['f_birthMonth',        'เดือนเกิด',                         'Birth Month',                    'identity'],
+  ['f_birthYear',         'ปีเกิด (ค.ศ.)',                    'Birth Year (CE)',                 'identity'],
+
+  // ── B: ข้อมูลการศึกษา (academic) ──
+  ['f_institution',       'สถานที่ศึกษา',                      'Institution',                    'academic'],
+  ['f_otherInst',         'ชื่อสถานศึกษา (กรณีเลือก อื่นๆ)',  'Other Institution Name',         'academic'],
+  ['f_level',             'ระดับชั้นที่กำลังศึกษา',            'Class / Level',                  'academic'],
+  ['f_studentId',         'รหัสนักเรียน / นักศึกษา',          'Student ID',                     'academic'],
+  ['f_scholarshipYear',   'ปีที่ได้รับทุน (ค.ศ.)',             'Scholarship Year (CE)',           'academic'],
+  ['f_entryYear',         'ปีที่เข้าเรียน (ค.ศ.)',             'Entry Year (CE)',                 'academic'],
+  ['f_entryTerm',         'ภาคเรียน',                          'Entry Term',                     'academic'],
+  ['f_major',             'แผนการเรียน / สาขาวิชา',           'Major / Field of Study',         'academic'],
+  ['f_department',        'แผนกวิชา',                          'Department',                     'academic'],
+  ['f_oldSchool',         'สถานศึกษาเดิม (ก่อนรับทุน)',        'Previous School',                'academic'],
+  ['f_lastEducation',     'วุฒิการศึกษาล่าสุดก่อนรับทุน',     'Last Education Before Scholarship','academic'],
+  // University sub-section (visible only when institution = UNI)
+  ['f_uniName',           'ชื่อมหาวิทยาลัย',                  'University Name',                'academic'],
+  ['f_uniDuration',       'ระยะเวลาหลักสูตร (ปี)',             'Course Duration (years)',         'academic'],
+  ['f_uniProvince',       'จังหวัดที่ตั้งมหาวิทยาลัย',        'University Province',            'academic'],
+  ['f_uniFaculty',        'คณะ',                               'Faculty',                        'academic'],
+  ['f_uniMajor',          'สาขาวิชา (มหาวิทยาลัย)',           'University Major',               'academic'],
+
+  // ── C: ข้อมูลส่วนตัว (personal) ──
+  ['f_title',             'คำนำหน้า (ภาษาไทย)',               'Title (Thai)',                    'personal'],
+  ['f_fname',             'ชื่อ (ภาษาไทย)',                   'First Name (Thai)',               'personal'],
+  ['f_lname',             'นามสกุล (ภาษาไทย)',                'Last Name (Thai)',                'personal'],
+  ['f_engTitle',          'คำนำหน้า (ภาษาอังกฤษ)',            'Title (English)',                 'personal'],
+  ['f_engFname',          'ชื่อภาษาอังกฤษ',                   'First Name (English)',            'personal'],
+  ['f_engLname',          'นามสกุลภาษาอังกฤษ',                'Last Name (English)',             'personal'],
+  ['f_nickname',          'ชื่อเล่น',                          'Nickname',                       'personal'],
+  ['f_gender',            'เพศ',                               'Gender',                         'personal'],
+  ['f_nationality',       'สัญชาติ',                           'Nationality',                    'personal'],
+  ['f_religion',          'ศาสนา',                             'Religion',                       'personal'],
+  ['f_talent',            'ความสามารถพิเศษ',                  'Special Talents',                 'personal'],
+  ['f_weight',            'น้ำหนัก (กก.)',                     'Weight (kg)',                     'personal'],
+  ['f_height',            'ส่วนสูง (ซม.)',                     'Height (cm)',                     'personal'],
+  ['f_blood',             'หมู่เลือด',                         'Blood Type',                     'personal'],
+  ['f_disease',           'โรคประจำตัว',                       'Medical Condition',              'personal'],
+
+  // ── C: รูปโปรไฟล์ (photo) ──
+  ['f_picFile',           'อัปโหลดรูปภาพ',                    'Upload Photo File',               'photo'],
+  ['f_picUrl',            'URL รูปโปรไฟล์ (Google Drive)',     'Profile Photo URL',               'photo'],
+
+  // ── D: ข้อมูลติดต่อ (contact) ──
+  ['f_phone1',            'หมายเลขโทรศัพท์ 1',                'Phone 1',                        'contact'],
+  ['f_phone2',            'หมายเลขโทรศัพท์ 2 (ผู้ปกครอง)',   'Phone 2 (Parent)',                'contact'],
+  ['f_email',             'อีเมล (สำหรับเข้าสู่ระบบ)',         'Email (for login)',               'contact'],
+
+  // ── D: ที่อยู่ (address) ──
+  ['f_village',           'ชื่อหมู่บ้าน / ชุมชน',             'Village / Community',            'address'],
+  ['f_houseNo',           'บ้านเลขที่',                        'House No.',                      'address'],
+  ['f_moo',               'หมู่ที่',                           'Moo',                            'address'],
+  ['f_tambon',            'ตำบล / แขวง',                      'Sub-district',                   'address'],
+  ['f_amphoe',            'อำเภอ / เขต',                      'District',                       'address'],
+  ['f_province',          'จังหวัด',                           'Province',                       'address'],
+
+  // ── E: ข้อมูลครอบครัว (family) ──
+  ['f_parentStatus',      'สถานภาพบิดา-มารดา',                'Parent Status',                  'family'],
+  ['f_parentStatusOther', 'ระบุสถานภาพ (กรณีเลือก อื่นๆ)',    'Parent Status Other',            'family'],
+  ['f_fatherID',          'เลขบัตรประชาชนบิดา',               'Father\'s ID Card',              'family'],
+  ['f_fatherTitle',       'คำนำหน้าบิดา',                     'Father\'s Title',                'family'],
+  ['f_fatherFname',       'ชื่อบิดา',                          'Father\'s First Name',           'family'],
+  ['f_fatherLname',       'นามสกุลบิดา',                       'Father\'s Last Name',            'family'],
+  ['f_motherID',          'เลขบัตรประชาชนมารดา / ผู้ปกครอง', 'Mother\'s ID Card',              'family'],
+  ['f_motherTitle',       'คำนำหน้ามารดา / ผู้ปกครอง',       'Mother\'s Title',                'family'],
+  ['f_motherFname',       'ชื่อมารดา / ผู้ปกครอง',            'Mother\'s First Name',           'family'],
+  ['f_motherLname',       'นามสกุลมารดา / ผู้ปกครอง',         'Mother\'s Last Name',            'family'],
+
+  // ── F: หมายเหตุ (remarks) ──
+  ['f_remarks',           'หมายเหตุ / บันทึกเพิ่มเติม',       'Remarks / Additional Notes',     'remarks'],
 ];
 
 let _studentEditableFields = null;
 
 // Map old field IDs (before fix) to correct IDs matching actual form elements
+// Add entries here whenever a field is renamed — keeps saved admin settings valid
 const _FIELD_ID_MIGRATION = {
-  'f_idCard':        'f_idcard',
-  'f_scholarYear':   'f_scholarshipYear',
-  'f_lineId':        null,           // field removed from form
-  'f_zipCode':       null,           // field removed from form
-  'f_addr':          null,           // replaced by f_village/f_houseNo/f_moo
-  'f_parentPhone':   null,           // field removed from form
-  'f_uniScholarship':null,           // field removed from form
-  'f_parent1Fname':  'f_fatherFname',
-  'f_parent1Lname':  'f_fatherLname',
-  'f_parent2Fname':  'f_motherFname',
-  'f_parent2Lname':  'f_motherLname',
+  'f_idCard':         'f_idcard',          // was wrong case
+  'f_scholarYear':    'f_scholarshipYear', // was abbreviated
+  'f_lineId':         null,               // field does not exist in form
+  'f_zipCode':        null,               // field does not exist in form
+  'f_addr':           null,               // split into f_village/f_houseNo/f_moo
+  'f_parentPhone':    null,               // field does not exist in form
+  'f_uniScholarship': null,               // field does not exist in form
+  'f_parent1Fname':   'f_fatherFname',
+  'f_parent1Lname':   'f_fatherLname',
+  'f_parent2Fname':   'f_motherFname',
+  'f_parent2Lname':   'f_motherLname',
+  'f_profilePicUrl':  'f_picUrl',         // hidden field → use f_picUrl for URL input
 };
 function _migrateFieldIds(ids) {
   if (!Array.isArray(ids)) return ids;
@@ -2679,51 +2740,46 @@ function buildStudentFieldsUI() {
   const grid = document.getElementById('studentFieldsGrid');
   if (!grid) return;
   const current = new Set(_studentEditableFields || RBAC.getDefaultEditableFields());
-  const groupColors = {
-    grades:'#faf5ff', academic:'#fef9c3', contact:'#eff6ff', address:'#f0fdf4', family:'#faf5ff', photo:'#fff7ed'
-  };
-  const groupBorder = {
-    grades:'#ddd6fe', academic:'#fde68a', contact:'#bfdbfe', address:'#bbf7d0', family:'#e9d5ff', photo:'#fed7aa'
-  };
-  const groupTH = {
-    grades:   t('sfGroupGrades'),
-    academic: t('sfGroupAcademic'),
-    contact:  t('sfGroupContact'),
-    address:  t('sfGroupAddress'),
-    family:   t('sfGroupFamily'),
-    photo:    t('sfGroupPhoto')
-  };
-  const groupDesc = {
-    grades: t('sfGradesDesc'),
-  };
-  const groupIcon = {
-    grades: '📚', academic: '🎓', contact: '📞', address: '🏠', family: '👨‍👩‍👧', photo: '🖼'
+
+  // ── Group display config (add new groups here when form sections are added) ──
+  const GROUP_CFG = {
+    // key: { bg, border, accent, icon, labelKey, desc? }
+    grades:   { bg:'#faf5ff', border:'#ddd6fe', accent:'#7c3aed', icon:'📊', labelKey:'sfGroupGrades',   desc: t('sfGradesDesc') },
+    identity: { bg:'#eff6ff', border:'#93c5fd', accent:'#1e40af', icon:'🪪', labelKey:'sfGroupIdentity' },
+    academic: { bg:'#fefce8', border:'#fde68a', accent:'#854d0e', icon:'🎓', labelKey:'sfGroupAcademic' },
+    personal: { bg:'#f0f9ff', border:'#7dd3fc', accent:'#0369a1', icon:'👤', labelKey:'sfGroupPersonal' },
+    photo:    { bg:'#fff7ed', border:'#fed7aa', accent:'#9a3412', icon:'📷', labelKey:'sfGroupPhoto'    },
+    contact:  { bg:'#f0fdfa', border:'#5eead4', accent:'#0f766e', icon:'📞', labelKey:'sfGroupContact'  },
+    address:  { bg:'#f0fdf4', border:'#86efac', accent:'#15803d', icon:'🏠', labelKey:'sfGroupAddress'  },
+    family:   { bg:'#eef2ff', border:'#a5b4fc', accent:'#4338ca', icon:'👨‍👩‍👧', labelKey:'sfGroupFamily'  },
+    remarks:  { bg:'#f8fafc', border:'#cbd5e1', accent:'#475569', icon:'📝', labelKey:'sfGroupRemarks'  },
   };
 
+  // Preserve insertion order from STUDENT_FIELD_OPTIONS
   const groups = [...new Set(STUDENT_FIELD_OPTIONS.map(f => f[3]))];
 
   grid.innerHTML = groups.map(g => {
-    const isWide    = ['grades','academic'].includes(g);
-    const isGrades  = g === 'grades';
-    const fields    = STUDENT_FIELD_OPTIONS.filter(f => f[3] === g);
-    const accentColor = isGrades ? '#7c3aed' : '#64748b';
+    const cfg      = GROUP_CFG[g] || { bg:'#f8fafc', border:'#e2e8f0', accent:'#64748b', icon:'•', labelKey: g };
+    const label    = t(cfg.labelKey) || g;
+    const isGrades = g === 'grades';
+    const fields   = STUDENT_FIELD_OPTIONS.filter(f => f[3] === g);
     return `
-    <div style="grid-column:${isWide?'1/-1':'span 1'};margin-bottom:6px">
-      <div style="background:${groupColors[g]||'#f8fafc'};border:1.5px solid ${groupBorder[g]||'#e5e7eb'};border-radius:10px;padding:10px 14px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:${groupDesc[g]?'4px':'8px'}">
-          <span style="font-size:14px">${groupIcon[g]||'•'}</span>
-          <span style="font-size:11px;font-weight:800;text-transform:uppercase;color:${accentColor};letter-spacing:.5px">${groupTH[g]||g}</span>
+    <div style="grid-column:1/-1;margin-bottom:6px">
+      <div style="background:${cfg.bg};border:1.5px solid ${cfg.border};border-radius:10px;padding:10px 14px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:${cfg.desc?'4px':'8px'}">
+          <span style="font-size:14px">${cfg.icon}</span>
+          <span style="font-size:11px;font-weight:800;text-transform:uppercase;color:${cfg.accent};letter-spacing:.5px">${label}</span>
+          ${isGrades ? `<span style="background:${cfg.accent};color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 7px;margin-left:4px">${t('sfGradesBadge')}</span>` : ''}
         </div>
-        ${groupDesc[g] ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px;padding-left:22px">${groupDesc[g]}</p>` : ''}
-        <div style="${isWide?'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 12px':''}">
+        ${cfg.desc ? `<p style="font-size:11px;color:#6b7280;margin-bottom:8px;padding-left:22px">${cfg.desc}</p>` : ''}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 12px">
         ${fields.map(([fid,lth,len]) => `
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 0;font-size:12px;color:#374151;${isGrades?'font-weight:700':''}">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 0;font-size:12px;color:#374151">
             <input type="checkbox" id="sef_${fid}" value="${fid}"
                    ${current.has(fid)?'checked':''}
-                   style="width:15px;height:15px;accent-color:${isGrades?'#7c3aed':'#0ea5e9'};cursor:pointer;flex-shrink:0">
+                   style="width:15px;height:15px;accent-color:${cfg.accent};cursor:pointer;flex-shrink:0">
             <span>${LANG==='en'?len:lth}
-              <span style="color:#94a3b8;font-size:10px;margin-left:4px">${LANG==='en'?lth:len}</span>
-              ${isGrades ? `<span style="margin-left:6px;background:#7c3aed;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 6px">${t('sfGradesBadge')}</span>` : ''}
+              <span style="color:#94a3b8;font-size:10px;margin-left:4px">${LANG==='en'?'('+lth+')':'('+len+')'}</span>
             </span>
           </label>`).join('')}
         </div>
