@@ -528,6 +528,7 @@ async function loadAll() {
     showLoader(false);
   } catch(e) {
     showLoader(false);
+    RDF.logError('academic-results.html', 'loadPage()', e.message);
     Swal.fire('ข้อผิดพลาด', e.message, 'error');
   }
 }
@@ -913,6 +914,7 @@ async function deleteGrade(stipNo, acadYear, semester) {
     applyFilters();
   } catch(e) {
     showLoader(false);
+    RDF.logError('academic-results.html', 'saveGrades()', e.message);
     Swal.fire('ข้อผิดพลาด', e.message, 'error');
   }
 }

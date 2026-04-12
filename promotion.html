@@ -1483,10 +1483,12 @@ async function applyAllChanges() {
       ROW_DECISIONS = {};
       loadPage();
     } else {
+      RDF.logError('promotion.html', 'savePromotion()', res.message || 'promoLoadError');
       Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
     }
   } catch(e) {
     showLoader(false);
+    RDF.logError('promotion.html', 'savePromotion()', e.message || 'Network error');
     Swal.fire(t('error'), e.message||'Network error', 'error');
   }
 }

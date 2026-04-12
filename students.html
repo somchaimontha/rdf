@@ -714,10 +714,12 @@ async function loadStudents() {
       if (initStatus) document.getElementById('filterStatus').value = initStatus;
       applyFilters();
     } else {
+      RDF.logError('students.html', 'loadStudents()', studResult.message);
       Swal.fire(t('error'), studResult.message, 'error');
     }
   } catch(e) {
     showLoader(false);
+    RDF.logError('students.html', 'loadStudents()', e.message || 'network error');
     Swal.fire(t('error'), t('network_error'), 'error');
   }
 }
@@ -1086,10 +1088,12 @@ async function confirmDelete(stipNo) {
       allStudents = allStudents.filter(s => s.stipNo !== stipNo);
       applyFilters();
     } else {
+      RDF.logError('students.html', 'deleteStudent()', r.message);
       Swal.fire(t('error'), r.message, 'error');
     }
   } catch(e) {
     showLoader(false);
+    RDF.logError('students.html', 'deleteStudent()', e.message || 'network error');
     Swal.fire(t('error'), t('network_error'), 'error');
   }
 }

@@ -543,6 +543,7 @@ const T = {
     stLogAllTypes: "ทุกประเภท",
     stLogAdd: "➕ เพิ่มข้อมูล", stLogUpdate: "✏️ แก้ไขข้อมูล",
     stLogDelete: "🗑️ ลบข้อมูล", stLogLogin: "🔑 เข้าสู่ระบบ", stLogSetting: "⚙️ ตั้งค่า",
+    stLogError: "🔴 ข้อผิดพลาด", stLogWarning: "⚠️ คำเตือน",
     stLogColTime: "เวลา", stLogColUser: "ผู้ดำเนินการ",
     stLogColType: "ประเภท", stLogColDetail: "รายละเอียด",
     /* ── Settings — API keys panel ── */
@@ -649,6 +650,7 @@ const T = {
     stLogTotal: "รวม", stLogItems: "รายการ",
     stLogShowing: "แสดง", stLogOf: "จาก",
     stLogSummaryAdd: "เพิ่ม", stLogSummaryUpdate: "แก้ไข", stLogSummaryDelete: "ลบ",
+    stLogSummaryError: "🔴 Error", stLogSummaryWarning: "⚠️ Warning",
     stSessNoActive: "ไม่มีเซสชันที่กำลังใช้งาน",
     stSessMinAgo: "นาทีที่แล้ว", stSessRemain: "เหลือ", stSessMin: "นาที",
     stSessForceOut: "บังคับออก", stSessForceTitle: "บังคับออกจากระบบ?",
@@ -1218,6 +1220,7 @@ const T = {
     stLogAllTypes: "All Types",
     stLogAdd: "➕ Add Data", stLogUpdate: "✏️ Edit Data",
     stLogDelete: "🗑️ Delete Data", stLogLogin: "🔑 Login", stLogSetting: "⚙️ Setting",
+    stLogError: "🔴 Error", stLogWarning: "⚠️ Warning",
     stLogColTime: "Time", stLogColUser: "Operator",
     stLogColType: "Type", stLogColDetail: "Details",
     /* ── Settings — API keys panel ── */
@@ -1324,6 +1327,7 @@ const T = {
     stLogTotal: "Total", stLogItems: "entries",
     stLogShowing: "Showing", stLogOf: "of",
     stLogSummaryAdd: "Add", stLogSummaryUpdate: "Edit", stLogSummaryDelete: "Delete",
+    stLogSummaryError: "🔴 Error", stLogSummaryWarning: "⚠️ Warning",
     stSessNoActive: "No active sessions",
     stSessMinAgo: "minutes ago", stSessRemain: "remaining", stSessMin: "min",
     stSessForceOut: "Force Logout", stSessForceTitle: "Force Logout?",

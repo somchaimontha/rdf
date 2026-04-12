@@ -99,6 +99,8 @@
 .log-delete { background:#fef2f2; color:#dc2626; }
 .log-login  { background:#f8fafc; color:#475569; }
 .log-setting{ background:#fffbeb; color:#92400e; }
+.log-error  { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.log-warning{ background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
 
 /* ── Tag editor ── */
 .tag-wrap {
@@ -881,6 +883,8 @@
               <option value="DELETE" data-t="stLogDelete">🗑️ ลบข้อมูล</option>
               <option value="LOGIN" data-t="stLogLogin">🔑 เข้าสู่ระบบ</option>
               <option value="SETTING" data-t="stLogSetting">⚙️ ตั้งค่า</option>
+              <option value="ERROR" data-t="stLogError">🔴 ข้อผิดพลาด</option>
+              <option value="WARNING" data-t="stLogWarning">⚠️ คำเตือน</option>
             </select>
           </div>
           <button onclick="loadLogs()" class="btn btn-secondary btn-sm">
@@ -2030,6 +2034,8 @@ async function loadLogs() {
 function getLogClass(action) {
   if (!action) return 'log-login';
   const a = action.toUpperCase();
+  if (a === 'ERROR')   return 'log-error';
+  if (a === 'WARNING') return 'log-warning';
   if (a.includes('ADD'))     return 'log-add';
   if (a.includes('UPDATE'))  return 'log-update';
   if (a.includes('DELETE'))  return 'log-delete';
@@ -2039,6 +2045,8 @@ function getLogClass(action) {
 
 function getLogIcon(action) {
   const a = (action||'').toUpperCase();
+  if (a === 'ERROR')    return '🔴';
+  if (a === 'WARNING')  return '⚠️';
   if (a.includes('ADD'))    return '➕';
   if (a.includes('UPDATE')) return '✏️';
   if (a.includes('DELETE')) return '🗑️';
@@ -2059,20 +2067,24 @@ function renderLogs() {
   });
 
   // Summary
-  const typeCounts = { ADD:0, UPDATE:0, DELETE:0, LOGIN:0, OTHER:0 };
+  const typeCounts = { ADD:0, UPDATE:0, DELETE:0, LOGIN:0, ERROR:0, WARNING:0, OTHER:0 };
   filtered.forEach(l => {
     const a = (l.action||'').toUpperCase();
-    if      (a.includes('ADD'))    typeCounts.ADD++;
+    if      (a === 'ERROR')        typeCounts.ERROR++;
+    else if (a === 'WARNING')      typeCounts.WARNING++;
+    else if (a.includes('ADD'))    typeCounts.ADD++;
     else if (a.includes('UPDATE')) typeCounts.UPDATE++;
     else if (a.includes('DELETE')) typeCounts.DELETE++;
     else if (a.includes('LOGIN'))  typeCounts.LOGIN++;
     else                           typeCounts.OTHER++;
   });
   document.getElementById('logSummary').innerHTML = [
-    ['ADD','log-add', () => t('stLogSummaryAdd')],
-    ['UPDATE','log-update', () => t('stLogSummaryUpdate')],
-    ['DELETE','log-delete', () => t('stLogSummaryDelete')],
-    ['LOGIN','log-login','Login']
+    ['ERROR',  'log-error',   () => t('stLogSummaryError')],
+    ['WARNING','log-warning', () => t('stLogSummaryWarning')],
+    ['ADD',    'log-add',     () => t('stLogSummaryAdd')],
+    ['UPDATE', 'log-update',  () => t('stLogSummaryUpdate')],
+    ['DELETE', 'log-delete',  () => t('stLogSummaryDelete')],
+    ['LOGIN',  'log-login',   'Login'],
   ].map(([k,c,label]) => typeCounts[k]
     ? `<span class="log-action-badge ${c}">${typeof label==='function'?label():label} ${typeCounts[k]}</span>` : ''
   ).join('') + `<span class="text-xs text-gray-400 ml-1">${t('stLogTotal')} ${filtered.length} ${t('stLogItems')}</span>`;

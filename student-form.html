@@ -1259,6 +1259,7 @@ async function loadStudentForEdit(stipNo) {
     const result = await Promise.race([API.getStudent(stipNo), _loadTimeout]);
     showLoader(false);
     if (result.status !== 'success') {
+      RDF.logError('student-form.html', 'loadStudentForEdit()', result.message);
       Swal.fire(t('error'), result.message, 'error').then(() => window.location.href = 'students.html');
       return;
     }
@@ -1267,6 +1268,7 @@ async function loadStudentForEdit(stipNo) {
     loadGradesForStudent(stipNo);
   } catch(e) {
     showLoader(false);
+    RDF.logError('student-form.html', 'loadStudentForEdit()', e.message || t('network_error'));
     Swal.fire(t('error'), e.message || t('network_error'), 'error')
       .then(() => window.location.href = 'students.html');
   }
@@ -1950,6 +1952,7 @@ async function saveStudent() {
       window.location.href = `student-profile.html?stipNo=${encodeURIComponent(finalStipNo)}`;
     } else {
       const _errDetail = result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ';
+      RDF.logError('student-form.html', 'saveStudent()', _errDetail);
       const _photoWarn = _photoErrMsg ? `<br><span class="text-xs text-yellow-600">⚠️ รูปโปรไฟล์: ${_photoErrMsg}</span>` : '';
       Swal.fire({
         title: t('error'),
@@ -1959,6 +1962,7 @@ async function saveStudent() {
     }
   } catch(e) {
     showLoader(false);
+    RDF.logError('student-form.html', 'saveStudent()', e.message);
     Swal.fire({
       title: t('error'),
       html: `<div class="text-left text-sm"><b>ข้อผิดพลาด:</b> ${e.message}<br><span class="text-gray-400 text-xs">หากเกิดซ้ำ — รอ GAS ตื่น (cold start) แล้วลองใหม่</span></div>`,

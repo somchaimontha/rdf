@@ -75,7 +75,50 @@ const API = {
   // Generic helpers for pages that call API.get / API.post directly
   async get(action, params) { return apiGet({ action, ...(params||{}) }); },
   async post(action, body)  { return apiPost({ action, ...body }); },
+  // Client-side error/warning logger — fire-and-forget, never throws
+  clientLog(userId, action, details) {
+    apiPost({ action: 'clientLog', userId, action, details }).catch(() => {});
+  },
 };
+
+// ── RDF Client Logger ─────────────────────────────────────────────────────
+// Lightweight, async, non-blocking. Dedup is enforced both client-side
+// (same message within 10 s) and server-side (same row within 60 s).
+//
+// Usage (from any page):
+//   RDF.logError('student-form.html', 'saveStudent()', 'Failed to save: timeout');
+//   RDF.logWarn('settings.html', 'loadAdmins()', 'No admins returned');
+// ─────────────────────────────────────────────────────────────────────────
+(function() {
+  const _recentKeys = new Map(); // key → timestamp for client-side dedup (10 s)
+  const DEDUP_MS = 10000;
+
+  function _send(level, page, fn, message) {
+    // Build canonical strings
+    const action  = level;                               // 'ERROR' | 'WARNING'
+    const details = `${message} (${page}${fn ? ' — ' + fn : ''})`;
+    const user    = (() => { try { return (getUser()||{}).username || 'anonymous'; } catch(e){ return 'anonymous'; } })();
+    const key     = user + '|' + action + '|' + details;
+
+    // Client-side dedup: same key within DEDUP_MS → skip
+    const now = Date.now();
+    if (_recentKeys.has(key) && now - _recentKeys.get(key) < DEDUP_MS) return;
+    _recentKeys.set(key, now);
+
+    // Prune old keys to avoid memory leak (keep ≤ 50)
+    if (_recentKeys.size > 50) {
+      const oldest = [..._recentKeys.entries()]
+        .sort((a, b) => a[1] - b[1]).slice(0, 20).map(e => e[0]);
+      oldest.forEach(k => _recentKeys.delete(k));
+    }
+
+    // Fire-and-forget — never blocks or throws
+    API.clientLog(user, action, details);
+  }
+
+  RDF.logError = (page, fn, message) => _send('ERROR',   page, fn, message);
+  RDF.logWarn  = (page, fn, message) => _send('WARNING', page, fn, message);
+})();
 
 /* ── Shared Loader ── */
 function showLoader(show, text) {
