@@ -1746,9 +1746,24 @@ async function uploadPendingDocs(stipNo, institution) {
 
 function previewImg(e) {
   const f = e.target.files[0]; if (!f) return;
-  _photoFile = f; // store for upload during save
+  // Validate type immediately
+  if (!RDF.UPLOAD.PHOTO_TYPES.includes(f.type)) {
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'ประเภทไฟล์ไม่รองรับ (JPG, PNG, WEBP เท่านั้น)', timer:3000, showConfirmButton:false });
+    e.target.value = ''; return;
+  }
+  _photoFile = f;
+  // Show local preview immediately (full resolution for display)
   const r = new FileReader();
-  r.onload = ev => { document.getElementById('imgPreview').src = ev.target.result; };
+  r.onload = ev => {
+    document.getElementById('imgPreview').src = ev.target.result;
+    // Show compression hint if file is large
+    const sizeMB = (f.size / 1024 / 1024).toFixed(1);
+    const _lbl = document.querySelector('label[data-t="uploadPhoto"]');
+    if (f.size > RDF.UPLOAD.PHOTO_MAX_BYTES && _lbl) {
+      _lbl.setAttribute('data-orig-text', _lbl.innerHTML);
+      _lbl.innerHTML += ` <span class="text-amber-500 text-xs ml-1">(${sizeMB} MB — จะบีบอัดอัตโนมัติ)</span>`;
+    }
+  };
   r.readAsDataURL(f);
 }
 
@@ -1853,15 +1868,25 @@ async function saveStudent() {
       showLoader(true, t('saving'));
     }
 
-    // ── Upload profile photo to Drive first (so URL is in the save payload) ──
+    // ── Compress + upload profile photo to Drive first ──
     let _photoErrMsg = '';
     if (_photoFile) {
-      showLoader(true, 'กำลังอัปโหลดรูปโปรไฟล์...');
+      showLoader(true, 'กำลังบีบอัดรูปโปรไฟล์...');
+      const _compressed = await compressImage(_photoFile);
+      if (_compressed.error) {
+        showLoader(false);
+        Swal.fire(t('error'), _compressed.error, 'error');
+        return;
+      }
+      if (_compressed.wasCompressed) {
+        showLoader(true, `บีบอัดแล้ว ${_compressed.originalSizeKB} KB → ${_compressed.sizeKB} KB • กำลังอัปโหลด...`);
+      } else {
+        showLoader(true, 'กำลังอัปโหลดรูปโปรไฟล์...');
+      }
       try {
-        const _pb64 = await _fileToBase64(_photoFile);
-        const _safeName = (data.StipNo || 'new') + '_photo_' + Date.now() + '.' + (_photoFile.name.split('.').pop() || 'jpg');
+        const _safeName = (data.StipNo || 'new') + '_photo_' + Date.now() + '.jpg';
         const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา photo upload (30s)')), 30000));
-        const _pr = await Promise.race([API.uploadPhoto(_pb64, _photoFile.type, _safeName, data.Institution || 'Other'), _pt]);
+        const _pr = await Promise.race([API.uploadPhoto(_compressed.base64, 'image/jpeg', _safeName, data.Institution || 'Other'), _pt]);
         if (_pr.status === 'success') {
           data.ProfilePicURL = _pr.url;
           document.getElementById('f_profilePicUrl').value = _pr.url;

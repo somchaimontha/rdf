@@ -526,8 +526,90 @@
       </div>
     </div>
 
+    <!-- Upload Limits Card -->
+    <div class="card fade-in-up delay-1 mb-5">
+      <div class="card-header" style="background:#0369a1">
+        <i data-lucide="image-up" class="w-4 h-4"></i>
+        <span data-t="stUploadLimitsHeader">ขนาดไฟล์สูงสุดสำหรับการอัปโหลด</span>
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4" data-t="stUploadLimitsDesc">
+          กำหนดขนาดไฟล์สูงสุดที่อนุญาต — ระบบจะบีบอัดรูปภาพอัตโนมัติให้ไม่เกินขนาดที่กำหนด ก่อนส่งขึ้น Google Drive
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Photo limit -->
+          <div class="rounded-xl border border-blue-100 p-4 bg-blue-50">
+            <div class="flex items-center gap-2 mb-3">
+              <i data-lucide="image" class="w-4 h-4 text-blue-600"></i>
+              <span class="font-semibold text-sm text-blue-800" data-t="stUploadPhotoTitle">รูปภาพโปรไฟล์</span>
+            </div>
+            <div class="space-y-2">
+              <div>
+                <label class="field-label text-xs" data-t="stUploadPhotoTarget">ขนาดเป้าหมาย (MB) — หลังบีบอัด</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="ul_photoMaxMB" class="field-input" style="width:90px"
+                         min="0.5" max="10" step="0.5" value="2">
+                  <span class="text-xs text-gray-400">MB</span>
+                </div>
+              </div>
+              <div>
+                <label class="field-label text-xs" data-t="stUploadPhotoHard">ขนาดสูงสุดสัมบูรณ์ (MB) — เซิร์ฟเวอร์ปฏิเสธ</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="ul_photoHardMB" class="field-input" style="width:90px"
+                         min="1" max="20" step="0.5" value="3">
+                  <span class="text-xs text-gray-400">MB</span>
+                </div>
+              </div>
+              <div>
+                <label class="field-label text-xs" data-t="stUploadPhotoMaxPx">ขนาดรูปสูงสุด (พิกเซล)</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="ul_photoMaxPx" class="field-input" style="width:90px"
+                         min="400" max="4000" step="100" value="1200">
+                  <span class="text-xs text-gray-400">px</span>
+                </div>
+              </div>
+              <div>
+                <label class="field-label text-xs" data-t="stUploadPhotoQuality">คุณภาพ JPEG (0.1 – 1.0)</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="ul_photoQuality" class="field-input" style="width:90px"
+                         min="0.1" max="1" step="0.05" value="0.85">
+                  <span class="text-xs text-gray-400">(0–1)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Document limit -->
+          <div class="rounded-xl border border-purple-100 p-4 bg-purple-50">
+            <div class="flex items-center gap-2 mb-3">
+              <i data-lucide="file-text" class="w-4 h-4 text-purple-600"></i>
+              <span class="font-semibold text-sm text-purple-800" data-t="stUploadDocTitle">เอกสาร (PDF / รูปภาพ)</span>
+            </div>
+            <div>
+              <label class="field-label text-xs" data-t="stUploadDocMax">ขนาดสูงสุด (MB)</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="ul_docMaxMB" class="field-input" style="width:90px"
+                       min="1" max="50" step="1" value="5">
+                <span class="text-xs text-gray-400">MB</span>
+              </div>
+            </div>
+            <div class="mt-3 p-2 rounded-lg bg-purple-100 text-xs text-purple-700">
+              <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+              <span data-t="stUploadDocNote">เอกสารไม่มีการบีบอัดอัตโนมัติ — ขนาดที่ตั้งคือขีดจำกัดจริง</span>
+            </div>
+          </div>
+        </div>
+        <!-- Current effective values -->
+        <div class="mt-3 p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-500" id="ul_currentValues"></div>
+        <div class="flex justify-end mt-4 pt-3 border-t border-gray-100">
+          <button onclick="saveUploadLimits()" class="btn btn-primary btn-sm" style="background:#0369a1;border-color:#0369a1">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stUploadLimitsSave">บันทึกการตั้งค่าขนาดไฟล์</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- System Notice Card -->
-    <div class="card fade-in-up delay-1">
+    <div class="card fade-in-up delay-2">
       <div class="card-header" style="background:#7c3aed">
         <i data-lucide="megaphone" class="w-4 h-4"></i> <span data-t="stGenNoticeHeader">ข้อความแจ้งเตือนระบบ</span>
       </div>
@@ -1590,16 +1672,25 @@ let _adminPhotoFile = null; // pending photo File for admin modal
 function _adminPreviewPhoto(e) {
   const file = e.target.files[0];
   if (!file) return;
+  if (!RDF.UPLOAD.PHOTO_TYPES.includes(file.type)) {
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'ประเภทไฟล์ไม่รองรับ (JPG, PNG, WEBP)', timer:3000, showConfirmButton:false });
+    e.target.value = ''; return;
+  }
   _adminPhotoFile = file;
   const reader = new FileReader();
   reader.onload = ev => {
     const img = document.getElementById('m_picPreview');
     img.src = ev.target.result;
     img.onerror = null;
+    // Show size hint if large
+    if (file.size > RDF.UPLOAD.PHOTO_MAX_BYTES) {
+      const sizeMB = (file.size/1024/1024).toFixed(1);
+      Swal.fire({ toast:true, position:'top-end', icon:'info', title:`รูป ${sizeMB} MB — จะบีบอัดอัตโนมัติก่อนอัปโหลด`, timer:2500, showConfirmButton:false });
+    }
   };
   reader.readAsDataURL(file);
-  document.getElementById('m_picUrl').value    = ''; // will be set after upload
-  document.getElementById('m_driveUrl').value  = ''; // clear drive URL input
+  document.getElementById('m_picUrl').value   = '';
+  document.getElementById('m_driveUrl').value = '';
 }
 
 function _adminSetDriveUrl(url) {
@@ -1712,20 +1803,20 @@ async function submitAdminForm() {
   const btn = document.getElementById('m_submitBtn');
   btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${t('saving')}`;
   try {
-    // ── Upload profile photo first if a new file was selected ──
+    // ── Compress + upload profile photo first if a new file was selected ──
     let picUrl = document.getElementById('m_picUrl').value.trim();
     if (_adminPhotoFile) {
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> อัปโหลดรูป...`;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บีบอัดรูป...`;
+      const _compressed = await compressImage(_adminPhotoFile);
+      if (_compressed.error) {
+        btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> ${t('stSave')}`;
+        Swal.fire(t('error'), _compressed.error, 'error'); return;
+      }
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> อัปโหลดรูป${_compressed.wasCompressed ? ` (${_compressed.sizeKB} KB)` : ''}...`;
       try {
-        const b64 = await new Promise((res, rej) => {
-          const reader = new FileReader();
-          reader.onload = e => res(e.target.result.split(',')[1]);
-          reader.onerror = rej;
-          reader.readAsDataURL(_adminPhotoFile);
-        });
-        const safeName = (uname || 'admin') + '_photo_' + Date.now() + '.' + (_adminPhotoFile.name.split('.').pop() || 'jpg');
+        const safeName = (uname || 'admin') + '_photo_' + Date.now() + '.jpg';
         const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
-        const pr = await Promise.race([API.uploadPhoto(b64, _adminPhotoFile.type, safeName, 'Admin'), _pt]);
+        const pr = await Promise.race([API.uploadPhoto(_compressed.base64, 'image/jpeg', safeName, 'Admin'), _pt]);
         if (pr.status === 'success') {
           picUrl = pr.url;
           document.getElementById('m_picUrl').value = picUrl;
@@ -2907,11 +2998,16 @@ async function loadGeneralSettings() {
       if (contactEl) contactEl.value = r.data['ADMIN_CONTACT_URL'] || '';
       // Google Client ID
       _renderGcidState(r.data['GOOGLE_CLIENT_ID'] || '');
+      // Upload Limits
+      _renderUploadLimitsForm(r.data[RDF.UPLOAD.SETTINGS_KEY]);
+      RDF.applyUploadSettings(r.data);
     } else {
       STIP_INST.forEach(inst => { stipPrefixState[inst.key] = { enabled: true, prefix: inst.def }; });
+      _renderUploadLimitsForm(null);
     }
   } catch(e) {
     STIP_INST.forEach(inst => { stipPrefixState[inst.key] = { enabled: true, prefix: inst.def }; });
+    _renderUploadLimitsForm(null);
   }
   generalLoaded = true;
   renderStipRows();
@@ -2919,6 +3015,55 @@ async function loadGeneralSettings() {
   renderSigEditor();
   renderPrintTitleForm();
   renderPrintLayoutForm();
+}
+
+function _renderUploadLimitsForm(saved) {
+  const s = (saved && typeof saved === 'object') ? saved : {};
+  const _sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  _sv('ul_photoMaxMB',   s.photoMaxMB  ?? 2);
+  _sv('ul_photoHardMB',  s.photoHardMB ?? 3);
+  _sv('ul_photoMaxPx',   s.photoMaxPx  ?? 1200);
+  _sv('ul_photoQuality', s.photoQuality?? 0.85);
+  _sv('ul_docMaxMB',     s.docMaxMB    ?? 5);
+  // Show current effective values
+  const cur = document.getElementById('ul_currentValues');
+  if (cur) {
+    cur.innerHTML = `<span class="font-semibold text-gray-600 mr-1">${t('stUploadCurrent')}:</span>
+      ${t('stUploadPhotoTarget')}: <b>${RDF.UPLOAD.PHOTO_MAX_BYTES/1024/1024} MB</b> &nbsp;|&nbsp;
+      ${t('stUploadPhotoHard')}: <b>${RDF.UPLOAD.PHOTO_HARD_LIMIT/1024/1024} MB</b> &nbsp;|&nbsp;
+      ${t('stUploadPhotoMaxPx')}: <b>${RDF.UPLOAD.PHOTO_MAX_PX} px</b> &nbsp;|&nbsp;
+      ${t('stUploadDocMax')}: <b>${RDF.UPLOAD.DOCUMENT_MAX_BYTES/1024/1024} MB</b>`;
+  }
+}
+
+async function saveUploadLimits() {
+  const _gv = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const limits = {
+    photoMaxMB:   _gv('ul_photoMaxMB'),
+    photoHardMB:  _gv('ul_photoHardMB'),
+    photoMaxPx:   parseInt(document.getElementById('ul_photoMaxPx')?.value) || 1200,
+    photoQuality: _gv('ul_photoQuality'),
+    docMaxMB:     _gv('ul_docMaxMB'),
+  };
+  // Validate
+  if (limits.photoMaxMB <= 0 || limits.photoHardMB <= 0 || limits.docMaxMB <= 0) {
+    Swal.fire(t('warning'), 'กรุณากรอกค่าที่ถูกต้อง (มากกว่า 0)', 'warning'); return;
+  }
+  if (limits.photoHardMB < limits.photoMaxMB) {
+    Swal.fire(t('warning'), 'ขนาดสัมบูรณ์ต้องมากกว่าหรือเท่ากับขนาดเป้าหมาย', 'warning'); return;
+  }
+  if (limits.photoQuality < 0.1 || limits.photoQuality > 1) {
+    Swal.fire(t('warning'), 'คุณภาพ JPEG ต้องอยู่ระหว่าง 0.1 – 1.0', 'warning'); return;
+  }
+  try {
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
+    const r = await Promise.race([API.saveSetting(RDF.UPLOAD.SETTINGS_KEY, limits), _t]);
+    if (r.status === 'success') {
+      RDF.applyUploadSettings({ [RDF.UPLOAD.SETTINGS_KEY]: limits });
+      _renderUploadLimitsForm(limits);
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stUploadLimitsSaved'), timer:2000, showConfirmButton:false });
+    } else { Swal.fire(t('error'), r.message || t('error'), 'error'); }
+  } catch(e) { Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
 async function saveAdminContactUrl() {

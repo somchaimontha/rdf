@@ -134,12 +134,28 @@ RDF.MONTHS_EN = ['January','February','March','April','May','June',
 
 /* ── File Upload Limits (standard) ── */
 RDF.UPLOAD = {
-  PHOTO_MAX_BYTES:    1 * 1024 * 1024,   // 1 MB  — after compression
-  PHOTO_MAX_PX:       800,                // max width or height in pixels
-  PHOTO_QUALITY:      0.82,               // JPEG quality (0–1)
+  PHOTO_MAX_BYTES:    2 * 1024 * 1024,   // 2 MB  — target after compression
+  PHOTO_HARD_LIMIT:   3 * 1024 * 1024,   // 3 MB  — absolute hard limit (server rejects above this)
+  PHOTO_MAX_PX:       1200,              // max width or height in pixels
+  PHOTO_QUALITY:      0.85,              // JPEG quality (0–1)
   PHOTO_TYPES:        ['image/jpeg', 'image/png', 'image/webp'],
-  DOCUMENT_MAX_BYTES: 5 * 1024 * 1024,   // 5 MB
+  DOCUMENT_MAX_BYTES: 5 * 1024 * 1024,  // 5 MB
   DOCUMENT_TYPES:     ['application/pdf', 'image/jpeg', 'image/png'],
+  SETTINGS_KEY:       'UPLOAD_LIMITS',   // SystemSettings key for admin-configurable limits
+};
+
+/**
+ * Load admin-configured upload limits from SystemSettings and override RDF.UPLOAD defaults.
+ * Call once after getSystemSettings() resolves.
+ */
+RDF.applyUploadSettings = function(settings) {
+  if (!settings || !settings[RDF.UPLOAD.SETTINGS_KEY]) return;
+  const s = settings[RDF.UPLOAD.SETTINGS_KEY];
+  if (s.photoMaxMB  && s.photoMaxMB  > 0) RDF.UPLOAD.PHOTO_MAX_BYTES    = s.photoMaxMB  * 1024 * 1024;
+  if (s.photoHardMB && s.photoHardMB > 0) RDF.UPLOAD.PHOTO_HARD_LIMIT   = s.photoHardMB * 1024 * 1024;
+  if (s.photoMaxPx  && s.photoMaxPx  > 0) RDF.UPLOAD.PHOTO_MAX_PX       = s.photoMaxPx;
+  if (s.photoQuality && s.photoQuality > 0 && s.photoQuality <= 1) RDF.UPLOAD.PHOTO_QUALITY = s.photoQuality;
+  if (s.docMaxMB    && s.docMaxMB    > 0) RDF.UPLOAD.DOCUMENT_MAX_BYTES = s.docMaxMB    * 1024 * 1024;
 };
 
 /**
@@ -155,15 +171,16 @@ function compressImage(file, maxPx, quality, maxBytes) {
   maxPx    = maxPx    || RDF.UPLOAD.PHOTO_MAX_PX;
   quality  = quality  || RDF.UPLOAD.PHOTO_QUALITY;
   maxBytes = maxBytes || RDF.UPLOAD.PHOTO_MAX_BYTES;
+  const hardLimit = RDF.UPLOAD.PHOTO_HARD_LIMIT || maxBytes * 1.5;
 
   return new Promise((resolve) => {
     // Type check
     if (!RDF.UPLOAD.PHOTO_TYPES.includes(file.type)) {
-      return resolve({ error: 'ประเภทไฟล์ไม่รองรับ — รองรับ JPG, PNG, WEBP เท่านั้น' });
+      return resolve({ error: 'ประเภทไฟล์ไม่รองรับ — รองรับ JPG, PNG, WEBP เท่านั้น\nUnsupported file type — JPG, PNG, WEBP only.' });
     }
-    // Quick size check before compression (reject obviously huge files — 20MB raw)
-    if (file.size > 20 * 1024 * 1024) {
-      return resolve({ error: 'ไฟล์ใหญ่เกินไป (สูงสุด 20 MB ก่อนบีบอัด)' });
+    // Reject files that are impossibly large even before compression (50 MB raw)
+    if (file.size > 50 * 1024 * 1024) {
+      return resolve({ error: 'ไฟล์ใหญ่เกินไป (สูงสุด 50 MB ก่อนบีบอัด)\nFile too large (max 50 MB before compression).' });
     }
 
     const reader = new FileReader();
@@ -180,31 +197,39 @@ function compressImage(file, maxPx, quality, maxBytes) {
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 
-        // Try progressively lower quality until under limit
+        // Try progressively lower quality until under target limit
         let q = quality;
         let dataUrl;
         do {
           dataUrl = canvas.toDataURL('image/jpeg', q);
           q = Math.round((q - 0.05) * 100) / 100;
-        } while (q > 0.3 && dataUrl.length * 0.75 > maxBytes);
+        } while (q > 0.2 && dataUrl.length * 0.75 > maxBytes);
 
         const base64 = dataUrl.split(',')[1];
-        const sizeKB = Math.round(base64.length * 0.75 / 1024);
+        const sizeBytes = Math.round(base64.length * 0.75);
+        const sizeKB    = Math.round(sizeBytes / 1024);
 
-        if (sizeKB * 1024 > maxBytes) {
-          return resolve({ error: `รูปยังใหญ่เกินไปหลังบีบอัด (${sizeKB} KB, สูงสุด ${Math.round(maxBytes/1024)} KB)` });
+        // Reject if still over hard limit after max compression
+        if (sizeBytes > hardLimit) {
+          return resolve({
+            error: `รูปใหญ่เกินขีดจำกัดสูงสุด ${Math.round(hardLimit/1024/1024)} MB หลังบีบอัดแล้ว (${sizeKB} KB)\nImage exceeds ${Math.round(hardLimit/1024/1024)} MB hard limit after compression (${sizeKB} KB).`
+          });
         }
         resolve({
           base64,
-          mimeType: 'image/jpeg',
+          mimeType:       'image/jpeg',
           sizeKB,
+          sizeBytes,
           originalSizeKB: Math.round(file.size / 1024),
+          wasCompressed:  file.size > maxBytes,
           width: w,
           height: h
         });
       };
+      img.onerror = () => resolve({ error: 'ไม่สามารถโหลดรูปภาพได้ — ไฟล์อาจเสียหาย\nCannot load image — file may be corrupted.' });
       img.src = e.target.result;
     };
+    reader.onerror = () => resolve({ error: 'ไม่สามารถอ่านไฟล์ได้\nCannot read file.' });
     reader.readAsDataURL(file);
   });
 }
