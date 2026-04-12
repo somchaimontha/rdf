@@ -636,6 +636,60 @@ function instLabelBi(code) {
   return (RDF.INSTITUTION_LABELS_TH && RDF.INSTITUTION_LABELS_TH[code]) || RDF.INSTITUTION_LABELS[code] || code;
 }
 
+// ── Level label (bilingual, shortened) ────────────────────────
+// Converts stored long form (e.g. "มัธยมศึกษาปีที่ 4 (Grade 10)") to compact display
+function levelLabelBi(raw) {
+  if (!raw) return '—';
+  if (LANG === 'en') {
+    // Extract English part from parentheses: "มัธยมศึกษาปีที่ 4 (Grade 10)" → "Grade 10"
+    const m = raw.match(/\(([^)]+)\)/);
+    if (m) return m[1];
+    // VC: "ปวช. ชั้นปีที่ 1" → "ปวช. Yr.1", "ปวส. ชั้นปีที่ 2" → "ปวส. Yr.2"
+    const vc = raw.match(/^(ปวช\.|ปวส\.)\s*ชั้นปีที่\s*(\d+)/);
+    if (vc) return vc[1] + ' Yr.' + vc[2];
+    // UNI: "ปริญญาตรี ปีที่ 1" → "Bachelor Yr.1"
+    const uni = raw.match(/ปริญญาตรี.*ปีที่\s*(\d+)/);
+    if (uni) return 'Bachelor Yr.' + uni[1];
+    return raw;
+  }
+  // Thai: shorten "มัธยมศึกษาปีที่ 4 (Grade 10)" → "ม.4"
+  const mbs = raw.match(/มัธยมศึกษาปีที่\s*(\d+)/);
+  if (mbs) return 'ม.' + mbs[1];
+  // "ปวช. ชั้นปีที่ 1" → "ปวช. 1"
+  const vc = raw.match(/^(ปวช\.|ปวส\.)\s*ชั้นปีที่\s*(\d+)/);
+  if (vc) return vc[1] + ' ' + vc[2];
+  // UNI: "ปริญญาตรี ปีที่ 1" → "ป.ตรี ปี 1"
+  const uni = raw.match(/ปริญญาตรี.*ปีที่\s*(\d+)/);
+  if (uni) return 'ป.ตรี ปี ' + uni[1];
+  return raw;
+}
+
+// ── Build full student object for calcProfileCompletion ───────
+function _studentToCompletionObj(s) {
+  return {
+    IDCard:            s.idCard        || '',
+    Title:             s.title         || '',
+    FirstName:         s.fname         || '',
+    LastName:          s.lname         || '',
+    BirthYear:         s.birthYear     || '',
+    Institution:       s.institution   || '',
+    CurrentLevel:      s.level         || '',
+    ScholarshipYear:   s.scholarshipYear|| '',
+    EntryYear:         s.entryYear     || '',
+    Sex:               s.sex           || '',
+    Nationality:       s.nationality   || '',
+    Religion:          s.religion      || '',
+    Phone1:            s.phone         || '',
+    Province:          s.province      || '',
+    Amphoe:            s.amphoe        || '',
+    Tambon:            s.tambon        || '',
+    ParentStatus:      s.parentStatus  || '',
+    Parent1_FirstName: s.parent1Fname  || '',
+    Parent1_LastName:  s.parent1Lname  || '',
+    ProfilePicURL:     s.pic           || '',
+  };
+}
+
 // Read URL params for initial filter
 const urlParams = new URLSearchParams(window.location.search);
 const initInst   = urlParams.get('inst')   || '';
@@ -722,7 +776,7 @@ function applyFilters() {
 
   // Incomplete profile filter
   if (incompleteFilter) {
-    filteredStudents = filteredStudents.filter(s => calcProfileCompletion({IDCard:s.idCard,FirstName:s.fname,LastName:s.lname,Institution:s.institution,ScholarshipYear:s.scholarshipYear,Phone1:s.phone}).pct < 80);
+    filteredStudents = filteredStudents.filter(s => calcProfileCompletion(_studentToCompletionObj(s)).pct < 80);
   }
 
   // Sort: newest StipNo first (descending numeric suffix)
@@ -780,14 +834,14 @@ function renderTable() {
             })()}
             <div class="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
               <span>${fmtIDCard(s.idCard)}</span>
-              ${(() => { const _cp = calcProfileCompletion({IDCard:s.idCard,FirstName:s.fname,LastName:s.lname,Institution:s.institution,ScholarshipYear:s.scholarshipYear,Phone1:s.phone}); return _cp.pct < 100 ? `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;background:${_cp.pct>=80?'#dcfce7':_cp.pct>=50?'#fef3c7':'#fee2e2'};color:${_cp.pct>=80?'#15803d':_cp.pct>=50?'#92400e':'#dc2626'}">${_cp.pct}%</span>` : ''; })()}
+              ${(() => { const _cp = calcProfileCompletion(_studentToCompletionObj(s)); return _cp.pct < 100 ? `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;background:${_cp.pct>=80?'#dcfce7':_cp.pct>=50?'#fef3c7':'#fee2e2'};color:${_cp.pct>=80?'#15803d':_cp.pct>=50?'#92400e':'#dc2626'}" title="${t('profileCompletion')}: ${_cp.pct}%">${_cp.pct}%</span>` : ''; })()}
             </div>
           </div>
         </div>
       </td>
       <td>
         <div class="font-semibold text-xs" style="color:${instColor}">${instLabelBi(s.institution)}</div>
-        <div class="text-xs text-gray-400">${s.level||'—'}</div>
+        <div class="text-xs text-gray-500" title="${s.level||''}">${levelLabelBi(s.level)}</div>
       </td>
       <td class="hide-mobile text-xs text-gray-500">
         ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
@@ -886,7 +940,7 @@ function updateActiveFilters(f) {
   if (f.q)      tags.push(`ค้นหา: "${f.q}"`);
   if (f.inst)   tags.push(instLabel(f.inst));
   if (f.status) tags.push(f.status === 'Continued' ? t('continuedScholarship') : RDF.STATUS_LABELS_TH[f.status]||f.status);
-  if (f.level)  tags.push(f.level);
+  if (f.level)  tags.push(levelLabelBi(f.level));
   if (f.year)   tags.push(`ปีการศึกษา ${parseInt(f.year)+543}`);
   const wrap = document.getElementById('activeFiltersWrap');
   const tagEl = document.getElementById('activeFilterTags');
@@ -967,7 +1021,7 @@ function openGradeModal(stipNo) {
     <div style="display:flex;align-items:center;gap:12px;padding:14px 18px 12px;border-bottom:1px solid #f1f5f9">
       <div style="flex:1">
         <div style="font-weight:800;font-size:15px;color:#1e3a8a">${name}</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:2px">${stipNo} · ${stu.institution||'—'} · ${stu.level||'—'}</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px">${stipNo} · ${instLabelBi(stu.institution)} · ${levelLabelBi(stu.level)}</div>
       </div>
       ${grades.length ? `
       <div style="text-align:center;background:#faf5ff;border:1px solid #ddd6fe;border-radius:10px;padding:6px 14px">
@@ -1311,7 +1365,7 @@ function _renderDupGroup() {
       <p class="text-sm font-semibold text-gray-800">${[s.title,s.firstName,s.lastName].filter(Boolean).join(' ') || '—'}</p>
       ${s.engFirstName ? `<p class="text-xs text-gray-400">${s.engFirstName} ${s.engLastName||''}</p>` : ''}
       <div class="mt-2 pt-2 border-t border-gray-100 space-y-0.5 text-xs text-gray-500">
-        <div><b>สถาบัน:</b> ${s.institution||'—'} | <b>ระดับ:</b> ${s.level||'—'}</div>
+        <div><b>${LANG==='en'?'Institution':'สถาบัน'}:</b> ${instLabelBi(s.institution)} | <b>${LANG==='en'?'Level':'ระดับ'}:</b> ${levelLabelBi(s.level)}</div>
         <div><b>ปีเกิด:</b> ${s.birthYear||'—'} | <b>โทร:</b> ${s.phone||'—'}</div>
         ${s.idCard ? `<div class="font-mono text-blue-600"><b>บัตร:</b> ${s.idCard.substring(0,3)}-${s.idCard.substring(3,9)}-${s.idCard.substring(9)}</div>` : '<div class="text-red-300">บัตร: ไม่มีข้อมูล</div>'}
         <div class="text-gray-300"><b>สร้าง:</b> ${s.createdAt||'—'}</div>
@@ -1463,7 +1517,7 @@ const RPT_FIELD_DEFS = [
                            : ((RDF.INSTITUTION_LABELS_TH||{})[s.institution]||RDF.INSTITUTION_LABELS[s.institution]||s.institution||'—') },
   { key:'level',         cat:'academic', defaultOn:true,
     labelTH:'ระดับชั้น',              labelEN:'Level / Grade',
-    render:(s)=> s.level||'—' },
+    render:(s,isEN)=> isEN ? levelLabelBi(s.level) : (s.level||'—') },
   { key:'scholarshipYear', cat:'academic', defaultOn:true,
     labelTH:'ปีการศึกษา (พ.ศ.)',      labelEN:'Acad. Year (BE)',
     render:(s)=> s.scholarshipYear ? String(parseInt(s.scholarshipYear)+543) : '—' },
