@@ -205,14 +205,14 @@
         <div>
           <label class="field-label"><span data-t="scholarshipYearLabel">ปีการศึกษาที่ได้รับทุน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
           <input type="number" id="f_scholarshipYear" min="2000" max="2100" placeholder="เช่น 2023" class="field-input" required
-                 oninput="showBeHint(this,'hintScholarYear'); _syncEntryYear(this)">
+                 oninput="onScholarYearInput(this)">
           <p id="hintScholarYear" class="text-xs text-blue-500 mt-1 hidden"></p>
         </div>
         <div class="flex gap-2">
           <div class="flex-1">
             <label class="field-label"><span data-t="entryYear">ปีที่เข้าเรียน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
             <input type="number" id="f_entryYear" placeholder="เช่น 2023" class="field-input" required
-                   oninput="_entryYearTouched=true; showBeHint(this,'hintEntryYear')">
+                   oninput="onEntryYearInput(this)">
             <p id="hintEntryYear" class="text-xs text-blue-500 mt-1 hidden"></p>
           </div>
           <div style="width:110px">
@@ -1474,17 +1474,24 @@ function calcAge() {
 }
 initBirthDropdowns();
 
-// ── Scholarship year → Entry year mirror ──
-// Stays true while user hasn't manually typed in f_entryYear.
-// Reset to true when the form is cleared/reset for a new record.
+// ── Scholarship year ↔ Entry year mirror ──────────────────────────────────
+// _entryYearTouched: true once user manually edits f_entryYear — stops mirror.
+// Must be a named function (not inline oninput) so the closure variable is
+// correctly read/written by both handlers.
 let _entryYearTouched = false;
 
-function _syncEntryYear(scholarEl) {
-  if (_entryYearTouched) return;          // user has taken manual control
+function onScholarYearInput(el) {
+  showBeHint(el, 'hintScholarYear');
+  if (_entryYearTouched) return;           // user has taken manual control
   const entryEl = document.getElementById('f_entryYear');
   if (!entryEl) return;
-  entryEl.value = scholarEl.value;
+  entryEl.value = el.value;
   showBeHint(entryEl, 'hintEntryYear');
+}
+
+function onEntryYearInput(el) {
+  _entryYearTouched = true;               // closure variable — reliably set
+  showBeHint(el, 'hintEntryYear');
 }
 
 // ── BE year hint ──
