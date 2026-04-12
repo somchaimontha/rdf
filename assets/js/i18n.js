@@ -182,6 +182,7 @@ const T = {
     currentLevel: "ระดับชั้นที่กำลังศึกษา", studentId: "รหัสนักเรียน/นักศึกษา",
     scholarshipYearLabel: "ปีการศึกษาที่ได้รับทุน (ค.ศ.)",
     entryYear: "ปีการศึกษาที่เข้าเรียน (ค.ศ.)", entryTerm: "ภาคเรียนที่เข้า",
+    entryTerm1: "ภาคเรียนที่ 1", entryTerm2: "ภาคเรียนที่ 2", entryTerm3: "ภาคเรียนที่ 3", entryTermSummer: "Summer",
     major: "แผนการเรียน / สาขาวิชา", department: "แผนกวิชา",
     oldSchool: "สถานศึกษาเดิม (ก่อนรับทุน)",
     /* University */
@@ -865,6 +866,7 @@ const T = {
     currentLevel: "Current Level", studentId: "Student ID",
     scholarshipYearLabel: "Scholarship Year (C.E.)",
     entryYear: "Entry Year (C.E.)", entryTerm: "Entry Term",
+    entryTerm1: "Semester 1", entryTerm2: "Semester 2", entryTerm3: "Semester 3", entryTermSummer: "Summer",
     major: "Study Plan / Major", department: "Department",
     oldSchool: "Previous School",
     uniSection: "University Details", uniName: "University Name",
