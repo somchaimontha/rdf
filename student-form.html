@@ -1273,8 +1273,6 @@ async function loadStudentForEdit(stipNo) {
 }
 
 function fillForm(d) {
-  // Existing record: entry year is already stored separately — disable mirror
-  _entryYearTouched = true;
   // sv() only sets value when val is a non-empty string/number,
   // so that missing DB fields don't clear select defaults (e.g. f_entryTerm)
   const sv = (id, val) => {
@@ -1474,23 +1472,19 @@ function calcAge() {
 }
 initBirthDropdowns();
 
-// ── Scholarship year ↔ Entry year mirror ──────────────────────────────────
-// _entryYearTouched: true once user manually edits f_entryYear — stops mirror.
-// Must be a named function (not inline oninput) so the closure variable is
-// correctly read/written by both handlers.
-let _entryYearTouched = false;
-
+// ── Scholarship year → Entry year mirror ──────────────────────────────────
+// Always mirrors f_scholarshipYear → f_entryYear in real-time.
+// f_entryYear remains independently editable by the user at any time.
+// fillForm() sets f_entryYear directly from stored DB value (not overwritten here).
 function onScholarYearInput(el) {
   showBeHint(el, 'hintScholarYear');
-  if (_entryYearTouched) return;           // user has taken manual control
   const entryEl = document.getElementById('f_entryYear');
   if (!entryEl) return;
-  entryEl.value = el.value;
+  entryEl.value = el.value;               // empty → clears entryYear; value → mirrors
   showBeHint(entryEl, 'hintEntryYear');
 }
 
 function onEntryYearInput(el) {
-  _entryYearTouched = true;               // closure variable — reliably set
   showBeHint(el, 'hintEntryYear');
 }
 
