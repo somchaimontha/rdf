@@ -74,10 +74,9 @@ const STUDENT_PROTECTED_FIELDS = new Set([
 
 // Default editable fields for Students (admin can change in settings)
 const STUDENT_EDITABLE_DEFAULTS = [
-  'f_phone1','f_phone2','f_email','f_lineId',
-  'f_province','f_amphoe','f_tambon','f_zipCode',
-  'f_addr','f_parentPhone',
-  'f_parent1Fname','f_parent1Lname','f_parent2Fname','f_parent2Lname',
+  'f_phone1','f_phone2','f_email',
+  'f_village','f_houseNo','f_moo','f_tambon','f_amphoe','f_province',
+  'f_fatherFname','f_fatherLname','f_motherFname','f_motherLname',
   'f_profilePicUrl','f_picUrl',
 ];
 
@@ -285,7 +284,7 @@ const RBAC = {
       }
     }
 
-    // Lock all form inputs/selects/textareas
+    // Lock/unlock all form inputs/selects/textareas (idempotent — safe to call multiple times)
     document.querySelectorAll(
       'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=checkbox]),' +
       'select, textarea'
@@ -297,6 +296,8 @@ const RBAC = {
 
       if (isProtected || !isEditable) {
         _rbacLockField(el, isProtected);
+      } else {
+        _rbacUnlockField(el);
       }
     });
 
@@ -304,6 +305,8 @@ const RBAC = {
     document.querySelectorAll('input[type=checkbox]').forEach(el => {
       if (STUDENT_PROTECTED_FIELDS.has(el.id) || !editableFields.has(el.id)) {
         _rbacLockField(el, true);
+      } else {
+        _rbacUnlockField(el);
       }
     });
 
@@ -433,6 +436,16 @@ function _rbacLockField(el, isHard) {
   el.style.cursor       = 'not-allowed';
   el.style.pointerEvents = 'none';
   if (el.tagName === 'SELECT') el.style.opacity = '0.6';
+}
+
+function _rbacUnlockField(el) {
+  el.readOnly  = false;
+  el.disabled  = false;
+  el.style.background   = '';
+  el.style.color        = '';
+  el.style.cursor       = '';
+  el.style.pointerEvents = '';
+  if (el.tagName === 'SELECT') el.style.opacity = '';
 }
 
 function _rbacDimCard(card, perm) {

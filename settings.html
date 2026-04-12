@@ -2607,46 +2607,70 @@ async function forceLogout(username) {
 const STUDENT_FIELD_OPTIONS = [
   // [fieldId, labelTH, labelEN, group]
   // ── ผลการเรียน — ควบคุมว่านักเรียนบันทึก/แก้ไขเกรดตนเองได้หรือไม่ ──
-  ['f_gradeEdit',     'บันทึก/แก้ไขผลการเรียน',  'Record / Edit Grades',  'grades'],
+  ['f_gradeEdit',       'บันทึก/แก้ไขผลการเรียน',          'Record / Edit Grades',    'grades'],
   // ── ข้อมูลการศึกษา (admin-configurable — StipNo remains always locked separately) ──
-  ['f_idCard',        'เลขบัตรประชาชน',           'National ID',           'academic'],
-  ['f_institution',   'สถาบัน',                   'Institution',           'academic'],
-  ['f_level',         'ชั้นเรียน',                'Class / Level',         'academic'],
-  ['f_scholarYear',   'ปีทุน (พ.ศ.)',             'Scholarship Year',      'academic'],
-  ['f_entryYear',     'ปีที่เข้า (พ.ศ.)',         'Entry Year',            'academic'],
-  ['f_status',        'สถานะนักเรียน',             'Student Status',        'academic'],
-  ['f_major',         'สาขาวิชา',                 'Major / Field',         'academic'],
-  ['f_uniScholarship','ทุน ม. (University Sch.)', 'University Scholarship','academic'],
+  ['f_idcard',          'เลขบัตรประชาชน',                  'National ID',             'academic'],
+  ['f_institution',     'สถาบัน',                          'Institution',             'academic'],
+  ['f_level',           'ชั้นเรียน',                       'Class / Level',           'academic'],
+  ['f_scholarshipYear', 'ปีทุน (พ.ศ.)',                   'Scholarship Year',        'academic'],
+  ['f_entryYear',       'ปีที่เข้า (พ.ศ.)',               'Entry Year',              'academic'],
+  ['f_status',          'สถานะนักเรียน',                   'Student Status',          'academic'],
+  ['f_major',           'สาขาวิชา',                        'Major / Field',           'academic'],
   // ── ข้อมูลติดต่อ ──
-  ['f_phone1',        'เบอร์โทรศัพท์ 1',          'Phone 1',               'contact'],
-  ['f_phone2',        'เบอร์โทรศัพท์ 2',          'Phone 2',               'contact'],
-  ['f_email',         'อีเมล',                    'Email',                 'contact'],
-  ['f_lineId',        'LINE ID',                   'LINE ID',               'contact'],
+  ['f_phone1',          'เบอร์โทรศัพท์ 1',                 'Phone 1',                 'contact'],
+  ['f_phone2',          'เบอร์โทรศัพท์ 2',                 'Phone 2',                 'contact'],
+  ['f_email',           'อีเมล',                           'Email',                   'contact'],
   // ── ที่อยู่ ──
-  ['f_province',      'จังหวัด',                  'Province',              'address'],
-  ['f_amphoe',        'อำเภอ',                    'District',              'address'],
-  ['f_tambon',        'ตำบล',                     'Sub-district',          'address'],
-  ['f_zipCode',       'รหัสไปรษณีย์',             'Postal Code',           'address'],
-  ['f_addr',          'ที่อยู่',                   'Address',               'address'],
+  ['f_village',         'ชื่อหมู่บ้าน / ชุมชน',            'Village / Community',     'address'],
+  ['f_houseNo',         'บ้านเลขที่',                      'House No.',               'address'],
+  ['f_moo',             'หมู่',                            'Moo',                     'address'],
+  ['f_tambon',          'ตำบล',                            'Sub-district',            'address'],
+  ['f_amphoe',          'อำเภอ',                           'District',                'address'],
+  ['f_province',        'จังหวัด',                         'Province',                'address'],
   // ── ครอบครัว ──
-  ['f_parentPhone',   'เบอร์โทรผู้ปกครอง',        'Parent Phone',          'family'],
-  ['f_parent1Fname',  'ชื่อ บิดา/มารดา คนที่ 1',  'Parent 1 First Name',   'family'],
-  ['f_parent1Lname',  'นามสกุล บิดา/มารดา คนที่ 1','Parent 1 Last Name',  'family'],
-  ['f_parent2Fname',  'ชื่อ บิดา/มารดา คนที่ 2',  'Parent 2 First Name',   'family'],
-  ['f_parent2Lname',  'นามสกุล บิดา/มารดา คนที่ 2','Parent 2 Last Name',  'family'],
+  ['f_fatherFname',     'ชื่อบิดา',                        'Father First Name',       'family'],
+  ['f_fatherLname',     'นามสกุลบิดา',                     'Father Last Name',        'family'],
+  ['f_motherFname',     'ชื่อมารดา',                       'Mother First Name',       'family'],
+  ['f_motherLname',     'นามสกุลมารดา',                    'Mother Last Name',        'family'],
   // ── รูปโปรไฟล์ ──
-  ['f_profilePicUrl', 'รูปโปรไฟล์',               'Profile Photo',         'photo'],
-  ['f_picUrl',        'URL รูปโปรไฟล์',            'Profile Photo URL',     'photo'],
+  ['f_profilePicUrl',   'รูปโปรไฟล์',                      'Profile Photo',           'photo'],
+  ['f_picUrl',          'URL รูปโปรไฟล์',                  'Profile Photo URL',       'photo'],
 ];
 
 let _studentEditableFields = null;
+
+// Map old field IDs (before fix) to correct IDs matching actual form elements
+const _FIELD_ID_MIGRATION = {
+  'f_idCard':        'f_idcard',
+  'f_scholarYear':   'f_scholarshipYear',
+  'f_lineId':        null,           // field removed from form
+  'f_zipCode':       null,           // field removed from form
+  'f_addr':          null,           // replaced by f_village/f_houseNo/f_moo
+  'f_parentPhone':   null,           // field removed from form
+  'f_uniScholarship':null,           // field removed from form
+  'f_parent1Fname':  'f_fatherFname',
+  'f_parent1Lname':  'f_fatherLname',
+  'f_parent2Fname':  'f_motherFname',
+  'f_parent2Lname':  'f_motherLname',
+};
+function _migrateFieldIds(ids) {
+  if (!Array.isArray(ids)) return ids;
+  const validIds = new Set(STUDENT_FIELD_OPTIONS.map(f => f[0]));
+  return ids.flatMap(id => {
+    if (validIds.has(id)) return [id];                         // already correct
+    const mapped = _FIELD_ID_MIGRATION[id];
+    if (mapped === null) return [];                            // field removed
+    if (mapped && validIds.has(mapped)) return [mapped];       // migrated
+    return [];                                                 // unknown — drop
+  });
+}
 
 async function loadStudentEditableFields() {
   try {
     const r = await API.getSystemSettings();
     const saved = r.data?.STUDENT_EDITABLE_FIELDS;
-    _studentEditableFields = Array.isArray(saved) && saved.length > 0
-      ? saved : RBAC.getDefaultEditableFields();
+    const raw = Array.isArray(saved) && saved.length > 0 ? saved : null;
+    _studentEditableFields = raw ? _migrateFieldIds(raw) : RBAC.getDefaultEditableFields();
   } catch { _studentEditableFields = RBAC.getDefaultEditableFields(); }
   buildStudentFieldsUI();
 }

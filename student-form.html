@@ -1052,6 +1052,7 @@ async function loadGradesForStudent(stipNo) {
     const sett = res.data || {};
     _formGrades = Array.isArray(sett.STUDENT_GRADES) ? sett.STUDENT_GRADES : [];
     RBAC.cacheStudentFields(sett);   // keep cache in sync
+    RBAC.applyFieldGuards();         // re-apply with actual settings (fixes timing vs window.load)
 
     renderGradeFormTable();
 
