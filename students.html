@@ -318,12 +318,18 @@
           </div>
         </div>
 
-        <!-- Year + Date -->
-        <div class="grid grid-cols-2 gap-3">
+        <!-- Year + Level + Date -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ปีการศึกษา / Academic Year</label>
             <select id="rptYear" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
               <option value="">ทุกปีการศึกษา / All Years</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ระดับชั้น / Level</label>
+            <select id="rptLevel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+              <option value="">ทุกระดับชั้น / All Levels</option>
             </select>
           </div>
           <div>
@@ -1497,86 +1503,72 @@ function _showDupDone() {
  * render(s, isEN) → display string for student record s.
  * Fields NOT in this list are auto-detected from data as "dynamic".
  */
+// ══════════════════════════════════════════════════════════════
+// RPT_FIELD_DEFS — organized by student-form.html sections A–G
+// To add a new field: append entry with the correct cat value.
+// Cats: identity | academic | personal | contact | address |
+//       family | remarks | banking | status | university
+// ══════════════════════════════════════════════════════════════
 const RPT_FIELD_DEFS = [
-  // ── Identity ──
+  // ── A: ข้อมูลระบุตัวตน (Identity) ──────────────────────────
   { key:'stipNo',        cat:'identity', defaultOn:true,
-    labelTH:'รหัสทุน',                labelEN:'Stip No.',
+    labelTH:'รหัสทุน',                    labelEN:'Stip No.',
     render:(s)=> s.stipNo||'—' },
   { key:'idCard',        cat:'identity', defaultOn:false,
-    labelTH:'เลขบัตรประชาชน',         labelEN:'ID Card',
+    labelTH:'เลขบัตรประชาชน',             labelEN:'ID Card',
     render:(s)=> fmtIDCard(s.idCard) },
   { key:'name',          cat:'identity', defaultOn:true,
-    labelTH:'ชื่อ-นามสกุล (ไทย)',     labelEN:'Thai Name',
+    labelTH:'ชื่อ-นามสกุล (ไทย)',         labelEN:'Thai Full Name',
     render:(s)=> s.name||'—' },
   { key:'engName',       cat:'identity', defaultOn:true,
-    labelTH:'ชื่อภาษาอังกฤษ',         labelEN:'English Name',
+    labelTH:'ชื่อ-นามสกุล (อังกฤษ)',      labelEN:'English Full Name',
     render:(s)=> [s.engTitle,s.engFname,s.engLname].filter(Boolean).join(' ')||'—' },
+  { key:'nickname',      cat:'identity', defaultOn:false,
+    labelTH:'ชื่อเล่น',                   labelEN:'Nickname',
+    render:(s)=> s.nickname||'—' },
+  { key:'sex',           cat:'identity', defaultOn:false,
+    labelTH:'เพศ',                        labelEN:'Gender',
+    render:(s)=> s.sex||'—' },
   { key:'birthYear',     cat:'identity', defaultOn:false,
-    labelTH:'ปีเกิด (ค.ศ.)',          labelEN:'Birth Year',
+    labelTH:'ปีเกิด (ค.ศ.)',              labelEN:'Birth Year (CE)',
     render:(s)=> s.birthYear||'—' },
-  // ── Academic ──
+
+  // ── B: ข้อมูลการศึกษา (Academic) ───────────────────────────
   { key:'institution',   cat:'academic', defaultOn:true,
-    labelTH:'สถานศึกษา',              labelEN:'Institution',
+    labelTH:'สถานศึกษา',                  labelEN:'Institution',
     render:(s,isEN)=> isEN ? (RDF.INSTITUTION_LABELS[s.institution]||s.institution||'—')
                            : ((RDF.INSTITUTION_LABELS_TH||{})[s.institution]||RDF.INSTITUTION_LABELS[s.institution]||s.institution||'—') },
   { key:'level',         cat:'academic', defaultOn:true,
-    labelTH:'ระดับชั้น',              labelEN:'Level / Grade',
+    labelTH:'ระดับชั้น',                  labelEN:'Level / Grade',
     render:(s,isEN)=> isEN ? levelLabelBi(s.level) : (s.level||'—') },
   { key:'scholarshipYear', cat:'academic', defaultOn:true,
-    labelTH:'ปีการศึกษา (พ.ศ.)',      labelEN:'Acad. Year (CE)',
+    labelTH:'ปีการศึกษา (พ.ศ.)',          labelEN:'Scholarship Year (CE)',
     render:(s,isEN)=> s.scholarshipYear
       ? (isEN ? s.scholarshipYear : String(parseInt(s.scholarshipYear)+543))
       : '—' },
   { key:'entryYear',     cat:'academic', defaultOn:false,
-    labelTH:'ปีเข้าเรียน (พ.ศ.)',     labelEN:'Entry Year (CE)',
+    labelTH:'ปีเข้าเรียน (พ.ศ.)',         labelEN:'Entry Year (CE)',
     render:(s,isEN)=> s.entryYear
       ? (isEN ? s.entryYear : String(parseInt(s.entryYear)+543))
       : '—' },
+  { key:'entryTerm',     cat:'academic', defaultOn:false,
+    labelTH:'ภาคเรียนที่เข้า',            labelEN:'Entry Term',
+    render:(s)=> s.entryTerm||'—' },
   { key:'major',         cat:'academic', defaultOn:true,
-    labelTH:'สาขา/แผนก',             labelEN:'Major / Dept.',
+    labelTH:'สาขา/แผนการเรียน',           labelEN:'Major / Study Plan',
     render:(s)=> s.major||'—' },
+  { key:'department',    cat:'academic', defaultOn:false,
+    labelTH:'แผนก',                       labelEN:'Department',
+    render:(s)=> s.department||'—' },
   { key:'studentId',     cat:'academic', defaultOn:false,
-    labelTH:'รหัสนักเรียน',           labelEN:'Student ID',
+    labelTH:'รหัสนักเรียน/นักศึกษา',      labelEN:'Student ID',
     render:(s)=> s.studentId||'—' },
   { key:'lastEducation', cat:'academic', defaultOn:false,
-    labelTH:'การศึกษาสุดท้าย',        labelEN:'Last Education',
+    labelTH:'การศึกษาก่อนรับทุน',         labelEN:'Last Education',
     render:(s)=> s.lastEducation||'—' },
-  // ── Status ──
-  { key:'status',        cat:'status',   defaultOn:true,
-    labelTH:'สถานะ',                  labelEN:'Status',
-    render:(s,isEN)=> isEN ? (RDF.STATUS_LABELS_EN[s.status]||s.status||'—')
-                           : (RDF.STATUS_LABELS_TH[s.status]||s.status||'—') },
-  // ── Contact ──
-  { key:'phone',         cat:'contact',  defaultOn:true,
-    labelTH:'โทรศัพท์',               labelEN:'Phone',
-    render:(s)=> fmtPhone(s.phone) },
-  { key:'phone2',        cat:'contact',  defaultOn:false,
-    labelTH:'โทรศัพท์ 2',            labelEN:'Phone 2',
-    render:(s)=> s.phone2||'—' },
-  { key:'province',      cat:'contact',  defaultOn:false,
-    labelTH:'จังหวัด',                labelEN:'Province',
-    render:(s)=> s.province||'—' },
-  { key:'amphoe',        cat:'contact',  defaultOn:false,
-    labelTH:'อำเภอ',                  labelEN:'District',
-    render:(s)=> s.amphoe||'—' },
-  { key:'tambon',        cat:'contact',  defaultOn:false,
-    labelTH:'ตำบล',                   labelEN:'Sub-district',
-    render:(s)=> s.tambon||'—' },
-  // ── Personal ──
-  { key:'sex',           cat:'personal', defaultOn:false,
-    labelTH:'เพศ',                    labelEN:'Gender',
-    render:(s)=> s.sex||'—' },
-  { key:'nationality',   cat:'personal', defaultOn:false,
-    labelTH:'สัญชาติ',                labelEN:'Nationality',
-    render:(s)=> s.nationality||'—' },
-  { key:'religion',      cat:'personal', defaultOn:false,
-    labelTH:'ศาสนา',                  labelEN:'Religion',
-    render:(s)=> s.religion||'—' },
-  // ── Academic Term (dynamically resolved against SETTINGS.ACADEMIC_TERMS) ──
-  { key:'_activeTerm',   cat:'academic',   defaultOn:false,
-    labelTH:'ภาคเรียนปัจจุบัน',       labelEN:'Current Term',
+  { key:'_activeTerm',   cat:'academic', defaultOn:false,
+    labelTH:'ภาคเรียนปัจจุบัน',           labelEN:'Current Term',
     render:(s)=> {
-      // Look up active terms for this student's institution from settings
       const terms = (window._rptSettings && window._rptSettings['ACADEMIC_TERMS']) || [];
       const today = new Date(); today.setHours(0,0,0,0);
       const active = terms.filter(t => {
@@ -1589,38 +1581,179 @@ const RPT_FIELD_DEFS = [
       return active.map(t => LANG==='en' ? (t.labelEN||t.labelTH) : t.labelTH).join(', ');
     }
   },
-  // ── University ──
+
+  // ── C: ข้อมูลส่วนตัว (Personal) ────────────────────────────
+  { key:'nationality',   cat:'personal', defaultOn:false,
+    labelTH:'สัญชาติ',                    labelEN:'Nationality',
+    render:(s)=> s.nationality||'—' },
+  { key:'religion',      cat:'personal', defaultOn:false,
+    labelTH:'ศาสนา',                      labelEN:'Religion',
+    render:(s)=> s.religion||'—' },
+  { key:'talent',        cat:'personal', defaultOn:false,
+    labelTH:'ความสามารถพิเศษ',            labelEN:'Special Talent',
+    render:(s)=> s.talent||'—' },
+  { key:'weight',        cat:'personal', defaultOn:false,
+    labelTH:'น้ำหนัก (กก.)',              labelEN:'Weight (kg)',
+    render:(s)=> s.weight||'—' },
+  { key:'height',        cat:'personal', defaultOn:false,
+    labelTH:'ส่วนสูง (ซม.)',              labelEN:'Height (cm)',
+    render:(s)=> s.height||'—' },
+  { key:'bloodType',     cat:'personal', defaultOn:false,
+    labelTH:'หมู่เลือด',                  labelEN:'Blood Type',
+    render:(s)=> s.bloodType||'—' },
+  { key:'disease',       cat:'personal', defaultOn:false,
+    labelTH:'โรคประจำตัว',               labelEN:'Medical Condition',
+    render:(s)=> s.disease||'—' },
+
+  // ── D: ข้อมูลติดต่อ (Contact) ───────────────────────────────
+  { key:'phone',         cat:'contact',  defaultOn:true,
+    labelTH:'โทรศัพท์ 1',                labelEN:'Phone 1',
+    render:(s)=> fmtPhone(s.phone) },
+  { key:'phone2',        cat:'contact',  defaultOn:false,
+    labelTH:'โทรศัพท์ 2 (ผู้ปกครอง)',    labelEN:'Phone 2 (Parent)',
+    render:(s)=> s.phone2||'—' },
+  { key:'email',         cat:'contact',  defaultOn:false,
+    labelTH:'อีเมล',                     labelEN:'Email',
+    render:(s)=> s.email||'—' },
+
+  // ── D: ที่อยู่ปัจจุบัน (Address) ────────────────────────────
+  { key:'village',       cat:'address',  defaultOn:false,
+    labelTH:'ชื่อหมู่บ้าน',              labelEN:'Village',
+    render:(s)=> s.village||'—' },
+  { key:'houseNo',       cat:'address',  defaultOn:false,
+    labelTH:'บ้านเลขที่',                labelEN:'House No.',
+    render:(s)=> s.houseNo||'—' },
+  { key:'moo',           cat:'address',  defaultOn:false,
+    labelTH:'หมู่ที่',                   labelEN:'Moo',
+    render:(s)=> s.moo||'—' },
+  { key:'tambon',        cat:'address',  defaultOn:false,
+    labelTH:'ตำบล/แขวง',                labelEN:'Sub-district',
+    render:(s)=> s.tambon||'—' },
+  { key:'amphoe',        cat:'address',  defaultOn:false,
+    labelTH:'อำเภอ/เขต',                labelEN:'District',
+    render:(s)=> s.amphoe||'—' },
+  { key:'province',      cat:'address',  defaultOn:false,
+    labelTH:'จังหวัด',                   labelEN:'Province',
+    render:(s)=> s.province||'—' },
+
+  // ── E: ข้อมูลครอบครัว (Family) ──────────────────────────────
+  { key:'parentStatus',  cat:'family',   defaultOn:false,
+    labelTH:'สถานภาพบิดา-มารดา',        labelEN:'Parent Status',
+    render:(s)=> s.parentStatus||'—' },
+  { key:'fatherName',    cat:'family',   defaultOn:false,
+    labelTH:'ชื่อบิดา',                  labelEN:'Father Name',
+    render:(s)=> [s.parent1Fname,s.parent1Lname].filter(Boolean).join(' ')||'—' },
+  { key:'motherName',    cat:'family',   defaultOn:false,
+    labelTH:'ชื่อมารดา/ผู้ปกครอง',      labelEN:'Mother / Guardian',
+    render:(s)=> [s.parent2Fname,s.parent2Lname].filter(Boolean).join(' ')||'—' },
+
+  // ── F: หมายเหตุ (Remarks) ────────────────────────────────────
+  { key:'remarks',       cat:'remarks',  defaultOn:false,
+    labelTH:'หมายเหตุ',                  labelEN:'Remarks',
+    render:(s)=> s.remarks||'—' },
+
+  // ── G: ข้อมูลธนาคาร (Banking) ───────────────────────────────
+  { key:'bankName',      cat:'banking',  defaultOn:false,
+    labelTH:'ธนาคาร',                    labelEN:'Bank',
+    render:(s)=> s.bankName||'—' },
+  { key:'bankAccountNo', cat:'banking',  defaultOn:false,
+    labelTH:'เลขบัญชีธนาคาร',           labelEN:'Bank Account No.',
+    render:(s)=> s.bankAccountNo||'—' },
+
+  // ── สถานะ (Status) ───────────────────────────────────────────
+  { key:'status',        cat:'status',   defaultOn:true,
+    labelTH:'สถานะ',                     labelEN:'Status',
+    render:(s,isEN)=> isEN ? (RDF.STATUS_LABELS_EN[s.status]||s.status||'—')
+                           : (RDF.STATUS_LABELS_TH[s.status]||s.status||'—') },
+
+  // ── ข้อมูลมหาวิทยาลัย (University) ─────────────────────────
   { key:'uniName',       cat:'university', defaultOn:false,
-    labelTH:'ชื่อมหาวิทยาลัย',        labelEN:'University Name',
+    labelTH:'ชื่อมหาวิทยาลัย',            labelEN:'University Name',
     render:(s)=> s.uniName||'—' },
   { key:'faculty',       cat:'university', defaultOn:false,
-    labelTH:'คณะ',                    labelEN:'Faculty',
-    render:(s)=> s.faculty||'—' },
+    labelTH:'คณะ',                        labelEN:'Faculty',
+    render:(s)=> s.uniFaculty||'—' },
   { key:'uniMajor',      cat:'university', defaultOn:false,
-    labelTH:'สาขาวิชา (มหาวิทยาลัย)',  labelEN:'Uni Major',
+    labelTH:'สาขาวิชา (ม.)',              labelEN:'Uni Major',
     render:(s)=> s.uniMajor||'—' },
   { key:'uniProvince',   cat:'university', defaultOn:false,
-    labelTH:'จังหวัดมหาวิทยาลัย',     labelEN:'Uni Province',
+    labelTH:'จังหวัดมหาวิทยาลัย',         labelEN:'Uni Province',
     render:(s)=> s.uniProvince||'—' },
-  // ── Banking ──
-  { key:'bankName',      cat:'banking',    defaultOn:false,
-    labelTH:'ธนาคาร',                 labelEN:'Bank',
-    render:(s)=> s.bankName||'—' },
-  { key:'bankAccountNo', cat:'banking',    defaultOn:false,
-    labelTH:'เลขบัญชีธนาคาร',         labelEN:'Bank Account No.',
-    render:(s)=> s.bankAccountNo||'—' },
 ];
 
-/* Category display metadata */
+// ── Category metadata (section letters + colors match student-form.html) ──
+// To add a new section: add a key here + use it as cat in RPT_FIELD_DEFS
 const RPT_CAT_META = {
-  identity:   { labelTH:'ข้อมูลระบุตัวตน',     labelEN:'Identity',     icon:'user' },
-  academic:   { labelTH:'ข้อมูลการศึกษา',       labelEN:'Academic',     icon:'book-open' },
-  status:     { labelTH:'สถานะ',                labelEN:'Status',       icon:'activity' },
-  contact:    { labelTH:'ข้อมูลติดต่อ',         labelEN:'Contact',      icon:'phone' },
-  personal:   { labelTH:'ข้อมูลส่วนตัว',        labelEN:'Personal',     icon:'heart' },
-  university: { labelTH:'ข้อมูลมหาวิทยาลัย',   labelEN:'University',   icon:'building-2' },
-  banking:    { labelTH:'ข้อมูลธนาคาร',         labelEN:'Banking',      icon:'landmark' },
-  dynamic:    { labelTH:'ฟิลด์อื่นๆ (ตรวจพบอัตโนมัติ)', labelEN:'Other Fields (Auto-detected)', icon:'layers' },
+  identity:   { labelTH:'A — ข้อมูลระบุตัวตน',      labelEN:'A — Identity',          icon:'fingerprint', color:'#1e40af', bg:'#eff6ff', border:'#93c5fd' },
+  academic:   { labelTH:'B — ข้อมูลการศึกษา',        labelEN:'B — Academic',          icon:'book-open',   color:'#0369a1', bg:'#f0f9ff', border:'#7dd3fc' },
+  personal:   { labelTH:'C — ข้อมูลส่วนตัว',         labelEN:'C — Personal',          icon:'user',        color:'#7c3aed', bg:'#faf5ff', border:'#c4b5fd' },
+  contact:    { labelTH:'D — ข้อมูลติดต่อ',          labelEN:'D — Contact',           icon:'phone',       color:'#0f766e', bg:'#f0fdfa', border:'#5eead4' },
+  address:    { labelTH:'D — ที่อยู่ปัจจุบัน',      labelEN:'D — Current Address',   icon:'map-pin',     color:'#15803d', bg:'#f0fdf4', border:'#86efac' },
+  family:     { labelTH:'E — ข้อมูลครอบครัว',        labelEN:'E — Family',            icon:'users',       color:'#4338ca', bg:'#eef2ff', border:'#a5b4fc' },
+  remarks:    { labelTH:'F — หมายเหตุ',              labelEN:'F — Remarks',           icon:'file-text',   color:'#475569', bg:'#f8fafc', border:'#cbd5e1' },
+  banking:    { labelTH:'G — ข้อมูลธนาคาร',          labelEN:'G — Banking',           icon:'landmark',    color:'#0369a1', bg:'#f0f9ff', border:'#7dd3fc' },
+  status:     { labelTH:'สถานะทุนการศึกษา',          labelEN:'Scholarship Status',    icon:'activity',    color:'#b45309', bg:'#fffbeb', border:'#fcd34d' },
+  university: { labelTH:'ข้อมูลมหาวิทยาลัย',        labelEN:'University Info',       icon:'building-2',  color:'#7c3aed', bg:'#faf5ff', border:'#c4b5fd' },
+  dynamic:    { labelTH:'ฟิลด์เพิ่มเติม',           labelEN:'Additional Fields',     icon:'layers',      color:'#374151', bg:'#f9fafb', border:'#e2e8f0' },
+};
+
+// ── Human-readable labels for auto-detected (dynamic) fields ──
+// Add entries here when new columns are added to the Students sheet
+const DYNAMIC_FIELD_LABEL_MAP = {
+  stipNo:        { th:'รหัสทุน',                      en:'Stip No.' },
+  idCard:        { th:'เลขบัตรประชาชน',               en:'ID Card' },
+  studentId:     { th:'รหัสนักเรียน',                 en:'Student ID' },
+  institution:   { th:'สถานศึกษา',                    en:'Institution' },
+  level:         { th:'ระดับชั้น',                    en:'Level/Grade' },
+  title:         { th:'คำนำหน้า (ไทย)',               en:'Title (Thai)' },
+  fname:         { th:'ชื่อ (ไทย)',                   en:'First Name (Thai)' },
+  lname:         { th:'นามสกุล (ไทย)',                en:'Last Name (Thai)' },
+  name:          { th:'ชื่อ-นามสกุล (ไทย)',           en:'Thai Full Name' },
+  engTitle:      { th:'คำนำหน้า (อังกฤษ)',            en:'Title (English)' },
+  engFname:      { th:'ชื่อ (อังกฤษ)',                en:'First Name (English)' },
+  engLname:      { th:'นามสกุล (อังกฤษ)',             en:'Last Name (English)' },
+  nickname:      { th:'ชื่อเล่น',                     en:'Nickname' },
+  sex:           { th:'เพศ',                          en:'Gender' },
+  birthYear:     { th:'ปีเกิด (ค.ศ.)',                en:'Birth Year (CE)' },
+  nationality:   { th:'สัญชาติ',                      en:'Nationality' },
+  religion:      { th:'ศาสนา',                        en:'Religion' },
+  talent:        { th:'ความสามารถพิเศษ',              en:'Special Talent' },
+  weight:        { th:'น้ำหนัก (กก.)',                en:'Weight (kg)' },
+  height:        { th:'ส่วนสูง (ซม.)',                en:'Height (cm)' },
+  bloodType:     { th:'หมู่เลือด',                    en:'Blood Type' },
+  disease:       { th:'โรคประจำตัว',                  en:'Medical Condition' },
+  phone:         { th:'โทรศัพท์ 1',                   en:'Phone 1' },
+  phone2:        { th:'โทรศัพท์ 2',                   en:'Phone 2' },
+  email:         { th:'อีเมล',                        en:'Email' },
+  village:       { th:'ชื่อหมู่บ้าน',                en:'Village' },
+  houseNo:       { th:'บ้านเลขที่',                   en:'House No.' },
+  moo:           { th:'หมู่ที่',                      en:'Moo' },
+  tambon:        { th:'ตำบล/แขวง',                   en:'Sub-district' },
+  amphoe:        { th:'อำเภอ/เขต',                   en:'District' },
+  province:      { th:'จังหวัด',                      en:'Province' },
+  scholarshipYear: { th:'ปีการศึกษา (พ.ศ.)',          en:'Scholarship Year (CE)' },
+  entryYear:     { th:'ปีเข้าเรียน (พ.ศ.)',           en:'Entry Year (CE)' },
+  entryTerm:     { th:'ภาคเรียนที่เข้า',              en:'Entry Term' },
+  major:         { th:'สาขา/แผนการเรียน',             en:'Major' },
+  department:    { th:'แผนก',                         en:'Department' },
+  lastEducation: { th:'การศึกษาก่อนรับทุน',           en:'Last Education' },
+  oldSchool:     { th:'สถานศึกษาเดิม',                en:'Previous School' },
+  status:        { th:'สถานะทุน',                     en:'Scholarship Status' },
+  parentStatus:  { th:'สถานภาพบิดา-มารดา',           en:'Parent Status' },
+  parent1Fname:  { th:'ชื่อบิดา',                     en:'Father First Name' },
+  parent1Lname:  { th:'นามสกุลบิดา',                  en:'Father Last Name' },
+  parent2Fname:  { th:'ชื่อมารดา/ผู้ปกครอง',         en:'Mother First Name' },
+  parent2Lname:  { th:'นามสกุลมารดา/ผู้ปกครอง',      en:'Mother Last Name' },
+  remarks:       { th:'หมายเหตุ',                     en:'Remarks' },
+  bankName:      { th:'ธนาคาร',                       en:'Bank' },
+  bankAccountNo: { th:'เลขบัญชีธนาคาร',              en:'Bank Account No.' },
+  uniName:       { th:'ชื่อมหาวิทยาลัย',              en:'University Name' },
+  uniFaculty:    { th:'คณะ',                          en:'Faculty' },
+  uniMajor:      { th:'สาขาวิชา (ม.)',                en:'Uni Major' },
+  uniProvince:   { th:'จังหวัดมหาวิทยาลัย',           en:'Uni Province' },
+  pic:           { th:'URL รูปโปรไฟล์',               en:'Profile Photo URL' },
+  createdAt:     { th:'วันที่สร้างข้อมูล',            en:'Created Date' },
+  updatedAt:     { th:'วันที่แก้ไขล่าสุด',            en:'Last Updated' },
 };
 
 /* Built-in templates */
@@ -1663,71 +1796,115 @@ function switchRptTab(n) {
 }
 
 // ── Auto-detect fields not in RPT_FIELD_DEFS ──────────────────
+// Any column that exists in the student data but is not listed in
+// RPT_FIELD_DEFS appears here with a human-readable label (via
+// DYNAMIC_FIELD_LABEL_MAP) or a camelCase → "Camel Case" fallback.
+function _dynFieldLabel(key) {
+  const m = DYNAMIC_FIELD_LABEL_MAP[key];
+  if (m) return m;
+  // Fallback: camelCase → "Camel Case" with Thai = English
+  const readable = key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+  return { th: readable, en: readable };
+}
+
 function _getDynamicFields(data) {
   if (!data || !data.length) return [];
   const definedKeys = new Set(RPT_FIELD_DEFS.map(f => f.key));
-  // Keys that belong to composite fields — don't show them as separate
+  // Exclude internal / composite-source keys
   const EXCLUDE = new Set([
-    'pic','_rowIdx','_id','createdAt','updatedAt','rowNum',
+    'pic','_rowIdx','_id','rowNum',
     'engTitle','engFname','engLname','title','fname','lname',
+    'parent1Fname','parent1Lname','parent2Fname','parent2Lname',
   ]);
   const allKeys = new Set();
   data.slice(0, 30).forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
   return [...allKeys]
     .filter(k => !definedKeys.has(k) && !EXCLUDE.has(k) && !k.startsWith('_') && k.length > 1)
     .sort()
-    .map(k => ({
-      key: k, cat: 'dynamic', defaultOn: false,
-      labelTH: k, labelEN: k,
-      render: (s) => (s[k] != null && s[k] !== '') ? String(s[k]) : '—'
-    }));
+    .map(k => {
+      const lbl = _dynFieldLabel(k);
+      return {
+        key: k, cat: 'dynamic', defaultOn: false,
+        labelTH: lbl.th, labelEN: lbl.en,
+        render: (s) => (s[k] != null && s[k] !== '') ? String(s[k]) : '—'
+      };
+    });
 }
 
 // ── Build Field Selection UI (Tab 2) ──────────────────────────
+// Preserves checkbox state across re-renders (e.g. language switch).
+// Extend by adding entries to RPT_FIELD_DEFS and RPT_CAT_META.
+const _RPT_CAT_ORDER = [
+  'identity','academic','personal','contact','address',
+  'family','remarks','banking','status','university','dynamic'
+];
+
 function _renderFieldSelectionUI(extraFields) {
   const allDefs = [...RPT_FIELD_DEFS, ...(extraFields || [])];
+
+  // Preserve checkbox state across language switches / re-renders
+  const existingCBs = document.querySelectorAll('input[name="rptField"]');
+  const prevChecked = existingCBs.length > 0
+    ? new Set([...existingCBs].filter(cb => cb.checked).map(cb => cb.value))
+    : null; // null = first render → use defaultOn
+
   const grouped = {};
   allDefs.forEach(f => {
     if (!grouped[f.cat]) grouped[f.cat] = [];
     grouped[f.cat].push(f);
   });
-  const catOrder = ['identity','academic','status','contact','personal','university','dynamic'];
+
   const isEN = document.querySelector('input[name="rptLang"]:checked')?.value === 'en';
-  const el = document.getElementById('rptFieldGroups');
+  const el   = document.getElementById('rptFieldGroups');
   if (!el) return;
 
-  el.innerHTML = catOrder
-    .filter(cat => grouped[cat] && grouped[cat].length)
+  el.innerHTML = _RPT_CAT_ORDER
+    .filter(cat => grouped[cat]?.length)
     .map(cat => {
-      const meta = RPT_CAT_META[cat] || { labelTH: cat, labelEN: cat, icon: 'layers' };
-      const catLabel = isEN ? meta.labelEN : meta.labelTH;
+      const meta   = RPT_CAT_META[cat] || { labelTH:cat, labelEN:cat, icon:'layers', color:'#64748b', bg:'#f9fafb', border:'#e2e8f0' };
+      const label  = isEN ? meta.labelEN : meta.labelTH;
       const fields = grouped[cat];
+      const selLbl = isEN ? 'Select all' : 'เลือกทั้งหมด';
+      const clrLbl = isEN ? 'Clear'      : 'ยกเลิก';
       return `
-        <div class="border border-gray-200 rounded-xl overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-            <span class="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-              <i data-lucide="${meta.icon}" class="w-3.5 h-3.5 text-blue-500"></i>
-              ${catLabel}
-              <span class="text-gray-400 font-normal">(${fields.length})</span>
+        <div class="rounded-xl overflow-hidden" style="border:1.5px solid ${meta.border};margin-bottom:2px">
+          <div class="flex items-center justify-between px-3 py-2.5"
+               style="background:${meta.bg};border-bottom:1px solid ${meta.border}">
+            <span class="text-xs font-bold flex items-center gap-1.5" style="color:${meta.color}">
+              <i data-lucide="${meta.icon}" class="w-3.5 h-3.5 flex-shrink-0"></i>
+              ${label}
+              <span class="font-normal text-gray-400 text-xs">(${fields.length})</span>
             </span>
-            <div class="flex gap-2">
-              <button onclick="_rptSelectCat('${cat}', true)" class="text-xs text-blue-600 hover:underline">เลือกทั้งหมด</button>
+            <div class="flex gap-2 text-xs flex-shrink-0">
+              <button onclick="_rptSelectCat('${cat}',true)"
+                      class="font-semibold hover:underline" style="color:${meta.color}">${selLbl}</button>
               <span class="text-gray-300">|</span>
-              <button onclick="_rptSelectCat('${cat}', false)" class="text-xs text-gray-400 hover:underline">ยกเลิก</button>
+              <button onclick="_rptSelectCat('${cat}',false)"
+                      class="text-gray-400 hover:underline">${clrLbl}</button>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
-            ${fields.map(f => `
-              <label class="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer transition" style="border-bottom:1px solid #f3f4f6">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));background:#fff">
+            ${fields.map(f => {
+              const lbl = isEN ? f.labelEN : f.labelTH;
+              return `<label class="flex items-center gap-2 px-3 py-2 cursor-pointer transition hover:bg-blue-50"
+                            style="border-bottom:1px solid #f3f4f6;border-right:1px solid #f3f4f6">
                 <input type="checkbox" name="rptField" value="${f.key}"
-                       ${f.defaultOn ? 'checked' : ''}
-                       onchange="_updateRptFieldCount()"
-                       class="rounded accent-blue-600 flex-shrink-0">
-                <span class="text-xs text-gray-700">${isEN ? f.labelEN : f.labelTH}</span>
-              </label>`).join('')}
+                       class="rounded flex-shrink-0" style="accent-color:${meta.color}"
+                       onchange="_updateRptFieldCount()">
+                <span class="text-xs text-gray-700 leading-tight">${lbl}</span>
+              </label>`;
+            }).join('')}
           </div>
         </div>`;
     }).join('');
+
+  // Restore or initialise checkbox state
+  document.querySelectorAll('input[name="rptField"]').forEach(cb => {
+    const def = allDefs.find(f => f.key === cb.value);
+    cb.checked = (prevChecked !== null)
+      ? prevChecked.has(cb.value)
+      : (def?.defaultOn || false);
+  });
 
   lucide.createIcons();
   _updateRptFieldCount();
@@ -1872,9 +2049,27 @@ async function openStudentReportModal() {
     yearSel.appendChild(opt);
   });
 
+  // Populate level dropdown
+  const levelSel = document.getElementById('rptLevel');
+  if (levelSel) {
+    const savedLevel = levelSel.value;
+    levelSel.innerHTML = `<option value="">${LANG==='en' ? 'All Levels' : 'ทุกระดับชั้น / All Levels'}</option>`;
+    const levels = [...new Set(allStudents.map(s => s.level).filter(Boolean))].sort();
+    levels.forEach(lv => {
+      const opt = document.createElement('option');
+      opt.value = lv; opt.textContent = lv;
+      levelSel.appendChild(opt);
+    });
+    if (savedLevel) levelSel.value = savedLevel;
+  }
+
   document.getElementById('rptDate').value = new Date().toISOString().split('T')[0];
   if (initInst) document.getElementById('rptInst').value = initInst;
-  document.querySelectorAll('input[name="rptLang"]').forEach(r => r.checked = (r.value === LANG));
+  document.querySelectorAll('input[name="rptLang"]').forEach(r => {
+    r.checked = (r.value === LANG);
+    // Re-render field selection when language changes (state is preserved)
+    r.onchange = () => _renderFieldSelectionUI(window._rptDynamicFields);
+  });
 
   // Detect dynamic fields from actual data (auto-extensible)
   window._rptDynamicFields = _getDynamicFields(allStudents);
@@ -1926,11 +2121,12 @@ function _renderRptSigList() {
 
 // ── Get filtered/sorted data from modal settings ───────────────
 function _getRptData() {
-  const rptType = document.querySelector('input[name="rptType"]:checked').value;
-  const inst    = document.getElementById('rptInst').value;
-  const year    = document.getElementById('rptYear').value;
-  const lang    = document.querySelector('input[name="rptLang"]:checked').value;
-  const isEN    = lang === 'en';
+  const rptType   = document.querySelector('input[name="rptType"]:checked').value;
+  const inst      = document.getElementById('rptInst').value;
+  const year      = document.getElementById('rptYear').value;
+  const level     = document.getElementById('rptLevel')?.value || '';
+  const lang      = document.querySelector('input[name="rptLang"]:checked').value;
+  const isEN      = lang === 'en';
   const groupInst = document.getElementById('rptGroupInst').checked;
 
   const STATUS_FILTER = {
@@ -1942,9 +2138,10 @@ function _getRptData() {
   const statusFn = STATUS_FILTER[rptType] || null;
 
   let data = allStudents.filter(s => {
-    if (inst && s.institution !== inst) return false;
-    if (year && s.scholarshipYear !== year && s.entryYear !== year) return false;
-    if (statusFn && !statusFn(s)) return false;
+    if (inst  && s.institution !== inst)  return false;
+    if (level && s.level !== level)       return false;
+    if (year  && s.scholarshipYear !== year && s.entryYear !== year) return false;
+    if (statusFn && !statusFn(s))         return false;
     return true;
   });
   data.sort((a, b) => extractStipNum(b.stipNo) - extractStipNum(a.stipNo));
