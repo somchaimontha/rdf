@@ -568,11 +568,63 @@
     </div>
   </div>
 
-  <!-- ─── SECTION G: Documents ─── -->
+  <!-- ─── SECTION G: Banking Information ─── -->
+  <div class="form-section mb-5">
+    <div class="form-section-header" style="background:#0369a1">
+      <i data-lucide="landmark" class="w-4 h-4"></i>
+      <span data-t="secBanking">7. ข้อมูลธนาคาร</span>
+    </div>
+    <div class="form-section-body">
+      <!-- Datalist for bank names with emoji flags -->
+      <datalist id="bankNameList">
+        <option value="ธนาคารกรุงไทย (Krungthai Bank)">
+        <option value="ธนาคารกสิกรไทย (KBank)">
+        <option value="ธนาคารออมสิน (Government Savings Bank)">
+        <option value="ธนาคารกรุงเทพ (Bangkok Bank)">
+        <option value="ธนาคารไทยพาณิชย์ (SCB)">
+        <option value="ธนาคารกรุงศรีอยุธยา (Krungsri)">
+        <option value="ธนาคารทหารไทยธนชาต (TTB)">
+        <option value="ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร (BAAC)">
+        <option value="ธนาคารอาคารสงเคราะห์ (GHB)">
+        <option value="ธนาคารอิสลามแห่งประเทศไทย (ISBT)">
+        <option value="ธนาคารซีไอเอ็มบีไทย (CIMB Thai)">
+        <option value="ธนาคารยูโอบี (UOB)">
+      </datalist>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="field-label" data-t="bankName">ธนาคาร</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-lg select-none pointer-events-none">🏦</span>
+            <input type="text" id="f_bankName" list="bankNameList"
+                   class="field-input pl-9"
+                   data-t-placeholder="bankNamePlaceholder"
+                   placeholder="พิมพ์หรือเลือกธนาคาร"
+                   autocomplete="off">
+          </div>
+          <p class="text-xs text-gray-400 mt-1">ธนาคารกรุงไทยเป็นค่าเริ่มต้น (สามารถเปลี่ยนได้)</p>
+        </div>
+        <div>
+          <label class="field-label" data-t="bankAccountNo">เลขบัญชีธนาคาร</label>
+          <input type="text" id="f_bankAccountNo"
+                 class="field-input font-mono tracking-widest"
+                 data-t-placeholder="bankAccountNoPlaceholder"
+                 placeholder="ตัวเลขเท่านั้น"
+                 inputmode="numeric"
+                 maxlength="20"
+                 oninput="validateBankAccountNo(this)">
+          <p id="bankAccountNoHint" class="text-xs text-gray-400 mt-1" data-t="bankAccountNoHint">กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีด</p>
+          <p id="bankAccountNoError" class="text-xs text-red-500 mt-1 hidden" data-t="bankAccountNoInvalid">เลขบัญชีไม่ถูกต้อง — ต้องเป็นตัวเลข 10–15 หลัก</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION H: Documents ─── -->
   <div class="form-section mb-5">
     <div class="form-section-header" style="background:#7c3aed">
       <i data-lucide="paperclip" class="w-4 h-4"></i>
-      <span>7. เอกสารแนบ (PDF / รูปภาพ)</span>
+      <span>8. เอกสารแนบ (PDF / รูปภาพ)</span>
     </div>
     <div class="form-section-body">
       <!-- datalist for labels -->
@@ -1314,6 +1366,11 @@ function fillForm(d) {
   sv('f_motherID', d.Parent2_IDCard); sv('f_motherTitle', d.Parent2_Title);
   sv('f_motherFname', d.Parent2_FirstName); sv('f_motherLname', d.Parent2_LastName);
   sv('f_remarks', d.Remarks);
+  sv('f_bankName', d.BankName);
+  if (d.BankAccountNo) {
+    const baEl = document.getElementById('f_bankAccountNo');
+    if (baEl) baEl.value = String(d.BankAccountNo).replace(/\D/g, '');
+  }
   if (d.ProfilePicURL) {
     document.getElementById('f_profilePicUrl').value = d.ProfilePicURL;
     document.getElementById('f_picUrl').value = d.ProfilePicURL;
@@ -1488,6 +1545,22 @@ function onScholarYearInput(el) {
 
 function onEntryYearInput(el) {
   showBeHint(el, 'hintEntryYear');
+}
+
+function validateBankAccountNo(el) {
+  // Strip non-digits as user types
+  const digits = el.value.replace(/\D/g, '');
+  if (el.value !== digits) el.value = digits;
+  const hint  = document.getElementById('bankAccountNoHint');
+  const error = document.getElementById('bankAccountNoError');
+  if (!digits) {
+    if (hint)  hint.classList.remove('hidden');
+    if (error) error.classList.add('hidden');
+    return;
+  }
+  const valid = digits.length >= 10 && digits.length <= 15;
+  if (hint)  hint.classList.toggle('hidden', !valid);
+  if (error) error.classList.toggle('hidden', valid);
 }
 
 // ── BE year hint ──
@@ -1834,6 +1907,8 @@ function collectForm() {
     Parent2_IDCard: get('f_motherID'), Parent2_Title: get('f_motherTitle'),
     Parent2_FirstName: get('f_motherFname'), Parent2_LastName: get('f_motherLname'),
     Remarks: get('f_remarks'),
+    BankName: get('f_bankName'),
+    BankAccountNo: get('f_bankAccountNo').replace(/\D/g, ''),
     ProfilePicURL: document.getElementById('f_profilePicUrl').value,
     SavedBy: user ? user.name : 'Admin'
   };

@@ -80,6 +80,7 @@ RDF.PROFILE_SECTIONS = [
   { key:'address',  label_th:'ที่อยู่และติดต่อ',      label_en:'Contact & Address', fields:['Province','Amphoe','Tambon'],                                              weight:15 },
   { key:'family',   label_th:'ข้อมูลครอบครัว',        label_en:'Family',           fields:['ParentStatus','Parent1_FirstName','Parent1_LastName'],                     weight:10 },
   { key:'photo',    label_th:'รูปโปรไฟล์',            label_en:'Profile Photo',    fields:['ProfilePicURL'],                                                           weight:10 },
+  { key:'banking',  label_th:'ข้อมูลธนาคาร',          label_en:'Banking',          fields:['BankName','BankAccountNo'],                                                weight:0  },
 ];
 
 function calcProfileCompletion(student) {

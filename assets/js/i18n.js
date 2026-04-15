@@ -207,6 +207,12 @@ const T = {
     village: "ชื่อหมู่บ้าน", houseNo: "บ้านเลขที่",
     moo: "หมู่ที่", tambon: "ตำบล/แขวง",
     amphoe: "อำเภอ/เขต", province: "จังหวัด",
+    /* Banking */
+    secBanking: "7. ข้อมูลธนาคาร",
+    bankName: "ธนาคาร", bankNamePlaceholder: "พิมพ์หรือเลือกธนาคาร",
+    bankAccountNo: "เลขบัญชีธนาคาร", bankAccountNoPlaceholder: "ตัวเลขเท่านั้น",
+    bankAccountNoHint: "กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีด",
+    bankAccountNoInvalid: "เลขบัญชีไม่ถูกต้อง — ต้องเป็นตัวเลข 10–15 หลัก",
     /* Family */
     parentStatus: "สถานภาพบิดา-มารดา", specifyStatus: "ระบุสถานภาพ",
     father: "บิดา (พ่อ)", mother: "มารดา / ผู้ปกครอง",
@@ -697,6 +703,7 @@ const T = {
     sfGroupAddress:  "D — ที่อยู่ปัจจุบัน",
     sfGroupFamily:   "E — ข้อมูลครอบครัว",
     sfGroupRemarks:  "F — หมายเหตุ",
+    sfGroupBanking:  "G — ข้อมูลธนาคาร",
     sfGradesDesc: "เปิด = นักเรียนสามารถเพิ่ม/แก้ไขผลการเรียนของตนเองได้  •  ปิด = ดูได้อย่างเดียว ห้ามแก้ไข",
     sfGradesBadge: "ระบบเกรด",
   },
@@ -890,6 +897,12 @@ const T = {
     village: "Village Name", houseNo: "House No.",
     moo: "Moo (Village No.)", tambon: "Sub-district",
     amphoe: "District", province: "Province",
+    /* Banking */
+    secBanking: "7. Banking Information",
+    bankName: "Bank", bankNamePlaceholder: "Type or select bank",
+    bankAccountNo: "Bank Account No.", bankAccountNoPlaceholder: "Numbers only",
+    bankAccountNoHint: "Enter digits only, no dashes",
+    bankAccountNoInvalid: "Invalid account number — must be 10–15 digits",
     parentStatus: "Parents Status", specifyStatus: "Specify Status",
     father: "Father", mother: "Mother / Guardian",
     parentIdCard: "ID Card (optional)",
@@ -1374,6 +1387,7 @@ const T = {
     sfGroupAddress:  "D — Address",
     sfGroupFamily:   "E — Family",
     sfGroupRemarks:  "F — Remarks",
+    sfGroupBanking:  "G — Banking Information",
     sfGradesDesc: "On = students can add/edit their own grades  •  Off = read-only, no editing",
     sfGradesBadge: "Grade System",
   }

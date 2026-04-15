@@ -2706,6 +2706,10 @@ const STUDENT_FIELD_OPTIONS = [
 
   // ── F: หมายเหตุ (remarks) ──
   ['f_remarks',           'หมายเหตุ / บันทึกเพิ่มเติม',       'Remarks / Additional Notes',     'remarks'],
+
+  // ── G: ข้อมูลธนาคาร (banking) ──
+  ['f_bankName',          'ธนาคาร',                            'Bank Name',                      'banking'],
+  ['f_bankAccountNo',     'เลขบัญชีธนาคาร',                   'Bank Account No.',               'banking'],
 ];
 
 let _studentEditableFields = null;
@@ -2765,6 +2769,7 @@ function buildStudentFieldsUI() {
     address:  { bg:'#f0fdf4', border:'#86efac', accent:'#15803d', icon:'🏠', labelKey:'sfGroupAddress'  },
     family:   { bg:'#eef2ff', border:'#a5b4fc', accent:'#4338ca', icon:'👨‍👩‍👧', labelKey:'sfGroupFamily'  },
     remarks:  { bg:'#f8fafc', border:'#cbd5e1', accent:'#475569', icon:'📝', labelKey:'sfGroupRemarks'  },
+    banking:  { bg:'#f0f9ff', border:'#7dd3fc', accent:'#0369a1', icon:'🏦', labelKey:'sfGroupBanking'  },
   };
 
   // Preserve insertion order from STUDENT_FIELD_OPTIONS
