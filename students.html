@@ -1517,6 +1517,9 @@ const RPT_FIELD_DEFS = [
   { key:'idCard',        cat:'identity', defaultOn:false,
     labelTH:'เลขบัตรประชาชน',             labelEN:'ID Card',
     render:(s)=> fmtIDCard(s.idCard) },
+  { key:'title',         cat:'identity', defaultOn:false,
+    labelTH:'คำนำหน้าชื่อ (ไทย)',          labelEN:'Title (Thai)',
+    render:(s)=> s.title||'—' },
   { key:'name',          cat:'identity', defaultOn:true,
     labelTH:'ชื่อ-นามสกุล (ไทย)',         labelEN:'Thai Full Name',
     render:(s)=> s.name||'—' },
@@ -1813,7 +1816,7 @@ function _getDynamicFields(data) {
   // Exclude internal / composite-source keys
   const EXCLUDE = new Set([
     'pic','_rowIdx','_id','rowNum',
-    'engTitle','engFname','engLname','title','fname','lname',
+    'engTitle','engFname','engLname','fname','lname',
     'parent1Fname','parent1Lname','parent2Fname','parent2Lname',
   ]);
   const allKeys = new Set();
