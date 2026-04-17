@@ -1517,14 +1517,33 @@ const RPT_FIELD_DEFS = [
   { key:'idCard',        cat:'identity', defaultOn:false,
     labelTH:'เลขบัตรประชาชน',             labelEN:'ID Card',
     render:(s)=> fmtIDCard(s.idCard) },
+  // ── Thai name (individual parts) ──
   { key:'title',         cat:'identity', defaultOn:false,
     labelTH:'คำนำหน้าชื่อ (ไทย)',          labelEN:'Title (Thai)',
     render:(s)=> s.title||'—' },
+  { key:'fname',         cat:'identity', defaultOn:false,
+    labelTH:'ชื่อ (ไทย)',                  labelEN:'First Name (Thai)',
+    render:(s)=> s.fname||'—' },
+  { key:'lname',         cat:'identity', defaultOn:false,
+    labelTH:'นามสกุล (ไทย)',              labelEN:'Last Name (Thai)',
+    render:(s)=> s.lname||'—' },
+  // ── Thai name (composite) ──
   { key:'name',          cat:'identity', defaultOn:true,
-    labelTH:'ชื่อ-นามสกุล (ไทย)',         labelEN:'Thai Full Name',
+    labelTH:'ชื่อ-นามสกุล (ไทย) รวม',    labelEN:'Thai Full Name (combined)',
     render:(s)=> s.name||'—' },
+  // ── English name (individual parts) ──
+  { key:'engTitle',      cat:'identity', defaultOn:false,
+    labelTH:'คำนำหน้าชื่อ (อังกฤษ)',      labelEN:'Title (English)',
+    render:(s)=> s.engTitle||'—' },
+  { key:'engFname',      cat:'identity', defaultOn:false,
+    labelTH:'ชื่อ (อังกฤษ)',               labelEN:'First Name (English)',
+    render:(s)=> s.engFname||'—' },
+  { key:'engLname',      cat:'identity', defaultOn:false,
+    labelTH:'นามสกุล (อังกฤษ)',           labelEN:'Last Name (English)',
+    render:(s)=> s.engLname||'—' },
+  // ── English name (composite) ──
   { key:'engName',       cat:'identity', defaultOn:true,
-    labelTH:'ชื่อ-นามสกุล (อังกฤษ)',      labelEN:'English Full Name',
+    labelTH:'ชื่อ-นามสกุล (อังกฤษ) รวม', labelEN:'English Full Name (combined)',
     render:(s)=> [s.engTitle,s.engFname,s.engLname].filter(Boolean).join(' ')||'—' },
   { key:'nickname',      cat:'identity', defaultOn:false,
     labelTH:'ชื่อเล่น',                   labelEN:'Nickname',
@@ -1532,9 +1551,24 @@ const RPT_FIELD_DEFS = [
   { key:'sex',           cat:'identity', defaultOn:false,
     labelTH:'เพศ',                        labelEN:'Gender',
     render:(s)=> s.sex||'—' },
+  // ── Birthday (individual parts) ──
+  { key:'birthDay',      cat:'identity', defaultOn:false,
+    labelTH:'วันเกิด',                    labelEN:'Birth Day',
+    render:(s)=> s.birthDay||'—' },
+  { key:'birthMonth',    cat:'identity', defaultOn:false,
+    labelTH:'เดือนเกิด',                  labelEN:'Birth Month',
+    render:(s,isEN)=> {
+      if (!s.birthMonth) return '—';
+      const m = parseInt(s.birthMonth);
+      if (!isNaN(m) && m >= 1 && m <= 12)
+        return isEN ? (RDF.MONTHS_EN[m-1]||s.birthMonth) : (RDF.MONTHS_TH[m-1]||s.birthMonth);
+      return s.birthMonth;
+    }},
   { key:'birthYear',     cat:'identity', defaultOn:false,
-    labelTH:'ปีเกิด (ค.ศ.)',              labelEN:'Birth Year (CE)',
-    render:(s)=> s.birthYear||'—' },
+    labelTH:'ปีเกิด (พ.ศ.)',              labelEN:'Birth Year (CE)',
+    render:(s,isEN)=> s.birthYear
+      ? (isEN ? s.birthYear : String(parseInt(s.birthYear)+543))
+      : '—' },
 
   // ── B: ข้อมูลการศึกษา (Academic) ───────────────────────────
   { key:'institution',   cat:'academic', defaultOn:true,
@@ -1717,7 +1751,9 @@ const DYNAMIC_FIELD_LABEL_MAP = {
   engLname:      { th:'นามสกุล (อังกฤษ)',             en:'Last Name (English)' },
   nickname:      { th:'ชื่อเล่น',                     en:'Nickname' },
   sex:           { th:'เพศ',                          en:'Gender' },
-  birthYear:     { th:'ปีเกิด (ค.ศ.)',                en:'Birth Year (CE)' },
+  birthDay:      { th:'วันเกิด',                      en:'Birth Day' },
+  birthMonth:    { th:'เดือนเกิด',                   en:'Birth Month' },
+  birthYear:     { th:'ปีเกิด (พ.ศ./CE)',            en:'Birth Year (CE)' },
   nationality:   { th:'สัญชาติ',                      en:'Nationality' },
   religion:      { th:'ศาสนา',                        en:'Religion' },
   talent:        { th:'ความสามารถพิเศษ',              en:'Special Talent' },
@@ -1816,7 +1852,6 @@ function _getDynamicFields(data) {
   // Exclude internal / composite-source keys
   const EXCLUDE = new Set([
     'pic','_rowIdx','_id','rowNum',
-    'engTitle','engFname','engLname','fname','lname',
     'parent1Fname','parent1Lname','parent2Fname','parent2Lname',
   ]);
   const allKeys = new Set();
