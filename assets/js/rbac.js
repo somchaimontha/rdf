@@ -89,10 +89,12 @@ const STUDENT_EDITABLE_DEFAULTS = [
   'f_parentStatus', 'f_parentStatusOther',
   'f_fatherFname', 'f_fatherLname',
   'f_motherFname', 'f_motherLname',
-  // F: Remarks
-  'f_remarks',
-  // G: Banking (students can update their own banking info)
+  // F: Banking (students can update their own banking info)
   'f_bankName', 'f_bankAccountNo',
+  // H: Passion
+  'f_passion',
+  // J: Remarks
+  'f_remarks',
 ];
 
 // ─────────────────────────────────────────────

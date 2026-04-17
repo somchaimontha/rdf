@@ -556,23 +556,11 @@
     </div>
   </div>
 
-  <!-- ─── SECTION F: Remarks ─── -->
-  <div class="form-section mb-5">
-    <div class="form-section-header" style="background:#475569">
-      <i data-lucide="file-text" class="w-4 h-4"></i>
-      <span data-t="secF">6. หมายเหตุเพิ่มเติม</span>
-    </div>
-    <div class="form-section-body">
-      <label class="field-label" data-t="additionalNotes">หมายเหตุ / บันทึกเพิ่มเติม</label>
-      <textarea id="f_remarks" rows="3" class="field-input" placeholder="หมายเหตุ..."></textarea>
-    </div>
-  </div>
-
-  <!-- ─── SECTION G: Banking Information ─── -->
+  <!-- ─── SECTION F: Banking Information ─── -->
   <div class="form-section mb-5">
     <div class="form-section-header" style="background:#0369a1">
       <i data-lucide="landmark" class="w-4 h-4"></i>
-      <span data-t="secBanking">7. ข้อมูลธนาคาร</span>
+      <span data-t="secBanking">6. ข้อมูลธนาคาร</span>
     </div>
     <div class="form-section-body">
       <!-- Datalist for bank names with emoji flags -->
@@ -620,71 +608,12 @@
     </div>
   </div>
 
-  <!-- ─── SECTION H: Documents ─── -->
-  <div class="form-section mb-5">
-    <div class="form-section-header" style="background:#7c3aed">
-      <i data-lucide="paperclip" class="w-4 h-4"></i>
-      <span>8. เอกสารแนบ (PDF / รูปภาพ)</span>
-    </div>
-    <div class="form-section-body">
-      <!-- datalist for labels -->
-      <datalist id="docLabelList">
-        <option value="สำเนาบัตรประชาชน">
-        <option value="สำเนาทะเบียนบ้าน">
-        <option value="ผลการเรียน (Transcript)">
-        <option value="ใบสมัครทุนการศึกษา">
-        <option value="ใบรับรองจากสถานศึกษา">
-        <option value="รูปถ่าย">
-        <option value="เอกสารสมัครมหาวิทยาลัย">
-        <option value="รายงานประจำเดือน">
-        <option value="อื่นๆ">
-      </datalist>
-
-      <!-- Drop zone -->
-      <div id="docDropZone"
-           class="border-2 border-dashed border-purple-200 rounded-xl p-5 bg-purple-50 text-center mb-4 transition"
-           ondragover="event.preventDefault(); this.classList.add('border-purple-500','bg-purple-100')"
-           ondragleave="this.classList.remove('border-purple-500','bg-purple-100')"
-           ondrop="docHandleDrop(event)">
-        <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-300 mx-auto mb-2"></i>
-        <p class="text-sm text-purple-700 font-semibold mb-1">ลากวางไฟล์ที่นี่ หรือกดเลือกไฟล์</p>
-        <p class="text-xs text-gray-400 mb-3">รองรับ PDF, JPG, PNG, WEBP — สูงสุด 5 MB ต่อไฟล์</p>
-        <label class="btn btn-sm cursor-pointer inline-flex items-center gap-2" style="background:#7c3aed;color:white;border-color:#7c3aed">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เลือกไฟล์
-          <input type="file" id="f_docFiles" accept="image/*,.pdf" multiple class="hidden" onchange="docAddFiles(event)">
-        </label>
-      </div>
-
-      <!-- Pending uploads -->
-      <div id="docPendingWrap" class="hidden mb-4">
-        <p class="text-xs font-bold text-amber-700 mb-2 flex items-center gap-1.5">
-          <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-          รอการอัปโหลด — จะอัปโหลดอัตโนมัติหลังกด "บันทึกข้อมูล"
-        </p>
-        <div id="docPendingList" class="space-y-2"></div>
-      </div>
-
-      <!-- Existing docs (edit mode) -->
-      <div id="docExistingWrap" class="hidden">
-        <div class="flex items-center gap-2 mb-2">
-          <p class="text-xs font-bold text-green-700 flex items-center gap-1.5">
-            <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
-            เอกสารที่บันทึกแล้ว
-          </p>
-          <span id="docExistingLoading" class="text-xs text-gray-400">(กำลังโหลด...)</span>
-        </div>
-        <div id="docExistingList" class="space-y-2"></div>
-        <p id="docExistingEmpty" class="hidden text-xs text-gray-400 italic">ยังไม่มีเอกสารแนบ</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── SECTION H: Grade Records (edit mode only, shared STUDENT_GRADES DB) ─── -->
+  <!-- ─── SECTION G: Grade Records (edit mode only, shared STUDENT_GRADES DB) ─── -->
   <div class="form-section mb-5" id="sectionGrades" style="display:none">
     <div class="form-section-header" style="background:linear-gradient(90deg,#7c3aed,#6d28d9);justify-content:space-between">
       <div class="flex items-center gap-2">
         <i data-lucide="book-open" class="w-4 h-4"></i>
-        <span data-t="arSectionH">8. ผลการเรียน / Academic Results</span>
+        <span data-t="arSectionH">7. ผลการเรียน / Academic Results</span>
       </div>
       <a href="academic-results.html" target="_blank"
          style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px">
@@ -759,6 +688,92 @@
           <span data-t="arModeEntry">บันทึกผลการเรียน</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION H: Passion / Dream Career ─── -->
+  <div class="form-section mb-5">
+    <div class="form-section-header" style="background:#0f766e">
+      <i data-lucide="star" class="w-4 h-4"></i>
+      <span data-t="secPassion">8. อาชีพในฝัน / Passion</span>
+    </div>
+    <div class="form-section-body">
+      <label class="field-label" data-t="passion">อาชีพในฝัน / ความฝัน / Passion</label>
+      <textarea id="f_passion" rows="4" class="field-input"
+                data-t-placeholder="passionPlaceholder"
+                placeholder="เล่าให้ฟังว่าอยากเป็นอะไร หรือมีความฝันอะไรในอนาคต..."></textarea>
+      <p class="text-xs text-gray-400 mt-1" data-t="passionHint">บอกเล่าความฝัน อาชีพที่อยากเป็น หรือสิ่งที่มีแรงบันดาลใจ</p>
+    </div>
+  </div>
+
+  <!-- ─── SECTION I: Documents ─── -->
+  <div class="form-section mb-5">
+    <div class="form-section-header" style="background:#7c3aed">
+      <i data-lucide="paperclip" class="w-4 h-4"></i>
+      <span>9. เอกสารแนบ (PDF / รูปภาพ)</span>
+    </div>
+    <div class="form-section-body">
+      <!-- datalist for labels -->
+      <datalist id="docLabelList">
+        <option value="สำเนาบัตรประชาชน">
+        <option value="สำเนาทะเบียนบ้าน">
+        <option value="ผลการเรียน (Transcript)">
+        <option value="ใบสมัครทุนการศึกษา">
+        <option value="ใบรับรองจากสถานศึกษา">
+        <option value="รูปถ่าย">
+        <option value="เอกสารสมัครมหาวิทยาลัย">
+        <option value="รายงานประจำเดือน">
+        <option value="อื่นๆ">
+      </datalist>
+
+      <!-- Drop zone -->
+      <div id="docDropZone"
+           class="border-2 border-dashed border-purple-200 rounded-xl p-5 bg-purple-50 text-center mb-4 transition"
+           ondragover="event.preventDefault(); this.classList.add('border-purple-500','bg-purple-100')"
+           ondragleave="this.classList.remove('border-purple-500','bg-purple-100')"
+           ondrop="docHandleDrop(event)">
+        <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-300 mx-auto mb-2"></i>
+        <p class="text-sm text-purple-700 font-semibold mb-1">ลากวางไฟล์ที่นี่ หรือกดเลือกไฟล์</p>
+        <p class="text-xs text-gray-400 mb-3">รองรับ PDF, JPG, PNG, WEBP — สูงสุด 5 MB ต่อไฟล์</p>
+        <label class="btn btn-sm cursor-pointer inline-flex items-center gap-2" style="background:#7c3aed;color:white;border-color:#7c3aed">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เลือกไฟล์
+          <input type="file" id="f_docFiles" accept="image/*,.pdf" multiple class="hidden" onchange="docAddFiles(event)">
+        </label>
+      </div>
+
+      <!-- Pending uploads -->
+      <div id="docPendingWrap" class="hidden mb-4">
+        <p class="text-xs font-bold text-amber-700 mb-2 flex items-center gap-1.5">
+          <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+          รอการอัปโหลด — จะอัปโหลดอัตโนมัติหลังกด "บันทึกข้อมูล"
+        </p>
+        <div id="docPendingList" class="space-y-2"></div>
+      </div>
+
+      <!-- Existing docs (edit mode) -->
+      <div id="docExistingWrap" class="hidden">
+        <div class="flex items-center gap-2 mb-2">
+          <p class="text-xs font-bold text-green-700 flex items-center gap-1.5">
+            <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
+            เอกสารที่บันทึกแล้ว
+          </p>
+          <span id="docExistingLoading" class="text-xs text-gray-400">(กำลังโหลด...)</span>
+        </div>
+        <div id="docExistingList" class="space-y-2"></div>
+        <p id="docExistingEmpty" class="hidden text-xs text-gray-400 italic">ยังไม่มีเอกสารแนบ</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION J: Remarks ─── -->
+  <div class="form-section mb-5">
+    <div class="form-section-header" style="background:#475569">
+      <i data-lucide="file-text" class="w-4 h-4"></i>
+      <span data-t="secF">10. หมายเหตุเพิ่มเติม</span>
+    </div>
+    <div class="form-section-body">
+      <label class="field-label" data-t="additionalNotes">หมายเหตุ / บันทึกเพิ่มเติม</label>
+      <textarea id="f_remarks" rows="3" class="field-input" placeholder="หมายเหตุ..."></textarea>
     </div>
   </div>
 
@@ -1365,6 +1380,7 @@ function fillForm(d) {
   sv('f_fatherFname', d.Parent1_FirstName); sv('f_fatherLname', d.Parent1_LastName);
   sv('f_motherID', d.Parent2_IDCard); sv('f_motherTitle', d.Parent2_Title);
   sv('f_motherFname', d.Parent2_FirstName); sv('f_motherLname', d.Parent2_LastName);
+  sv('f_passion', d.Passion);
   sv('f_remarks', d.Remarks);
   sv('f_bankName', d.BankName);
   if (d.BankAccountNo) {
@@ -1906,6 +1922,7 @@ function collectForm() {
     Parent1_FirstName: get('f_fatherFname'), Parent1_LastName: get('f_fatherLname'),
     Parent2_IDCard: get('f_motherID'), Parent2_Title: get('f_motherTitle'),
     Parent2_FirstName: get('f_motherFname'), Parent2_LastName: get('f_motherLname'),
+    Passion: get('f_passion'),
     Remarks: get('f_remarks'),
     BankName: get('f_bankName'),
     BankAccountNo: get('f_bankAccountNo').replace(/\D/g, ''),

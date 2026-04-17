@@ -1697,6 +1697,11 @@ const RPT_FIELD_DEFS = [
     labelTH:'เลขบัญชีธนาคาร',           labelEN:'Bank Account No.',
     render:(s)=> s.bankAccountNo||'—' },
 
+  // ── H: อาชีพในฝัน / Passion ─────────────────────────────────
+  { key:'passion',       cat:'passion',  defaultOn:false,
+    labelTH:'อาชีพในฝัน / Passion',     labelEN:'Dream Career / Passion',
+    render:(s)=> s.passion||'—' },
+
   // ── สถานะ (Status) ───────────────────────────────────────────
   { key:'status',        cat:'status',   defaultOn:true,
     labelTH:'สถานะ',                     labelEN:'Status',
@@ -1727,8 +1732,9 @@ const RPT_CAT_META = {
   contact:    { labelTH:'D — ข้อมูลติดต่อ',          labelEN:'D — Contact',           icon:'phone',       color:'#0f766e', bg:'#f0fdfa', border:'#5eead4' },
   address:    { labelTH:'D — ที่อยู่ปัจจุบัน',      labelEN:'D — Current Address',   icon:'map-pin',     color:'#15803d', bg:'#f0fdf4', border:'#86efac' },
   family:     { labelTH:'E — ข้อมูลครอบครัว',        labelEN:'E — Family',            icon:'users',       color:'#4338ca', bg:'#eef2ff', border:'#a5b4fc' },
-  remarks:    { labelTH:'F — หมายเหตุ',              labelEN:'F — Remarks',           icon:'file-text',   color:'#475569', bg:'#f8fafc', border:'#cbd5e1' },
-  banking:    { labelTH:'G — ข้อมูลธนาคาร',          labelEN:'G — Banking',           icon:'landmark',    color:'#0369a1', bg:'#f0f9ff', border:'#7dd3fc' },
+  banking:    { labelTH:'F — ข้อมูลธนาคาร',          labelEN:'F — Banking',           icon:'landmark',    color:'#0369a1', bg:'#f0f9ff', border:'#7dd3fc' },
+  passion:    { labelTH:'H — อาชีพในฝัน / Passion',  labelEN:'H — Dream Career',      icon:'star',        color:'#0f766e', bg:'#f0fdf4', border:'#6ee7b7' },
+  remarks:    { labelTH:'J — หมายเหตุ',              labelEN:'J — Remarks',           icon:'file-text',   color:'#475569', bg:'#f8fafc', border:'#cbd5e1' },
   status:     { labelTH:'สถานะทุนการศึกษา',          labelEN:'Scholarship Status',    icon:'activity',    color:'#b45309', bg:'#fffbeb', border:'#fcd34d' },
   university: { labelTH:'ข้อมูลมหาวิทยาลัย',        labelEN:'University Info',       icon:'building-2',  color:'#7c3aed', bg:'#faf5ff', border:'#c4b5fd' },
   dynamic:    { labelTH:'ฟิลด์เพิ่มเติม',           labelEN:'Additional Fields',     icon:'layers',      color:'#374151', bg:'#f9fafb', border:'#e2e8f0' },
@@ -1784,6 +1790,7 @@ const DYNAMIC_FIELD_LABEL_MAP = {
   parent2Fname:  { th:'ชื่อมารดา/ผู้ปกครอง',         en:'Mother First Name' },
   parent2Lname:  { th:'นามสกุลมารดา/ผู้ปกครอง',      en:'Mother Last Name' },
   remarks:       { th:'หมายเหตุ',                     en:'Remarks' },
+  passion:       { th:'อาชีพในฝัน / Passion',         en:'Dream Career / Passion' },
   bankName:      { th:'ธนาคาร',                       en:'Bank' },
   bankAccountNo: { th:'เลขบัญชีธนาคาร',              en:'Bank Account No.' },
   uniName:       { th:'ชื่อมหาวิทยาลัย',              en:'University Name' },
@@ -1874,7 +1881,7 @@ function _getDynamicFields(data) {
 // Extend by adding entries to RPT_FIELD_DEFS and RPT_CAT_META.
 const _RPT_CAT_ORDER = [
   'identity','academic','personal','contact','address',
-  'family','remarks','banking','status','university','dynamic'
+  'family','banking','passion','remarks','status','university','dynamic'
 ];
 
 function _renderFieldSelectionUI(extraFields) {
