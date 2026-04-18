@@ -1078,12 +1078,17 @@ async function loadPage() {
             defAction = 'promote';
           }
 
+          // Auto-calculate next academic year (BE +1, store as string)
+          const _curYear = s.CurrentAcademicYear || ps.academicYear || '';
+          const _nextYearBE = _curYear ? String(parseInt(_curYear) + 1) : (ps.academicYear ? String(parseInt(ps.academicYear) + 1) : '');
+
           ROW_DECISIONS[s.StipNo] = {
-            action:         defAction,
-            nextLevel:      defAction === 'promote' ? (defTo !== '—' ? defTo : '') : '',
-            uniScholarship: s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
-            notes:          s.PromotionNotes || '',
-            alreadyPromoted: alreadyPromoted,
+            action:           defAction,
+            nextLevel:        defAction === 'promote' ? (defTo !== '—' ? defTo : '') : '',
+            uniScholarship:   s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
+            notes:            s.PromotionNotes || '',
+            alreadyPromoted:  alreadyPromoted,
+            nextAcademicYear: _nextYearBE,
             uniName:'', uniDuration:'', uniFaculty:'', uniMajor:'', uniProvince:'',
           };
         }
@@ -1207,6 +1212,7 @@ function renderGroupTable(inst, level, students, nextDefault, isGradLevel) {
         <th style="width:160px" class="no-print">${t('promoColAction')}</th>
         <th style="width:220px">${t('promoColNext')}</th>
         <th style="width:115px">${t('promoColUniSch')}</th>
+        <th style="width:100px">${t('promoColNextYear')}</th>
         <th style="width:120px">${t('promoColNotes')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -1252,12 +1258,12 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
         ✓ ${t('promoAlreadyPromoted')}
       </span>` : '';
 
-  // "ทุนต่อ" badge — shows for UNI-transfer eligible levels and all UNI-year levels
-  const schContBadge = (!alreadyPromoted && isSchContRow)
+  // "ทุนต่อ ม." badge: only shown AFTER admin explicitly selects a uni/uni_own action.
+  // Not shown by default — the group header already signals eligibility.
+  const schContBadge = (!alreadyPromoted && ['uni','uni_own'].includes(act))
     ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:#ede9fe;color:#7c3aed;border:1px solid #c4b5fd">
-        🏛 ${inst==='UNI' ? t('promoSchCont') : t('promoUniEligible')}
+        🏛 ${t('promoUniEligible')}
       </span>` : '';
-  // unused isUniElig removed — use isUniTransfer / isSchContRow instead
 
   // Show 'uni'/'uni_own' options ONLY for the three university-eligible transfer levels.
   const showUniOpts = isUniTransfer;
@@ -1316,9 +1322,17 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
     <td id="detail_${s.StipNo}">${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}</td>
     <td>${schCell}</td>
     <td>
+      <input type="text" class="notes-input" style="width:78px;text-align:center;font-weight:600"
+        placeholder="—"
+        title="${t('promoNextYearHint')}"
+        value="${(dec.nextAcademicYear||'').replace(/"/g,'&quot;')}"
+        onchange="setDec('${s.StipNo}','nextAcademicYear',this.value)">
+    </td>
+    <td>
       <input type="text" class="notes-input"
         placeholder="${LANG==='th'?'หมายเหตุ...':'Notes...'}"
         value="${(dec.notes||'').replace(/"/g,'&quot;')}"
+        id="notes_${s.StipNo}"
         onchange="setDec('${s.StipNo}','notes',this.value)">
     </td>
   </tr>
@@ -1475,7 +1489,12 @@ async function promoteAllInGroup(inst, level) {
   const defAct  = (comp === 'graduate' || comp === 'graduate_uni') ? 'graduate' : 'promote';
   const defNxt  = defAct === 'promote' ? (rule && rule.to !== '—' ? rule.to : '') : '';
   const isGrad  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
-  const count   = group.students.length;
+  // Count only students whose checkboxes are checked in this group
+  const checkedStudents = group.students.filter(s => {
+    const chk = document.querySelector(`input.group-check[data-stipno="${s.StipNo}"]`);
+    return chk ? chk.checked : true; // if group not rendered, assume all selected
+  });
+  const count = checkedStudents.length || group.students.length;
 
   const actEmoji = defAct === 'graduate' ? '🎓' : '⬆';
   const actLabel = defAct === 'graduate'
@@ -1504,8 +1523,12 @@ async function promoteAllInGroup(inst, level) {
   });
   if (!isConfirmed) return;
 
-  // Update ROW_DECISIONS for all students in this group
-  group.students.forEach(s => {
+  // Update ROW_DECISIONS only for CHECKED students in this group
+  const targetStudents = group.students.filter(s => {
+    const chk = document.querySelector(`input.group-check[data-stipno="${s.StipNo}"]`);
+    return chk ? chk.checked : true; // if not rendered, include all
+  });
+  targetStudents.forEach(s => {
     if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
     ROW_DECISIONS[s.StipNo].action    = defAct;
     ROW_DECISIONS[s.StipNo].nextLevel = defNxt;
@@ -1606,6 +1629,41 @@ async function applyAllChanges() {
     counts.withdraw_sch ? `<b>${counts.withdraw_sch}</b> ${LANG==='th'?'นักเรียนจะถอนทุนการศึกษา':'students will withdraw from scholarship'}` : '',
   ].filter(Boolean);
 
+  // ── Mandatory notes check for critical actions ─────────────
+  const NOTES_REQUIRED_ACTIONS = ['hold','suspend','resign','withdraw_sch'];
+  const missingNotes = active.filter(([stipNo, dec]) =>
+    NOTES_REQUIRED_ACTIONS.includes(dec.action) && !(dec.notes || '').trim()
+  );
+  if (missingNotes.length > 0) {
+    // Collect student names for the warning
+    const missingNames = missingNotes.map(([stipNo]) => {
+      const grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+      const stu = grp?.students.find(s => s.StipNo === stipNo);
+      return stu ? ((stu.Title||'') + (stu.FirstName||'') + ' ' + (stu.LastName||'') + ' (' + stipNo + ')').trim()
+                 : stipNo;
+    });
+    const { isConfirmed: goBack } = await Swal.fire({
+      icon: 'warning',
+      title: t('promoNotesRequired'),
+      html: `<div class="text-sm text-left">${t('promoNotesWarning')}:<br><ul class="mt-2 ml-4 list-disc text-red-600 text-xs">${missingNames.map(n=>`<li>${n}</li>`).join('')}</ul></div>`,
+      showCancelButton: true,
+      confirmButtonText: t('promoGoBack'),
+      cancelButtonText: t('promoContinueAnyway'),
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true,
+    });
+    if (goBack) {
+      // Highlight missing notes fields
+      missingNotes.forEach(([stipNo]) => {
+        const el = document.getElementById('notes_' + stipNo);
+        if (el) { el.style.border = '2px solid #dc2626'; el.focus(); }
+      });
+      return;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
+
   const promoDate = document.getElementById('promotionDate').value;
   const { isConfirmed } = await Swal.fire({
     icon:'question', title: t('promoConfirmTitle'),
@@ -1673,6 +1731,8 @@ async function applyAllChanges() {
     if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
     if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
       p.UniScholarship = dec.uniScholarship;
+    // Next academic year — written to CurrentAcademicYear in DB
+    if (dec.nextAcademicYear) p.NextAcademicYear = dec.nextAcademicYear;
     // Mark this student as processed in this promotion cycle (prevents double-promotion)
     if (batchID) p.PromotionBatchID = batchID;
     promotions.push(p);
@@ -1685,7 +1745,7 @@ async function applyAllChanges() {
   const meaningful = promotions.filter(p =>
     (p.NewLevel && p.NewLevel !== '—') || p.NewStatus || p.NewInstitution ||
     p.UniScholarship !== undefined || p.PromotionNotes !== undefined ||
-    p.PromotionBatchID
+    p.PromotionBatchID || p.NextAcademicYear
   );
   if (meaningful.length === 0) return Swal.fire(t('warning'), t('promoNothingToSave'), 'info');
 
