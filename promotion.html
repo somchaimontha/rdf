@@ -830,12 +830,12 @@ const DEFAULT_RULES = [
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 3 (Grade 9)',  to:'มัธยมศึกษาปีที่ 4 (Grade 10)', completion:'promote' },
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 4 (Grade 10)', to:'มัธยมศึกษาปีที่ 5 (Grade 11)', completion:'promote' },
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 5 (Grade 11)', to:'มัธยมศึกษาปีที่ 6 (Grade 12)', completion:'promote' },
-  { inst:'MBS', from:'มัธยมศึกษาปีที่ 6 (Grade 12)', to:'—',                             completion:'graduate' },
+  { inst:'MBS', from:'มัธยมศึกษาปีที่ 6 (Grade 12)', to:'—',                             completion:'graduate_uni' },
   { inst:'VC',  from:'ปวช. ชั้นปีที่ 1', to:'ปวช. ชั้นปีที่ 2', completion:'promote' },
   { inst:'VC',  from:'ปวช. ชั้นปีที่ 2', to:'ปวช. ชั้นปีที่ 3', completion:'promote' },
   { inst:'VC',  from:'ปวช. ชั้นปีที่ 3', to:'ปวส. ชั้นปีที่ 1', completion:'promote' },
   { inst:'VC',  from:'ปวส. ชั้นปีที่ 1', to:'ปวส. ชั้นปีที่ 2', completion:'promote' },
-  { inst:'VC',  from:'ปวส. ชั้นปีที่ 2', to:'—',                 completion:'graduate' },
+  { inst:'VC',  from:'ปวส. ชั้นปีที่ 2', to:'—',                 completion:'graduate_uni' },
   { inst:'UNI', from:'ชั้นปีที่ 1', to:'ชั้นปีที่ 2', completion:'promote' },
   { inst:'UNI', from:'ชั้นปีที่ 2', to:'ชั้นปีที่ 3', completion:'promote' },
   { inst:'UNI', from:'ชั้นปีที่ 3', to:'ชั้นปีที่ 4', completion:'promote' },
@@ -843,6 +843,24 @@ const DEFAULT_RULES = [
   { inst:'UNI', from:'ชั้นปีที่ 5', to:'—',           completion:'graduate' },
   { inst:'UNI', from:'ชั้นปีที่ 6', to:'—',           completion:'graduate' },
 ];
+
+// ─────────────────────────────────────────────
+// TERMINAL-LEVEL HELPERS
+// ─────────────────────────────────────────────
+// Returns true when a student at this level can transition to university with RDF scholarship.
+// These are the levels where "ทุนต่อ ม." should be prominently offered.
+function isUniEligibleLevel(inst, level) {
+  const rule = PROMO_RULES[inst + '||' + level];
+  return !!(rule && rule.completion === 'graduate_uni');
+}
+
+// Returns true when the "ทุนต่อ" scholarship-continuation badge should appear on a row.
+// Covers: M.6, ปวส.2 (can go to uni), ปวช.3 (continues to ปวส.), ALL UNI years.
+function isSchContinuationLevel(inst, level) {
+  if (inst === 'UNI') return true;
+  if (inst === 'VC' && level === 'ปวช. ชั้นปีที่ 3') return true;
+  return isUniEligibleLevel(inst, level);
+}
 
 // ─────────────────────────────────────────────
 // AVATAR HELPER — no external placeholder service
@@ -1023,17 +1041,39 @@ async function loadPage() {
 
     ALL_GROUPS = studRes.groups || [];
 
+    // PromotionBatchID for this academic year — used to detect already-promoted students
+    const currentBatchID = ps.academicYear ? ps.academicYear + '_PROMO' : '';
+
     ALL_GROUPS.forEach(g => {
       g.students.forEach(s => {
         if (!ROW_DECISIONS[s.StipNo]) {
           const rule = PROMO_RULES[g.institution + '||' + g.level];
           const defTo = rule ? rule.to : '';
           const comp  = rule ? rule.completion : 'promote';
+
+          // Students with a matching PromotionBatchID were already processed this cycle.
+          // Default them to 'skip' so they are not accidentally promoted a second time.
+          const alreadyPromoted = !!(currentBatchID && s.PromotionBatchID &&
+            s.PromotionBatchID === currentBatchID);
+
+          let defAction;
+          if (alreadyPromoted) {
+            defAction = 'skip';
+          } else if (comp === 'graduate_uni') {
+            // Terminal level eligible for university → default to "scholarship continuation"
+            defAction = 'uni';
+          } else if (comp === 'graduate') {
+            defAction = 'graduate';
+          } else {
+            defAction = 'promote';
+          }
+
           ROW_DECISIONS[s.StipNo] = {
-            action:        comp === 'graduate' ? 'graduate' : 'promote',
-            nextLevel:     comp === 'promote' ? defTo : '',
+            action:         defAction,
+            nextLevel:      defAction === 'promote' ? (defTo !== '—' ? defTo : '') : '',
             uniScholarship: s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
-            notes:         s.PromotionNotes || '',
+            notes:          s.PromotionNotes || '',
+            alreadyPromoted: alreadyPromoted,
             uniName:'', uniDuration:'', uniFaculty:'', uniMajor:'', uniProvince:'',
           };
         }
@@ -1088,6 +1128,7 @@ function renderGroups() {
     const rule  = PROMO_RULES[gKey];
     const nextDefault   = rule ? rule.to : '—';
     const isGradLevel   = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
+    const isSchCont     = isSchContinuationLevel(g.institution, g.level);
     const countLabel    = filtered.length + ' ' + t('promoStudents');
 
     shown++;
@@ -1099,6 +1140,8 @@ function renderGroups() {
           <span class="text-gray-700">— ${g.level}</span>
           <span class="text-xs text-gray-400 font-normal">${countLabel}</span>
           ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
+          ${isSchCont && !isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#f3e8ff;color:#7c3aed;border:1px solid #c4b5fd">🏛 ${t('promoSchCont')}</span>` : ''}
+          ${isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#ede9fe;color:#6d28d9;border:1px solid #a78bfa">🏛 ${t('promoUniEligible')}</span>` : ''}
         </div>
         <div class="flex gap-2 items-center no-print">
           <button onclick="promoteAllInGroup('${g.institution}','${g.level}')"
@@ -1178,13 +1221,36 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
   const schCls   = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
   const schLabel = { Yes: t('promoSchYes'), No: t('promoSchNo'), Pending: t('promoSchPending') }[dec.uniScholarship] || '—';
 
+  // ── Scholarship continuation flags ──────────────────────────
+  // isUniEligible: can go to university (M.6, ปวส.2) → show 'uni'/'uni_own' options
+  // isSchCont: scholarship continues (ปวช.3, all UNI) → show badge only
+  const _rule        = PROMO_RULES[inst + '||' + level];
+  const isUniElig    = !!(_rule && _rule.completion === 'graduate_uni');
+  const isSchContRow = isSchContinuationLevel(inst, level);
+
+  // "Already promoted this cycle" badge
+  const alreadyPromoted = dec.alreadyPromoted === true;
+  const alreadyBadge = alreadyPromoted
+    ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:#dcfce7;color:#16a34a;border:1px solid #86efac">
+        ✓ ${t('promoAlreadyPromoted')}
+      </span>` : '';
+
+  // "ทุนต่อ" badge — shown on uni-eligible and scholarship-continuation rows
+  const schContBadge = (!alreadyPromoted && isSchContRow)
+    ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;background:#ede9fe;color:#7c3aed;border:1px solid #c4b5fd">
+        🏛 ${inst==='UNI' ? t('promoSchCont') : t('promoUniEligible')}
+      </span>` : '';
+
+  // Show 'uni'/'uni_own' options for MBS/VC at any level, plus UNI-eligible VC/MBS levels
+  const showUniOpts = ['MBS','VC'].includes(inst) || isUniElig;
+
   // Action options HTML
   const actionSel = `<select class="promo-action-select w-full" id="act_${s.StipNo}"
     onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)">
     <option value="promote"  ${act==='promote' ?'selected':''}>⬆ ${t('promoActPromote')}</option>
     <option value="graduate" ${act==='graduate'?'selected':''}>🎓 ${t('promoActGraduate')}</option>
-    ${['MBS','VC'].includes(inst) ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
-    ${['MBS','VC'].includes(inst) ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
+    ${showUniOpts ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
+    ${showUniOpts ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
     <option value="hold"    ${act==='hold'   ?'selected':''}>⏸ ${t('promoActHold')}</option>
     <option value="suspend"      ${act==='suspend'     ?'selected':''}>⚠ ${t('promoActSuspend')}</option>
     <option value="resign"       ${act==='resign'      ?'selected':''}>✕ ${t('promoActResign')}</option>
@@ -1224,6 +1290,7 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
       <div class="font-semibold text-gray-800 text-xs leading-tight">${thaiName || '—'}</div>
       ${engName ? `<div class="text-gray-400" style="font-size:10px">${engName}</div>` : ''}
       ${s.Major ? `<div class="text-gray-400" style="font-size:10px">${s.Major}</div>` : ''}
+      ${alreadyBadge || schContBadge ? `<div class="flex flex-wrap gap-1 mt-1">${alreadyBadge}${schContBadge}</div>` : ''}
     </td>
     <td class="text-xs font-mono text-gray-500">${s.StipNo}</td>
     <td><span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></td>
@@ -1302,7 +1369,8 @@ function onActionChange(stipNo, inst, level, newAct) {
 
   if (newAct === 'promote') {
     const rule = PROMO_RULES[inst + '||' + level];
-    dec.nextLevel = rule ? rule.to : '';
+    const rTo = rule ? rule.to : '';
+    dec.nextLevel = (rTo && rTo !== '—') ? rTo : '';
   } else {
     dec.nextLevel = '';
   }
@@ -1371,15 +1439,21 @@ async function promoteAllInGroup(inst, level) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
   const rule    = PROMO_RULES[inst + '||' + level];
-  const defAct  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni') ? 'graduate' : 'promote';
-  const defNxt  = defAct === 'promote' ? (rule ? rule.to : '') : '';
+  const comp    = rule ? rule.completion : 'promote';
+  // graduate_uni → default to 'uni' (scholarship continuation to university)
+  // graduate     → default to 'graduate'
+  // promote      → default to 'promote'
+  const defAct  = comp === 'graduate_uni' ? 'uni' : comp === 'graduate' ? 'graduate' : 'promote';
+  const defNxt  = defAct === 'promote' ? (rule && rule.to !== '—' ? rule.to : '') : '';
   const isGrad  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
   const count   = group.students.length;
 
-  const actEmoji = defAct === 'graduate' ? '🎓' : '⬆';
+  const actEmoji = defAct === 'graduate' ? '🎓' : defAct === 'uni' ? '🏛' : '⬆';
   const actLabel = defAct === 'graduate'
     ? (LANG === 'th' ? 'จบการศึกษา' : 'Graduate')
-    : (LANG === 'th' ? 'เลื่อนชั้น' : 'Promote');
+    : defAct === 'uni'
+      ? (LANG === 'th' ? 'ต่อมหาวิทยาลัย (ทุน RDF)' : 'University (RDF Scholarship)')
+      : (LANG === 'th' ? 'เลื่อนชั้น' : 'Promote');
 
   const { isConfirmed } = await Swal.fire({
     icon: 'question',
@@ -1519,6 +1593,10 @@ async function applyAllChanges() {
 
   const promotions = [];
   const user = (getUser()||{}).username || 'admin';
+  // PromotionBatchID written to every processed student to prevent double-promotion.
+  // Only generated when an academic year is configured in settings.
+  const academicYear = document.getElementById('academicYear').value || '';
+  const batchID = academicYear ? academicYear + '_PROMO' : '';
 
   active.forEach(([stipNo, dec]) => {
     const p = { StipNo: stipNo };
@@ -1554,12 +1632,20 @@ async function applyAllChanges() {
     if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
     if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
       p.UniScholarship = dec.uniScholarship;
+    // Mark this student as processed in this promotion cycle (prevents double-promotion)
+    if (batchID) p.PromotionBatchID = batchID;
     promotions.push(p);
   });
 
+  // A promotion is "meaningful" (worth writing to the DB) if it has any field that changes data,
+  // OR if it carries a PromotionBatchID (to record which students were processed this cycle).
+  // Crucially, a 'promote' with empty nextLevel (e.g. manually set on a terminal level) is
+  // excluded unless it writes something else — the batchID alone keeps it included when set.
   const meaningful = promotions.filter(p =>
-    p.NewLevel || p.NewStatus || p.NewInstitution ||
-    p.UniScholarship !== undefined || p.PromotionNotes !== undefined);
+    (p.NewLevel && p.NewLevel !== '—') || p.NewStatus || p.NewInstitution ||
+    p.UniScholarship !== undefined || p.PromotionNotes !== undefined ||
+    p.PromotionBatchID
+  );
   if (meaningful.length === 0) return Swal.fire(t('warning'), t('promoNothingToSave'), 'info');
 
   showLoader(true, LANG==='th'?`กำลังบันทึก ${meaningful.length} รายการ...`:`Applying ${meaningful.length} changes...`);
