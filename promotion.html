@@ -1418,11 +1418,44 @@ function setGroupNextYear(inst, level, year) {
   });
 }
 
+// Returns a short display label for a level string (value stays unchanged).
+// TH: มัธยมศึกษาปีที่ 5 (Grade 11) → ม.5   EN: Grade 11
+// TH: ปวช. ชั้นปีที่ 2              → ปวช.2  EN: ปวช.2
+// TH: ชั้นปีที่ 3  (UNI)            → ปี 3   EN: Yr 3
+function abbrevLevel(level) {
+  if (!level || level === '—') return level;
+  const lang = (typeof LANG !== 'undefined') ? LANG : 'th';
+
+  // มัธยมศึกษาปีที่ N (Grade M) → ม.N (TH) / Gr.M (EN)
+  const mbsMatch = level.match(/มัธยมศึกษาปีที่\s*(\d+)(?:\s*\(Grade\s*(\d+)\))?/);
+  if (mbsMatch) {
+    return lang === 'th'
+      ? 'ม.' + mbsMatch[1]
+      : 'Gr.' + (mbsMatch[2] || mbsMatch[1]);
+  }
+
+  // ปวช. ชั้นปีที่ N → ปวช.N  |  ปวส. ชั้นปีที่ N → ปวส.N
+  const vcMatch = level.match(/(ปวช\.|ปวส\.)\s*ชั้นปีที่\s*(\d+)/);
+  if (vcMatch) return vcMatch[1] + vcMatch[2];
+
+  // ชั้นปีที่ N (UNI) → ปี N (TH) / Yr N (EN)
+  const uniMatch = level.match(/ชั้นปีที่\s*(\d+)/);
+  if (uniMatch) return lang === 'th' ? 'ปี ' + uniMatch[1] : 'Yr ' + uniMatch[1];
+
+  // ปีที่ N (OTHER) → ปีที่ N (TH) / Yr N (EN)
+  const genMatch = level.match(/ปีที่\s*(\d+)/);
+  if (genMatch) return lang === 'th' ? 'ปีที่ ' + genMatch[1] : 'Yr ' + genMatch[1];
+
+  return level; // fallback: show original
+}
+
 function buildLevelOpts(inst, selected) {
   const all = LEVEL_OPTIONS[inst] || [];
-  let opts = all.map(l => `<option value="${l}" ${selected===l?'selected':''}>${l}</option>`).join('');
+  // value = full string (DB key), display = short label
+  let opts = all.map(l => `<option value="${l}" ${selected===l?'selected':''}>${abbrevLevel(l)}</option>`).join('');
   if (['MBS','VC'].includes(inst)) {
-    opts += `<option value="__UNI__" ${selected==='__UNI__'?'selected':''}>→ University</option>`;
+    const uniLabel = (typeof LANG !== 'undefined' && LANG === 'en') ? '→ University' : '→ มหาวิทยาลัย';
+    opts += `<option value="__UNI__" ${selected==='__UNI__'?'selected':''}>${uniLabel}</option>`;
   }
   return opts;
 }
