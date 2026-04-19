@@ -1621,7 +1621,7 @@ async function promoteAllInGroup(inst, level) {
   });
 
   // Re-render only this group's body — preserve search filter, avoid full page re-render
-  const gKey   = inst + '||' + level;
+  // gKey already declared above (const gKey = inst + '||' + level)
   const bodyEl = document.getElementById('body_' + CSS.escape(gKey));
   if (bodyEl) {
     const search = (document.getElementById('promoSearch')?.value || '').toLowerCase();
