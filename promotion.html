@@ -1123,6 +1123,10 @@ function renderGroups() {
            (LEVEL_OPTIONS[b.institution] || []).indexOf(b.level);
   });
 
+  // Base academic year from settings — used to build year dropdowns
+  const acadYearSetting = SETTINGS.promotionSettings?.academicYear ||
+    document.getElementById('academicYear')?.value || '';
+
   let html = '';
   let shown = 0;
 
@@ -1153,6 +1157,11 @@ function renderGroups() {
     ).length;
     const allPromoted = promotedCount === g.students.length && g.students.length > 0;
 
+    // Current group next-year value — read from first student's ROW_DECISIONS
+    const gNextYear = g.students.length > 0
+      ? (ROW_DECISIONS[g.students[0].StipNo]?.nextAcademicYear || (acadYearSetting ? String(parseInt(acadYearSetting)+1) : ''))
+      : (acadYearSetting ? String(parseInt(acadYearSetting)+1) : '');
+
     shown++;
     html += `
     <div class="group-card" id="group_${CSS.escape(gKey)}">
@@ -1164,9 +1173,20 @@ function renderGroups() {
           ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
           ${isSchCont && !isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#f3e8ff;color:#7c3aed;border:1px solid #c4b5fd">🏛 ${t('promoSchCont')}</span>` : ''}
           ${isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#ede9fe;color:#6d28d9;border:1px solid #a78bfa">🏛 ${t('promoUniEligible')}</span>` : ''}
-          ${allPromoted ? `<span class="action-badge" style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac">✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}</span>` : promotedCount > 0 ? `<span class="action-badge" style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac">✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${g.students.length}</span>` : ''}
+          ${allPromoted
+            ? `<span class="action-badge" style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;font-weight:700">✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}</span>`
+            : promotedCount > 0
+              ? `<span class="action-badge" style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac">✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${g.students.length}</span>` : ''}
         </div>
-        <div class="flex gap-2 items-center no-print">
+        <div class="flex gap-2 items-center no-print flex-wrap">
+          <div class="flex items-center gap-1 no-print">
+            <span style="font-size:10px;color:#64748b;white-space:nowrap">${LANG==='th'?'ปีถัดไป:':'Next Year:'}</span>
+            <select id="groupYear_${CSS.escape(gKey)}"
+              style="font-size:11px;padding:2px 6px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:${color};font-weight:700;cursor:pointer"
+              onchange="setGroupNextYear('${g.institution}','${g.level}',this.value)">
+              ${buildYearOpts(gNextYear, acadYearSetting)}
+            </select>
+          </div>
           <button onclick="promoteAllInGroup('${g.institution}','${g.level}')"
             class="btn btn-sm text-xs font-bold" style="background:${color}15;color:${color};border:1.5px solid ${color}40">
             <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> ${t('promoPromoteAll')}
@@ -1210,10 +1230,10 @@ function renderGroupTable(inst, level, students, nextDefault, isGradLevel) {
         <th style="width:90px">${t('promoColStipNo')}</th>
         <th style="width:80px">${t('promoColStatus')}</th>
         <th style="width:160px" class="no-print">${t('promoColAction')}</th>
-        <th style="width:220px">${t('promoColNext')}</th>
-        <th style="width:115px">${t('promoColUniSch')}</th>
+        <th style="width:210px">${t('promoColNext')}</th>
         <th style="width:100px">${t('promoColNextYear')}</th>
-        <th style="width:120px">${t('promoColNotes')}</th>
+        <th style="width:110px">${t('promoColUniSch')}</th>
+        <th style="width:130px">${t('promoColNotes')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -1294,8 +1314,18 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
 
   const uniRowHTML = isUniAct ? renderUniDetailRow(s.StipNo, dec) : '';
 
+  // Row style: green left-border + tint when already promoted this cycle
+  const rowStyle = alreadyPromoted
+    ? 'border-left:3px solid #16a34a;background:#f0fdf4'
+    : act === 'skip' ? '' : '';
+
+  // Build year selector for this individual student
+  const acadBase = SETTINGS.promotionSettings?.academicYear ||
+    document.getElementById('academicYear')?.value || '';
+  const yearSelOpts = buildYearOpts(dec.nextAcademicYear || '', acadBase);
+
   return `
-  <tr id="row_${s.StipNo}" class="${act==='skip'?'excluded':''}">
+  <tr id="row_${s.StipNo}" class="${act==='skip'?'excluded':''}" style="${rowStyle}">
     <td class="no-print">
       <input type="checkbox" class="rounded group-check" data-stipno="${s.StipNo}"
         ${act!=='skip'?'checked':''} onchange="onRowCheck('${s.StipNo}',this.checked)">
@@ -1320,14 +1350,15 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
     <td><span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></td>
     <td class="no-print">${actionSel}</td>
     <td id="detail_${s.StipNo}">${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}</td>
-    <td>${schCell}</td>
     <td>
-      <input type="text" class="notes-input" style="width:78px;text-align:center;font-weight:600"
-        placeholder="—"
+      <select id="nextYear_${s.StipNo}" class="promo-action-select text-xs"
+        style="font-weight:700;color:#1e3a8a;min-width:90px"
         title="${t('promoNextYearHint')}"
-        value="${(dec.nextAcademicYear||'').replace(/"/g,'&quot;')}"
         onchange="setDec('${s.StipNo}','nextAcademicYear',this.value)">
+        ${yearSelOpts}
+      </select>
     </td>
+    <td>${schCell}</td>
     <td>
       <input type="text" class="notes-input"
         placeholder="${LANG==='th'?'หมายเหตุ...':'Notes...'}"
@@ -1337,6 +1368,33 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
     </td>
   </tr>
   ${uniRowHTML}`;
+}
+
+// ─────────────────────────────────────────────
+// YEAR HELPERS
+// ─────────────────────────────────────────────
+// Generates <option> list for BE academic year selectors.
+// selected: string BE year (e.g. "2569"); baseYear: configured year from settings.
+function buildYearOpts(selected, baseYear) {
+  const base = parseInt(baseYear || selected || '2568') || 2568;
+  return Array.from({ length: 8 }, (_, i) => base - 1 + i).map(y => {
+    const yStr = String(y);
+    const ce   = String(y - 543);
+    return `<option value="${yStr}" ${yStr === String(selected) ? 'selected' : ''}>${yStr} / ${ce}</option>`;
+  }).join('');
+}
+
+// Sets the same next academic year for every student in a group.
+// Updates ROW_DECISIONS and syncs DOM selects without a full re-render.
+function setGroupNextYear(inst, level, year) {
+  const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
+  if (!group) return;
+  group.students.forEach(s => {
+    if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
+    ROW_DECISIONS[s.StipNo].nextAcademicYear = year;
+    const sel = document.getElementById('nextYear_' + s.StipNo);
+    if (sel) sel.value = year;
+  });
 }
 
 function buildLevelOpts(inst, selected) {
@@ -1501,6 +1559,11 @@ async function promoteAllInGroup(inst, level) {
     ? (LANG === 'th' ? 'จบการศึกษา' : 'Graduate')
     : (LANG === 'th' ? 'เลื่อนชั้น' : 'Promote');
 
+  // Read group-level next year from group header dropdown (if rendered)
+  const gKey = inst + '||' + level;
+  const groupYearSel = document.getElementById('groupYear_' + CSS.escape(gKey));
+  const groupNextYear = groupYearSel ? groupYearSel.value : '';
+
   const { isConfirmed } = await Swal.fire({
     icon: 'question',
     title: LANG === 'th' ? 'ยืนยันการเลื่อนชั้นแบบกลุ่ม?' : 'Confirm Bulk Promotion?',
@@ -1508,8 +1571,9 @@ async function promoteAllInGroup(inst, level) {
       <div style="margin-bottom:8px;font-size:13px;color:#374151">
         ${LANG === 'th' ? 'กลุ่ม' : 'Group'}: <b style="color:#1e40af">${inst} — ${level}</b>
       </div>
-      <div>• ${LANG === 'th' ? 'นักเรียนทั้งหมด' : 'Total students'}: <b>${count}</b> ${LANG === 'th' ? 'คน' : ''}</div>
+      <div>• ${LANG === 'th' ? 'นักเรียนที่เลือก' : 'Selected students'}: <b style="color:#16a34a">${count}</b> ${LANG === 'th' ? 'คน' : ''} / ${group.students.length} ${LANG === 'th' ? 'คนทั้งหมด' : 'total'}</div>
       <div>• ${LANG === 'th' ? 'การกระทำ' : 'Action'}: <b>${actEmoji} ${actLabel}</b>${defNxt ? ' → <b>' + defNxt + '</b>' : ''}</div>
+      ${groupNextYear ? `<div>• ${LANG==='th'?'ปีการศึกษาถัดไป':'Next Acad. Year'}: <b style="color:#1e40af">${groupNextYear} / ${parseInt(groupNextYear)-543}</b></div>` : ''}
       <div style="margin-top:10px;font-size:11px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:8px">
         ${LANG === 'th'
           ? '⚠ การตั้งค่าเดิมของนักเรียนทุกคนในกลุ่มนี้จะถูกแทนที่'
@@ -1532,6 +1596,7 @@ async function promoteAllInGroup(inst, level) {
     if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
     ROW_DECISIONS[s.StipNo].action    = defAct;
     ROW_DECISIONS[s.StipNo].nextLevel = defNxt;
+    if (groupNextYear) ROW_DECISIONS[s.StipNo].nextAcademicYear = groupNextYear;
   });
 
   // Re-render only this group's body — preserve search filter, avoid full page re-render
