@@ -429,6 +429,9 @@ img.student-avatar {
             <option value="UNI">University</option>
             <option value="OTHER">Other</option>
           </select>
+          <select id="promoYearFilter" class="field-select" onchange="filterGroups()" style="width:135px">
+            <option value="">ทุกปีการศึกษา</option>
+          </select>
           <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
             <input type="checkbox" id="chkHideEmpty" onchange="filterGroups()" class="rounded">
             <span data-t="promoHideEmpty">ซ่อนกลุ่มว่าง</span>
@@ -1126,6 +1129,7 @@ async function loadPage() {
     });
 
     showLoader(false);
+    populateYearFilter();
     renderGroups();
     updateStats();
   } catch(e) {
@@ -1145,6 +1149,7 @@ function renderGroups() {
   const instFlt   = document.getElementById('promoInstFilter').value;
   const hideEmpty = document.getElementById('chkHideEmpty').checked;
 
+  const yearFlt  = document.getElementById('promoYearFilter')?.value || '';
   const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const sorted = [...ALL_GROUPS].sort((a, b) => {
     const io = (instOrder[a.institution] ?? 9) - (instOrder[b.institution] ?? 9);
@@ -1162,6 +1167,13 @@ function renderGroups() {
 
   sorted.forEach(g => {
     if (instFlt && g.institution !== instFlt) return;
+    // Year filter: group must contain at least one student with matching CurrentAcademicYear
+    if (yearFlt) {
+      const hasYear = g.students.some(s =>
+        (ROW_DECISIONS[s.StipNo]?.currentYear || s.CurrentAcademicYear || '') === yearFlt
+      );
+      if (!hasYear) return;
+    }
     const filtered = search
       ? g.students.filter(s => {
           const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
@@ -1611,7 +1623,8 @@ function setGroupNextYear(inst, level, year) {
 }
 
 // Sets the current academic year for every student in a group.
-// Auto-advances nextAcademicYear = currentYear + 1 and syncs DOM selects.
+// Auto-advances nextAcademicYear = currentYear + 1, re-renders the group body
+// so all per-row year selects reflect the new value.
 function setGroupCurrentYear(inst, level, year) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
@@ -1620,14 +1633,40 @@ function setGroupCurrentYear(inst, level, year) {
     if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
     ROW_DECISIONS[s.StipNo].currentYear = year;
     ROW_DECISIONS[s.StipNo].nextAcademicYear = nextYear;
-    // Sync per-student next-year select
-    const nextSel = document.getElementById('nextYear_' + s.StipNo);
-    if (nextSel) nextSel.value = nextYear;
   });
-  // Sync group next-year select
+  // Re-render group body so nextYear selects rebuild with correct base year
+  _rerenderGroupBody(inst, level);
+  // Re-sync group next-year select (it's outside the body, stays intact)
   const gKey = inst + '||' + level;
   const groupYearSel = document.getElementById('groupYear_' + CSS.escape(gKey));
   if (groupYearSel) groupYearSel.value = nextYear;
+  // Re-sync the group current-year select value (stays in header, not re-rendered)
+  const groupCurYearSel = document.getElementById('groupCurYear_' + CSS.escape(gKey));
+  if (groupCurYearSel) groupCurYearSel.value = year;
+}
+
+// Re-renders just the body of a group card in-place (preserves group header).
+function _rerenderGroupBody(inst, level) {
+  const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
+  if (!group) return;
+  const gKey    = inst + '||' + level;
+  const bodyEl  = document.getElementById('body_' + CSS.escape(gKey));
+  if (!bodyEl) return;
+  const rule        = PROMO_RULES[gKey];
+  const nextDefault = rule ? rule.to : '—';
+  const isGradLevel = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
+  const search = (document.getElementById('promoSearch').value || '').toLowerCase();
+  const filtered = search
+    ? group.students.filter(s => {
+        const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
+                   s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
+        return n.includes(search);
+      })
+    : group.students;
+  bodyEl.innerHTML = filtered.length === 0
+    ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
+    : renderGroupTable(inst, level, filtered, nextDefault, isGradLevel);
+  lucide.createIcons();
 }
 
 // Returns a short display label for a level string (value stays unchanged).
@@ -1917,6 +1956,26 @@ function selectAllInGroup(inst, level, checked) {
 }
 
 function filterGroups() { renderGroups(); }
+
+// Rebuilds the promoYearFilter dropdown from distinct CurrentAcademicYear values
+// found across all loaded student groups. Called once after ALL_GROUPS loads.
+function populateYearFilter() {
+  const sel = document.getElementById('promoYearFilter');
+  if (!sel) return;
+  const years = new Set();
+  ALL_GROUPS.forEach(g => g.students.forEach(s => {
+    const y = (ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear;
+    if (y) years.add(String(y));
+  }));
+  const cur    = sel.value;
+  const sorted = [...years].sort((a, b) => b - a);   // newest first
+  const allLbl = LANG === 'th' ? 'ทุกปีการศึกษา' : 'All Years';
+  sel.innerHTML = `<option value="">${allLbl}</option>` +
+    sorted.map(y => {
+      const ce = parseInt(y) - 543;
+      return `<option value="${y}"${y===cur?' selected':''}>${y} / ${ce}</option>`;
+    }).join('');
+}
 
 function toggleGroup(inst, level) {
   const gKey = inst + '||' + level;
