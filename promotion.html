@@ -977,6 +977,9 @@ async function savePromotionSettings() {
     ]);
     showLoader(false);
     if (res.status === 'success') {
+      // Invalidate settings sessionStorage cache so next loadPage gets fresh data
+      sessionStorage.removeItem('rdf_promoSettings_v1');
+      sessionStorage.removeItem('rdf_promoSettings_v1_ts');
       // Update in-memory state so the main table immediately reflects new rules
       _psRules = rules;
       _editableRules = null;
@@ -1021,10 +1024,28 @@ function updateExportLabels() {
 async function loadPage() {
   showLoader(true, t('loading'));
   try {
-    const [settRes, studRes] = await Promise.all([
-      API.getSystemSettings(),
-      API.get('getStudentsForPromotion'),
-    ]);
+    // Settings: try sessionStorage first (fast path) — stale < 3 min is acceptable
+    const SETT_KEY = 'rdf_promoSettings_v1';
+    let settRes;
+    const cachedSett = sessionStorage.getItem(SETT_KEY);
+    const cachedTs   = parseInt(sessionStorage.getItem(SETT_KEY + '_ts') || '0');
+    if (cachedSett && (Date.now() - cachedTs < 3 * 60 * 1000)) {
+      settRes = JSON.parse(cachedSett);
+    }
+
+    // Students always fresh (or parallel with settings if settings not cached)
+    const studPromise = API.get('getStudentsForPromotion');
+    if (!settRes) {
+      // settings not cached — fetch both in parallel
+      const [s, st] = await Promise.all([API.getSystemSettings(), studPromise]);
+      settRes = s;
+      sessionStorage.setItem(SETT_KEY, JSON.stringify(settRes));
+      sessionStorage.setItem(SETT_KEY + '_ts', String(Date.now()));
+      var studRes = st;
+    } else {
+      // settings from cache — only wait on students
+      var studRes = await studPromise;
+    }
 
     SETTINGS = settRes.data || {};
     const ps = SETTINGS.promotionSettings || {};
