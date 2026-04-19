@@ -1584,6 +1584,10 @@ function onActionChange(stipNo, inst, level, newAct) {
 }
 
 function onRowCheck(stipNo, checked) {
+  // Always sync the physical checkbox DOM (may be called programmatically from selectAllInGroup)
+  const chk = document.querySelector(`input.group-check[data-stipno="${stipNo}"]`);
+  if (chk) chk.checked = checked;
+
   if (!checked) {
     setDec(stipNo, 'action', 'skip');
     const sel = document.getElementById('act_' + stipNo);
@@ -1611,11 +1615,25 @@ async function promoteAllInGroup(inst, level) {
   const defNxt  = defAct === 'promote' ? (rule && rule.to !== '—' ? rule.to : '') : '';
   const isGrad  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
   // Count only students whose checkboxes are checked in this group
+  // (if group is collapsed/not rendered, checkboxes aren't in DOM — treat all as selected)
+  const groupBodyRendered = !!document.getElementById('body_' + CSS.escape(inst + '||' + level))
+    ?.querySelector('input.group-check');
   const checkedStudents = group.students.filter(s => {
     const chk = document.querySelector(`input.group-check[data-stipno="${s.StipNo}"]`);
-    return chk ? chk.checked : true; // if group not rendered, assume all selected
+    return chk ? chk.checked : !groupBodyRendered; // if DOM not rendered, assume all selected
   });
-  const count = checkedStudents.length || group.students.length;
+  const count = checkedStudents.length;
+
+  // If group is rendered but no students are selected, abort with a message
+  if (groupBodyRendered && count === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: LANG === 'th' ? 'ไม่มีนักเรียนที่เลือก' : 'No students selected',
+      text:  LANG === 'th' ? 'กรุณาเลือก checkbox อย่างน้อย 1 คน' : 'Please select at least one student.',
+      timer: 2500, showConfirmButton: false,
+    });
+    return;
+  }
 
   const actEmoji = defAct === 'graduate' ? '🎓' : '⬆';
   const actLabel = defAct === 'graduate'
@@ -1650,11 +1668,8 @@ async function promoteAllInGroup(inst, level) {
   });
   if (!isConfirmed) return;
 
-  // Update ROW_DECISIONS only for CHECKED students in this group
-  const targetStudents = group.students.filter(s => {
-    const chk = document.querySelector(`input.group-check[data-stipno="${s.StipNo}"]`);
-    return chk ? chk.checked : true; // if not rendered, include all
-  });
+  // Update ROW_DECISIONS only for checked students (reuse checkedStudents computed above)
+  const targetStudents = checkedStudents.length > 0 ? checkedStudents : group.students;
   targetStudents.forEach(s => {
     if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
     ROW_DECISIONS[s.StipNo].action    = defAct;
