@@ -1192,11 +1192,13 @@ function renderGroups() {
       ? (ROW_DECISIONS[g.students[0].StipNo]?.nextAcademicYear || (acadYearSetting ? String(parseInt(acadYearSetting)+1) : ''))
       : (acadYearSetting ? String(parseInt(acadYearSetting)+1) : '');
 
-    // Current academic year: take first non-empty value from students in this group
-    const curAcadYear = g.students.map(s => s.CurrentAcademicYear).find(y => y) || '';
-    const curYearLabel = curAcadYear
-      ? `${curAcadYear} / ${parseInt(curAcadYear) - 543}`
-      : '—';
+    // Current academic year: prefer ROW_DECISIONS (may have been edited),
+    // then DB value from students, then fall back to settings year.
+    const _dbCurYear = g.students.map(s => s.CurrentAcademicYear).find(y => y) || '';
+    const curAcadYear = (g.students.length > 0 && ROW_DECISIONS[g.students[0].StipNo]?.currentYear)
+      || _dbCurYear
+      || acadYearSetting
+      || '';
 
     shown++;
     html += `
@@ -1206,9 +1208,14 @@ function renderGroups() {
           <span class="font-bold text-sm" style="color:${color}">${g.institution}</span>
           <span class="text-gray-700">— ${g.level}</span>
           <span class="text-xs text-gray-400 font-normal">${countLabel}</span>
-          <span class="text-xs px-2 py-0.5 rounded" style="background:${color}12;color:${color};border:1px solid ${color}30;font-weight:600">
-            ${LANG==='th'?'ปีการศึกษา:':'Acad. Year:'} ${curYearLabel}
-          </span>
+          <div class="flex items-center gap-1 no-print">
+            <span style="font-size:10px;color:#64748b;white-space:nowrap">${LANG==='th'?'ปีปัจจุบัน:':'Cur. Year:'}</span>
+            <select id="groupCurYear_${CSS.escape(gKey)}"
+              style="font-size:11px;padding:2px 6px;border:1px solid ${color}40;border-radius:6px;background:${color}08;color:${color};font-weight:700;cursor:pointer"
+              onchange="setGroupCurrentYear('${g.institution}','${g.level}',this.value)">
+              ${buildYearOpts(curAcadYear, acadYearSetting)}
+            </select>
+          </div>
           ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
           ${isSchCont && !isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#f3e8ff;color:#7c3aed;border:1px solid #c4b5fd">🏛 ${t('promoSchCont')}</span>` : ''}
           ${isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#ede9fe;color:#6d28d9;border:1px solid #a78bfa">🏛 ${t('promoUniEligible')}</span>` : ''}
@@ -1601,6 +1608,26 @@ function setGroupNextYear(inst, level, year) {
     const sel = document.getElementById('nextYear_' + s.StipNo);
     if (sel) sel.value = year;
   });
+}
+
+// Sets the current academic year for every student in a group.
+// Auto-advances nextAcademicYear = currentYear + 1 and syncs DOM selects.
+function setGroupCurrentYear(inst, level, year) {
+  const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
+  if (!group) return;
+  const nextYear = year ? String(parseInt(year) + 1) : '';
+  group.students.forEach(s => {
+    if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
+    ROW_DECISIONS[s.StipNo].currentYear = year;
+    ROW_DECISIONS[s.StipNo].nextAcademicYear = nextYear;
+    // Sync per-student next-year select
+    const nextSel = document.getElementById('nextYear_' + s.StipNo);
+    if (nextSel) nextSel.value = nextYear;
+  });
+  // Sync group next-year select
+  const gKey = inst + '||' + level;
+  const groupYearSel = document.getElementById('groupYear_' + CSS.escape(gKey));
+  if (groupYearSel) groupYearSel.value = nextYear;
 }
 
 // Returns a short display label for a level string (value stays unchanged).
