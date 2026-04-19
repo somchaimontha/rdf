@@ -1142,14 +1142,16 @@ async function loadPage() {
 
 // ─────────────────────────────────────────────
 // RENDER GROUPS
+// Groups are split by institution + level + CurrentAcademicYear.
+// Within each institution+level, sub-groups are sorted oldest year first.
 // ─────────────────────────────────────────────
 function renderGroups() {
   const container = document.getElementById('groupsContainer');
   const search    = (document.getElementById('promoSearch').value || '').toLowerCase();
   const instFlt   = document.getElementById('promoInstFilter').value;
+  const yearFlt   = document.getElementById('promoYearFilter')?.value || '';
   const hideEmpty = document.getElementById('chkHideEmpty').checked;
 
-  const yearFlt  = document.getElementById('promoYearFilter')?.value || '';
   const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const sorted = [...ALL_GROUPS].sort((a, b) => {
     const io = (instOrder[a.institution] ?? 9) - (instOrder[b.institution] ?? 9);
@@ -1162,70 +1164,72 @@ function renderGroups() {
   const acadYearSetting = SETTINGS.promotionSettings?.academicYear ||
     document.getElementById('academicYear')?.value || '';
 
+  // Split each backend group into per-year display sub-groups (oldest year first)
+  const displayGroups = [];
+  sorted.forEach(g => {
+    if (instFlt && g.institution !== instFlt) return;
+    const yearMap = {};
+    g.students.forEach(s => {
+      const yr = (ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '';
+      if (!yearMap[yr]) yearMap[yr] = [];
+      yearMap[yr].push(s);
+    });
+    Object.keys(yearMap)
+      .sort((a, b) => parseInt(a || 0) - parseInt(b || 0))  // oldest first
+      .forEach(yr => {
+        if (yearFlt && yr !== yearFlt) return;
+        displayGroups.push({ inst: g.institution, level: g.level, curYear: yr, students: yearMap[yr] });
+      });
+  });
+
   let html = '';
   let shown = 0;
 
-  sorted.forEach(g => {
-    if (instFlt && g.institution !== instFlt) return;
-    // Year filter: group must contain at least one student with matching CurrentAcademicYear
-    if (yearFlt) {
-      const hasYear = g.students.some(s =>
-        (ROW_DECISIONS[s.StipNo]?.currentYear || s.CurrentAcademicYear || '') === yearFlt
-      );
-      if (!hasYear) return;
-    }
+  displayGroups.forEach(dg => {
+    const { inst, level, curYear, students: dgStudents } = dg;
     const filtered = search
-      ? g.students.filter(s => {
+      ? dgStudents.filter(s => {
           const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
                      s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
           return n.includes(search);
         })
-      : g.students;
+      : dgStudents;
     if (hideEmpty && filtered.length === 0) return;
 
-    const color = INST_COLORS[g.institution] || '#64748b';
-    const bg    = INST_BG[g.institution]    || '#f9fafb';
-    const gKey  = g.institution + '||' + g.level;
-    const rule  = PROMO_RULES[gKey];
+    const color = INST_COLORS[inst] || '#64748b';
+    const bg    = INST_BG[inst]     || '#f9fafb';
+    // gKey now includes curYear so same inst+level can appear in multiple year sub-groups
+    const gKey  = inst + '||' + level + '||' + curYear;
+    const rule  = PROMO_RULES[inst + '||' + level];
     const nextDefault   = rule ? rule.to : '—';
     const isGradLevel   = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
-    const isSchCont     = isSchContinuationLevel(g.institution, g.level);
+    const isSchCont     = isSchContinuationLevel(inst, level);
     const countLabel    = filtered.length + ' ' + t('promoStudents');
-    // Count already-promoted students in this group (session tracking + DB batch ID)
-    const promotedCount = g.students.filter(s =>
+    const promotedCount = dgStudents.filter(s =>
       PROMOTED_THIS_SESSION.has(s.StipNo) ||
       !!(s.PromotionBatchID && (SETTINGS.promotionSettings?.academicYear) &&
          s.PromotionBatchID === (SETTINGS.promotionSettings.academicYear + '_PROMO'))
     ).length;
-    const allPromoted = promotedCount === g.students.length && g.students.length > 0;
-
-    // Current group next-year value — read from first student's ROW_DECISIONS
-    const gNextYear = g.students.length > 0
-      ? (ROW_DECISIONS[g.students[0].StipNo]?.nextAcademicYear || (acadYearSetting ? String(parseInt(acadYearSetting)+1) : ''))
-      : (acadYearSetting ? String(parseInt(acadYearSetting)+1) : '');
-
-    // Current academic year: prefer ROW_DECISIONS (may have been edited),
-    // then DB value from students, then fall back to settings year.
-    const _dbCurYear = g.students.map(s => s.CurrentAcademicYear).find(y => y) || '';
-    const curAcadYear = (g.students.length > 0 && ROW_DECISIONS[g.students[0].StipNo]?.currentYear)
-      || _dbCurYear
-      || acadYearSetting
-      || '';
+    const allPromoted = promotedCount === dgStudents.length && dgStudents.length > 0;
+    const gNextYear = dgStudents.length > 0
+      ? (ROW_DECISIONS[dgStudents[0].StipNo]?.nextAcademicYear
+          || (curYear ? String(parseInt(curYear) + 1) : (acadYearSetting ? String(parseInt(acadYearSetting) + 1) : '')))
+      : (curYear ? String(parseInt(curYear) + 1) : (acadYearSetting ? String(parseInt(acadYearSetting) + 1) : ''));
 
     shown++;
     html += `
     <div class="group-card" id="group_${CSS.escape(gKey)}">
       <div class="promo-group-header" style="background:${bg};border-bottom:2px solid ${color}20">
         <div class="flex items-center gap-3 flex-wrap">
-          <span class="font-bold text-sm" style="color:${color}">${g.institution}</span>
-          <span class="text-gray-700">— ${g.level}</span>
+          <span class="font-bold text-sm" style="color:${color}">${inst}</span>
+          <span class="text-gray-700">— ${level}</span>
           <span class="text-xs text-gray-400 font-normal">${countLabel}</span>
           <div class="flex items-center gap-1 no-print">
             <span style="font-size:10px;color:#64748b;white-space:nowrap">${LANG==='th'?'ปีปัจจุบัน:':'Cur. Year:'}</span>
             <select id="groupCurYear_${CSS.escape(gKey)}"
               style="font-size:11px;padding:2px 6px;border:1px solid ${color}40;border-radius:6px;background:${color}08;color:${color};font-weight:700;cursor:pointer"
-              onchange="setGroupCurrentYear('${g.institution}','${g.level}',this.value)">
-              ${buildYearOpts(curAcadYear, acadYearSetting)}
+              onchange="setGroupCurrentYear('${inst}','${level}','${curYear}',this.value)">
+              ${buildYearOpts(curYear, acadYearSetting)}
             </select>
           </div>
           ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
@@ -1235,7 +1239,7 @@ function renderGroups() {
             style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;font-weight:700;${promotedCount===0?'display:none':''}">
             ${allPromoted
               ? `✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}`
-              : `✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${g.students.length}`}
+              : `✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${dgStudents.length}`}
           </span>
         </div>
         <div class="flex gap-2 items-center no-print flex-wrap">
@@ -1243,15 +1247,15 @@ function renderGroups() {
             <span style="font-size:10px;color:#64748b;white-space:nowrap">${LANG==='th'?'ปีถัดไป:':'Next Year:'}</span>
             <select id="groupYear_${CSS.escape(gKey)}"
               style="font-size:11px;padding:2px 6px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:${color};font-weight:700;cursor:pointer"
-              onchange="setGroupNextYear('${g.institution}','${g.level}',this.value)">
+              onchange="setGroupNextYear('${inst}','${level}','${curYear}',this.value)">
               ${buildYearOpts(gNextYear, acadYearSetting)}
             </select>
           </div>
-          <button onclick="promoteAllInGroup('${g.institution}','${g.level}')"
+          <button onclick="promoteAllInGroup('${inst}','${level}','${curYear}')"
             class="btn btn-sm text-xs font-bold" style="background:${color}15;color:${color};border:1.5px solid ${color}40">
             <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> ${t('promoPromoteAll')}
           </button>
-          <button onclick="toggleGroup('${g.institution}','${g.level}')"
+          <button onclick="toggleGroup('${inst}','${level}','${curYear}')"
             class="btn btn-secondary btn-sm text-xs" style="padding:4px 8px">
             <i data-lucide="chevron-up" class="w-3.5 h-3.5" id="chevron_${CSS.escape(gKey)}"></i>
           </button>
@@ -1260,7 +1264,7 @@ function renderGroups() {
       <div id="body_${CSS.escape(gKey)}">
         ${filtered.length === 0
           ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
-          : renderGroupTable(g.institution, g.level, filtered, nextDefault, isGradLevel)}
+          : renderGroupTable(inst, level, curYear, filtered, nextDefault, isGradLevel)}
       </div>
     </div>`;
   });
@@ -1277,13 +1281,13 @@ function renderGroups() {
   lucide.createIcons();
 }
 
-function renderGroupTable(inst, level, students, nextDefault, isGradLevel) {
+function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLevel) {
   const rows = students.map(s => renderStudentRow(s, inst, level, nextDefault, isGradLevel)).join('');
   return `<div class="overflow-x-auto">
     <table class="promo-table">
       <thead><tr>
         <th style="width:32px" class="no-print">
-          <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}',this.checked)" class="rounded">
+          <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}','${curYear}',this.checked)" class="rounded">
         </th>
         <th style="width:40px"></th>
         <th style="min-width:110px">${t('promoColName')}</th>
@@ -1535,7 +1539,8 @@ async function applyOneStudent(stipNo) {
       PROMOTED_THIS_SESSION.add(stipNo);
       dec.alreadyPromoted = true;
       _updateRowAfterPromotion(stipNo, dec, inst, level, grp);
-      _updateGroupDoneBadge(inst, level, grp);
+      const _curYr = dec.currentYear || grp.students.find(s => s.StipNo === stipNo)?.CurrentAcademicYear || '';
+      _updateGroupDoneBadge(inst, level, grp, _curYr);
       updateStats();
       Swal.fire({
         icon:'success', toast:true, position:'bottom-end',
@@ -1577,22 +1582,25 @@ function _updateRowAfterPromotion(stipNo, dec, inst, level, grp) {
   lucide.createIcons();
 }
 
-// Update the "Done N/M" badge in the group card header after individual promotions.
-function _updateGroupDoneBadge(inst, level, grp) {
-  const gKey = inst + '||' + level;
-  const promotedCount = grp.students.filter(s =>
+// Update the "Done N/M" badge in a year-split group card header after promotions.
+function _updateGroupDoneBadge(inst, level, grp, curYear) {
+  const gKey = inst + '||' + level + '||' + curYear;
+  const dgStudents = grp.students.filter(s =>
+    ((ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '') === curYear
+  );
+  const promotedCount = dgStudents.filter(s =>
     PROMOTED_THIS_SESSION.has(s.StipNo) ||
     !!(s.PromotionBatchID && SETTINGS.promotionSettings?.academicYear &&
        s.PromotionBatchID === (SETTINGS.promotionSettings.academicYear + '_PROMO'))
   ).length;
-  const allPromoted = promotedCount === grp.students.length && grp.students.length > 0;
+  const allPromoted = promotedCount === dgStudents.length && dgStudents.length > 0;
 
   const badge = document.getElementById('doneBadge_' + CSS.escape(gKey));
   if (!badge) return;
   badge.style.display = promotedCount > 0 ? '' : 'none';
   badge.innerHTML = allPromoted
     ? `✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}`
-    : `✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${grp.students.length}`;
+    : `✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${dgStudents.length}`;
 }
 
 // ─────────────────────────────────────────────
@@ -1609,63 +1617,63 @@ function buildYearOpts(selected, baseYear) {
   }).join('');
 }
 
-// Sets the same next academic year for every student in a group.
+// Sets the same next academic year for every student in a display sub-group (inst+level+curYear).
 // Updates ROW_DECISIONS and syncs DOM selects without a full re-render.
-function setGroupNextYear(inst, level, year) {
+function setGroupNextYear(inst, level, curYear, year) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  group.students.forEach(s => {
-    if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
-    ROW_DECISIONS[s.StipNo].nextAcademicYear = year;
-    const sel = document.getElementById('nextYear_' + s.StipNo);
-    if (sel) sel.value = year;
-  });
+  group.students
+    .filter(s => ((ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '') === curYear)
+    .forEach(s => {
+      if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
+      ROW_DECISIONS[s.StipNo].nextAcademicYear = year;
+      const sel = document.getElementById('nextYear_' + s.StipNo);
+      if (sel) sel.value = year;
+    });
 }
 
-// Sets the current academic year for every student in a group.
-// Auto-advances nextAcademicYear = currentYear + 1, re-renders the group body
-// so all per-row year selects reflect the new value.
-function setGroupCurrentYear(inst, level, year) {
+// Changes the current academic year of a display sub-group (inst+level+oldYear) to newYear.
+// Moving students to a different year re-groups them — triggers a full renderGroups().
+function setGroupCurrentYear(inst, level, oldYear, newYear) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  const nextYear = year ? String(parseInt(year) + 1) : '';
-  group.students.forEach(s => {
-    if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
-    ROW_DECISIONS[s.StipNo].currentYear = year;
-    ROW_DECISIONS[s.StipNo].nextAcademicYear = nextYear;
-  });
-  // Re-render group body so nextYear selects rebuild with correct base year
-  _rerenderGroupBody(inst, level);
-  // Re-sync group next-year select (it's outside the body, stays intact)
-  const gKey = inst + '||' + level;
-  const groupYearSel = document.getElementById('groupYear_' + CSS.escape(gKey));
-  if (groupYearSel) groupYearSel.value = nextYear;
-  // Re-sync the group current-year select value (stays in header, not re-rendered)
-  const groupCurYearSel = document.getElementById('groupCurYear_' + CSS.escape(gKey));
-  if (groupCurYearSel) groupCurYearSel.value = year;
+  const nextYear = newYear ? String(parseInt(newYear) + 1) : '';
+  group.students
+    .filter(s => ((ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '') === oldYear)
+    .forEach(s => {
+      if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
+      ROW_DECISIONS[s.StipNo].currentYear      = newYear;
+      ROW_DECISIONS[s.StipNo].nextAcademicYear = nextYear;
+    });
+  // Year change merges/splits display groups — full re-render is required
+  renderGroups();
 }
 
-// Re-renders just the body of a group card in-place (preserves group header).
-function _rerenderGroupBody(inst, level) {
+// Re-renders just the body of a year-split group card in-place (preserves group header).
+function _rerenderGroupBody(inst, level, curYear) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  const gKey    = inst + '||' + level;
+  const gKey    = inst + '||' + level + '||' + curYear;
   const bodyEl  = document.getElementById('body_' + CSS.escape(gKey));
   if (!bodyEl) return;
-  const rule        = PROMO_RULES[gKey];
+  const ruleKey     = inst + '||' + level;
+  const rule        = PROMO_RULES[ruleKey];
   const nextDefault = rule ? rule.to : '—';
   const isGradLevel = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
   const search = (document.getElementById('promoSearch').value || '').toLowerCase();
+  const dgStudents = group.students.filter(s =>
+    ((ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '') === curYear
+  );
   const filtered = search
-    ? group.students.filter(s => {
+    ? dgStudents.filter(s => {
         const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
                    s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
         return n.includes(search);
       })
-    : group.students;
+    : dgStudents;
   bodyEl.innerHTML = filtered.length === 0
     ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
-    : renderGroupTable(inst, level, filtered, nextDefault, isGradLevel);
+    : renderGroupTable(inst, level, curYear, filtered, nextDefault, isGradLevel);
   lucide.createIcons();
 }
 
@@ -1846,27 +1854,28 @@ function onRowCheck(stipNo, checked) {
   updateStats();
 }
 
-async function promoteAllInGroup(inst, level) {
+async function promoteAllInGroup(inst, level, curYear) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  const rule    = PROMO_RULES[inst + '||' + level];
-  const comp    = rule ? rule.completion : 'promote';
-  // graduate_uni/graduate → default to 'graduate' (admin selects uni individually per student)
-  // promote               → default to 'promote'
-  const defAct  = (comp === 'graduate' || comp === 'graduate_uni') ? 'graduate' : 'promote';
-  const defNxt  = defAct === 'promote' ? (rule && rule.to !== '—' ? rule.to : '') : '';
-  const isGrad  = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
-  // Count only students whose checkboxes are checked in this group
-  // (if group is collapsed/not rendered, checkboxes aren't in DOM — treat all as selected)
-  const groupBodyRendered = !!document.getElementById('body_' + CSS.escape(inst + '||' + level))
+  const rule   = PROMO_RULES[inst + '||' + level];
+  const comp   = rule ? rule.completion : 'promote';
+  const defAct = (comp === 'graduate' || comp === 'graduate_uni') ? 'graduate' : 'promote';
+  const defNxt = defAct === 'promote' ? (rule && rule.to !== '—' ? rule.to : '') : '';
+
+  // Students that belong to this year sub-group
+  const dgStudents = group.students.filter(s =>
+    ((ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '') === curYear
+  );
+
+  const gKey = inst + '||' + level + '||' + curYear;
+  const groupBodyRendered = !!document.getElementById('body_' + CSS.escape(gKey))
     ?.querySelector('input.group-check');
-  const checkedStudents = group.students.filter(s => {
+  const checkedStudents = dgStudents.filter(s => {
     const chk = document.querySelector(`input.group-check[data-stipno="${s.StipNo}"]`);
-    return chk ? chk.checked : !groupBodyRendered; // if DOM not rendered, assume all selected
+    return chk ? chk.checked : !groupBodyRendered;
   });
   const count = checkedStudents.length;
 
-  // If group is rendered but no students are selected, abort with a message
   if (groupBodyRendered && count === 0) {
     Swal.fire({
       icon: 'warning',
@@ -1882,9 +1891,7 @@ async function promoteAllInGroup(inst, level) {
     ? (LANG === 'th' ? 'จบการศึกษา' : 'Graduate')
     : (LANG === 'th' ? 'เลื่อนชั้น' : 'Promote');
 
-  // Read group-level next year from group header dropdown (if rendered)
-  const gKey = inst + '||' + level;
-  const groupYearSel = document.getElementById('groupYear_' + CSS.escape(gKey));
+  const groupYearSel  = document.getElementById('groupYear_' + CSS.escape(gKey));
   const groupNextYear = groupYearSel ? groupYearSel.value : '';
 
   const { isConfirmed } = await Swal.fire({
@@ -1894,24 +1901,21 @@ async function promoteAllInGroup(inst, level) {
       <div style="margin-bottom:8px;font-size:13px;color:#374151">
         ${LANG === 'th' ? 'กลุ่ม' : 'Group'}: <b style="color:#1e40af">${inst} — ${level}</b>
       </div>
-      <div>• ${LANG === 'th' ? 'นักเรียนที่เลือก' : 'Selected students'}: <b style="color:#16a34a">${count}</b> ${LANG === 'th' ? 'คน' : ''} / ${group.students.length} ${LANG === 'th' ? 'คนทั้งหมด' : 'total'}</div>
+      ${curYear ? `<div>• ${LANG==='th'?'ปีการศึกษาปัจจุบัน':'Current Year'}: <b>${curYear} / ${parseInt(curYear)-543}</b></div>` : ''}
+      <div>• ${LANG === 'th' ? 'นักเรียนที่เลือก' : 'Selected students'}: <b style="color:#16a34a">${count}</b> ${LANG === 'th' ? 'คน' : ''} / ${dgStudents.length} ${LANG === 'th' ? 'คนทั้งหมด' : 'total'}</div>
       <div>• ${LANG === 'th' ? 'การกระทำ' : 'Action'}: <b>${actEmoji} ${actLabel}</b>${defNxt ? ' → <b>' + defNxt + '</b>' : ''}</div>
       ${groupNextYear ? `<div>• ${LANG==='th'?'ปีการศึกษาถัดไป':'Next Acad. Year'}: <b style="color:#1e40af">${groupNextYear} / ${parseInt(groupNextYear)-543}</b></div>` : ''}
-      <div style="margin-top:10px;font-size:11px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:8px">
-        ${LANG === 'th'
-          ? '⚠ การตั้งค่าเดิมของนักเรียนทุกคนในกลุ่มนี้จะถูกแทนที่'
-          : '⚠ Existing per-student settings in this group will be overwritten.'}
-      </div>
     </div>`,
     showCancelButton: true,
     confirmButtonText: LANG === 'th' ? '✓ ยืนยัน' : '✓ Confirm',
-    cancelButtonText: LANG === 'th' ? 'ยกเลิก' : 'Cancel',
+    cancelButtonText:  LANG === 'th' ? 'ยกเลิก'   : 'Cancel',
     confirmButtonColor: '#16a34a',
   });
   if (!isConfirmed) return;
 
-  // Update ROW_DECISIONS only for checked students (reuse checkedStudents computed above)
-  const targetStudents = checkedStudents.length > 0 ? checkedStudents : group.students;
+  const targetStudents = checkedStudents.length > 0 ? checkedStudents : dgStudents;
+
+  // Update ROW_DECISIONS
   targetStudents.forEach(s => {
     if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
     ROW_DECISIONS[s.StipNo].action    = defAct;
@@ -1919,40 +1923,65 @@ async function promoteAllInGroup(inst, level) {
     if (groupNextYear) ROW_DECISIONS[s.StipNo].nextAcademicYear = groupNextYear;
   });
 
-  // Re-render only this group's body — preserve search filter, avoid full page re-render
-  // gKey already declared above (const gKey = inst + '||' + level)
-  const bodyEl = document.getElementById('body_' + CSS.escape(gKey));
-  if (bodyEl) {
-    const search = (document.getElementById('promoSearch')?.value || '').toLowerCase();
-    const filtered = search
-      ? group.students.filter(s => {
-          const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
-                     s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
-          return n.includes(search);
-        })
-      : group.students;
-    const nextDefault = rule ? rule.to : '—';
-    bodyEl.innerHTML = filtered.length === 0
-      ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
-      : renderGroupTable(inst, level, filtered, nextDefault, isGrad);
-    lucide.createIcons();
+  // Build API payload and save to DB (same as applyAllChanges — not just a local state update)
+  const promoDate    = document.getElementById('promotionDate').value;
+  const academicYear = document.getElementById('academicYear').value || '';
+  const batchID      = academicYear ? academicYear + '_PROMO' : '';
+  const user         = (getUser()||{}).username || 'admin';
+
+  const promotions = targetStudents.map(s => {
+    const p = _buildStudentPayload(s.StipNo, ROW_DECISIONS[s.StipNo], inst, level);
+    if (batchID) p.PromotionBatchID = batchID;
+    return p;
+  }).filter(p =>
+    (p.NewLevel && p.NewLevel !== '—') || p.NewStatus || p.NewInstitution ||
+    p.UniScholarship !== undefined || p.PromotionNotes !== undefined ||
+    p.PromotionBatchID || p.NextAcademicYear
+  );
+
+  if (promotions.length === 0) {
+    Swal.fire({ toast:true, position:'top-end', icon:'info', timer:2000, showConfirmButton:false,
+      title: LANG==='th'?'ไม่มีข้อมูลที่จะบันทึก':'Nothing to save' });
+    return;
   }
 
-  updateStats();
-
-  Swal.fire({
-    toast: true, position: 'top-end', icon: 'success',
-    timer: 2800, showConfirmButton: false,
-    title: LANG === 'th'
-      ? `${actEmoji} เลื่อนชั้นแบบกลุ่มสำเร็จ — ${count} คน`
-      : `${actEmoji} Bulk ${actLabel} applied — ${count} student(s)`,
-  });
+  showLoader(true, LANG==='th'
+    ? `กำลังบันทึก ${promotions.length} รายการ...`
+    : `Applying ${promotions.length} changes...`);
+  try {
+    const res = await API.promoteStudents(promotions, user, promoDate);
+    showLoader(false);
+    if (res.status === 'success' && res.success > 0) {
+      // Mark promoted + re-render rows in-place to show "✓ เลื่อนชั้นแล้ว" badge
+      targetStudents.forEach(s => {
+        PROMOTED_THIS_SESSION.add(s.StipNo);
+        if (ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo].alreadyPromoted = true;
+      });
+      _rerenderGroupBody(inst, level, curYear);
+      _updateGroupDoneBadge(inst, level, group, curYear);
+      updateStats();
+      Swal.fire({
+        toast: true, position: 'top-end', icon: 'success',
+        timer: 2800, showConfirmButton: false,
+        title: LANG === 'th'
+          ? `${actEmoji} เลื่อนชั้นแบบกลุ่มสำเร็จ — ${res.success} คน`
+          : `${actEmoji} Bulk ${actLabel} saved — ${res.success} student(s)`,
+      });
+    } else {
+      Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), e.message || 'Network error', 'error');
+  }
 }
 
-function selectAllInGroup(inst, level, checked) {
+function selectAllInGroup(inst, level, curYear, checked) {
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
   if (!group) return;
-  group.students.forEach(s => onRowCheck(s.StipNo, checked));
+  group.students
+    .filter(s => ((ROW_DECISIONS[s.StipNo]?.currentYear) || s.CurrentAcademicYear || '') === curYear)
+    .forEach(s => onRowCheck(s.StipNo, checked));
 }
 
 function filterGroups() { renderGroups(); }
@@ -1977,8 +2006,8 @@ function populateYearFilter() {
     }).join('');
 }
 
-function toggleGroup(inst, level) {
-  const gKey = inst + '||' + level;
+function toggleGroup(inst, level, curYear) {
+  const gKey = inst + '||' + level + '||' + curYear;
   const body = document.getElementById('body_'    + CSS.escape(gKey));
   const chev = document.getElementById('chevron_' + CSS.escape(gKey));
   if (!body) return;
@@ -2167,7 +2196,9 @@ async function applyAllChanges() {
         if (grp && ROW_DECISIONS[p.StipNo]) {
           ROW_DECISIONS[p.StipNo].alreadyPromoted = true;
           _updateRowAfterPromotion(p.StipNo, ROW_DECISIONS[p.StipNo], grp.institution, grp.level, grp);
-          _updateGroupDoneBadge(grp.institution, grp.level, grp);
+          const _stu = grp.students.find(s => s.StipNo === p.StipNo);
+          const _curYr = ROW_DECISIONS[p.StipNo].currentYear || _stu?.CurrentAcademicYear || '';
+          _updateGroupDoneBadge(grp.institution, grp.level, grp, _curYr);
         }
       });
       updateStats();
