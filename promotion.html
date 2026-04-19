@@ -180,6 +180,15 @@ img.student-avatar {
 #avatarOverlay.av-active .av-name {
   transform: translateY(0);
 }
+/* ── Mobile responsive — hide less-essential columns on small screens ── */
+@media (max-width: 767px) {
+  .promo-hide-sm { display: none !important; }
+  .promo-table th, .promo-table td { padding: 5px 6px; font-size: 11px; }
+  .promo-action-select { font-size: 11px; }
+  .notes-input { width: 90px; }
+  .group-card { border-radius: 8px; }
+  .promo-group-header { flex-wrap: wrap; gap: 6px; }
+}
 /* ── Print / PDF ── */
 @media print {
   .no-print, .rdf-nav, .rdf-footer, #loader, .sticky-toolbar,
@@ -1246,15 +1255,15 @@ function renderGroupTable(inst, level, students, nextDefault, isGradLevel) {
         <th style="width:32px" class="no-print">
           <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}',this.checked)" class="rounded">
         </th>
-        <th style="width:44px"></th>
-        <th>${t('promoColName')}</th>
-        <th style="width:90px">${t('promoColStipNo')}</th>
-        <th style="width:80px">${t('promoColStatus')}</th>
-        <th style="width:160px" class="no-print">${t('promoColAction')}</th>
-        <th style="width:210px">${t('promoColNext')}</th>
-        <th style="width:100px">${t('promoColNextYear')}</th>
-        <th style="width:110px">${t('promoColUniSch')}</th>
-        <th style="width:130px">${t('promoColNotes')}</th>
+        <th style="width:40px"></th>
+        <th style="min-width:110px">${t('promoColName')}</th>
+        <th style="width:80px" class="promo-hide-sm">${t('promoColStipNo')}</th>
+        <th style="width:72px" class="promo-hide-sm">${t('promoColStatus')}</th>
+        <th style="width:150px" class="no-print">${t('promoColAction')}</th>
+        <th style="width:130px">${t('promoColNext')}</th>
+        <th style="width:90px" class="promo-hide-sm">${t('promoColNextYear')}</th>
+        <th style="width:90px" class="promo-hide-sm">${t('promoColUniSch')}</th>
+        <th style="width:120px">${t('promoColNotes')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -1367,19 +1376,19 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
       ${s.Major ? `<div class="text-gray-400" style="font-size:10px">${s.Major}</div>` : ''}
       ${alreadyBadge || schContBadge ? `<div class="flex flex-wrap gap-1 mt-1">${alreadyBadge}${schContBadge}</div>` : ''}
     </td>
-    <td class="text-xs font-mono text-gray-500">${s.StipNo}</td>
-    <td><span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></td>
+    <td class="text-xs font-mono text-gray-500 promo-hide-sm">${s.StipNo}</td>
+    <td class="promo-hide-sm"><span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></td>
     <td class="no-print">${actionSel}</td>
     <td id="detail_${s.StipNo}">${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}</td>
-    <td>
+    <td class="promo-hide-sm">
       <select id="nextYear_${s.StipNo}" class="promo-action-select text-xs"
-        style="font-weight:700;color:#1e3a8a;min-width:90px"
+        style="font-weight:700;color:#1e3a8a;min-width:80px"
         title="${t('promoNextYearHint')}"
         onchange="setDec('${s.StipNo}','nextAcademicYear',this.value)">
         ${yearSelOpts}
       </select>
     </td>
-    <td>${schCell}</td>
+    <td class="promo-hide-sm">${schCell}</td>
     <td>
       <input type="text" class="notes-input"
         placeholder="${LANG==='th'?'หมายเหตุ...':'Notes...'}"
