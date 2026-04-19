@@ -1192,6 +1192,12 @@ function renderGroups() {
       ? (ROW_DECISIONS[g.students[0].StipNo]?.nextAcademicYear || (acadYearSetting ? String(parseInt(acadYearSetting)+1) : ''))
       : (acadYearSetting ? String(parseInt(acadYearSetting)+1) : '');
 
+    // Current academic year: take first non-empty value from students in this group
+    const curAcadYear = g.students.map(s => s.CurrentAcademicYear).find(y => y) || '';
+    const curYearLabel = curAcadYear
+      ? `${curAcadYear} / ${parseInt(curAcadYear) - 543}`
+      : '—';
+
     shown++;
     html += `
     <div class="group-card" id="group_${CSS.escape(gKey)}">
@@ -1200,13 +1206,18 @@ function renderGroups() {
           <span class="font-bold text-sm" style="color:${color}">${g.institution}</span>
           <span class="text-gray-700">— ${g.level}</span>
           <span class="text-xs text-gray-400 font-normal">${countLabel}</span>
+          <span class="text-xs px-2 py-0.5 rounded" style="background:${color}12;color:${color};border:1px solid ${color}30;font-weight:600">
+            ${LANG==='th'?'ปีการศึกษา:':'Acad. Year:'} ${curYearLabel}
+          </span>
           ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
           ${isSchCont && !isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#f3e8ff;color:#7c3aed;border:1px solid #c4b5fd">🏛 ${t('promoSchCont')}</span>` : ''}
           ${isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#ede9fe;color:#6d28d9;border:1px solid #a78bfa">🏛 ${t('promoUniEligible')}</span>` : ''}
-          ${allPromoted
-            ? `<span class="action-badge" style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;font-weight:700">✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}</span>`
-            : promotedCount > 0
-              ? `<span class="action-badge" style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac">✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${g.students.length}</span>` : ''}
+          <span class="promo-done-badge action-badge" id="doneBadge_${CSS.escape(gKey)}"
+            style="font-size:10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;font-weight:700;${promotedCount===0?'display:none':''}">
+            ${allPromoted
+              ? `✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}`
+              : `✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${g.students.length}`}
+          </span>
         </div>
         <div class="flex gap-2 items-center no-print flex-wrap">
           <div class="flex items-center gap-1 no-print">
@@ -1318,19 +1329,29 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
   // Show 'uni'/'uni_own' options ONLY for the three university-eligible transfer levels.
   const showUniOpts = isUniTransfer;
 
-  // Action options HTML
-  const actionSel = `<select class="promo-action-select w-full" id="act_${s.StipNo}"
-    onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)">
-    <option value="promote"  ${act==='promote' ?'selected':''}>⬆ ${t('promoActPromote')}</option>
-    <option value="graduate" ${act==='graduate'?'selected':''}>🎓 ${t('promoActGraduate')}</option>
-    ${showUniOpts ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
-    ${showUniOpts ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
-    <option value="hold"    ${act==='hold'   ?'selected':''}>⏸ ${t('promoActHold')}</option>
-    <option value="suspend"      ${act==='suspend'     ?'selected':''}>⚠ ${t('promoActSuspend')}</option>
-    <option value="resign"       ${act==='resign'      ?'selected':''}>✕ ${t('promoActResign')}</option>
-    <option value="withdraw_sch" ${act==='withdraw_sch'?'selected':''}>🚫 ${t('promoActWithdrawSch')}</option>
-    <option value="skip"         ${act==='skip'        ?'selected':''}>— ${t('promoActSkip')}</option>
-  </select>`;
+  // Action options HTML — already-promoted rows show a locked badge instead of select
+  const actionSel = alreadyPromoted
+    ? `<span id="act_${s.StipNo}" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:#dcfce7;color:#16a34a;border:1px solid #86efac;white-space:nowrap">
+        ✓ ${LANG==='th'?'เลื่อนชั้นแล้ว':'Promoted'}
+      </span>`
+    : `<div class="flex gap-1 items-center">
+        <select class="promo-action-select flex-1" id="act_${s.StipNo}"
+          onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)">
+          <option value="promote"  ${act==='promote' ?'selected':''}>⬆ ${t('promoActPromote')}</option>
+          <option value="graduate" ${act==='graduate'?'selected':''}>🎓 ${t('promoActGraduate')}</option>
+          ${showUniOpts ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
+          ${showUniOpts ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
+          <option value="hold"    ${act==='hold'   ?'selected':''}>⏸ ${t('promoActHold')}</option>
+          <option value="suspend"      ${act==='suspend'     ?'selected':''}>⚠ ${t('promoActSuspend')}</option>
+          <option value="resign"       ${act==='resign'      ?'selected':''}>✕ ${t('promoActResign')}</option>
+          <option value="withdraw_sch" ${act==='withdraw_sch'?'selected':''}>🚫 ${t('promoActWithdrawSch')}</option>
+          <option value="skip"         ${act==='skip'        ?'selected':''}>— ${t('promoActSkip')}</option>
+        </select>
+        ${act!=='skip' ? `<button onclick="applyOneStudent('${s.StipNo}')"
+          title="${LANG==='th'?'บันทึกคนนี้':'Apply this student'}"
+          style="flex-shrink:0;padding:3px 7px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #16a34a;background:#f0fdf4;color:#16a34a;cursor:pointer;line-height:1"
+          id="quickApplyBtn_${s.StipNo}">✓</button>` : ''}
+      </div>`;
 
   // Uni scholarship cell
   const isUniAct = ['uni','uni_own'].includes(act);
@@ -1398,6 +1419,161 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel) {
     </td>
   </tr>
   ${uniRowHTML}`;
+}
+
+// ─────────────────────────────────────────────
+// PER-STUDENT INDIVIDUAL APPLY
+// ─────────────────────────────────────────────
+
+// Build DB payload for one student (shared logic with applyAllChanges).
+function _buildStudentPayload(stipNo, dec, inst, level) {
+  // DOM sync: read the level <select> so what admin sees = what gets saved
+  if (dec.action === 'promote') {
+    const detCell = document.getElementById('detail_' + stipNo);
+    const sel = detCell?.querySelector('select');
+    if (sel && sel.value) dec.nextLevel = sel.value;
+  }
+
+  const p = { StipNo: stipNo };
+  switch (dec.action) {
+    case 'promote':   p.NewLevel = dec.nextLevel; break;
+    case 'graduate':  p.NewStatus = 'Graduated'; break;
+    case 'uni':
+      p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
+      p.UniScholarship = dec.uniScholarship || 'Yes';
+      if (dec.uniName)     p.UniName     = dec.uniName;
+      if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
+      if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+      if (dec.uniProvince) p.UniProvince = dec.uniProvince;
+      if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+      { const og = ALL_GROUPS.find(g => g.institution === inst);
+        if (og?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
+        else if (og?.institution === 'VC') p.LastEducation = level.includes('ปวส.')
+          ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)' : 'ประกาศนียบัตรวิชาชีพ (ปวช.)'; }
+      break;
+    case 'uni_own':
+      p.NewStatus = 'University'; p.UniScholarship = 'No';
+      if (dec.uniName)     p.UniName     = dec.uniName;
+      if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
+      if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+      if (dec.uniProvince) p.UniProvince = dec.uniProvince;
+      if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+      break;
+    case 'suspend':      p.NewStatus = 'Suspended';            break;
+    case 'resign':       p.NewStatus = 'Resigned';             break;
+    case 'withdraw_sch': p.NewStatus = 'WithdrawnScholarship'; break;
+    case 'hold': break; // no level/status change
+  }
+  if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
+  if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
+    p.UniScholarship = dec.uniScholarship;
+  if (dec.nextAcademicYear) p.NextAcademicYear = dec.nextAcademicYear;
+
+  const academicYear = document.getElementById('academicYear')?.value || '';
+  if (academicYear) p.PromotionBatchID = academicYear + '_PROMO';
+  return p;
+}
+
+// Apply promotion for ONE student only — no full page reload, no blocking other rows.
+async function applyOneStudent(stipNo) {
+  const dec = ROW_DECISIONS[stipNo];
+  if (!dec || dec.action === 'skip' || dec.alreadyPromoted) return;
+
+  // Mandatory notes for critical actions
+  const NOTES_REQUIRED = ['hold','suspend','resign','withdraw_sch'];
+  if (NOTES_REQUIRED.includes(dec.action) && !(dec.notes||'').trim()) {
+    const el = document.getElementById('notes_' + stipNo);
+    if (el) { el.style.border = '2px solid #dc2626'; el.focus(); }
+    Swal.fire({ icon:'warning', title: t('promoNotesRequired'), timer:2500, showConfirmButton:false });
+    return;
+  }
+
+  const grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+  if (!grp) return;
+  const { institution: inst, level } = grp;
+
+  const p = _buildStudentPayload(stipNo, dec, inst, level);
+  // Nothing meaningful to write
+  if (!(p.NewLevel && p.NewLevel !== '—') && !p.NewStatus && !p.NewInstitution &&
+      p.UniScholarship === undefined && p.PromotionNotes === undefined &&
+      !p.PromotionBatchID && !p.NextAcademicYear) return;
+
+  const user = (getUser()||{}).username || 'admin';
+  const promoDate = document.getElementById('promotionDate')?.value || '';
+
+  // Dim the row while saving
+  const rowEl = document.getElementById('row_' + stipNo);
+  const btn   = document.getElementById('quickApplyBtn_' + stipNo);
+  if (rowEl) rowEl.style.opacity = '0.55';
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await API.promoteStudents([p], user, promoDate);
+    if (rowEl) rowEl.style.opacity = '';
+    if (btn) btn.disabled = false;
+
+    if (res.status === 'success' && res.success > 0) {
+      PROMOTED_THIS_SESSION.add(stipNo);
+      dec.alreadyPromoted = true;
+      _updateRowAfterPromotion(stipNo, dec, inst, level, grp);
+      _updateGroupDoneBadge(inst, level, grp);
+      updateStats();
+      Swal.fire({
+        icon:'success', toast:true, position:'bottom-end',
+        title: LANG==='th'
+          ? `✓ ${dec.action==='promote'?'เลื่อนชั้น':dec.action==='graduate'?'จบการศึกษา':'บันทึก'}แล้ว`
+          : '✓ Applied',
+        timer:2000, showConfirmButton:false,
+      });
+    } else {
+      Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
+    }
+  } catch(e) {
+    if (rowEl) rowEl.style.opacity = '';
+    if (btn) btn.disabled = false;
+    Swal.fire(t('error'), e.message || 'Network error', 'error');
+  }
+}
+
+// Re-render just one row in-place after promotion — no full group re-render.
+function _updateRowAfterPromotion(stipNo, dec, inst, level, grp) {
+  const stu  = grp.students.find(s => s.StipNo === stipNo);
+  const rule = PROMO_RULES[inst + '||' + level];
+  if (!stu || !rule) return;
+
+  // Re-use existing renderStudentRow with updated ROW_DECISIONS (alreadyPromoted now true)
+  const nextDefault = rule.to || '—';
+  const isGrad = rule.completion === 'graduate' || rule.completion === 'graduate_uni';
+  const newHtml = renderStudentRow(stu, inst, level, nextDefault, isGrad);
+
+  const rowEl  = document.getElementById('row_' + stipNo);
+  const uniRow = document.getElementById('unirow_' + stipNo);
+  if (!rowEl) return;
+
+  // Insert new rows and remove old ones
+  const tmp = document.createElement('tbody');
+  tmp.innerHTML = newHtml;
+  rowEl.replaceWith(...tmp.children);
+  if (uniRow) uniRow.remove();
+  lucide.createIcons();
+}
+
+// Update the "Done N/M" badge in the group card header after individual promotions.
+function _updateGroupDoneBadge(inst, level, grp) {
+  const gKey = inst + '||' + level;
+  const promotedCount = grp.students.filter(s =>
+    PROMOTED_THIS_SESSION.has(s.StipNo) ||
+    !!(s.PromotionBatchID && SETTINGS.promotionSettings?.academicYear &&
+       s.PromotionBatchID === (SETTINGS.promotionSettings.academicYear + '_PROMO'))
+  ).length;
+  const allPromoted = promotedCount === grp.students.length && grp.students.length > 0;
+
+  const badge = document.getElementById('doneBadge_' + CSS.escape(gKey));
+  if (!badge) return;
+  badge.style.display = promotedCount > 0 ? '' : 'none';
+  badge.innerHTML = allPromoted
+    ? `✓ ${LANG==='th'?'เลื่อนชั้นแล้วทั้งกลุ่ม':'All Promoted'}`
+    : `✓ ${LANG==='th'?'เลื่อนแล้ว':'Done'} ${promotedCount}/${grp.students.length}`;
 }
 
 // ─────────────────────────────────────────────
@@ -1897,14 +2073,25 @@ async function applyAllChanges() {
     const res = await API.promoteStudents(meaningful, user, promoDate);
     showLoader(false);
     if (res.status === 'success') {
-      // Track all processed students so "สำเร็จแล้ว" badges appear immediately on reload
-      meaningful.forEach(p => { if (p.StipNo) PROMOTED_THIS_SESSION.add(p.StipNo); });
+      // Track promoted students and update their rows inline immediately
+      meaningful.forEach(p => {
+        if (!p.StipNo) return;
+        PROMOTED_THIS_SESSION.add(p.StipNo);
+        const grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === p.StipNo));
+        if (grp && ROW_DECISIONS[p.StipNo]) {
+          ROW_DECISIONS[p.StipNo].alreadyPromoted = true;
+          _updateRowAfterPromotion(p.StipNo, ROW_DECISIONS[p.StipNo], grp.institution, grp.level, grp);
+          _updateGroupDoneBadge(grp.institution, grp.level, grp);
+        }
+      });
+      updateStats();
 
       await Swal.fire({
         icon:'success', title: t('promoApplied'),
         html: `<b>${res.success}</b> ${t('promoUpdated')}${res.errors?.length?`<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>`:''}`,
         confirmButtonColor:'#16a34a',
       });
+      // Full reload to get fresh level data from server (students moved to new groups)
       ROW_DECISIONS = {};
       loadPage();
     } else {
