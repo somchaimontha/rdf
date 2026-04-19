@@ -225,6 +225,19 @@
             </select>
           </div>
         </div>
+        <div>
+          <label class="field-label">
+            <span data-t="currentAcademicYearLabel">ปีการศึกษาปัจจุบัน (พ.ศ.)</span>
+          </label>
+          <div class="flex gap-2 items-center">
+            <input type="number" id="f_currentAcademicYear" class="field-input"
+              placeholder="เช่น 2568" min="2500" max="2700"
+              oninput="updateCurrentAcadYearHint(this.value)"
+              style="max-width:130px">
+            <span id="hintCurrentAcadYear" class="text-xs text-blue-500 font-semibold"></span>
+          </div>
+          <p class="text-xs text-gray-400 mt-0.5" data-t="currentAcademicYearHint">อัปเดตอัตโนมัติเมื่อเลื่อนชั้นในระบบโปรโมชัน</p>
+        </div>
         <div id="majorWrap">
           <label class="field-label"><span data-t="major">แผนการเรียน / สาขาวิชา</span></label>
           <input type="text" id="f_major" list="majorList" class="field-input"
@@ -1357,6 +1370,8 @@ function fillForm(d) {
   onInstitutionChange();
   sv('f_level', d.CurrentLevel); sv('f_studentId', d.StudentID);
   sv('f_scholarshipYear', d.ScholarshipYear); sv('f_entryYear', d.EntryYear);
+  sv('f_currentAcademicYear', d.CurrentAcademicYear);
+  updateCurrentAcadYearHint(d.CurrentAcademicYear);
   sv('f_entryTerm', d.EntryTerm); sv('f_major', d.Major);
   sv('f_department', d.Department); sv('f_oldSchool', d.OldSchool);
   sv('f_lastEducation', d.LastEducation);
@@ -1577,6 +1592,21 @@ function validateBankAccountNo(el) {
   const valid = digits.length >= 10 && digits.length <= 15;
   if (hint)  hint.classList.toggle('hidden', !valid);
   if (error) error.classList.toggle('hidden', valid);
+}
+
+// ── Current academic year hint (BE input → show CE) ──
+function updateCurrentAcadYearHint(val) {
+  const hint = document.getElementById('hintCurrentAcadYear');
+  if (!hint) return;
+  const be = parseInt(val);
+  if (be && be >= 2500 && be <= 2700) {
+    const ce = be - 543;
+    hint.textContent = `= ค.ศ. ${ce}`;
+    hint.style.display = '';
+  } else {
+    hint.textContent = '';
+    hint.style.display = 'none';
+  }
 }
 
 // ── BE year hint ──
@@ -1924,6 +1954,7 @@ function collectForm() {
     Parent2_FirstName: get('f_motherFname'), Parent2_LastName: get('f_motherLname'),
     Passion: get('f_passion'),
     Remarks: get('f_remarks'),
+    CurrentAcademicYear: get('f_currentAcademicYear'),
     BankName: get('f_bankName'),
     BankAccountNo: get('f_bankAccountNo').replace(/\D/g, ''),
     ProfilePicURL: document.getElementById('f_profilePicUrl').value,

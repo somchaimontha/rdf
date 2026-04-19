@@ -182,6 +182,7 @@
           <th data-t="namePhoto">รูป / ชื่อ-สกุล</th>
           <th data-t="instLevel">สถานศึกษา / ชั้นปี</th>
           <th class="hide-mobile" data-t="scholarshipYear">ปีการศึกษาที่ได้รับทุน</th>
+          <th class="hide-mobile" data-t="currentAcademicYear">ปีการศึกษาปัจจุบัน</th>
           <th data-t="phone">โทรศัพท์</th>
           <th>สถานะ</th>
           <th class="hide-mobile text-center">ปีเกิด ค.ศ.</th>
@@ -853,6 +854,12 @@ function renderTable() {
       </td>
       <td class="hide-mobile text-xs text-gray-500">
         ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
+      </td>
+      <td class="hide-mobile text-xs">
+        ${s.currentAcademicYear
+          ? `<span class="font-semibold" style="color:#1d4ed8">${s.currentAcademicYear}</span>
+             <span class="text-gray-400"> / ${parseInt(s.currentAcademicYear) - 543}</span>`
+          : '<span class="text-gray-300">—</span>'}
       </td>
       <td class="text-sm text-gray-600">${fmtPhone(s.phone)}</td>
       <td><span class="badge ${statusColor}">${statusLabel}</span></td>
@@ -1583,6 +1590,11 @@ const RPT_FIELD_DEFS = [
     render:(s,isEN)=> s.scholarshipYear
       ? (isEN ? s.scholarshipYear : String(parseInt(s.scholarshipYear)+543))
       : '—' },
+  { key:'currentAcademicYear', cat:'academic', defaultOn:true,
+    labelTH:'ปีการศึกษาปัจจุบัน (พ.ศ.)', labelEN:'Current Academic Year (BE)',
+    render:(s,isEN)=> s.currentAcademicYear
+      ? (isEN ? `${s.currentAcademicYear} / ${parseInt(s.currentAcademicYear)-543}` : s.currentAcademicYear)
+      : '—' },
   { key:'entryYear',     cat:'academic', defaultOn:false,
     labelTH:'ปีเข้าเรียน (พ.ศ.)',         labelEN:'Entry Year (CE)',
     render:(s,isEN)=> s.entryYear
@@ -1776,7 +1788,8 @@ const DYNAMIC_FIELD_LABEL_MAP = {
   tambon:        { th:'ตำบล/แขวง',                   en:'Sub-district' },
   amphoe:        { th:'อำเภอ/เขต',                   en:'District' },
   province:      { th:'จังหวัด',                      en:'Province' },
-  scholarshipYear: { th:'ปีการศึกษา (พ.ศ.)',          en:'Scholarship Year (CE)' },
+  scholarshipYear:      { th:'ปีการศึกษา (พ.ศ.)',          en:'Scholarship Year (CE)' },
+  currentAcademicYear:  { th:'ปีการศึกษาปัจจุบัน (พ.ศ.)', en:'Current Academic Year (BE)' },
   entryYear:     { th:'ปีเข้าเรียน (พ.ศ.)',           en:'Entry Year (CE)' },
   entryTerm:     { th:'ภาคเรียนที่เข้า',              en:'Entry Term' },
   major:         { th:'สาขา/แผนการเรียน',             en:'Major' },
