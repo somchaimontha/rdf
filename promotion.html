@@ -1438,13 +1438,17 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
       </select>
     </td>
     ${showUniSchCol ? `<td id="schCell_${s.StipNo}" class="promo-hide-sm">${schCell}</td>` : ''}
-    <td>
-      <input type="text" class="notes-input"
-        placeholder="${LANG==='th'?'หมายเหตุ...':'Notes...'}"
+    <td>${(()=>{
+      const _nr = ['hold','suspend','resign','withdraw_sch'].includes(act);
+      const _ne = !(dec.notes||'').trim();
+      const _border = (_nr && _ne) ? 'border:2px solid #dc2626;' : '';
+      const _ph = _nr ? (LANG==='th'?'* หมายเหตุ (จำเป็น)...':'* Notes (required)...') : (LANG==='th'?'หมายเหตุ...':'Notes...');
+      return `<input type="text" class="notes-input" id="notes_${s.StipNo}"
+        placeholder="${_ph}"
         value="${(dec.notes||'').replace(/"/g,'&quot;')}"
-        id="notes_${s.StipNo}"
-        onchange="setDec('${s.StipNo}','notes',this.value)">
-    </td>
+        style="${_border}"
+        onchange="setDec('${s.StipNo}','notes',this.value);_syncNotesBorder('${s.StipNo}',this.value,'${act}')">`;
+    })()}</td>
   </tr>
   ${uniRowHTML}`;
 }
@@ -1547,13 +1551,26 @@ async function applyOneStudent(stipNo) {
       const _curYr = dec.currentYear || grp.students.find(s => s.StipNo === stipNo)?.CurrentAcademicYear || '';
       _updateGroupDoneBadge(inst, level, grp, _curYr);
       updateStats();
-      Swal.fire({
-        icon:'success', toast:true, position:'bottom-end',
-        title: LANG==='th'
-          ? `✓ ${dec.action==='promote'?'เลื่อนชั้น':dec.action==='graduate'?'จบการศึกษา':'บันทึก'}แล้ว`
-          : '✓ Applied',
-        timer:2000, showConfirmButton:false,
-      });
+
+      // Alumni-moving actions: offer link to alumni view
+      const ALUMNI_ACTIONS = new Set(['graduate','uni','uni_own','resign','withdraw_sch']);
+      if (ALUMNI_ACTIONS.has(dec.action)) {
+        Swal.fire({
+          toast: true, position: 'bottom-right', icon: 'success',
+          title: LANG==='th' ? '🎓 ย้ายเข้ากลุ่มศิษย์เก่าแล้ว' : '🎓 Moved to alumni',
+          showConfirmButton: true,
+          confirmButtonText: LANG==='th' ? 'ดูศิษย์เก่า →' : 'View Alumni →',
+          timer: 5000, timerProgressBar: true,
+        }).then(r => {
+          if (r.isConfirmed) window.open('students.html?filterStatus=Graduated', '_blank');
+        });
+      } else {
+        Swal.fire({
+          icon:'success', toast:true, position:'bottom-end',
+          title: LANG==='th' ? `✓ เลื่อนชั้นแล้ว` : '✓ Applied',
+          timer:2000, showConfirmButton:false,
+        });
+      }
     } else {
       Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
     }
@@ -1790,14 +1807,23 @@ function buildLevelOpts(inst, selected) {
 }
 
 function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
+  // Alumni badge: shown for actions that move student out of active roster
+  const alumniTag = `<span title="${LANG==='th'?'ย้ายเข้ากลุ่มศิษย์เก่า':'Moves to Alumni'}"
+    style="font-size:9px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700;white-space:nowrap">
+    🎓 ศิษย์เก่า</span>`;
+  // Withdrawal form button: for resign/withdraw_sch
+  const wdBtn = `<button onclick="openWithdrawalFormModal()" title="${LANG==='th'?'เปิดใบลาออก':'Open withdrawal form'}"
+    style="font-size:9px;padding:2px 6px;border-radius:4px;background:#fff1f2;color:#9f1239;border:1px solid #fda4af;font-weight:700;cursor:pointer;white-space:nowrap">
+    📄 ใบลาออก</button>`;
+
   if (act === 'promote')   return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${levelOpts}</select>`;
-  if (act === 'graduate')  return `<span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>`;
-  if (act === 'uni')       return `<span class="text-xs text-purple-600 font-semibold">${t('promoUniRDF')}</span>`;
-  if (act === 'uni_own')   return `<span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span>`;
+  if (act === 'graduate')  return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>${alumniTag}</div>`;
+  if (act === 'uni')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-600 font-semibold">${t('promoUniRDF')}</span>${alumniTag}</div>`;
+  if (act === 'uni_own')   return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span>${alumniTag}</div>`;
   if (act === 'hold')      return `<span class="text-xs text-orange-500 font-semibold">${t('promoStayLevel')}</span>`;
   if (act === 'suspend')   return `<span class="text-xs text-yellow-600 font-semibold">${t('promoStatusSuspended')}</span>`;
-  if (act === 'resign')       return `<span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>`;
-  if (act === 'withdraw_sch') return `<span class="text-xs font-semibold" style="color:#9f1239">${t('promoStatusWithdrawnSch')}</span>`;
+  if (act === 'resign')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>${alumniTag}${wdBtn}</div>`;
+  if (act === 'withdraw_sch') return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs font-semibold" style="color:#9f1239">${t('promoStatusWithdrawnSch')}</span>${alumniTag}${wdBtn}</div>`;
   return `<span class="text-xs text-gray-400">—</span>`;
 }
 
@@ -1833,6 +1859,14 @@ function renderUniDetailRow(stipNo, dec) {
 function setDec(stipNo, field, val) {
   if (!ROW_DECISIONS[stipNo]) ROW_DECISIONS[stipNo] = {};
   ROW_DECISIONS[stipNo][field] = val;
+}
+
+// Clears the red required border on notes field once the user starts typing.
+function _syncNotesBorder(stipNo, val, act) {
+  const el = document.getElementById('notes_' + stipNo);
+  if (!el) return;
+  const needsNote = ['hold','suspend','resign','withdraw_sch'].includes(act);
+  el.style.border = (needsNote && !val.trim()) ? '2px solid #dc2626' : '';
 }
 
 function onActionChange(stipNo, inst, level, newAct) {
@@ -1898,6 +1932,29 @@ function onActionChange(stipNo, inst, level, newAct) {
     mainRow.classList.toggle('excluded', newAct === 'skip');
     const chk = mainRow.querySelector('.group-check');
     if (chk) chk.checked = newAct !== 'skip';
+  }
+
+  // Sync notes field: required border + placeholder for critical actions
+  const notesEl = document.getElementById('notes_' + stipNo);
+  if (notesEl) {
+    const needsNote = ['hold','suspend','resign','withdraw_sch'].includes(newAct);
+    const hasNote   = (notesEl.value || '').trim().length > 0;
+    notesEl.style.border    = (needsNote && !hasNote) ? '2px solid #dc2626' : '';
+    notesEl.placeholder     = needsNote
+      ? (LANG==='th' ? '* หมายเหตุ (จำเป็น)...' : '* Notes (required)...')
+      : (LANG==='th' ? 'หมายเหตุ...' : 'Notes...');
+    if (needsNote && !hasNote) notesEl.focus();
+  }
+
+  // For resign / withdraw_sch: prompt to open withdrawal form
+  if (['resign','withdraw_sch'].includes(newAct)) {
+    Swal.fire({
+      toast: true, position: 'bottom-right', icon: 'info',
+      title: LANG==='th' ? '📄 อย่าลืมกรอกใบลาออก' : '📄 Remember to fill withdrawal form',
+      showConfirmButton: true,
+      confirmButtonText: LANG==='th' ? 'เปิดใบลาออก →' : 'Open Form →',
+      timer: 5000, timerProgressBar: true,
+    }).then(r => { if (r.isConfirmed) openWithdrawalFormModal(); });
   }
 
   updateStats();
@@ -1992,6 +2049,27 @@ async function promoteAllInGroup(inst, level, curYear) {
     ROW_DECISIONS[s.StipNo].nextLevel = defNxt;
     if (groupNextYear) ROW_DECISIONS[s.StipNo].nextAcademicYear = groupNextYear;
   });
+
+  // Notes are required for hold/suspend/resign/withdraw_sch
+  const NOTES_REQD = new Set(['hold','suspend','resign','withdraw_sch']);
+  if (NOTES_REQD.has(defAct)) {
+    const missingNotes = targetStudents.filter(s => !(ROW_DECISIONS[s.StipNo]?.notes||'').trim());
+    if (missingNotes.length > 0) {
+      const names = missingNotes.map(s =>
+        ((s.FirstName||'') + ' ' + (s.LastName||'')).trim() || s.StipNo
+      );
+      await Swal.fire({
+        icon: 'warning',
+        title: LANG==='th' ? 'กรุณากรอกหมายเหตุ' : 'Notes Required',
+        html: `<div class="text-sm text-left">${LANG==='th'?'นักเรียนต่อไปนี้ยังไม่มีหมายเหตุ':'The following students have no notes'}:<br>
+          <ul class="mt-2 ml-4 list-disc text-red-600 text-xs">${names.map(n=>`<li>${n}</li>`).join('')}</ul>
+          <p class="text-xs text-gray-400 mt-2">${LANG==='th'?'กรุณากรอกหมายเหตุรายบุคคลก่อนบันทึกกลุ่ม':'Please fill notes individually before bulk saving.'}</p>
+        </div>`,
+        confirmButtonColor: '#dc2626',
+      });
+      return;
+    }
+  }
 
   // Build API payload and save to DB (same as applyAllChanges — not just a local state update)
   const promoDate    = document.getElementById('promotionDate').value;
@@ -2273,9 +2351,25 @@ async function applyAllChanges() {
       });
       updateStats();
 
+      // Count alumni-bound actions in this batch
+      const ALUMNI_ACTS = new Set(['graduate','uni','uni_own','resign','withdraw_sch']);
+      const alumniCount = meaningful.filter(p => {
+        const d = ROW_DECISIONS[p.StipNo] || {};
+        return ALUMNI_ACTS.has(d.action);
+      }).length;
+
+      const alumniHtml = alumniCount > 0
+        ? `<br><div style="margin-top:10px;font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px">
+            🎓 <b>${alumniCount}</b> ${LANG==='th'?'คน ย้ายเข้ากลุ่มศิษย์เก่า':'student(s) moved to alumni'}
+            &nbsp;—&nbsp;<a href="students.html?filterStatus=Graduated" target="_blank"
+              style="color:#1e40af;font-weight:700;text-decoration:underline">
+              ${LANG==='th'?'ดูรายชื่อศิษย์เก่า →':'View Alumni →'}</a>
+          </div>`
+        : '';
+
       await Swal.fire({
         icon:'success', title: t('promoApplied'),
-        html: `<b>${res.success}</b> ${t('promoUpdated')}${res.errors?.length?`<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>`:''}`,
+        html: `<b>${res.success}</b> ${t('promoUpdated')}${res.errors?.length?`<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>`:''}${alumniHtml}`,
         confirmButtonColor:'#16a34a',
       });
       // Full reload to get fresh level data from server (students moved to new groups)
