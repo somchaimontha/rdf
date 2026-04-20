@@ -501,7 +501,7 @@ img.student-avatar {
   <div class="flex flex-wrap gap-2 mb-4 text-xs no-print legend-bar">
     <span class="action-badge act-promote"><i data-lucide="arrow-up" style="width:10px;height:10px"></i> <span data-t="promoActPromote">เลื่อนชั้น</span></span>
     <span class="action-badge act-graduate"><i data-lucide="graduation-cap" style="width:10px;height:10px"></i> <span data-t="promoActGraduate">จบการศึกษา</span></span>
-    <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> <span data-t="promoActUni">จบ + ต่อม. (ทุน RDF)</span></span>
+    <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> <span data-t="promoActUni">จบ + ต่อ ม. (ขอรับทุน RDF. ต่อ)</span></span>
     <span class="action-badge act-hold"><i data-lucide="pause-circle" style="width:10px;height:10px"></i> <span data-t="promoActHold">ซ้ำชั้น</span></span>
     <span class="action-badge act-suspend"><i data-lucide="clock" style="width:10px;height:10px"></i> <span data-t="promoActSuspend">พักการเรียน</span></span>
     <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> <span data-t="promoActResign">ลาออกจากสถาบัน</span></span>
@@ -2567,7 +2567,7 @@ async function applyAllChanges() {
       icon: 'question',
       title: LANG==='th' ? '📤 ส่งคำขออนุมัติทุน ม.' : '📤 Submit Scholarship Requests',
       html: `<div class="text-sm">${LANG==='th'
-        ? `พบ <b>${uniPending.length}</b> นักเรียนที่เลือก "ต่อ ม. ทุน RDF" — ต้องการส่งคำขออนุมัติทุนสำหรับนักเรียนเหล่านี้ด้วยหรือไม่?`
+        ? `พบ <b>${uniPending.length}</b> นักเรียนที่เลือก "จบ + ต่อ ม. (ขอรับทุน RDF. ต่อ)" — ต้องการส่งคำขออนุมัติทุนสำหรับนักเรียนเหล่านี้ด้วยหรือไม่?`
         : `Found <b>${uniPending.length}</b> student(s) with "RDF University" action. Submit scholarship requests for them too?`}
       </div>`,
       showCancelButton: true,
@@ -3409,7 +3409,7 @@ function buildReportSummaryHTML(dataRows, reportType, isEN, S) {
     const aNames = {
       promote:     isEN?'Grade Promotion':'เลื่อนชั้น',
       graduate:    isEN?'Graduated':'จบการศึกษา',
-      uni:         isEN?'Cont. to University (RDF Scholarship)':'ต่อมหาวิทยาลัย (ทุน RDF)',
+      uni:         isEN?'Cont. Uni (Apply RDF Scholarship)':'จบ + ต่อ ม. (ขอรับทุน RDF. ต่อ)',
       uni_own:     isEN?'Cont. to University (Own Funding)':'ต่อมหาวิทยาลัย (ทุนตนเอง)',
       hold:        isEN?'Repeat Year':'ซ้ำชั้น',
       suspend:     isEN?'Suspended':'พักการเรียน',
