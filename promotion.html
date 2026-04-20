@@ -54,7 +54,9 @@
   font-size:12px; font-weight:600; background:#fff; cursor:pointer; outline:none; }
 .promo-action-select:focus { border-color:#1d4ed8; }
 .notes-input { border:1px solid #e5e7eb; border-radius:6px; padding:3px 7px;
-  font-size:11px; width:100%; min-width:90px; outline:none; }
+  font-size:11px; width:100%; min-width:90px; outline:none;
+  resize:none; overflow:hidden; height:24px; line-height:1.4;
+  transition:height 0.15s ease; display:block; }
 .notes-input:focus { border-color:#7c3aed; }
 /* ── Toolbar ── */
 .sticky-toolbar { position:sticky; top:0; z-index:30; background:#fff;
@@ -1429,13 +1431,13 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
     <td class="promo-hide-sm"><span class="badge ${statusBadge}" style="font-size:10px">${statusLabel}</span></td>
     <td class="no-print">${actionSel}</td>
     <td id="detail_${s.StipNo}">${renderDetailCell(s.StipNo, inst, level, act, dec, levelOpts)}</td>
-    <td class="promo-hide-sm">
-      <select id="nextYear_${s.StipNo}" class="promo-action-select text-xs"
+    <td class="promo-hide-sm" id="nextYearCell_${s.StipNo}">
+      ${act === 'promote' ? `<select id="nextYear_${s.StipNo}" class="promo-action-select text-xs"
         style="font-weight:700;color:#1e3a8a;min-width:80px"
         title="${t('promoNextYearHint')}"
         onchange="setDec('${s.StipNo}','nextAcademicYear',this.value)">
         ${yearSelOpts}
-      </select>
+      </select>` : `<span style="color:#9ca3af;font-size:10px">—</span>`}
     </td>
     ${showUniSchCol ? `<td id="schCell_${s.StipNo}" class="promo-hide-sm">${schCell}</td>` : ''}
     <td>${(()=>{
@@ -1443,11 +1445,13 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
       const _ne = !(dec.notes||'').trim();
       const _border = (_nr && _ne) ? 'border:2px solid #dc2626;' : '';
       const _ph = _nr ? (LANG==='th'?'* หมายเหตุ (จำเป็น)...':'* Notes (required)...') : (LANG==='th'?'หมายเหตุ...':'Notes...');
-      return `<input type="text" class="notes-input" id="notes_${s.StipNo}"
+      return `<textarea class="notes-input" id="notes_${s.StipNo}"
         placeholder="${_ph}"
-        value="${(dec.notes||'').replace(/"/g,'&quot;')}"
         style="${_border}"
-        onchange="setDec('${s.StipNo}','notes',this.value);_syncNotesBorder('${s.StipNo}',this.value,'${act}')">`;
+        oninput="setDec('${s.StipNo}','notes',this.value);_syncNotesBorder('${s.StipNo}',this.value,'${act}');_autoResizeNotes(this)"
+        onfocus="_autoResizeNotes(this)"
+        onblur="_shrinkNotes(this)"
+        >${(dec.notes||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>`;
     })()}</td>
   </tr>
   ${uniRowHTML}`;
@@ -1869,6 +1873,17 @@ function _syncNotesBorder(stipNo, val, act) {
   el.style.border = (needsNote && !val.trim()) ? '2px solid #dc2626' : '';
 }
 
+// Auto-expand textarea to fit content while typing / on focus.
+function _autoResizeNotes(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.max(el.scrollHeight, 24) + 'px';
+}
+// Shrink back to single line when the field loses focus (if not empty keep 2 lines max).
+function _shrinkNotes(el) {
+  const lines = (el.value.match(/\n/g) || []).length + 1;
+  el.style.height = (lines > 1 ? Math.min(lines, 3) * 20 : 24) + 'px';
+}
+
 function onActionChange(stipNo, inst, level, newAct) {
   if (!ROW_DECISIONS[stipNo]) ROW_DECISIONS[stipNo] = {};
   const dec = ROW_DECISIONS[stipNo];
@@ -1932,6 +1947,24 @@ function onActionChange(stipNo, inst, level, newAct) {
     mainRow.classList.toggle('excluded', newAct === 'skip');
     const chk = mainRow.querySelector('.group-check');
     if (chk) chk.checked = newAct !== 'skip';
+  }
+
+  // Toggle next year cell: only show for 'promote' action
+  const nextYearCell = document.getElementById('nextYearCell_' + stipNo);
+  if (nextYearCell) {
+    if (newAct === 'promote') {
+      const acadBase = SETTINGS.promotionSettings?.academicYear ||
+        document.getElementById('academicYear')?.value || '';
+      const yOpts = buildYearOpts(dec.nextAcademicYear || '', acadBase);
+      nextYearCell.innerHTML = `<select id="nextYear_${stipNo}" class="promo-action-select text-xs"
+        style="font-weight:700;color:#1e3a8a;min-width:80px"
+        title="${t('promoNextYearHint')}"
+        onchange="setDec('${stipNo}','nextAcademicYear',this.value)">
+        ${yOpts}
+      </select>`;
+    } else {
+      nextYearCell.innerHTML = `<span style="color:#9ca3af;font-size:10px">—</span>`;
+    }
   }
 
   // Sync notes field: required border + placeholder for critical actions
