@@ -58,6 +58,37 @@
   resize:none; overflow:hidden; height:24px; line-height:1.4;
   transition:height 0.15s ease; display:block; }
 .notes-input:focus { border-color:#7c3aed; }
+/* ── Notes popup modal ── */
+#notesPopupOverlay {
+  display:none; position:fixed; inset:0; z-index:9000;
+  background:rgba(15,23,42,.45); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center;
+}
+#notesPopupOverlay.open { display:flex; }
+#notesPopupBox {
+  background:#fff; border-radius:16px; width:min(540px,94vw);
+  box-shadow:0 20px 60px rgba(0,0,0,.22); overflow:hidden;
+  animation:popupIn .18s cubic-bezier(.34,1.36,.64,1);
+}
+@keyframes popupIn {
+  from { transform:scale(.88); opacity:0; }
+  to   { transform:scale(1);   opacity:1; }
+}
+#notesPopupTextarea {
+  width:100%; border:none; outline:none; resize:vertical;
+  font-size:13px; line-height:1.7; padding:16px 18px;
+  min-height:150px; max-height:60vh; color:#1e293b;
+  font-family:inherit;
+}
+.notes-expand-btn {
+  display:none; position:absolute; top:2px; right:2px;
+  padding:1px 4px; font-size:10px; border-radius:4px;
+  border:1px solid #c4b5fd; background:#f5f3ff; color:#7c3aed;
+  cursor:pointer; line-height:1.4; font-weight:700;
+  transition:opacity .15s;
+}
+.notes-wrap { position:relative; }
+.notes-wrap:hover .notes-expand-btn { display:block; }
 /* ── Toolbar ── */
 .sticky-toolbar { position:sticky; top:0; z-index:30; background:#fff;
   border-bottom:1px solid #e5e7eb; padding:10px 0; margin-bottom:16px;
@@ -1476,13 +1507,28 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
       const _ne = !(dec.notes||'').trim();
       const _border = (_nr && _ne) ? 'border:2px solid #dc2626;' : '';
       const _ph = _nr ? (LANG==='th'?'* หมายเหตุ (จำเป็น)...':'* Notes (required)...') : (LANG==='th'?'หมายเหตุ...':'Notes...');
-      return `<textarea class="notes-input" id="notes_${s.StipNo}"
-        placeholder="${_ph}"
-        style="${_border}"
-        oninput="setDec('${s.StipNo}','notes',this.value);_syncNotesBorder('${s.StipNo}',this.value,'${act}');_autoResizeNotes(this)"
-        onfocus="_autoResizeNotes(this)"
-        onblur="_shrinkNotes(this)"
-        >${(dec.notes||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>`;
+      const _hasLong = (dec.notes||'').length > 20;
+      const _val = (dec.notes||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // Find student name for popup title (inline — no DOM access yet)
+      return `<div class="notes-wrap">
+        <textarea class="notes-input" id="notes_${s.StipNo}"
+          placeholder="${_ph}"
+          style="${_border}"
+          title="${_hasLong ? (dec.notes||'').replace(/"/g,'&quot;') : ''}"
+          oninput="setDec('${s.StipNo}','notes',this.value);_syncNotesBorder('${s.StipNo}',this.value,'${act}');_autoResizeNotes(this);_notesInlineCheck(this,'${s.StipNo}','${act}')"
+          onfocus="_autoResizeNotes(this)"
+          onblur="_shrinkNotes(this)"
+          >${_val}</textarea>
+        <button class="notes-expand-btn no-print" title="${LANG==='th'?'ขยายเพื่อแก้ไข':'Expand to edit'}"
+          onclick="(function(){
+            var dec=ROW_DECISIONS['${s.StipNo}']||{};
+            var nm='';
+            for(var g of ALL_GROUPS){var stu=g.students.find(function(s){return s.StipNo==='${s.StipNo}'});if(stu){nm=((stu.Title||'')+(stu.FirstName||'')+' '+(stu.LastName||'')).trim();break;}}
+            openNotesPopup('${s.StipNo}','${act}',nm,${_nr});
+          })()">↗</button>
+        ${_hasLong ? `<div style="font-size:9px;color:#7c3aed;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px"
+          title="${(dec.notes||'').replace(/"/g,'&quot;')}">💬 ${(dec.notes||'').slice(0,18)}…</div>` : ''}
+      </div>`;
     })()}</td>
   </tr>
   ${uniRowHTML}`;
@@ -3775,9 +3821,10 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
 })();
 initDBStatus();
 
-// ESC closes any open modal (priority: preview → withdrawal → print report → export)
+// ESC closes any open modal (priority: notes popup → preview → withdrawal → print report → export)
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  if (document.getElementById('notesPopupOverlay')?.classList.contains('open'))      { saveNotesPopup();             return; }
   if (!document.getElementById('printPreviewModal')?.classList.contains('hidden'))  { closePrintPreview();          return; }
   if (!document.getElementById('withdrawalFormModal')?.classList.contains('hidden')) { closeWithdrawalFormModal();   return; }
   if (!document.getElementById('printReportModal')?.classList.contains('hidden'))    { closePrintReportModal();      return; }
@@ -3829,6 +3876,159 @@ document.addEventListener('keydown', e => {
   overlay.addEventListener('mouseover', () => clearTimeout(hideTimer));
   overlay.addEventListener('mouseout',  () => hide());
 })();
+</script>
+
+<!-- ═══ NOTES POPUP MODAL ═══ -->
+<div id="notesPopupOverlay" onclick="_closeNotesPopupOnBg(event)">
+  <div id="notesPopupBox">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #e5e7eb;background:#fafafa">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">📝</span>
+        <div>
+          <div id="notesPopupTitle" style="font-size:13px;font-weight:700;color:#1e293b">หมายเหตุ</div>
+          <div id="notesPopupSub"   style="font-size:10px;color:#9ca3af"></div>
+        </div>
+      </div>
+      <button onclick="closeNotesPopup()" style="padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;font-size:13px;line-height:1" title="ปิด">✕</button>
+    </div>
+    <!-- Required note indicator -->
+    <div id="notesPopupRequiredBanner" style="display:none;padding:6px 18px;background:#fef2f2;border-bottom:1px solid #fca5a5">
+      <span style="font-size:11px;color:#dc2626;font-weight:600">⚠ หมายเหตุนี้จำเป็นต้องกรอก (required)</span>
+    </div>
+    <!-- Textarea -->
+    <textarea id="notesPopupTextarea"
+      placeholder="พิมพ์หมายเหตุที่นี่..."
+      oninput="_onNotesPopupInput()"
+      onfocus="this.select()"></textarea>
+    <!-- Char counter + footer -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid #f1f5f9;gap:8px">
+      <span id="notesPopupCharCount" style="font-size:11px;color:#9ca3af"></span>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeNotesPopup()" style="padding:6px 16px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer">
+          ยกเลิก
+        </button>
+        <button onclick="saveNotesPopup()" style="padding:6px 20px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          ✓ บันทึก
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// NOTES POPUP
+// ─────────────────────────────────────────────
+let _notesPopupStipNo = null;
+let _notesPopupAct    = null;
+
+function openNotesPopup(stipNo, act, studentName, isRequired) {
+  _notesPopupStipNo = stipNo;
+  _notesPopupAct    = act;
+  const dec = ROW_DECISIONS[stipNo] || {};
+  const val = dec.notes || '';
+
+  const overlay  = document.getElementById('notesPopupOverlay');
+  const ta       = document.getElementById('notesPopupTextarea');
+  const title    = document.getElementById('notesPopupTitle');
+  const sub      = document.getElementById('notesPopupSub');
+  const banner   = document.getElementById('notesPopupRequiredBanner');
+
+  title.textContent = LANG === 'th' ? 'หมายเหตุ' : 'Notes';
+  sub.textContent   = studentName || stipNo;
+  ta.value          = val;
+  ta.placeholder    = isRequired
+    ? (LANG === 'th' ? '* หมายเหตุ (จำเป็นต้องกรอก)...' : '* Notes (required)...')
+    : (LANG === 'th' ? 'พิมพ์หมายเหตุที่นี่...'          : 'Type notes here...');
+  banner.style.display = isRequired ? '' : 'none';
+  _updateNotesPopupCounter(val);
+
+  overlay.classList.add('open');
+  // Focus at end of existing text
+  setTimeout(() => { ta.focus(); ta.setSelectionRange(val.length, val.length); }, 80);
+}
+
+function closeNotesPopup() {
+  document.getElementById('notesPopupOverlay').classList.remove('open');
+  _notesPopupStipNo = null;
+  _notesPopupAct    = null;
+}
+
+function _closeNotesPopupOnBg(e) {
+  if (e.target === document.getElementById('notesPopupOverlay')) closeNotesPopup();
+}
+
+function saveNotesPopup() {
+  const ta  = document.getElementById('notesPopupTextarea');
+  const val = ta.value;
+  if (!_notesPopupStipNo) { closeNotesPopup(); return; }
+
+  // Sync back to ROW_DECISIONS
+  setDec(_notesPopupStipNo, 'notes', val);
+
+  // Sync to the inline textarea in the table row
+  const inlineTA = document.getElementById('notes_' + _notesPopupStipNo);
+  if (inlineTA) {
+    inlineTA.value = val;
+    _syncNotesBorder(_notesPopupStipNo, val, _notesPopupAct || '');
+    _shrinkNotes(inlineTA);
+    // Update preview text for long notes
+    _updateNotesInlinePreview(inlineTA, val);
+  }
+  closeNotesPopup();
+}
+
+function _onNotesPopupInput() {
+  const ta  = document.getElementById('notesPopupTextarea');
+  _updateNotesPopupCounter(ta.value);
+}
+
+function _updateNotesPopupCounter(val) {
+  const el = document.getElementById('notesPopupCharCount');
+  if (!el) return;
+  const len = val.length;
+  el.textContent = LANG === 'th' ? `${len} ตัวอักษร` : `${len} chars`;
+  el.style.color = len > 200 ? '#dc2626' : len > 80 ? '#f59e0b' : '#9ca3af';
+}
+
+// Updates the inline textarea to show a truncated preview when popup closes
+function _updateNotesInlinePreview(ta, val) {
+  if (!ta) return;
+  if (val.length > 20) {
+    ta.setAttribute('title', val); // tooltip with full text
+  } else {
+    ta.removeAttribute('title');
+  }
+  _shrinkNotes(ta);
+}
+
+// Called from oninput on the inline textarea: open popup if text grows past 20 chars
+function _notesInlineCheck(el, stipNo, act) {
+  if (el.value.length > 20) {
+    el.blur();
+    const dec = ROW_DECISIONS[stipNo] || {};
+    // Find student name
+    let studentName = stipNo;
+    for (const g of ALL_GROUPS) {
+      const stu = g.students.find(s => s.StipNo === stipNo);
+      if (stu) { studentName = ((stu.Title||'') + (stu.FirstName||'') + ' ' + (stu.LastName||'')).trim(); break; }
+    }
+    const isRequired = ['hold','suspend','resign','withdraw_sch'].includes(act);
+    openNotesPopup(stipNo, act, studentName, isRequired);
+  }
+}
+
+// ESC closes notes popup
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('notesPopupOverlay')?.classList.contains('open')) {
+    saveNotesPopup(); // auto-save on ESC
+  }
+});
+// Ctrl+Enter / Cmd+Enter saves from popup
+document.getElementById('notesPopupTextarea').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); saveNotesPopup(); }
+});
 </script>
 </body>
 </html>
