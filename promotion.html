@@ -411,6 +411,9 @@ img.student-avatar {
     </div>
   </div>
 
+  <!-- ═══ SCHOLARSHIP APPROVAL PANEL (Manager / SuperAdmin only) ═══ -->
+  <div id="approvalPanelWrap" class="container no-print" style="padding-top:8px"></div>
+
   <!-- ═══ STICKY TOOLBAR ═══ -->
   <div class="sticky-toolbar no-print">
     <div class="container" style="padding-top:0;padding-bottom:0">
@@ -1117,14 +1120,25 @@ async function loadPage() {
           const _curYear = s.CurrentAcademicYear || ps.academicYear || '';
           const _nextYearBE = _curYear ? String(parseInt(_curYear) + 1) : (ps.academicYear ? String(parseInt(ps.academicYear) + 1) : '');
 
+          // Detect existing scholarship approval state from DB
+          const schApprSt = (s.SchApprovalStatus || '').trim();
+          // If approval was granted, treat as already promoted (won't re-submit)
+          const approvedPromo = schApprSt === 'Approved';
+
           ROW_DECISIONS[s.StipNo] = {
-            action:           defAction,
-            nextLevel:        defAction === 'promote' ? (defTo !== '—' ? defTo : '') : '',
-            uniScholarship:   s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
-            notes:            s.PromotionNotes || '',
-            alreadyPromoted:  alreadyPromoted,
-            nextAcademicYear: _nextYearBE,
-            uniName:'', uniDuration:'', uniFaculty:'', uniMajor:'', uniProvince:'',
+            action:             defAction,
+            nextLevel:          defAction === 'promote' ? (defTo !== '—' ? defTo : '') : '',
+            uniScholarship:     s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
+            notes:              s.PromotionNotes || '',
+            alreadyPromoted:    alreadyPromoted || approvedPromo,
+            nextAcademicYear:   _nextYearBE,
+            uniName:            s.UniName || '', uniDuration: s.UniDuration || '',
+            uniFaculty:         s.UniFaculty || '', uniMajor: s.UniMajor || '',
+            uniProvince:        s.UniProvince || '',
+            schApprovalStatus:  schApprSt,   // '' | 'Pending' | 'Approved' | 'Rejected'
+            schApprovalBy:      s.SchApprovalBy || '',
+            schApprovalDate:    s.SchApprovalDate || '',
+            schApprovalNotes:   s.SchApprovalNotes || '',
           };
         }
       });
@@ -1134,6 +1148,7 @@ async function loadPage() {
     populateYearFilter();
     renderGroups();
     updateStats();
+    loadApprovalPanel(); // Load scholarship approval panel for Manager/SuperAdmin
   } catch(e) {
     showLoader(false);
     document.getElementById('groupsContainer').innerHTML =
@@ -1377,10 +1392,26 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
           <option value="withdraw_sch" ${act==='withdraw_sch'?'selected':''}>🚫 ${t('promoActWithdrawSch')}</option>
           <option value="skip"         ${act==='skip'        ?'selected':''}>— ${t('promoActSkip')}</option>
         </select>
-        ${act!=='skip' ? `<button onclick="applyOneStudent('${s.StipNo}')"
-          title="${LANG==='th'?'บันทึกคนนี้':'Apply this student'}"
-          style="flex-shrink:0;padding:3px 7px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #16a34a;background:#f0fdf4;color:#16a34a;cursor:pointer;line-height:1"
-          id="quickApplyBtn_${s.StipNo}">✓</button>` : ''}
+        ${act === 'uni'
+          ? (() => {
+              const schSt = dec.schApprovalStatus || '';
+              if (schSt === 'Pending') {
+                return `<span style="font-size:9px;padding:2px 6px;border-radius:6px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700;white-space:nowrap">⏳ ${t('schApprovalPending')}</span>`;
+              }
+              const label = schSt === 'Rejected' ? t('schResubmit') : t('schSubmitRequest');
+              const bStyle = schSt === 'Rejected'
+                ? 'border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626'
+                : 'border:1.5px solid #7c3aed;background:#f5f3ff;color:#7c3aed';
+              return `<button onclick="submitScholarshipRequest('${s.StipNo}')"
+                title="${label}" id="quickApplyBtn_${s.StipNo}"
+                style="flex-shrink:0;padding:3px 6px;font-size:10px;font-weight:700;border-radius:6px;cursor:pointer;line-height:1.2;white-space:nowrap;${bStyle}">🏛 ${label}</button>`;
+            })()
+          : act !== 'skip'
+          ? `<button onclick="applyOneStudent('${s.StipNo}')"
+              title="${LANG==='th'?'บันทึกคนนี้':'Apply this student'}"
+              style="flex-shrink:0;padding:3px 7px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #16a34a;background:#f0fdf4;color:#16a34a;cursor:pointer;line-height:1"
+              id="quickApplyBtn_${s.StipNo}">✓</button>`
+          : ''}
       </div>`;
 
   // Uni scholarship cell
@@ -1556,8 +1587,8 @@ async function applyOneStudent(stipNo) {
       _updateGroupDoneBadge(inst, level, grp, _curYr);
       updateStats();
 
-      // Alumni-moving actions: offer link to alumni view
-      const ALUMNI_ACTIONS = new Set(['graduate','uni','uni_own','resign','withdraw_sch']);
+      // Alumni-moving actions: only actions that truly end the scholarship (not uni which stays Active)
+      const ALUMNI_ACTIONS = new Set(['graduate','resign','withdraw_sch']);
       if (ALUMNI_ACTIONS.has(dec.action)) {
         Swal.fire({
           toast: true, position: 'bottom-right', icon: 'success',
@@ -1583,6 +1614,239 @@ async function applyOneStudent(stipNo) {
     if (btn) btn.disabled = false;
     Swal.fire(t('error'), e.message || 'Network error', 'error');
   }
+}
+
+// ─────────────────────────────────────────────
+// SCHOLARSHIP APPROVAL SUBMIT (for 'uni' action)
+// ─────────────────────────────────────────────
+
+// Called when admin clicks "ส่งขออนุมัติทุน" on a student with action='uni'.
+// Does NOT promote immediately — saves pending request and notifies approvers.
+async function submitScholarshipRequest(stipNo) {
+  const dec = ROW_DECISIONS[stipNo];
+  if (!dec || dec.action !== 'uni') return;
+
+  const grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+  const stu = grp?.students.find(s => s.StipNo === stipNo);
+  if (!stu) return;
+
+  const thaiName = ((stu.Title||'') + (stu.FirstName||'') + ' ' + (stu.LastName||'')).trim();
+  const uniName  = dec.uniName || '';
+
+  // Sync uni detail fields from DOM
+  const detCell = document.getElementById('detail_' + stipNo);
+  if (detCell) {
+    const inputs = detCell.querySelectorAll('input[type=text]');
+    // The UNI detail row (unirow_) has 4 inputs: name, faculty, major, province
+  }
+
+  const { isConfirmed } = await Swal.fire({
+    icon: 'question',
+    title: LANG==='th' ? 'ส่งคำขออนุมัติทุนมหาวิทยาลัย?' : 'Submit Scholarship Request?',
+    html: `<div class="text-sm text-left" style="line-height:1.9">
+      <div><b>${thaiName}</b> (${stipNo})</div>
+      ${uniName ? `<div style="color:#5b21b6">${LANG==='th'?'มหาวิทยาลัย:':'University:'} <b>${uniName}</b></div>` : ''}
+      <div style="margin-top:8px;font-size:11px;color:#6b7280">
+        ${LANG==='th'
+          ? '⚠ คำขอจะถูกส่งให้ผู้มีอำนาจอนุมัติ — การเลื่อนชั้นจะเกิดขึ้นหลังจากได้รับการอนุมัติเท่านั้น'
+          : '⚠ Request will be sent to an approver. Promotion happens only after approval.'}
+      </div>
+    </div>`,
+    confirmButtonText: LANG==='th' ? '📤 ส่งคำขอ' : '📤 Submit',
+    cancelButtonText:  LANG==='th' ? 'ยกเลิก' : 'Cancel',
+    showCancelButton: true,
+    confirmButtonColor: '#7c3aed',
+  });
+  if (!isConfirmed) return;
+
+  const user = (getUser()||{}).username || 'admin';
+  const payload = {
+    StipNo:       stipNo,
+    UniName:      dec.uniName     || '',
+    UniFaculty:   dec.uniFaculty  || '',
+    UniMajor:     dec.uniMajor    || '',
+    UniDuration:  dec.uniDuration || '',
+    UniProvince:  dec.uniProvince || '',
+    uniScholarship: dec.uniScholarship || 'Yes',
+    notes:        dec.notes || '',
+  };
+
+  showLoader(true, LANG==='th' ? 'กำลังส่งคำขอ...' : 'Submitting...');
+  try {
+    const res = await API.post('submitScholarshipRequest', { data: payload, reqUser: user });
+    showLoader(false);
+    if (res.status === 'success') {
+      dec.schApprovalStatus = 'Pending';
+      // Update the action area to show pending badge
+      const btn = document.getElementById('quickApplyBtn_' + stipNo);
+      if (btn) {
+        btn.outerHTML = `<span style="font-size:9px;padding:2px 6px;border-radius:6px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700;white-space:nowrap">⏳ ${t('schApprovalPending')}</span>`;
+      }
+      // Update detail cell to show pending badge
+      const detCellEl = document.getElementById('detail_' + stipNo);
+      if (detCellEl) detCellEl.innerHTML = renderDetailCell(stipNo, grp?.institution||'', grp?.level||'', 'uni', dec, '');
+      Swal.fire({
+        toast: true, position: 'bottom-right', icon: 'success',
+        title: LANG==='th' ? '📤 ส่งคำขออนุมัติแล้ว' : '📤 Request submitted',
+        text:  LANG==='th' ? 'รอผู้มีอำนาจอนุมัติ' : 'Awaiting approval',
+        timer: 3500, showConfirmButton: false,
+      });
+      // Refresh approval panel if visible
+      renderApprovalPanel();
+    } else {
+      Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), e.message || 'Network error', 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// SCHOLARSHIP APPROVAL REVIEW (for Manager/SuperAdmin)
+// ─────────────────────────────────────────────
+
+async function reviewScholarshipRequest(stipNo, approvalStatus) {
+  const user = (getUser()||{}).username || 'admin';
+  const promoDate = document.getElementById('promotionDate')?.value || '';
+
+  // Ask for approval notes
+  const { value: notes, isConfirmed } = await Swal.fire({
+    title: approvalStatus === 'Approved'
+      ? (LANG==='th' ? '✔ ยืนยันการอนุมัติทุน' : '✔ Confirm Scholarship Approval')
+      : (LANG==='th' ? '✕ ยืนยันการไม่อนุมัติ' : '✕ Confirm Rejection'),
+    input: 'text',
+    inputLabel: t('schApprovalNotes'),
+    inputPlaceholder: LANG==='th' ? 'หมายเหตุ (ไม่บังคับ)...' : 'Notes (optional)...',
+    showCancelButton: true,
+    confirmButtonText: approvalStatus === 'Approved'
+      ? (LANG==='th' ? '✔ อนุมัติ' : '✔ Approve')
+      : (LANG==='th' ? '✕ ไม่อนุมัติ' : '✕ Reject'),
+    confirmButtonColor: approvalStatus === 'Approved' ? '#16a34a' : '#dc2626',
+    cancelButtonText: LANG==='th' ? 'ยกเลิก' : 'Cancel',
+  });
+  if (!isConfirmed) return;
+
+  showLoader(true, LANG==='th' ? 'กำลังบันทึก...' : 'Saving...');
+  try {
+    const res = await API.post('reviewScholarshipRequest', {
+      stipNo, approvalStatus, notes: notes || '', reqUser: user, promotionDate: promoDate,
+    });
+    showLoader(false);
+    if (res.status === 'success') {
+      // Update ROW_DECISIONS
+      const dec = ROW_DECISIONS[stipNo];
+      if (dec) {
+        dec.schApprovalStatus = approvalStatus;
+        if (approvalStatus === 'Approved') {
+          dec.alreadyPromoted = true;
+          PROMOTED_THIS_SESSION.add(stipNo);
+        }
+      }
+      await Swal.fire({
+        icon: approvalStatus === 'Approved' ? 'success' : 'info',
+        title: approvalStatus === 'Approved'
+          ? (LANG==='th' ? '✔ อนุมัติทุนแล้ว' : '✔ Scholarship Approved')
+          : (LANG==='th' ? 'ไม่อนุมัติ — บันทึกแล้ว' : 'Rejected — saved'),
+        timer: 2500, showConfirmButton: false,
+      });
+      renderApprovalPanel();
+      renderGroups();
+    } else {
+      Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), e.message || 'Network error', 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// APPROVAL PANEL RENDER
+// ─────────────────────────────────────────────
+let _PENDING_APPROVALS = []; // cached from last load
+
+async function loadApprovalPanel() {
+  const user = getUser() || {};
+  // Only show for Manager / SuperAdmin
+  if (!['Manager','SuperAdmin'].includes(user.role)) {
+    document.getElementById('approvalPanelWrap')?.classList.add('hidden');
+    return;
+  }
+  try {
+    const res = await API.get('getPendingScholarshipRequests');
+    _PENDING_APPROVALS = (res.pending || []);
+    renderApprovalPanel();
+  } catch(e) {
+    _PENDING_APPROVALS = [];
+  }
+}
+
+function renderApprovalPanel() {
+  const wrap = document.getElementById('approvalPanelWrap');
+  if (!wrap) return;
+  const user = getUser() || {};
+  if (!['Manager','SuperAdmin'].includes(user.role)) { wrap.classList.add('hidden'); return; }
+
+  const pending = _PENDING_APPROVALS;
+  const badge = document.getElementById('approvalBadgeCount');
+  if (badge) badge.textContent = pending.length || '';
+
+  if (pending.length === 0) {
+    wrap.innerHTML = `
+      <div id="approvalPanelWrap" style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:12px 16px;margin-bottom:16px" class="no-print">
+        <div class="flex items-center gap-2 text-purple-700 font-semibold text-sm">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>${t('schApprovalPanel')}</span>
+          <span style="font-size:11px;font-weight:400;color:#7c3aed">${t('schNoRequests')}</span>
+        </div>
+      </div>`;
+    lucide.createIcons(); return;
+  }
+
+  const rows = pending.map(p => `
+    <tr style="border-bottom:1px solid #ede9fe">
+      <td style="padding:6px 10px;font-size:12px;font-weight:600">${p.FirstName || ''} ${p.LastName || ''}<br>
+        <span style="font-size:10px;color:#9ca3af">${p.StipNo}</span>
+      </td>
+      <td style="padding:6px 10px;font-size:11px">${p.Institution || '—'} / ${p.CurrentLevel || '—'}</td>
+      <td style="padding:6px 10px;font-size:11px">${p.UniName||'—'} ${p.UniFaculty?'/ '+p.UniFaculty:''}<br>
+        <span style="font-size:10px;color:#7c3aed">${p.UniMajor||''} ${p.UniProvince?'• '+p.UniProvince:''}</span>
+      </td>
+      <td style="padding:6px 10px;font-size:11px;color:#6b7280">${p.PromotionNotes||'—'}</td>
+      <td style="padding:6px 10px;white-space:nowrap">
+        <button onclick="reviewScholarshipRequest('${p.StipNo}','Approved')"
+          style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #16a34a;background:#f0fdf4;color:#16a34a;cursor:pointer;margin-right:4px">
+          ✔ ${t('schApproveBtn')}</button>
+        <button onclick="reviewScholarshipRequest('${p.StipNo}','Rejected')"
+          style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #dc2626;background:#fff1f2;color:#dc2626;cursor:pointer">
+          ✕ ${t('schRejectBtn')}</button>
+      </td>
+    </tr>`).join('');
+
+  wrap.innerHTML = `
+    <div style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;overflow:hidden;margin-bottom:16px" class="no-print">
+      <div style="padding:10px 16px;background:#ede9fe;display:flex;align-items:center;gap:8px">
+        <i data-lucide="shield-alert" class="w-4 h-4" style="color:#7c3aed"></i>
+        <span style="font-weight:700;color:#5b21b6;font-size:13px">${t('schApprovalPanel')}</span>
+        <span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px">${pending.length} ${t('schPendingCount')}</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#ede9fe">
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'นักเรียน':'Student'}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'ชั้น/สถาบัน':'Level'}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'มหาวิทยาลัย':'University'}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${t('promoColNotes')}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'การดำเนินการ':'Action'}</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  lucide.createIcons();
 }
 
 // Revert a single student's promotion — restores original level/status in DB,
@@ -1811,19 +2075,32 @@ function buildLevelOpts(inst, selected) {
 }
 
 function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
-  // Alumni badge: shown for actions that move student out of active roster
+  // Alumni badge: only for actions that truly move student OUT of the scholarship roster
   const alumniTag = `<span title="${LANG==='th'?'ย้ายเข้ากลุ่มศิษย์เก่า':'Moves to Alumni'}"
     style="font-size:9px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700;white-space:nowrap">
     🎓 ศิษย์เก่า</span>`;
+  // Active scholarship track badge: for uni (RDF) — student stays Active
+  const activeTrackTag = `<span title="${LANG==='th'?'นักเรียนยังคงอยู่ในระบบทุน (Active)':'Student stays Active on scholarship track'}"
+    style="font-size:9px;padding:1px 6px;border-radius:4px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-weight:700;white-space:nowrap">
+    🏛 ${t('promoUniActiveTrack')}</span>`;
   // Withdrawal form button: for resign/withdraw_sch
   const wdBtn = `<button onclick="openWithdrawalFormModal()" title="${LANG==='th'?'เปิดใบลาออก':'Open withdrawal form'}"
     style="font-size:9px;padding:2px 6px;border-radius:4px;background:#fff1f2;color:#9f1239;border:1px solid #fda4af;font-weight:700;cursor:pointer;white-space:nowrap">
     📄 ใบลาออก</button>`;
+  // Approval status indicator for 'uni' action
+  const schSt = dec.schApprovalStatus || '';
+  const approvalBadge = schSt === 'Pending'
+    ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700;white-space:nowrap">⏳ ${t('schApprovalPending')}</span>`
+    : schSt === 'Approved'
+    ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:700;white-space:nowrap">✔ ${t('schApprovalApproved')}</span>`
+    : schSt === 'Rejected'
+    ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:700;white-space:nowrap">✕ ${t('schApprovalRejected')}</span>`
+    : '';
 
   if (act === 'promote')   return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${levelOpts}</select>`;
   if (act === 'graduate')  return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>${alumniTag}</div>`;
-  if (act === 'uni')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-600 font-semibold">${t('promoUniRDF')}</span>${alumniTag}</div>`;
-  if (act === 'uni_own')   return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span>${alumniTag}</div>`;
+  if (act === 'uni')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-600 font-semibold">${t('promoUniRDF')}</span>${activeTrackTag}${approvalBadge}</div>`;
+  if (act === 'uni_own')   return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span></div>`;
   if (act === 'hold')      return `<span class="text-xs text-orange-500 font-semibold">${t('promoStayLevel')}</span>`;
   if (act === 'suspend')   return `<span class="text-xs text-yellow-600 font-semibold">${t('promoStatusSuspended')}</span>`;
   if (act === 'resign')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>${alumniTag}${wdBtn}</div>`;
@@ -2227,9 +2504,55 @@ function updateStats() {
 // APPLY ALL CHANGES
 // ─────────────────────────────────────────────
 async function applyAllChanges() {
-  const active = Object.entries(ROW_DECISIONS).filter(([, d]) => d.action !== 'skip');
-  if (active.length === 0) {
+  // 'uni' (RDF scholarship) goes through the approval workflow — exclude from bulk apply.
+  // Students with action='uni' that haven't been submitted yet are auto-submitted below.
+  const active = Object.entries(ROW_DECISIONS).filter(([, d]) => d.action !== 'skip' && d.action !== 'uni');
+  const uniPending = Object.entries(ROW_DECISIONS).filter(
+    ([, d]) => d.action === 'uni' && !d.schApprovalStatus
+  );
+
+  if (active.length === 0 && uniPending.length === 0) {
     return Swal.fire(t('promoNothingToApply'), t('promoNothingDesc'), 'info');
+  }
+
+  // Auto-submit any un-submitted 'uni' scholarship requests
+  if (uniPending.length > 0) {
+    const { isConfirmed: submitUni } = await Swal.fire({
+      icon: 'question',
+      title: LANG==='th' ? '📤 ส่งคำขออนุมัติทุน ม.' : '📤 Submit Scholarship Requests',
+      html: `<div class="text-sm">${LANG==='th'
+        ? `พบ <b>${uniPending.length}</b> นักเรียนที่เลือก "ต่อ ม. ทุน RDF" — ต้องการส่งคำขออนุมัติทุนสำหรับนักเรียนเหล่านี้ด้วยหรือไม่?`
+        : `Found <b>${uniPending.length}</b> student(s) with "RDF University" action. Submit scholarship requests for them too?`}
+      </div>`,
+      showCancelButton: true,
+      confirmButtonText: LANG==='th' ? '📤 ส่งคำขอด้วย' : '📤 Yes, submit',
+      cancelButtonText: LANG==='th' ? 'ข้ามไปก่อน' : 'Skip for now',
+      confirmButtonColor: '#7c3aed',
+    });
+    if (submitUni) {
+      const user = (getUser()||{}).username || 'admin';
+      for (const [stipNo, dec] of uniPending) {
+        const payload = {
+          StipNo: stipNo, UniName: dec.uniName||'', UniFaculty: dec.uniFaculty||'',
+          UniMajor: dec.uniMajor||'', UniDuration: dec.uniDuration||'',
+          UniProvince: dec.uniProvince||'', uniScholarship: dec.uniScholarship||'Yes',
+          notes: dec.notes||'',
+        };
+        try {
+          const r = await API.post('submitScholarshipRequest', { data: payload, reqUser: user });
+          if (r.status === 'success') dec.schApprovalStatus = 'Pending';
+        } catch(e) {}
+      }
+    }
+  }
+
+  if (active.length === 0) {
+    renderApprovalPanel();
+    return Swal.fire({
+      icon: 'info', title: LANG==='th' ? 'ส่งคำขอแล้ว' : 'Requests Submitted',
+      text: LANG==='th' ? 'คำขออนุมัติทุนถูกส่งแล้ว รอการอนุมัติจากผู้มีอำนาจ' : 'Scholarship requests submitted. Awaiting approval.',
+      timer: 3000,
+    });
   }
 
   const counts = {};
@@ -2237,7 +2560,7 @@ async function applyAllChanges() {
   const lines = [
     counts.promote  ? `<b>${counts.promote}</b> ${LANG==='th'?'นักเรียนจะถูกเลื่อนชั้น':'students will be promoted'}` : '',
     counts.graduate ? `<b>${counts.graduate}</b> ${LANG==='th'?'นักเรียนจะจบการศึกษา':'students will graduate'}` : '',
-    (counts.uni||0)+(counts.uni_own||0) ? `<b>${(counts.uni||0)+(counts.uni_own||0)}</b> ${LANG==='th'?'นักเรียนจะต่อมหาวิทยาลัย':'students continuing to university'}` : '',
+    counts.uni_own ? `<b>${counts.uni_own}</b> ${LANG==='th'?'นักเรียนต่อมหาวิทยาลัย (ทุนตนเอง)':'students continuing to university (own)'}` : '',
     counts.hold     ? `<b>${counts.hold}</b> ${LANG==='th'?'นักเรียนจะซ้ำชั้น':'students will repeat year'}` : '',
     counts.suspend  ? `<b>${counts.suspend}</b> ${LANG==='th'?'นักเรียนจะพักการเรียน':'students will be suspended'}` : '',
     counts.resign       ? `<b>${counts.resign}</b> ${LANG==='th'?'นักเรียนจะลาออกจากสถาบัน':'students will withdraw from institution'}` : '',
@@ -2384,8 +2707,8 @@ async function applyAllChanges() {
       });
       updateStats();
 
-      // Count alumni-bound actions in this batch
-      const ALUMNI_ACTS = new Set(['graduate','uni','uni_own','resign','withdraw_sch']);
+      // Count alumni-bound actions in this batch (uni/uni_own stay Active — not alumni)
+      const ALUMNI_ACTS = new Set(['graduate','resign','withdraw_sch']);
       const alumniCount = meaningful.filter(p => {
         const d = ROW_DECISIONS[p.StipNo] || {};
         return ALUMNI_ACTS.has(d.action);
