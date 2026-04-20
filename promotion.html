@@ -1398,14 +1398,15 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
   // Show 'uni'/'uni_own' options ONLY for the three university-eligible transfer levels.
   const showUniOpts = isUniTransfer;
 
-  // Action options HTML — already-promoted rows show a locked badge instead of select
+  // Action options HTML — already-promoted rows show a locked action-specific badge
+  const _done = _actionDoneLabel(act);
   const actionSel = alreadyPromoted
     ? `<div class="flex items-center gap-1">
-        <span id="act_${s.StipNo}" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:#dcfce7;color:#16a34a;border:1px solid #86efac;white-space:nowrap">
-          ✓ ${LANG==='th'?'เลื่อนชั้นแล้ว':'Promoted'}
+        <span id="act_${s.StipNo}" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;background:${_done.bg};color:${_done.color};border:1px solid ${_done.border};white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${LANG==='th'?_done.th:_done.en}">
+          ${_done.emoji} ${LANG==='th'?_done.th:_done.en}
         </span>
         <button onclick="undoPromotion('${s.StipNo}','${inst}','${level}')"
-          title="${LANG==='th'?'ยกเลิกการเลื่อนชั้น':'Undo promotion'}"
+          title="${LANG==='th'?'ยกเลิก':'Undo'}"
           class="no-print"
           style="flex-shrink:0;padding:2px 6px;font-size:10px;font-weight:700;border-radius:6px;border:1.5px solid #dc2626;background:#fff1f2;color:#dc2626;cursor:pointer;line-height:1.4">
           ↩</button>
@@ -2188,6 +2189,21 @@ function setDec(stipNo, field, val) {
   ROW_DECISIONS[stipNo][field] = val;
 }
 
+// Returns the action-appropriate "done" label and badge style after promotion is saved.
+function _actionDoneLabel(act) {
+  const map = {
+    promote:      { emoji:'⬆', th:'เลื่อนชั้นแล้ว',         en:'Promoted',              bg:'#dcfce7', border:'#86efac', color:'#16a34a' },
+    graduate:     { emoji:'🎓', th:'จบการศึกษาแล้ว',          en:'Graduated',             bg:'#dcfce7', border:'#86efac', color:'#16a34a' },
+    uni:          { emoji:'🏛', th:'ต่อ ม. (RDF) แล้ว',       en:'Moved to UNI (RDF)',    bg:'#ede9fe', border:'#c4b5fd', color:'#6d28d9' },
+    uni_own:      { emoji:'🏛', th:'ต่อ ม. (ตนเอง) แล้ว',    en:'Moved to UNI (own)',    bg:'#ede9fe', border:'#c4b5fd', color:'#6d28d9' },
+    hold:         { emoji:'⏸', th:'ซ้ำชั้นแล้ว',             en:'Held Back',             bg:'#ffedd5', border:'#fdba74', color:'#c2410c' },
+    suspend:      { emoji:'⚠', th:'พักการเรียนแล้ว',          en:'Suspended',             bg:'#fef9c3', border:'#fde047', color:'#a16207' },
+    resign:       { emoji:'✕', th:'ลาออกจากสถาบันแล้ว',       en:'Resigned',              bg:'#fee2e2', border:'#fca5a5', color:'#dc2626' },
+    withdraw_sch: { emoji:'🚫', th:'ถอนทุนการศึกษาแล้ว',      en:'Scholarship Withdrawn', bg:'#ffe4e6', border:'#fda4af', color:'#9f1239' },
+  };
+  return map[act] || { emoji:'✓', th:'บันทึกแล้ว', en:'Applied', bg:'#dcfce7', border:'#86efac', color:'#16a34a' };
+}
+
 // Clears the red required border on notes field once the user starts typing.
 function _syncNotesBorder(stipNo, val, act) {
   const el = document.getElementById('notes_' + stipNo);
@@ -2377,55 +2393,81 @@ async function promoteAllInGroup(inst, level, curYear) {
   const groupYearSel  = document.getElementById('groupYear_' + CSS.escape(gKey));
   const groupNextYear = groupYearSel ? groupYearSel.value : '';
 
-  const { isConfirmed } = await Swal.fire({
+  const targetStudents = checkedStudents.length > 0 ? checkedStudents : dgStudents;
+
+  // ── Respect each student's individual action — NEVER override with group default ──
+  // Only apply group default to students who still have the automatic default set.
+  // Students individually set to resign/withdraw_sch/hold/suspend keep their action.
+  const NOTES_REQD = new Set(['hold','suspend','resign','withdraw_sch']);
+  targetStudents.forEach(s => {
+    if (!ROW_DECISIONS[s.StipNo]) {
+      ROW_DECISIONS[s.StipNo] = { action: defAct, nextLevel: defNxt };
+    }
+    // Only apply groupNextYear — never overwrite individually chosen action
+    if (groupNextYear) ROW_DECISIONS[s.StipNo].nextAcademicYear = groupNextYear;
+  });
+
+  // ── Pre-flight: check notes required for critical individual actions ──
+  const missingNotes = targetStudents.filter(s => {
+    const a = ROW_DECISIONS[s.StipNo]?.action;
+    return NOTES_REQD.has(a) && !(ROW_DECISIONS[s.StipNo]?.notes||'').trim();
+  });
+  if (missingNotes.length > 0) {
+    const names = missingNotes.map(s =>
+      ((s.Title||'') + (s.FirstName||'') + ' ' + (s.LastName||'')).trim() + ' (' + s.StipNo + ')'
+    );
+    await Swal.fire({
+      icon: 'warning',
+      title: LANG==='th' ? 'กรุณากรอกหมายเหตุ' : 'Notes Required',
+      html: `<div class="text-sm text-left">${LANG==='th'?'นักเรียนที่มีสถานะพิเศษต้องกรอกหมายเหตุก่อน':'Students with special status require notes first'}:<br>
+        <ul class="mt-2 ml-4 list-disc text-red-600 text-xs">${names.map(n=>`<li>${n}</li>`).join('')}</ul>
+        <p class="text-xs text-gray-400 mt-2">${LANG==='th'?'กรุณากรอกหมายเหตุรายบุคคลในตาราง':'Please fill notes individually in the table.'}</p>
+      </div>`,
+      confirmButtonColor: '#dc2626',
+    });
+    return;
+  }
+
+  // ── Build per-action summary for confirmation dialog ──
+  const actionGroups = {};
+  targetStudents.forEach(s => {
+    const a = ROW_DECISIONS[s.StipNo]?.action || defAct;
+    if (!actionGroups[a]) actionGroups[a] = [];
+    actionGroups[a].push(s);
+  });
+  const _actLabel = a => ({
+    promote:'⬆ ' + (LANG==='th'?'เลื่อนชั้น':'Promote'),
+    graduate:'🎓 ' + (LANG==='th'?'จบการศึกษา':'Graduate'),
+    uni:'🏛 ' + (LANG==='th'?'ต่อ ม. (ขอรับทุน RDF)':'Cont. Uni (RDF)'),
+    uni_own:'🏛 ' + (LANG==='th'?'ต่อ ม. (ทุนตนเอง)':'Cont. Uni (own)'),
+    hold:'⏸ ' + (LANG==='th'?'ซ้ำชั้น':'Hold'),
+    suspend:'⚠ ' + (LANG==='th'?'พักการเรียน':'Suspend'),
+    resign:'✕ ' + (LANG==='th'?'ลาออกจากสถาบัน':'Resign'),
+    withdraw_sch:'🚫 ' + (LANG==='th'?'ถอนทุนการศึกษา':'Withdraw Scholarship'),
+    skip:'— ' + (LANG==='th'?'ไม่เปลี่ยน':'No Change'),
+  }[a] || a);
+
+  const summaryLines = Object.entries(actionGroups).map(([a, ss]) =>
+    `<div>• <b>${_actLabel(a)}</b>: ${ss.length} ${LANG==='th'?'คน':'student(s)'}</div>`
+  ).join('');
+
+  const { isConfirmed: confirmBulk } = await Swal.fire({
     icon: 'question',
-    title: LANG === 'th' ? 'ยืนยันการเลื่อนชั้นแบบกลุ่ม?' : 'Confirm Bulk Promotion?',
+    title: LANG === 'th' ? 'ยืนยันการบันทึกแบบกลุ่ม?' : 'Confirm Bulk Save?',
     html: `<div class="text-sm text-left" style="line-height:1.9">
       <div style="margin-bottom:8px;font-size:13px;color:#374151">
         ${LANG === 'th' ? 'กลุ่ม' : 'Group'}: <b style="color:#1e40af">${inst} — ${level}</b>
       </div>
-      ${curYear ? `<div>• ${LANG==='th'?'ปีการศึกษาปัจจุบัน':'Current Year'}: <b>${curYear} / ${parseInt(curYear)-543}</b></div>` : ''}
-      <div>• ${LANG === 'th' ? 'นักเรียนที่เลือก' : 'Selected students'}: <b style="color:#16a34a">${count}</b> ${LANG === 'th' ? 'คน' : ''} / ${dgStudents.length} ${LANG === 'th' ? 'คนทั้งหมด' : 'total'}</div>
-      <div>• ${LANG === 'th' ? 'การกระทำ' : 'Action'}: <b>${actEmoji} ${actLabel}</b>${defNxt ? ' → <b>' + defNxt + '</b>' : ''}</div>
-      ${groupNextYear ? `<div>• ${LANG==='th'?'ปีการศึกษาถัดไป':'Next Acad. Year'}: <b style="color:#1e40af">${groupNextYear} / ${parseInt(groupNextYear)-543}</b></div>` : ''}
+      ${curYear ? `<div>• ${LANG==='th'?'ปีการศึกษา':'Year'}: <b>${curYear} / ${parseInt(curYear)-543}</b></div>` : ''}
+      <div style="margin:6px 0;border-top:1px solid #e5e7eb;padding-top:6px">${summaryLines}</div>
+      ${groupNextYear ? `<div style="color:#1e40af;font-size:11px">• ${LANG==='th'?'ปีถัดไป':'Next Year'}: <b>${groupNextYear} / ${parseInt(groupNextYear)-543}</b></div>` : ''}
     </div>`,
     showCancelButton: true,
     confirmButtonText: LANG === 'th' ? '✓ ยืนยัน' : '✓ Confirm',
     cancelButtonText:  LANG === 'th' ? 'ยกเลิก'   : 'Cancel',
     confirmButtonColor: '#16a34a',
   });
-  if (!isConfirmed) return;
-
-  const targetStudents = checkedStudents.length > 0 ? checkedStudents : dgStudents;
-
-  // Update ROW_DECISIONS
-  targetStudents.forEach(s => {
-    if (!ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo] = {};
-    ROW_DECISIONS[s.StipNo].action    = defAct;
-    ROW_DECISIONS[s.StipNo].nextLevel = defNxt;
-    if (groupNextYear) ROW_DECISIONS[s.StipNo].nextAcademicYear = groupNextYear;
-  });
-
-  // Notes are required for hold/suspend/resign/withdraw_sch
-  const NOTES_REQD = new Set(['hold','suspend','resign','withdraw_sch']);
-  if (NOTES_REQD.has(defAct)) {
-    const missingNotes = targetStudents.filter(s => !(ROW_DECISIONS[s.StipNo]?.notes||'').trim());
-    if (missingNotes.length > 0) {
-      const names = missingNotes.map(s =>
-        ((s.FirstName||'') + ' ' + (s.LastName||'')).trim() || s.StipNo
-      );
-      await Swal.fire({
-        icon: 'warning',
-        title: LANG==='th' ? 'กรุณากรอกหมายเหตุ' : 'Notes Required',
-        html: `<div class="text-sm text-left">${LANG==='th'?'นักเรียนต่อไปนี้ยังไม่มีหมายเหตุ':'The following students have no notes'}:<br>
-          <ul class="mt-2 ml-4 list-disc text-red-600 text-xs">${names.map(n=>`<li>${n}</li>`).join('')}</ul>
-          <p class="text-xs text-gray-400 mt-2">${LANG==='th'?'กรุณากรอกหมายเหตุรายบุคคลก่อนบันทึกกลุ่ม':'Please fill notes individually before bulk saving.'}</p>
-        </div>`,
-        confirmButtonColor: '#dc2626',
-      });
-      return;
-    }
-  }
+  if (!confirmBulk) return;
 
   // Build API payload and save to DB (same as applyAllChanges — not just a local state update)
   const promoDate    = document.getElementById('promotionDate').value;
@@ -2456,7 +2498,7 @@ async function promoteAllInGroup(inst, level, curYear) {
     const res = await API.promoteStudents(promotions, user, promoDate);
     showLoader(false);
     if (res.status === 'success' && res.success > 0) {
-      // Mark promoted + re-render rows in-place to show "✓ เลื่อนชั้นแล้ว" badge
+      // Mark each student's alreadyPromoted — keeping their individual action intact
       targetStudents.forEach(s => {
         PROMOTED_THIS_SESSION.add(s.StipNo);
         if (ROW_DECISIONS[s.StipNo]) ROW_DECISIONS[s.StipNo].alreadyPromoted = true;
@@ -2464,13 +2506,40 @@ async function promoteAllInGroup(inst, level, curYear) {
       _rerenderGroupBody(inst, level, curYear);
       _updateGroupDoneBadge(inst, level, group, curYear);
       updateStats();
+
+      // Count actions for toast summary
+      const savedCounts = {};
+      targetStudents.forEach(s => {
+        const a = ROW_DECISIONS[s.StipNo]?.action || defAct;
+        savedCounts[a] = (savedCounts[a]||0) + 1;
+      });
+      const summaryParts = Object.entries(savedCounts).map(([a, n]) => {
+        const lbl = _actionDoneLabel(a);
+        return `${lbl.emoji} ${n} ${LANG==='th'?lbl.th:lbl.en}`;
+      }).join(' / ');
+
       Swal.fire({
         toast: true, position: 'top-end', icon: 'success',
-        timer: 2800, showConfirmButton: false,
-        title: LANG === 'th'
-          ? `${actEmoji} เลื่อนชั้นแบบกลุ่มสำเร็จ — ${res.success} คน`
-          : `${actEmoji} Bulk ${actLabel} saved — ${res.success} student(s)`,
+        timer: 3200, showConfirmButton: false,
+        title: LANG==='th' ? `✓ บันทึกกลุ่มสำเร็จ — ${res.success} คน` : `✓ Bulk saved — ${res.success} student(s)`,
+        text: summaryParts,
       });
+
+      // If any students had resign/withdraw_sch — prompt to open withdrawal form
+      const hasWithdraw = targetStudents.some(s =>
+        ['resign','withdraw_sch'].includes(ROW_DECISIONS[s.StipNo]?.action)
+      );
+      if (hasWithdraw) {
+        setTimeout(() => {
+          Swal.fire({
+            toast: true, position: 'bottom-right', icon: 'info',
+            title: LANG==='th' ? '📄 มีนักเรียนที่ถอนทุน/ลาออก' : '📄 Withdrawal students detected',
+            showConfirmButton: true,
+            confirmButtonText: LANG==='th' ? 'เปิดใบลาออก →' : 'Open Form →',
+            timer: 6000, timerProgressBar: true,
+          }).then(r => { if (r.isConfirmed) openWithdrawalFormModal(); });
+        }, 500);
+      }
     } else {
       Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
     }
@@ -3457,14 +3526,31 @@ function buildSignatureHTML(sigs, dateStr, S, isEN) {
 // all students with resign or withdraw_sch status.
 // ─────────────────────────────────────────────
 function openWithdrawalFormModal() {
-  // Populate student list from ROW_DECISIONS
-  const withdrawActions = new Set(['resign','withdraw_sch']);
+  // Collect students who are withdraw/resign — from BOTH pending ROW_DECISIONS AND already-saved DB status
+  const withdrawActions  = new Set(['resign','withdraw_sch']);
+  const withdrawStatuses = new Set(['Resigned','WithdrawnScholarship']);
   const students = [];
+  const seen = new Set(); // deduplicate by StipNo
+
   ALL_GROUPS.forEach(g => {
     g.students.forEach(s => {
-      const act = (ROW_DECISIONS[s.StipNo] || {}).action;
-      if (withdrawActions.has(act)) {
-        students.push({ s, g, act, dec: ROW_DECISIONS[s.StipNo] });
+      if (seen.has(s.StipNo)) return;
+      const dec = ROW_DECISIONS[s.StipNo] || {};
+      const actMatch    = withdrawActions.has(dec.action);
+      const statusMatch = withdrawStatuses.has(s.Status);
+      if (actMatch || statusMatch) {
+        // Determine display action/source label
+        let act = dec.action;
+        let source = 'pending'; // action selected but not yet saved
+        if (!actMatch && statusMatch) {
+          // Already saved to DB — derive action from status
+          act = s.Status === 'Resigned' ? 'resign' : 'withdraw_sch';
+          source = 'saved';
+        } else if (dec.alreadyPromoted) {
+          source = 'saved';
+        }
+        students.push({ s, g, act, dec, source });
+        seen.add(s.StipNo);
       }
     });
   });
@@ -3476,18 +3562,27 @@ function openWithdrawalFormModal() {
       No students with resignation/withdrawal status yet.
     </div>`;
   } else {
-    listEl.innerHTML = students.map(({ s, g, act }) => {
+    listEl.innerHTML = students.map(({ s, g, act, dec, source }) => {
       const name = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
-      const typeLabel = act === 'resign'
-        ? `<span style="color:#be123c;font-weight:700">ลาออกจากสถาบัน</span>`
-        : `<span style="color:#9f1239;font-weight:700">ถอนทุน</span>`;
-      return `<div class="flex items-center gap-3 px-3 py-2 text-xs hover:bg-gray-50">
-        <input type="checkbox" name="wfStudent" value="${s.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0">
+      const isResign = act === 'resign';
+      const typeLabel = isResign
+        ? `<span style="color:#be123c;font-weight:700">✕ ลาออกจากสถาบัน</span>`
+        : `<span style="color:#9f1239;font-weight:700">🚫 ถอนทุน</span>`;
+      const sourceBadge = source === 'saved'
+        ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:700">✓ บันทึกแล้ว</span>`
+        : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;font-weight:700">⏳ รอบันทึก</span>`;
+      const noteText = dec.notes ? `<div class="text-gray-400 truncate" style="max-width:160px" title="${(dec.notes).replace(/"/g,'&quot;')}">📝 ${dec.notes}</div>` : '';
+      return `<div class="flex items-start gap-3 px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-100">
+        <input type="checkbox" name="wfStudent" value="${s.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0 mt-0.5">
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-gray-800">${name}</div>
           <div class="text-gray-400">${s.StipNo} • ${g.institution} — ${g.level}</div>
+          ${noteText}
         </div>
-        ${typeLabel}
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          ${typeLabel}
+          ${sourceBadge}
+        </div>
       </div>`;
     }).join('');
   }
@@ -3528,15 +3623,21 @@ function doPrintWithdrawalForm() {
   );
   const selSigs = (window._wfSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selSigIdxs.has(i));
 
-  // Collect selected students with their data
-  const withdrawActions = new Set(['resign','withdraw_sch']);
+  // Collect selected students — match by pending action OR already-saved DB status
+  const withdrawActions  = new Set(['resign','withdraw_sch']);
+  const withdrawStatuses = new Set(['Resigned','WithdrawnScholarship']);
   const rows = [];
   ALL_GROUPS.forEach(g => {
     g.students.forEach(s => {
       if (!selStips.has(s.StipNo)) return;
-      const act = (ROW_DECISIONS[s.StipNo] || {}).action;
-      if (!withdrawActions.has(act)) return;
-      rows.push({ s, g, act, dec: ROW_DECISIONS[s.StipNo] || {} });
+      const dec = ROW_DECISIONS[s.StipNo] || {};
+      let act = dec.action;
+      if (!withdrawActions.has(act)) {
+        if (withdrawStatuses.has(s.Status)) {
+          act = s.Status === 'Resigned' ? 'resign' : 'withdraw_sch';
+        } else return;
+      }
+      rows.push({ s, g, act, dec });
     });
   });
 
