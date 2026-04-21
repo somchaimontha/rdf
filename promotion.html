@@ -997,16 +997,19 @@ function _highlightStipNo(stipNo) {
   if (_FOCUS_ACTION && stuInst && stuLevel) {
     const actSel = document.getElementById('act_' + stipNo);
     if (actSel && actSel.tagName === 'SELECT') {
-      // Update ROW_DECISIONS + re-render detail cell via onActionChange
+      // 1. Update ROW_DECISIONS state + re-render detail cell
       onActionChange(stipNo, stuInst, stuLevel, _FOCUS_ACTION);
-      // Red ring on action select to draw attention
+      // 2. Explicitly set SELECT value — onActionChange only updates dec.action
+      //    but does NOT change the DOM select's displayed value
+      actSel.value = _FOCUS_ACTION;
+      // 3. Red ring to draw attention
       actSel.style.transition = 'box-shadow 0.3s, border-color 0.3s';
       actSel.style.borderColor = '#dc2626';
       actSel.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.25)';
-      // Focus + open the dropdown
+      // 4. Focus + open the dropdown
       setTimeout(() => {
         actSel.focus();
-        actSel.click(); // opens native dropdown in most browsers
+        actSel.click();
       }, 400);
     }
   }
