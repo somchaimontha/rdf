@@ -1940,13 +1940,32 @@ function setPicUrl(url) {
 }
 
 // ── Collect form data ──
-function collectForm() {
+async function collectForm() {
   const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const inst = get('f_institution');
   const idCard = get('f_idcard');
   if (!inst)   { Swal.fire(t('warning'), t('fillRequired'), 'warning'); return null; }
   if (!idCard || (!/^G\d{12}$/.test(idCard) && !/^\d{13}$/.test(idCard))) {
-    Swal.fire(t('warning'), t('invalidId'), 'warning'); return null;
+    const _isStudent = ((getUser()||{}).role || '') === 'Student';
+    if (_isStudent) {
+      Swal.fire(t('warning'), t('invalidId'), 'warning'); return null;
+    }
+    // Admin/Manager/SuperAdmin: offer skip option
+    const isEN = typeof LANG !== 'undefined' && LANG === 'en';
+    const skipResult = await Swal.fire({
+      icon: 'warning',
+      title: isEN ? 'ID Card Invalid' : 'เลขบัตรประชาชนไม่ถูกต้อง',
+      text: isEN
+        ? 'The ID card is missing or incorrect (must be 13 digits or start with G). You can skip and fill it in later.'
+        : 'เลขบัตรประชาชนไม่ถูกต้อง (13 หลัก หรือขึ้นต้น G) สามารถข้ามและกรอกเพิ่มเติมในภายหลังได้',
+      showCancelButton: true,
+      confirmButtonText: isEN ? 'Skip — Fill in later' : 'ข้าม — กรอกทีหลัง',
+      cancelButtonText:  isEN ? 'Fix first' : 'แก้ไขก่อน',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor:  '#6b7280',
+    });
+    if (!skipResult.isConfirmed) return null;
+    // Admin chose to skip — proceed with invalid/blank IDCard
   }
   return {
     StipNo: get('f_stipNo'), Status: get('f_status'),
@@ -1988,7 +2007,7 @@ function collectForm() {
 
 // ── Save ──
 async function saveStudent() {
-  const data = collectForm();
+  const data = await collectForm();
   if (!data) return;
   const isEdit = document.getElementById('f_editMode').value === 'edit';
   // showLoader is called AFTER all confirmation dialogs to avoid loader + popup overlap
