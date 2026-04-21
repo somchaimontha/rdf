@@ -140,13 +140,14 @@
             <select id="filterStatus" onchange="applyFilters()" class="field-select text-sm">
               <option value="" data-t="allStatus">ทุกสถานะ</option>
               <option value="Active"               data-t="statusActive">กำลังศึกษา</option>
-              <option value="Graduated"            data-t="statusGraduated">สำเร็จการศึกษา</option>
-              <option value="University"           data-t="statusUniversity">ต่อมหาวิทยาลัย (ทุนตนเอง)</option>
-              <option value="Continued"            data-t="continuedScholarship">ทุนต่อ ม. (RDF)</option>
-              <option value="Suspended"            data-t="statusSuspended">พักการเรียน</option>
-              <option value="Resigned"             data-t="statusResigned">ลาออกจากทุน</option>
-              <option value="WithdrawnScholarship" data-t="statusWithdrawnScholarship">ถอนทุนการศึกษา</option>
-              <option value="Incomplete"           data-t="statusIncomplete">ไม่สำเร็จการศึกษา</option>
+              <option value="Alumni"               data-t="alumniGroup">🎓 ศิษย์เก่า (ทุกประเภท)</option>
+              <option value="Graduated"            data-t="statusGraduated">— สำเร็จการศึกษา</option>
+              <option value="University"           data-t="statusUniversity">— ต่อมหาวิทยาลัย (ทุนตนเอง)</option>
+              <option value="Continued"            data-t="continuedScholarship">— ทุนต่อ ม. (RDF)</option>
+              <option value="Resigned"             data-t="statusResigned">— ลาออกจากทุน</option>
+              <option value="WithdrawnScholarship" data-t="statusWithdrawnScholarship">— ถอนทุนการศึกษา</option>
+              <option value="Incomplete"           data-t="statusIncomplete">— ไม่สำเร็จการศึกษา</option>
+              <option value="Suspended"            data-t="statusSuspended">⏸ พักการเรียน</option>
             </select>
           </div>
         </div>
@@ -777,8 +778,9 @@ function applyFilters() {
     if (year && s.scholarshipYear !== year && s.entryYear !== year) return false;
     // Status
     if (status) {
-      if (status === 'Continued') { if (!isContinuedScholarship(s)) return false; }
-      else if (status === 'Graduated') { if (s.status !== 'Graduated') return false; }
+      const ALUMNI_SET = new Set(['Graduated','Resigned','WithdrawnScholarship','Incomplete','University']);
+      if (status === 'Alumni')    { if (!ALUMNI_SET.has(s.status) && !isContinuedScholarship(s)) return false; }
+      else if (status === 'Continued') { if (!isContinuedScholarship(s)) return false; }
       else if (s.status !== status) return false;
     }
     return true;
@@ -955,7 +957,12 @@ function updateActiveFilters(f) {
   const tags = [];
   if (f.q)      tags.push(`ค้นหา: "${f.q}"`);
   if (f.inst)   tags.push(instLabel(f.inst));
-  if (f.status) tags.push(f.status === 'Continued' ? t('continuedScholarship') : RDF.STATUS_LABELS_TH[f.status]||f.status);
+  if (f.status) {
+    const _statusLabel = f.status === 'Alumni' ? (LANG==='en'?'Alumni (All)':'ศิษย์เก่า (ทุกประเภท)')
+      : f.status === 'Continued' ? t('continuedScholarship')
+      : (LANG==='en' ? RDF.STATUS_LABELS_EN[f.status] : RDF.STATUS_LABELS_TH[f.status]) || f.status;
+    tags.push(_statusLabel);
+  }
   if (f.level)  tags.push(levelLabelBi(f.level));
   if (f.year)   tags.push(`ปีการศึกษา ${parseInt(f.year)+543}`);
   const wrap = document.getElementById('activeFiltersWrap');
