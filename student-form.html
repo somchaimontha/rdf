@@ -55,8 +55,6 @@
         <i data-lucide="user-plus" class="w-5 h-5" style="color:#1e3a8a"></i>
         <span data-t="addStudentTitle">เพิ่มนักเรียนใหม่</span>
       </h2>
-      <!-- Promotion page link — shown for Active students in edit mode -->
-      <div id="promoLinkWrap" class="hidden mt-1"></div>
     </div>
     <!-- Bulk Import (admin only) -->
     <div id="bulkImportSection" class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
@@ -105,7 +103,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label class="field-label"><span data-t="scholarshipStatus">สถานะทุนการศึกษา</span> <span class="text-red-500">*</span></label>
-          <select id="f_status" class="field-select font-semibold" style="color:#1e3a8a" required>
+          <select id="f_status" class="field-select font-semibold" style="color:#1e3a8a" required onchange="onStatusChange(this.value)">
             <option value="Active">กำลังศึกษา (Active)</option>
             <option value="Graduated">สำเร็จการศึกษา (Graduated)</option>
             <option value="Suspended">พักการเรียน (Suspended)</option>
@@ -1417,28 +1415,29 @@ function fillForm(d) {
   }
   // Load existing documents from Drive (edit mode)
   if (d.StipNo) loadExistingDocs(d.StipNo);
-
-  // ── Promotion shortcut link ──
-  // Show "ดูในหน้าเลื่อนชั้น" button for Active students only
-  // (non-active statuses are excluded from getStudentsForPromotion)
-  const _promoLinkWrap = document.getElementById('promoLinkWrap');
-  if (_promoLinkWrap) {
-    const _activeStatuses = new Set(['Active','Suspended']);
-    if (d.StipNo && _activeStatuses.has(d.Status)) {
-      _promoLinkWrap.innerHTML = `
-        <a href="promotion.html?stipNo=${d.StipNo}"
-           class="btn btn-sm"
-           style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:5px;text-decoration:none">
-          <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
-          ดูในหน้าเลื่อนชั้น →
-        </a>`;
-      _promoLinkWrap.classList.remove('hidden');
-    } else {
-      _promoLinkWrap.classList.add('hidden');
-    }
-  }
-
   lucide.createIcons();
+}
+
+// ── Status change → redirect to promotion.html for workflow actions ──
+// Maps status values that should be handled via the promotion workflow
+// to the corresponding promotion action, then navigates with highlight.
+function onStatusChange(val) {
+  const stipNo   = document.getElementById('f_stipNo').value;
+  const editMode = document.getElementById('f_editMode').value;
+  if (!stipNo || editMode !== 'edit') return; // new student — no redirect
+
+  const ACTION_MAP = {
+    Graduated:            'graduate',
+    Suspended:            'suspend',
+    Incomplete:           'hold',
+    Resigned:             'resign',
+    WithdrawnScholarship: 'withdraw_sch',
+  };
+  const promoAction = ACTION_MAP[val];
+  if (!promoAction) return; // Active / University / Other — stay on form
+
+  window.location.href = 'promotion.html?stipNo=' + encodeURIComponent(stipNo)
+    + '&action=' + promoAction;
 }
 
 // ── Institution change ──
