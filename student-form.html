@@ -959,7 +959,8 @@
         <thead class="sticky top-0 bg-white z-10 shadow-sm">
           <tr class="border-b">
             <th class="p-2 w-8"></th>
-            <th class="p-2 text-left text-gray-500 font-semibold w-8">#</th>
+            <th id="csvThNo" class="p-2 text-left text-gray-500 font-semibold w-8">ลำดับ</th>
+            <th id="csvThStipNo" class="p-2 text-left text-gray-500 font-semibold whitespace-nowrap">หมายเลขทุน</th>
             <th class="p-2 text-left text-gray-500 font-semibold">สถานะ</th>
             <th class="p-2 text-left text-gray-500 font-semibold">ชื่อ-นามสกุล</th>
             <th class="p-2 text-left text-gray-500 font-semibold">ปีเกิด ค.ศ. 🔑</th>
@@ -2759,6 +2760,12 @@ function _csvRenderModal() {
       <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span> ข้อมูลไม่ครบ <b>${invalidCnt}</b>
     </span>`:''}
     <span class="ml-auto text-gray-400 text-xs italic">field ที่ตรวจ: IDCard → ชื่อ-นามสกุล (ไทย) → (Eng)</span>`;
+  // Bilingual column headers
+  const _isEN = typeof LANG !== 'undefined' && LANG === 'en';
+  const thNo = document.getElementById('csvThNo');
+  const thSN = document.getElementById('csvThStipNo');
+  if (thNo) thNo.textContent = _isEN ? 'No.' : 'ลำดับ';
+  if (thSN) thSN.textContent = _isEN ? 'Stip. No.' : 'หมายเลขทุน';
   // Show/hide invalid filter button
   const invBtn = document.getElementById('csvFInvalid');
   const invCntEl = document.getElementById('csvInvalidCnt');
@@ -2795,6 +2802,7 @@ function csvRenderTable() {
   if (!filtered.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   const IC = { MBS:'text-blue-700 font-semibold', VC:'text-orange-600 font-semibold', UNI:'text-purple-600 font-semibold' };
+  const isEN = typeof LANG !== 'undefined' && LANG === 'en';
   tbody.innerHTML = filtered.map(r => {
     const dt = r._dup.type;
     const ir = r._importResult; // 'ok'|'fail'|'pending'|undefined
@@ -2855,15 +2863,21 @@ function csvRenderTable() {
 
     const isEditing = _csvEditIdx === r._idx;
     const editBtn = isEditing
-      ? `<button onclick="_csvCloseEdit()" title="ปิดแก้ไข"
-          class="ml-1 text-xs px-1.5 py-0.5 rounded border border-blue-400 text-blue-600 bg-blue-50 transition">✕ ปิด</button>`
-      : `<button onclick="_csvOpenEdit(${r._idx})" title="แก้ไขข้อมูลแถวนี้"
-          class="ml-1 text-xs px-1.5 py-0.5 rounded border ${ir==='fail'?'border-orange-400 text-orange-600 bg-orange-50':'border-gray-300 text-gray-400'} hover:border-blue-400 hover:text-blue-600 transition">✏</button>`;
+      ? `<button onclick="_csvCloseEdit()" title="${isEN?'Close edit':'ปิดแก้ไข'}"
+          class="ml-1 text-xs px-1.5 py-0.5 rounded border border-blue-400 text-blue-600 bg-blue-50 transition">✕ ${isEN?'Close':'ปิด'}</button>`
+      : `<button onclick="_csvOpenEdit(${r._idx})" title="${isEN?'Edit this row':'แก้ไขข้อมูลแถวนี้'}"
+          class="ml-1 text-xs px-1.5 py-0.5 rounded border ${ir==='fail'?'border-orange-400 text-orange-600 bg-orange-50':'border-green-500 text-green-600 bg-green-50'} hover:border-green-600 hover:bg-green-100 transition font-semibold">✏</button>`;
+    // StipNo to display: existing match's stipNo, or the row's own StipNo (for update rows), or auto-placeholder
+    const rowStipNo = r.StipNo || (r._dup && r._dup.match ? r._dup.match.stipNo : null);
+    const stipNoCell = rowStipNo
+      ? `<span class="font-mono font-bold text-xs" style="color:#1d4ed8">${rowStipNo}</span>`
+      : `<span class="text-xs italic text-gray-400">${isEN ? 'Auto' : 'ระบบกำหนด'}</span>`;
     const mainRow = `<tr class="${rc}${isEditing?' ring-2 ring-blue-400 ring-inset':''} border-b transition" data-idx="${r._idx}">
       <td class="p-2 text-center"><input type="checkbox" ${r._selected?'checked':''} onchange="_csvToggle(${r._idx},this.checked)" class="rounded accent-blue-700"></td>
       <td class="p-2 text-gray-400">${r._idx+1}</td>
+      <td class="p-2 whitespace-nowrap">${stipNoCell}</td>
       <td class="p-2">${badge}${importBadge}${editBtn}${dupDetail}${importError}${issueRows}</td>
-      <td class="p-2">${r.StipNo?`<div class="text-xs font-mono font-bold mb-0.5" style="color:#1d4ed8">${r.StipNo}</div>`:''}<div class="font-medium text-gray-800">${nameDisplay}</div>${engName}</td>
+      <td class="p-2"><div class="font-medium text-gray-800">${nameDisplay}</div>${engName}</td>
       <td class="p-2 text-center">${byDisplay}</td>
       <td class="p-2 font-mono text-gray-600 text-xs">${idFmt}</td>
       <td class="p-2 ${IC[r.Institution]||'text-gray-600'}">${r.Institution||'—'}</td>
