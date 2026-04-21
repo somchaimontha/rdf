@@ -55,6 +55,7 @@
         <i data-lucide="user-plus" class="w-5 h-5" style="color:#1e3a8a"></i>
         <span data-t="addStudentTitle">เพิ่มนักเรียนใหม่</span>
       </h2>
+      <p id="pageStudentName" class="hidden mt-0.5 text-sm text-gray-500 flex flex-wrap items-center gap-x-2"></p>
     </div>
     <!-- Bulk Import (admin only) -->
     <div id="bulkImportSection" class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
@@ -1440,6 +1441,17 @@ function fillForm(d) {
   sv('f_title', d.Title); sv('f_fname', d.FirstName); sv('f_lname', d.LastName);
   document.getElementById('f_noSurname').checked = d.HasNoSurname === 'true';
   sv('f_engTitle', d.EngTitle); sv('f_engFname', d.EngFirstName); sv('f_engLname', d.EngLastName);
+  // Show student name below the page heading
+  (function() {
+    const el = document.getElementById('pageStudentName');
+    if (!el) return;
+    const thName  = [d.Title, d.FirstName, d.LastName].filter(Boolean).join(' ');
+    const enName  = [d.EngTitle, d.EngFirstName, d.EngLastName].filter(Boolean).join(' ');
+    const parts   = [];
+    if (thName) parts.push(`<span class="font-semibold text-gray-700">${thName}</span>`);
+    if (enName) parts.push(`<span class="text-gray-400 text-xs">${enName}</span>`);
+    if (parts.length) { el.innerHTML = parts.join('<span class="text-gray-300 mx-1">·</span>'); el.classList.remove('hidden'); }
+  })();
   sv('f_nickname', d.Nickname); sv('f_gender', d.Sex);
   // Nationality: detect preset vs free-text custom value
   (function() {
