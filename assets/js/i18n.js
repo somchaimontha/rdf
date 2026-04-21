@@ -237,11 +237,11 @@ const T = {
     /* Status TH */
     statusActive: "กำลังศึกษา", statusGraduated: "สำเร็จการศึกษา",
     statusSuspended: "พักการเรียน", statusIncomplete: "ไม่สำเร็จการศึกษา",
-    statusResigned: "ลาออกจากทุน", statusUni: "ต่อมหาวิทยาลัย",
-    statusUniversity: "ต่อมหาวิทยาลัย",
+    statusResigned: "ลาออกจากทุน", statusWithdrawnScholarship: "ถอนทุนการศึกษา",
+    statusUni: "ต่อมหาวิทยาลัย", statusUniversity: "ต่อมหาวิทยาลัย (ทุนตนเอง)",
     statusOther: "อื่นๆ",
     /* Special */
-    continuedScholarship: "ทุนต่อ", alumniGroup: "ศิษย์เก่า",
+    continuedScholarship: "ทุนต่อ ม. (RDF)", alumniGroup: "ศิษย์เก่า",
     /* Birthday & Age */
     birthDate: "วันเดือนปีเกิด", birthDay: "วัน", birthMonth: "เดือน",
     ageDisplay: "อายุ", ageYears: "ปี", birthDateHint: "ใช้ปีเกิด (ค.ศ.) เป็นรหัสผ่าน",
@@ -957,9 +957,10 @@ const T = {
     fillRequired: "Please fill in all required fields",
     statusActive: "Active", statusGraduated: "Graduated",
     statusSuspended: "Suspended", statusIncomplete: "Incomplete",
-    statusResigned: "Resigned", statusUni: "Promoted to University",
-    statusUniversity: "Promoted to University", statusOther: "Other",
-    continuedScholarship: "Continued", alumniGroup: "Alumni",
+    statusResigned: "Resigned", statusWithdrawnScholarship: "Scholarship Withdrawn",
+    statusUni: "Promoted to University", statusUniversity: "University (Self-funded)",
+    statusOther: "Other",
+    continuedScholarship: "Uni (RDF Scholarship)", alumniGroup: "Alumni",
     /* Birthday & Age */
     birthDate: "Date of Birth", birthDay: "Day", birthMonth: "Month",
     ageDisplay: "Age", ageYears: "years", birthDateHint: "Birth year (C.E.) is used as student password",

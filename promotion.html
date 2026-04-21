@@ -1409,8 +1409,12 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
     ? driveImgUrl(s.ProfilePicURL, 'w60') : photoFallback;
 
   // Status badge
-  const statusBadge = { Active:'badge-green', Suspended:'badge-orange', University:'badge-blue' }[s.Status] || 'badge-gray';
-  const statusLabel  = t('status' + s.Status) || s.Status || 'Active';
+  const statusBadge = {
+    Active:'badge-green', Graduated:'badge-purple', Suspended:'badge-orange',
+    Resigned:'badge-red', WithdrawnScholarship:'badge-red', Incomplete:'badge-red',
+    University:'badge-blue'
+  }[s.Status] || 'badge-gray';
+  const statusLabel = t('status' + s.Status) || RDF.STATUS_LABELS_TH[s.Status] || s.Status || 'Active';
 
   // Level selector
   const levelOpts = buildLevelOpts(inst, dec.nextLevel);

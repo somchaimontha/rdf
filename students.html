@@ -138,15 +138,15 @@
           <div>
             <label class="field-label" data-t="status">สถานะ</label>
             <select id="filterStatus" onchange="applyFilters()" class="field-select text-sm">
-              <option value="">ทุกสถานะ</option>
-              <option value="Active" data-t="statusActive">กำลังศึกษา</option>
-              <option value="Graduated">ศิษย์เก่า (สำเร็จการศึกษา)</option>
-              <option value="University">ต่อมหาวิทยาลัย</option>
-              <option value="Continued">ทุนต่อ (ขึ้นมหาวิทยาลัย)</option>
-              <option value="Suspended">พักการเรียน</option>
-              <option value="Resigned">ลาออกจากทุน</option>
-              <option value="WithdrawnScholarship">ถอนทุนการศึกษา</option>
-              <option value="Incomplete">ไม่สำเร็จการศึกษา</option>
+              <option value="" data-t="allStatus">ทุกสถานะ</option>
+              <option value="Active"               data-t="statusActive">กำลังศึกษา</option>
+              <option value="Graduated"            data-t="statusGraduated">สำเร็จการศึกษา</option>
+              <option value="University"           data-t="statusUniversity">ต่อมหาวิทยาลัย (ทุนตนเอง)</option>
+              <option value="Continued"            data-t="continuedScholarship">ทุนต่อ ม. (RDF)</option>
+              <option value="Suspended"            data-t="statusSuspended">พักการเรียน</option>
+              <option value="Resigned"             data-t="statusResigned">ลาออกจากทุน</option>
+              <option value="WithdrawnScholarship" data-t="statusWithdrawnScholarship">ถอนทุนการศึกษา</option>
+              <option value="Incomplete"           data-t="statusIncomplete">ไม่สำเร็จการศึกษา</option>
             </select>
           </div>
         </div>
@@ -1353,8 +1353,11 @@ function _renderDupGroup() {
 
   // Render student cards — isPrimary keyed by array index (no type issues)
   const cards = document.getElementById('dupCards');
-  const STATUS_COLORS = { Active:'#16a34a', Graduated:'#2563eb', Inactive:'#6b7280',
-                          Resigned:'#dc2626', Continued:'#7c3aed' };
+  const STATUS_COLORS = {
+    Active:'#16a34a', Graduated:'#7c3aed', Suspended:'#d97706',
+    Resigned:'#dc2626', WithdrawnScholarship:'#dc2626', Incomplete:'#dc2626',
+    University:'#2563eb', Other:'#6b7280'
+  };
   cards.innerHTML = g.students.map((s, arrayIdx) => {
     const isPrimary = arrayIdx === _dupPrimary;
     const sColor    = STATUS_COLORS[s.status] || '#6b7280';
@@ -2192,7 +2195,10 @@ function _getRptData() {
     all:        null,
     active:     s => s.status === 'Active',
     graduated:  s => s.status === 'Graduated',
-    university: s => ['University','Continued'].includes(s.status),
+    // University = self-funded (status=University) OR RDF-scholarship (inst=UNI, stipNo prefix)
+    university: s => s.status === 'University' || isContinuedScholarship(s),
+    // Alumni = all non-active statuses
+    alumni:     s => ['Graduated','Resigned','WithdrawnScholarship','Incomplete','University'].includes(s.status) || isContinuedScholarship(s),
   };
   const statusFn = STATUS_FILTER[rptType] || null;
 
@@ -2317,8 +2323,16 @@ function _buildStudentReportHTML(opts) {
 
   const instColors = { MBS:'#1d4ed8', VC:'#ea580c', UNI:'#7c3aed', OTHER:'#64748b' };
   const statusStyle = st => {
-    const bg  = st==='Active'?'#dcfce7':st==='Graduated'?'#ede9fe':st==='Suspended'?'#fef3c7':'#fee2e2';
-    const col = st==='Active'?'#15803d':st==='Graduated'?'#7c3aed':st==='Suspended'?'#92400e':'#dc2626';
+    const MAP = {
+      Active:               ['#dcfce7','#15803d'],
+      Graduated:            ['#ede9fe','#7c3aed'],
+      Suspended:            ['#fef3c7','#92400e'],
+      Resigned:             ['#fee2e2','#dc2626'],
+      WithdrawnScholarship: ['#fee2e2','#dc2626'],
+      Incomplete:           ['#fee2e2','#dc2626'],
+      University:           ['#dbeafe','#1d4ed8'],
+    };
+    const [bg, col] = MAP[st] || ['#f1f5f9','#64748b'];
     return `background:${bg};color:${col}`;
   };
 

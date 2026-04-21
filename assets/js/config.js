@@ -30,15 +30,20 @@ const RDF = {
   STATUS_LABELS_TH: {
     Active:"กำลังศึกษา", Graduated:"สำเร็จการศึกษา", Suspended:"พักการเรียน",
     Incomplete:"ไม่สำเร็จการศึกษา", Resigned:"ลาออกจากทุน",
-    University:"ต่อมหาวิทยาลัย", Other:"อื่นๆ"
+    WithdrawnScholarship:"ถอนทุนการศึกษา",
+    University:"ต่อมหาวิทยาลัย (ทุนตนเอง)", Other:"อื่นๆ"
   },
   STATUS_LABELS_EN: {
     Active:"Active", Graduated:"Graduated", Suspended:"Suspended",
-    Incomplete:"Incomplete", Resigned:"Resigned", University:"Promoted to Uni", Other:"Other"
+    Incomplete:"Incomplete", Resigned:"Resigned",
+    WithdrawnScholarship:"Scholarship Withdrawn",
+    University:"University (Self-funded)", Other:"Other"
   },
   STATUS_COLORS: {
     Active:"badge-green", Graduated:"badge-purple", Suspended:"badge-orange",
-    Incomplete:"badge-red", Resigned:"badge-red", University:"badge-blue", Other:"badge-gray"
+    Incomplete:"badge-red", Resigned:"badge-red",
+    WithdrawnScholarship:"badge-red",
+    University:"badge-blue", Other:"badge-gray"
   },
   /* ── Majors/Departments — admin can extend these via Settings ── */
   MAJORS: {
