@@ -1371,9 +1371,10 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
   // Level selector
   const levelOpts = buildLevelOpts(inst, dec.nextLevel);
 
-  // Uni scholarship badge
+  // Uni scholarship badge (for non-uni actions: show colored badge with icon)
   const schCls   = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
-  const schLabel = { Yes: t('promoSchYes'), No: t('promoSchNo'), Pending: t('promoSchPending') }[dec.uniScholarship] || '—';
+  const _schIcon = { Yes:'✓ ', No:'✗ ', Pending:'⏳ ' }[dec.uniScholarship] || '';
+  const schLabel = _schIcon + ({ Yes: t('promoSchYes'), No: t('promoSchNo'), Pending: t('promoSchPending') }[dec.uniScholarship] || '—');
 
   // ── Scholarship continuation flags ──────────────────────────
   // isUniTransfer: M.6 / ปวช.3 / ปวส.2 — shows uni/uni_own options (manual per-student)
@@ -1446,14 +1447,10 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
           : ''}
       </div>`;
 
-  // Uni scholarship cell
+  // Uni scholarship cell — toggle buttons for uni/uni_own, colored badge otherwise
   const isUniAct = ['uni','uni_own'].includes(act);
   const schCell = isUniAct
-    ? `<select class="promo-action-select text-xs" onchange="setDec('${s.StipNo}','uniScholarship',this.value)">
-        <option value="Yes"     ${dec.uniScholarship==='Yes'    ?'selected':''}>✓ ${t('promoSchYes')}</option>
-        <option value="No"      ${dec.uniScholarship==='No'     ?'selected':''}>✗ ${t('promoSchNo')}</option>
-        <option value="Pending" ${dec.uniScholarship==='Pending'?'selected':''}>⏳ ${t('promoSchPending')}</option>
-      </select>`
+    ? _renderSchToggle(s.StipNo, dec.uniScholarship || 'Pending')
     : `<span class="uni-sch-badge ${schCls}">${schLabel}</span>`;
 
   const uniRowHTML = isUniAct ? renderUniDetailRow(s.StipNo, dec) : '';
@@ -1761,8 +1758,11 @@ async function submitScholarshipRequest(stipNo) {
 // ─────────────────────────────────────────────
 
 async function reviewScholarshipRequest(stipNo, approvalStatus) {
-  const user = (getUser()||{}).username || 'admin';
+  const user      = (getUser()||{}).username || 'admin';
   const promoDate = document.getElementById('promotionDate')?.value || '';
+  // Next academic year = current academic year + 1 (for moving student to UNI year 1)
+  const acadYear    = document.getElementById('academicYear')?.value || '';
+  const nextAcadYear = acadYear ? String(parseInt(acadYear) + 1) : '';
 
   // Ask for approval notes
   const { value: notes, isConfirmed } = await Swal.fire({
@@ -1784,7 +1784,8 @@ async function reviewScholarshipRequest(stipNo, approvalStatus) {
   showLoader(true, LANG==='th' ? 'กำลังบันทึก...' : 'Saving...');
   try {
     const res = await API.post('reviewScholarshipRequest', {
-      stipNo, approvalStatus, notes: notes || '', reqUser: user, promotionDate: promoDate,
+      stipNo, approvalStatus, notes: notes || '', reqUser: user,
+      promotionDate: promoDate, nextAcademicYear: nextAcadYear,
     });
     showLoader(false);
     if (res.status === 'success') {
@@ -1800,10 +1801,28 @@ async function reviewScholarshipRequest(stipNo, approvalStatus) {
       await Swal.fire({
         icon: approvalStatus === 'Approved' ? 'success' : 'info',
         title: approvalStatus === 'Approved'
-          ? (LANG==='th' ? '✔ อนุมัติทุนแล้ว' : '✔ Scholarship Approved')
+          ? (LANG==='th' ? '✔ อนุมัติทุนแล้ว — ย้ายไปกลุ่มมหาวิทยาลัยแล้ว' : '✔ Approved — moved to University group')
           : (LANG==='th' ? 'ไม่อนุมัติ — บันทึกแล้ว' : 'Rejected — saved'),
         timer: 2500, showConfirmButton: false,
       });
+
+      if (approvalStatus === 'Approved') {
+        // Reload student groups from DB so the student appears in UNI group immediately
+        try {
+          const studRes = await API.get('getStudentsForPromotion');
+          if (studRes.status === 'success') {
+            const prevDec = Object.assign({}, ROW_DECISIONS);
+            ALL_GROUPS = studRes.groups || [];
+            // Re-apply existing decisions so other students' edits are not lost
+            ALL_GROUPS.forEach(g => {
+              g.students.forEach(s => {
+                if (prevDec[s.StipNo]) ROW_DECISIONS[s.StipNo] = prevDec[s.StipNo];
+              });
+            });
+          }
+        } catch(e) { /* reload failed — groups stale until page refresh */ }
+      }
+
       renderApprovalPanel();
       renderGroups();
     } else {
@@ -2216,6 +2235,31 @@ function setDec(stipNo, field, val) {
   ROW_DECISIONS[stipNo][field] = val;
 }
 
+// ── Scholarship toggle buttons (✓ / ✗ / ⏳) ──────────────────────────────
+// Renders 3 compact toggle buttons for ทุน ต่อ ม. selection.
+// Used in renderStudentRow and onActionChange.
+function _renderSchToggle(stipNo, val) {
+  const y = val === 'Yes', n = val === 'No', p = !y && !n;
+  const _b = (v, icon, sel, bg, bd, co) =>
+    `<button onclick="onSchChange('${stipNo}','${v}')"
+      style="flex:1;padding:2px 4px;font-size:10px;font-weight:700;border-radius:4px;cursor:pointer;
+             white-space:nowrap;line-height:1.4;transition:all .1s;
+             border:1.5px solid ${sel?bd:'#e5e7eb'};
+             background:${sel?bg:'#f9fafb'};color:${sel?co:'#9ca3af'}">${icon}</button>`;
+  return `<div style="display:flex;gap:2px;min-width:88px">
+    ${_b('Yes',    '✓ ได้รับ', y, '#dcfce7','#16a34a','#16a34a')}
+    ${_b('No',     '✗ ไม่ได้', n, '#fee2e2','#dc2626','#dc2626')}
+    ${_b('Pending','⏳',       p, '#fef3c7','#d97706','#d97706')}
+  </div>`;
+}
+
+// Called when a scholarship toggle button is clicked.
+function onSchChange(stipNo, val) {
+  setDec(stipNo, 'uniScholarship', val);
+  const cell = document.getElementById('schCell_' + stipNo);
+  if (cell) cell.innerHTML = _renderSchToggle(stipNo, val);
+}
+
 // Returns the action-appropriate "done" label and badge style after promotion is saved.
 function _actionDoneLabel(act) {
   const map = {
@@ -2295,19 +2339,15 @@ function onActionChange(stipNo, inst, level, newAct) {
 
   // Update scholarship cell (by id — avoids column-index fragility)
   if (mainRow) {
-    const schCell = document.getElementById('schCell_' + stipNo);
-    if (schCell) {
+    const schCellEl = document.getElementById('schCell_' + stipNo);
+    if (schCellEl) {
       if (isUni) {
-        const sv = dec.uniScholarship || 'Pending';
-        schCell.innerHTML = `<select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniScholarship',this.value)">
-          <option value="Yes"     ${sv==='Yes'    ?'selected':''}>✓ ${t('promoSchYes')}</option>
-          <option value="No"      ${sv==='No'     ?'selected':''}>✗ ${t('promoSchNo')}</option>
-          <option value="Pending" ${sv==='Pending'?'selected':''}>⏳ ${t('promoSchPending')}</option>
-        </select>`;
+        schCellEl.innerHTML = _renderSchToggle(stipNo, dec.uniScholarship || 'Pending');
       } else {
-        const scl = { Yes:t('promoSchYes'), No:t('promoSchNo'), Pending:t('promoSchPending') }[dec.uniScholarship] || '—';
-        const scc = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
-        schCell.innerHTML = `<span class="uni-sch-badge ${scc}">${scl}</span>`;
+        const _ic  = { Yes:'✓ ', No:'✗ ', Pending:'⏳ ' }[dec.uniScholarship] || '';
+        const scl  = _ic + ({ Yes:t('promoSchYes'), No:t('promoSchNo'), Pending:t('promoSchPending') }[dec.uniScholarship] || '—');
+        const scc  = { Yes:'sch-yes', No:'sch-no', Pending:'sch-pending' }[dec.uniScholarship] || 'sch-none';
+        schCellEl.innerHTML = `<span class="uni-sch-badge ${scc}">${scl}</span>`;
       }
     }
     mainRow.classList.toggle('excluded', newAct === 'skip');
