@@ -409,11 +409,17 @@
         </div>
         <div>
           <label class="field-label" data-t="nationality">สัญชาติ</label>
-          <input type="text" id="f_nationality" class="field-input" value="ไทย">
+          <select id="f_nationality" class="field-input" onchange="onNationalityChange(this.value)">
+            <!-- options rendered by _renderNatReligOptions() -->
+          </select>
+          <input type="text" id="f_nationality_other" class="field-input mt-1 hidden"
+                 maxlength="50" placeholder="ระบุสัญชาติ...">
         </div>
         <div>
           <label class="field-label" data-t="religion">ศาสนา</label>
-          <input type="text" id="f_religion" class="field-input" value="พุทธ">
+          <select id="f_religion" class="field-input">
+            <!-- options rendered by _renderNatReligOptions() -->
+          </select>
         </div>
       </div>
       <div class="mb-4">
@@ -1079,6 +1085,57 @@ lucide.createIcons();
 const user = requireAuth();
 if (user) renderNavUser(user);
 
+// ── Nationality & Religion select options (bilingual) ──────────────────────
+const _NAT_OPTS = [
+  { val: 'ไทย',                                 th: 'ไทย',                                        en: 'Thai' },
+  { val: 'บุคคลที่ไม่มีสถานะทางทะเบียน',        th: 'บุคคลที่ไม่มีสถานะทางทะเบียน (มหาดไทย)',    en: 'Stateless Person (Ministry of Interior)' },
+  { val: '__other__',                            th: 'อื่นๆ (ระบุ)',                               en: 'Other (specify)' },
+];
+const _REL_OPTS = [
+  { val: 'พุทธ',   th: 'พุทธ',   en: 'Buddhism' },
+  { val: 'คริสต์', th: 'คริสต์', en: 'Christianity' },
+  { val: 'อิสลาม', th: 'อิสลาม', en: 'Islam' },
+  { val: 'นอกรีต', th: 'นอกรีต', en: 'Non-religious' },
+];
+
+function _renderNatReligOptions() {
+  const isEN   = typeof LANG !== 'undefined' && LANG === 'en';
+  const natSel = document.getElementById('f_nationality');
+  const relSel = document.getElementById('f_religion');
+  const natOtherInput = document.getElementById('f_nationality_other');
+  if (!natSel || !relSel) return;
+  const prevNat = natSel.value;
+  const prevRel = relSel.value;
+  natSel.innerHTML = _NAT_OPTS.map(o =>
+    `<option value="${o.val}">${isEN ? o.en : o.th}</option>`).join('');
+  relSel.innerHTML = _REL_OPTS.map(o =>
+    `<option value="${o.val}">${isEN ? o.en : o.th}</option>`).join('');
+  // Restore previous selection after re-render
+  if (prevNat) natSel.value = prevNat;
+  if (prevRel) relSel.value = prevRel;
+  // Update other-input placeholder
+  if (natOtherInput) {
+    natOtherInput.placeholder = isEN ? 'Specify nationality...' : 'ระบุสัญชาติ...';
+  }
+}
+
+function onNationalityChange(val) {
+  const el = document.getElementById('f_nationality_other');
+  if (el) el.classList.toggle('hidden', val !== '__other__');
+}
+
+// Hook language toggle to re-render select option labels
+(function() {
+  const _orig = window.toggleLang;
+  window.toggleLang = function() {
+    if (typeof _orig === 'function') _orig();
+    _renderNatReligOptions();
+  };
+})();
+
+// Initial render (runs after DOM + LANG are ready)
+_renderNatReligOptions();
+
 // RBAC: Students can only edit their own profile
 // Admins need editStudents permission
 (function _rbacFormGuard() {
@@ -1384,7 +1441,21 @@ function fillForm(d) {
   document.getElementById('f_noSurname').checked = d.HasNoSurname === 'true';
   sv('f_engTitle', d.EngTitle); sv('f_engFname', d.EngFirstName); sv('f_engLname', d.EngLastName);
   sv('f_nickname', d.Nickname); sv('f_gender', d.Sex);
-  sv('f_nationality', d.Nationality); sv('f_religion', d.Religion);
+  // Nationality: detect preset vs free-text custom value
+  (function() {
+    const nat = d.Nationality;
+    if (!nat) return;
+    const natSel   = document.getElementById('f_nationality');
+    const natOther = document.getElementById('f_nationality_other');
+    const isPreset = _NAT_OPTS.some(o => o.val !== '__other__' && o.val === nat);
+    if (isPreset) {
+      natSel.value = nat;
+    } else {
+      natSel.value = '__other__';
+      if (natOther) { natOther.value = nat; natOther.classList.remove('hidden'); }
+    }
+  })();
+  sv('f_religion', d.Religion);
   sv('f_talent', d.Talent); sv('f_weight', d.Weight);
   sv('f_height', d.Height); sv('f_blood', d.BloodType); sv('f_disease', d.Disease);
   sv('f_phone1', d.Phone1); sv('f_phone2', d.Phone2);
@@ -1983,7 +2054,8 @@ async function collectForm() {
     HasNoSurname: document.getElementById('f_noSurname').checked.toString(),
     EngTitle: get('f_engTitle'), EngFirstName: get('f_engFname'), EngLastName: get('f_engLname'),
     Nickname: get('f_nickname'), Sex: get('f_gender'),
-    Nationality: get('f_nationality'), Religion: get('f_religion'),
+    Nationality: get('f_nationality') === '__other__' ? get('f_nationality_other') : get('f_nationality'),
+    Religion: get('f_religion'),
     Talent: get('f_talent'), Weight: get('f_weight'), Height: get('f_height'),
     BloodType: get('f_blood'), Disease: get('f_disease'),
     Phone1: get('f_phone1'), Phone2: get('f_phone2'),
@@ -2481,8 +2553,21 @@ function docScanApply() {
   sv('f_faculty', d.faculty);
   // Contact / other sections
   sv('f_phone1', d.phone);
-  sv('f_nationality', d.nationality);
-  sv('f_religion', d.religion);
+  // Nationality from OCR/doc-scan
+  (function() {
+    const nat = d.nationality;
+    if (!nat) return;
+    const natSel   = document.getElementById('f_nationality');
+    const natOther = document.getElementById('f_nationality_other');
+    const isPreset = _NAT_OPTS.some(o => o.val !== '__other__' && o.val === nat);
+    if (isPreset) {
+      natSel.value = nat; if (natOther) natOther.classList.add('hidden');
+    } else {
+      natSel.value = '__other__';
+      if (natOther) { natOther.value = nat; natOther.classList.remove('hidden'); }
+    }
+  })();
+  if (d.religion) sv('f_religion', d.religion);
   sv('f_village', d.village);
   sv('f_province', d.province);
   closeDocScanModal();
