@@ -468,6 +468,9 @@ img.student-avatar {
           <select id="promoYearFilter" class="field-select" onchange="filterGroups()" style="width:135px">
             <option value="">ทุกปีการศึกษา</option>
           </select>
+          <select id="promoActionFilter" class="field-select" onchange="filterGroups()" style="width:150px">
+            <!-- populated by renderActionFilterOptions() -->
+          </select>
           <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
             <input type="checkbox" id="chkHideEmpty" onchange="filterGroups()" class="rounded">
             <span data-t="promoHideEmpty">ซ่อนกลุ่มว่าง</span>
@@ -1054,6 +1057,7 @@ async function savePromotionSettings() {
 // ─────────────────────────────────────────────
 function promoToggleLang() {
   setLang(LANG === 'th' ? 'en' : 'th');
+  renderActionFilterOptions(); // update bilingual action filter options
   if (ALL_GROUPS.length > 0) renderGroups();
   updateStats();
   updateExportLabels();
@@ -1176,6 +1180,7 @@ async function loadPage() {
     });
 
     showLoader(false);
+    renderActionFilterOptions();
     populateYearFilter();
     renderGroups();
     updateStats();
@@ -1194,11 +1199,12 @@ async function loadPage() {
 // Within each institution+level, sub-groups are sorted oldest year first.
 // ─────────────────────────────────────────────
 function renderGroups() {
-  const container = document.getElementById('groupsContainer');
-  const search    = (document.getElementById('promoSearch').value || '').toLowerCase();
-  const instFlt   = document.getElementById('promoInstFilter').value;
-  const yearFlt   = document.getElementById('promoYearFilter')?.value || '';
-  const hideEmpty = document.getElementById('chkHideEmpty').checked;
+  const container  = document.getElementById('groupsContainer');
+  const search     = (document.getElementById('promoSearch').value || '').toLowerCase();
+  const instFlt    = document.getElementById('promoInstFilter').value;
+  const yearFlt    = document.getElementById('promoYearFilter')?.value || '';
+  const actionFlt  = document.getElementById('promoActionFilter')?.value || '';
+  const hideEmpty  = document.getElementById('chkHideEmpty').checked;
 
   const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const sorted = [...ALL_GROUPS].sort((a, b) => {
@@ -1235,8 +1241,14 @@ function renderGroups() {
 
   displayGroups.forEach(dg => {
     const { inst, level, curYear, students: dgStudents } = dg;
-    const filtered = search
+    const rule0 = PROMO_RULES[inst + '||' + level];
+    const defAct0 = rule0 && (rule0.completion === 'graduate' || rule0.completion === 'graduate_uni') ? 'graduate' : 'promote';
+    const filtered = (search || actionFlt)
       ? dgStudents.filter(s => {
+          const dec = ROW_DECISIONS[s.StipNo] || {};
+          const act = dec.action || defAct0;
+          if (actionFlt && act !== actionFlt) return false;
+          if (!search) return true;
           const n = (s.Title + s.FirstName + ' ' + s.LastName + ' ' +
                      s.EngFirstName + ' ' + s.EngLastName + ' ' + s.StipNo).toLowerCase();
           return n.includes(search);
@@ -2626,6 +2638,30 @@ function selectAllInGroup(inst, level, curYear, checked) {
 
 function filterGroups() { renderGroups(); }
 
+// Populates the promoActionFilter dropdown with bilingual labels.
+// Call once on load and whenever LANG changes.
+function renderActionFilterOptions() {
+  const sel = document.getElementById('promoActionFilter');
+  if (!sel) return;
+  const cur = sel.value;
+  const L = LANG === 'en';
+  const opts = [
+    { v:'',             th:'ทุกการดำเนินการ',         en:'All Actions' },
+    { v:'promote',      th:'⬆ เลื่อนชั้น',            en:'⬆ Promote' },
+    { v:'graduate',     th:'🎓 จบการศึกษา',            en:'🎓 Graduate' },
+    { v:'uni',          th:'🏛 ต่อ ม. (ขอรับทุน RDF)', en:'🏛 Uni (RDF Scholarship)' },
+    { v:'uni_own',      th:'🏛 ต่อ ม. (ทุนตนเอง)',    en:'🏛 Uni (Own Funding)' },
+    { v:'hold',         th:'⏸ ซ้ำชั้น',               en:'⏸ Hold Back' },
+    { v:'suspend',      th:'⚠ พักการเรียน',            en:'⚠ Suspend' },
+    { v:'resign',       th:'✕ ลาออกจากสถาบัน',        en:'✕ Resign' },
+    { v:'withdraw_sch', th:'🚫 ถอนทุนการศึกษา',       en:'🚫 Withdraw Scholarship' },
+    { v:'skip',         th:'— ไม่เปลี่ยน',             en:'— Skip / No Change' },
+  ];
+  sel.innerHTML = opts.map(o =>
+    `<option value="${o.v}"${o.v === cur ? ' selected' : ''}>${L ? o.en : o.th}</option>`
+  ).join('');
+}
+
 // Rebuilds the promoYearFilter dropdown from distinct CurrentAcademicYear values
 // found across all loaded student groups. Called once after ALL_GROUPS loads.
 function populateYearFilter() {
@@ -3990,6 +4026,7 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
   if (btn) btn.textContent = (localStorage.getItem('rdfLang')||'th') === 'th' ? 'EN' : 'TH';
 
   setLang(localStorage.getItem('rdfLang') || 'th');
+  renderActionFilterOptions(); // populate bilingual action filter on load
   loadPage();
 })();
 initDBStatus();
