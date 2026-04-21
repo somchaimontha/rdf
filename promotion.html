@@ -431,10 +431,11 @@ img.student-avatar {
                 <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoCurrentLevel">ชั้นปัจจุบัน</th>
                 <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoNextLevel">ชั้นถัดไป (Default)</th>
                 <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoCompletion">การดำเนินการ</th>
+                <th style="padding:8px 12px;text-align:center;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap" title="อนุญาตให้เลือกต่อ ม. ได้ในชั้นนี้ (ไม่จบการศึกษา)">🏛 ต่อ ม.</th>
               </tr>
             </thead>
             <tbody id="promotionRulesBody">
-              <tr><td colspan="4" class="text-center text-gray-400 py-6 text-xs">Loading...</td></tr>
+              <tr><td colspan="5" class="text-center text-gray-400 py-6 text-xs">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -887,7 +888,7 @@ const DEFAULT_RULES = [
   { inst:'MBS', from:'มัธยมศึกษาปีที่ 6 (Grade 12)', to:'—',                             completion:'graduate_uni' },
   { inst:'VC',  from:'ปวช. ชั้นปีที่ 1', to:'ปวช. ชั้นปีที่ 2', completion:'promote' },
   { inst:'VC',  from:'ปวช. ชั้นปีที่ 2', to:'ปวช. ชั้นปีที่ 3', completion:'promote' },
-  { inst:'VC',  from:'ปวช. ชั้นปีที่ 3', to:'ปวส. ชั้นปีที่ 1', completion:'promote' },
+  { inst:'VC',  from:'ปวช. ชั้นปีที่ 3', to:'ปวส. ชั้นปีที่ 1', completion:'promote', allowUniTransfer: true },
   { inst:'VC',  from:'ปวส. ชั้นปีที่ 1', to:'ปวส. ชั้นปีที่ 2', completion:'promote' },
   { inst:'VC',  from:'ปวส. ชั้นปีที่ 2', to:'—',                 completion:'graduate_uni' },
   { inst:'UNI', from:'ชั้นปีที่ 1', to:'ชั้นปีที่ 2', completion:'promote' },
@@ -902,12 +903,24 @@ const DEFAULT_RULES = [
 // TERMINAL-LEVEL HELPERS
 // ─────────────────────────────────────────────
 // Returns true for levels where the admin CAN manually choose university transfer.
-// Per policy: only ม.6, ปวช.3, ปวส.2 — NOT auto-default, must select individually.
+// Derived dynamically from PROMO_RULES: completion='graduate_uni' OR allowUniTransfer=true.
+// Falls back to DEFAULT_RULES if PROMO_RULES is not yet loaded (e.g., during init).
 function isUniTransferLevel(inst, level) {
-  if (inst === 'MBS' && level === 'มัธยมศึกษาปีที่ 6 (Grade 12)') return true;
-  if (inst === 'VC'  && level === 'ปวช. ชั้นปีที่ 3')             return true;
-  if (inst === 'VC'  && level === 'ปวส. ชั้นปีที่ 2')             return true;
-  return false;
+  if (inst === 'UNI') return false;
+  const rule = PROMO_RULES[inst + '||' + level]
+    || DEFAULT_RULES.find(r => r.inst === inst && r.from === level);
+  if (!rule) return false;
+  return rule.completion === 'graduate_uni' || rule.allowUniTransfer === true;
+}
+
+// Returns true when a UNI student is at their final year based on their individual UniDuration.
+// Example: UniDuration=4 → ชั้นปีที่ 4 is final; ชั้นปีที่ 3 is not.
+function _isUniStudentFinalYear(student) {
+  const dur = parseInt(student.UniDuration) || 0;
+  if (dur <= 0) return false;
+  const m = (student.CurrentLevel || '').match(/ชั้นปีที่\s*(\d+)/);
+  if (!m) return false;
+  return parseInt(m[1]) >= dur;
 }
 
 // Returns true when a student at this level can transition to university with RDF scholarship.
@@ -991,6 +1004,12 @@ function renderPromotionRules(rules) {
           <option value="graduate"     ${r.completion==='graduate'    ?'selected':''}>🎓 ${LANG==='th'?'จบการศึกษา':'Graduate'}</option>
           <option value="graduate_uni" ${r.completion==='graduate_uni'?'selected':''}>🏛 ${LANG==='th'?'จบ + สามารถต่อม.':'Graduate + Eligible for University'}</option>
         </select>
+      </td>
+      <td style="padding:8px 12px;text-align:center" title="${LANG==='th'?'อนุญาตให้เลือกต่อมหาวิทยาลัยได้ในชั้นนี้ (ไม่จบการศึกษา)':'Allow uni transfer at this level (without graduating)'}">
+        <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:#7c3aed;font-weight:600">
+          <input type="checkbox" ${r.allowUniTransfer?'checked':''} onchange="updatePromoRule(${i},'allowUniTransfer',this.checked)" style="width:13px;height:13px;accent-color:#7c3aed">
+          🏛
+        </label>
       </td>
     </tr>`).join('');
   lucide.createIcons();
@@ -1143,6 +1162,9 @@ async function loadPage() {
           let defAction;
           if (alreadyPromoted) {
             defAction = 'skip';
+          } else if (g.institution === 'UNI') {
+            // UNI: per-student final year based on UniDuration, not the group rule.
+            defAction = _isUniStudentFinalYear(s) ? 'graduate' : 'promote';
           } else if (comp === 'graduate' || comp === 'graduate_uni') {
             // graduate_uni: student CAN go to university but must select it individually.
             // Default to 'graduate' — admin picks uni per-student as needed.
@@ -1160,9 +1182,17 @@ async function loadPage() {
           // If approval was granted, treat as already promoted (won't re-submit)
           const approvedPromo = schApprSt === 'Approved';
 
+          // For UNI students that are not yet at final year, compute next level from year number
+          // (rule's 'to' may be '—' for levels that are graduate-by-default in the rules table)
+          let effectiveNextLevel = defTo;
+          if (g.institution === 'UNI' && defAction === 'promote') {
+            const _m = (s.CurrentLevel || '').match(/ชั้นปีที่\s*(\d+)/);
+            if (_m) effectiveNextLevel = 'ชั้นปีที่ ' + (parseInt(_m[1]) + 1);
+          }
+
           ROW_DECISIONS[s.StipNo] = {
             action:             defAction,
-            nextLevel:          defAction === 'promote' ? (defTo !== '—' ? defTo : '') : '',
+            nextLevel:          defAction === 'promote' ? (effectiveNextLevel !== '—' ? effectiveNextLevel : '') : '',
             uniScholarship:     s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
             notes:              s.PromotionNotes || '',
             alreadyPromoted:    alreadyPromoted || approvedPromo,
@@ -1362,9 +1392,11 @@ function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLev
 }
 
 function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol) {
-  if (showUniSchCol === undefined) showUniSchCol = isGradLevel || inst === 'UNI' || isUniTransferLevel(inst, level);
+  // For UNI: effective graduation status is per-student (depends on individual UniDuration).
+  const effectiveIsGrad = inst === 'UNI' ? _isUniStudentFinalYear(s) : isGradLevel;
+  if (showUniSchCol === undefined) showUniSchCol = effectiveIsGrad || inst === 'UNI' || isUniTransferLevel(inst, level);
   const dec = ROW_DECISIONS[s.StipNo] || {};
-  const act = dec.action || (isGradLevel ? 'graduate' : 'promote');
+  const act = dec.action || (effectiveIsGrad ? 'graduate' : 'promote');
 
   // Names
   const thaiName = ((s.Title||'') + (s.FirstName||'') + ' ' + (s.LastName||'')).trim();
@@ -1985,8 +2017,22 @@ async function undoPromotion(stipNo, inst, level) {
       // Restore action to level-appropriate default (not always 'promote')
       const _rule = PROMO_RULES[inst + '||' + level];
       const _comp = _rule ? _rule.completion : 'promote';
-      dec.action    = (_comp === 'graduate' || _comp === 'graduate_uni') ? 'graduate' : 'promote';
-      dec.nextLevel = dec.action === 'promote' ? (_rule && _rule.to !== '—' ? _rule.to : '') : '';
+      if (inst === 'UNI') {
+        // UNI: per-student final year based on UniDuration
+        dec.action = _isUniStudentFinalYear(stu) ? 'graduate' : 'promote';
+      } else {
+        dec.action = (_comp === 'graduate' || _comp === 'graduate_uni') ? 'graduate' : 'promote';
+      }
+      if (dec.action === 'promote') {
+        let _rTo = _rule ? _rule.to : '';
+        if (inst === 'UNI') {
+          const _m = level.match(/ชั้นปีที่\s*(\d+)/);
+          if (_m) _rTo = 'ชั้นปีที่ ' + (parseInt(_m[1]) + 1);
+        }
+        dec.nextLevel = _rTo && _rTo !== '—' ? _rTo : '';
+      } else {
+        dec.nextLevel = '';
+      }
       // Preserve notes from original DB record (stu.PromotionNotes was loaded at page start)
       if (!dec.notes && stu.PromotionNotes) dec.notes = stu.PromotionNotes;
       _updateRowAfterPromotion(stipNo, dec, inst, level, grp);
@@ -2319,7 +2365,12 @@ function onActionChange(stipNo, inst, level, newAct) {
 
   if (newAct === 'promote') {
     const rule = PROMO_RULES[inst + '||' + level];
-    const rTo = rule ? rule.to : '';
+    let rTo = rule ? rule.to : '';
+    // UNI: compute next level from year number since the rules table may say '—' for grad years
+    if (inst === 'UNI') {
+      const _m = level.match(/ชั้นปีที่\s*(\d+)/);
+      if (_m) rTo = 'ชั้นปีที่ ' + (parseInt(_m[1]) + 1);
+    }
     dec.nextLevel = (rTo && rTo !== '—') ? rTo : '';
     // If still empty, use the DOM select's current value as fallback
     if (!dec.nextLevel) {
