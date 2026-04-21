@@ -1326,7 +1326,7 @@ function renderGroups() {
 
 function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLevel) {
   // UniSch column only shown for graduation/UNI levels (ม.6, ปวช.3, ปวส.2, UNI)
-  const showUniSchCol = isGradLevel || inst === 'UNI';
+  const showUniSchCol = isGradLevel || inst === 'UNI' || isUniTransferLevel(inst, level);
   const rows = students.map(s => renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol)).join('');
   return `<div class="overflow-x-auto">
     <table class="promo-table">
@@ -1350,7 +1350,7 @@ function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLev
 }
 
 function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol) {
-  if (showUniSchCol === undefined) showUniSchCol = isGradLevel || inst === 'UNI';
+  if (showUniSchCol === undefined) showUniSchCol = isGradLevel || inst === 'UNI' || isUniTransferLevel(inst, level);
   const dec = ROW_DECISIONS[s.StipNo] || {};
   const act = dec.action || (isGradLevel ? 'graduate' : 'promote');
 
