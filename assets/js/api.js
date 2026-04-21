@@ -68,7 +68,8 @@ const API = {
   async mergeStudentRows(primaryRowIdx, mergeRowIdx) {
     return apiPost({ action: 'mergeStudentRows', primaryRowIdx, mergeRowIdx, reqUser: (getUser()||{}).username||'Admin' });
   },
-  async getStudentsForPromotion() { return apiGet({ action: 'getStudentsForPromotion' }); },
+  async getStudentsForPromotion()        { return apiGet({ action: 'getStudentsForPromotion' }); },
+  async getPendingScholarshipRequests()  { return apiGet({ action: 'getPendingScholarshipRequests' }); },
   async promoteStudents(promotions, reqUser, promotionDate) {
     return apiPost({ action: 'promoteStudents', promotions, reqUser, promotionDate });
   },

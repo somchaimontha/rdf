@@ -64,6 +64,18 @@
   <!-- System Notice Banner (loaded dynamically) -->
   <div id="systemNoticeBanner" class="hidden mb-4 fade-in-up"></div>
 
+  <!-- Notification Alerts (loaded dynamically — Manager/SuperAdmin only) -->
+  <div id="dashAlerts" class="hidden mb-4 fade-in-up">
+    <div class="rounded-2xl border overflow-hidden" style="border-color:#e2e8f0;background:#fff">
+      <div class="flex items-center gap-2 px-4 py-2.5" style="background:#1e3a8a">
+        <i data-lucide="bell" class="w-4 h-4 text-white"></i>
+        <span class="text-sm font-bold text-white" data-t="notifications">การแจ้งเตือน</span>
+        <span id="alertTotalBadge" class="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold" style="background:#ef4444;color:#fff">0</span>
+      </div>
+      <div id="alertItems" class="divide-y divide-gray-100"></div>
+    </div>
+  </div>
+
   <!-- Stats -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card fade-in-up delay-1" onclick="window.location.href='students.html?inst=MBS'">
@@ -105,8 +117,9 @@
       <h4 class="font-bold text-gray-800 text-base mb-1" data-t="menuStudents">จัดการประวัตินักเรียน</h4>
       <p class="text-xs text-gray-500" data-t="menuStudentsDesc">เพิ่ม แก้ไข ดู และพิมพ์ประวัตินักเรียน</p>
     </div>
-    <div class="menu-card" style="border-top-color:#16a34a"
+    <div class="menu-card" style="border-top-color:#16a34a;position:relative"
          onclick="window.location.href='promotion.html'">
+      <span id="promoNotifBadge" class="hidden" style="position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;line-height:1.6"></span>
       <div class="menu-icon" style="background:#f0fdf4">
         <i data-lucide="trophy" class="w-7 h-7" style="color:#16a34a"></i>
       </div>
@@ -320,10 +333,87 @@ const user = requireAuth();
 if (user) {
   renderNavUser(user);
   document.getElementById('welcomeName').textContent = user.name;
-  // Apply role-based menu visibility before loading data
   RBAC.applyDashboardUI(user);
   loadStats();
   loadSystemNotice();
+  if (['SuperAdmin','Manager'].includes(user.role)) loadNotifications();
+}
+
+async function loadNotifications() {
+  try {
+    const res = await API.getPendingScholarshipRequests();
+    const pending = (res.status === 'success') ? (res.students || res.data || []) : [];
+    const pendingCount = pending.length;
+
+    // Fetch suspended students from existing student data
+    const stuRes = await API.getStudents();
+    const allStu = stuRes.status === 'success' ? (stuRes.data || []) : [];
+    const suspended = allStu.filter(s => s.status === 'Suspended');
+    const suspendedCount = suspended.length;
+
+    const total = pendingCount + suspendedCount;
+    if (total === 0) return;
+
+    // Badge on promotion menu card
+    if (pendingCount > 0) {
+      const badge = document.getElementById('promoNotifBadge');
+      if (badge) {
+        badge.textContent = pendingCount + (LANG === 'en' ? ' pending' : ' รอ');
+        badge.classList.remove('hidden');
+      }
+    }
+
+    // Build alert items
+    const ALERTS = [];
+    if (pendingCount > 0) ALERTS.push({
+      icon: '🏛',
+      iconBg: '#fef3c7', iconColor: '#92400e',
+      barColor: '#d97706',
+      title: LANG === 'en' ? 'Scholarship Approval Pending' : 'รอการอนุมัติทุนต่อ ม.',
+      desc:  LANG === 'en'
+        ? `${pendingCount} request${pendingCount > 1 ? 's' : ''} waiting for review`
+        : `มี ${pendingCount} คำขอรอการพิจารณา`,
+      action: { label: LANG === 'en' ? 'Review →' : 'ไปอนุมัติ →', href: 'promotion.html#schApproval' },
+      urgent: true,
+    });
+    if (suspendedCount > 0) ALERTS.push({
+      icon: '⏸',
+      iconBg: '#fff7ed', iconColor: '#c2410c',
+      barColor: '#ea580c',
+      title: LANG === 'en' ? 'Students on Hold' : 'นักเรียนพักการเรียน',
+      desc:  LANG === 'en'
+        ? `${suspendedCount} student${suspendedCount > 1 ? 's' : ''} currently suspended`
+        : `มี ${suspendedCount} คน พักการเรียนอยู่`,
+      action: { label: LANG === 'en' ? 'View →' : 'ดูรายชื่อ →', href: 'students.html?status=Suspended' },
+      urgent: false,
+    });
+
+    const alertBox  = document.getElementById('dashAlerts');
+    const alertItems = document.getElementById('alertItems');
+    const totalBadge = document.getElementById('alertTotalBadge');
+    if (!alertBox || !alertItems) return;
+
+    totalBadge.textContent = total;
+    alertItems.innerHTML = ALERTS.map(a => `
+      <div class="flex items-center gap-3 px-4 py-3" style="border-left:3px solid ${a.barColor}">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+             style="background:${a.iconBg}">${a.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm font-bold text-gray-800">${a.title}</span>
+            ${a.urgent ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d">⚡ รีวิวด่วน</span>` : ''}
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">${a.desc}</p>
+        </div>
+        <a href="${a.action.href}"
+           class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition"
+           style="background:${a.barColor};color:#fff;white-space:nowrap"
+           onclick="event.stopPropagation()">${a.action.label}</a>
+      </div>`).join('');
+
+    alertBox.classList.remove('hidden');
+    lucide.createIcons();
+  } catch(e) {}
 }
 
 async function loadSystemNotice() {
@@ -514,8 +604,9 @@ function buildDashboardCharts(students) {
     }
   });
 
-  // ── Donut: active students by institution ──
-  const active = students.filter(s => s.status !== 'Graduated');
+  // ── Donut: active students by institution (exclude all alumni statuses) ──
+  const ALUMNI_STATUSES = new Set(['Graduated','Resigned','WithdrawnScholarship','Incomplete','University']);
+  const active = students.filter(s => !ALUMNI_STATUSES.has(s.status));
   const instCnt = { MBS:0, VC:0, UNI:0, อื่นๆ:0 };
   active.forEach(s => {
     if      (s.institution === 'MBS') instCnt.MBS++;
@@ -541,11 +632,15 @@ function buildDashboardCharts(students) {
   // ── Bar chart: status distribution ──
   const STATUS_TH = {
     Active:'กำลังศึกษา', Graduated:'สำเร็จการศึกษา', Suspended:'พักการเรียน',
-    Incomplete:'ไม่สำเร็จ', Resigned:'ลาออก', University:'ต่อมหาวิทยาลัย', Other:'อื่นๆ'
+    Incomplete:'ไม่สำเร็จการศึกษา', Resigned:'ลาออกจากทุน',
+    WithdrawnScholarship:'ถอนทุนการศึกษา',
+    University:'ต่อ ม. (ทุนตนเอง)', Other:'อื่นๆ'
   };
   const STATUS_COLOR = {
     Active:'#10b981', Graduated:'#7c3aed', Suspended:'#f59e0b',
-    Incomplete:'#ef4444', Resigned:'#ef4444', University:'#1d4ed8', Other:'#94a3b8'
+    Incomplete:'#ef4444', Resigned:'#ef4444',
+    WithdrawnScholarship:'#dc2626',
+    University:'#1d4ed8', Other:'#94a3b8'
   };
   const statusMap = {};
   students.forEach(s => { statusMap[s.status] = (statusMap[s.status]||0) + 1; });
