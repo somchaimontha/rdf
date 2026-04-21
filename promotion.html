@@ -538,6 +538,9 @@ img.student-avatar {
     </div>
   </div>
 
+  <!-- Focus banner: shown when promotion.html?stipNo=xxx is used -->
+  <div id="promoFocusBanner" class="hidden mb-3 fade-in-up"></div>
+
   <!-- Groups container -->
   <div id="groupsContainer">
     <div class="text-center text-gray-400 py-16">
@@ -852,6 +855,12 @@ img.student-avatar {
 RBAC.enforcePage(['viewPromotion']);
 
 // ─────────────────────────────────────────────
+// URL PARAMS
+// ─────────────────────────────────────────────
+const _URL_PARAMS  = new URLSearchParams(window.location.search);
+const _FOCUS_STIP  = _URL_PARAMS.get('stipNo') || '';   // highlight a specific student row
+
+// ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
 let ALL_GROUPS    = [];
@@ -935,6 +944,70 @@ function isUniEligibleLevel(inst, level) {
 function isSchContinuationLevel(inst, level) {
   if (inst === 'UNI') return true;
   return isUniTransferLevel(inst, level);
+}
+
+// ─────────────────────────────────────────────
+// FOCUS / HIGHLIGHT — triggered by ?stipNo=xxx URL param
+// ─────────────────────────────────────────────
+function _highlightStipNo(stipNo) {
+  const rowEl = document.getElementById('row_' + stipNo);
+  if (!rowEl) {
+    // Student not found in current groups (might be non-active status)
+    const banner = document.getElementById('promoFocusBanner');
+    if (banner) {
+      banner.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;font-size:12px;color:#dc2626">
+          <span>⚠</span>
+          <span>${LANG==='en'?'Student':'นักเรียน'} <b>${stipNo}</b> ${LANG==='en'?'is not in the active promotion list (may have already graduated or resigned)':'ไม่อยู่ในรายการเลื่อนชั้น (อาจจบการศึกษาหรือลาออกแล้ว)'}</span>
+          <a href="student-form.html?stipNo=${stipNo}" style="margin-left:auto;font-weight:700;color:#1d4ed8;white-space:nowrap;text-decoration:underline">${LANG==='en'?'Edit profile →':'แก้ไขโปรไฟล์ →'}</a>
+          <button onclick="document.getElementById('promoFocusBanner').classList.add('hidden')" style="opacity:0.5;flex-shrink:0;font-size:14px">✕</button>
+        </div>`;
+      banner.classList.remove('hidden');
+    }
+    return;
+  }
+
+  // Find student name from ALL_GROUPS
+  let stuName = stipNo;
+  for (const g of ALL_GROUPS) {
+    const s = g.students.find(s => s.StipNo === stipNo);
+    if (s) { stuName = ((s.Title||'') + (s.FirstName||'') + ' ' + (s.LastName||'')).trim() || stipNo; break; }
+  }
+
+  // Scroll to row
+  rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Flash highlight: amber → fade back
+  const orig = rowEl.style.background || '';
+  rowEl.style.transition = 'background 0.3s, outline 0.3s';
+  rowEl.style.background = '#fef08a';
+  rowEl.style.outline = '2.5px solid #f59e0b';
+  rowEl.style.outlineOffset = '-2px';
+  setTimeout(() => {
+    rowEl.style.background = '#fffbeb';
+    rowEl.style.outline = '2px solid #fcd34d';
+  }, 800);
+
+  // Focus banner
+  const banner = document.getElementById('promoFocusBanner');
+  if (banner) {
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fef3c7;border:1.5px solid #fcd34d;border-radius:12px;font-size:12px;color:#92400e">
+        <span style="font-size:16px">📍</span>
+        <div>
+          <span style="font-weight:700">${stuName}</span>
+          <span style="opacity:0.7;margin-left:6px">${stipNo}</span>
+        </div>
+        <a href="student-form.html?stipNo=${stipNo}"
+           style="margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:#1d4ed8;color:#fff;white-space:nowrap;text-decoration:none"
+           onclick="event.stopPropagation()">
+          ${LANG==='en'?'Edit profile →':'✏ แก้ไขโปรไฟล์'}
+        </a>
+        <button onclick="document.getElementById('promoFocusBanner').classList.add('hidden');document.getElementById('row_${stipNo}').style.outline='none'"
+                style="flex-shrink:0;opacity:0.5;font-size:14px;margin-left:4px">✕</button>
+      </div>`;
+    banner.classList.remove('hidden');
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1215,6 +1288,7 @@ async function loadPage() {
     renderGroups();
     updateStats();
     loadApprovalPanel(); // Load scholarship approval panel for Manager/SuperAdmin
+    if (_FOCUS_STIP) setTimeout(() => _highlightStipNo(_FOCUS_STIP), 300); // wait for DOM paint
   } catch(e) {
     showLoader(false);
     document.getElementById('groupsContainer').innerHTML =
