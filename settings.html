@@ -550,10 +550,16 @@
           <!-- Province -->
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="field-label">จังหวัดที่ตั้ง / Province</label>
-              <input type="text" id="apModalProvince" class="field-input" placeholder="จังหวัด...">
+              <label class="field-label">จังหวัดที่ตั้ง / Province (ไทย)</label>
+              <input type="text" id="apModalProvince" class="field-input" list="apProvinceList"
+                placeholder="จังหวัด..." oninput="apAutoFillProvinceEN(this.value)">
+              <datalist id="apProvinceList"></datalist>
             </div>
-            <div></div>
+            <div>
+              <label class="field-label">🇬🇧 Province (EN) <span class="text-gray-400 text-xs font-normal">auto-fill</span></label>
+              <input type="text" id="apModalProvinceEN" class="field-input" style="border-color:#c4b5fd"
+                placeholder="e.g. Chiang Mai">
+            </div>
           </div>
         </div>
 
@@ -2361,6 +2367,38 @@ function apSetCat(cat) {
   apRender();
 }
 
+// ── Province TH → EN lookup (all 77 provinces) ───────────────
+const _PROV_EN = {
+  'กรุงเทพมหานคร':'Bangkok','กระบี่':'Krabi','กาญจนบุรี':'Kanchanaburi','กาฬสินธุ์':'Kalasin',
+  'กำแพงเพชร':'Kamphaeng Phet','ขอนแก่น':'Khon Kaen','จันทบุรี':'Chanthaburi','ฉะเชิงเทรา':'Chachoengsao',
+  'ชลบุรี':'Chonburi','ชัยนาท':'Chai Nat','ชัยภูมิ':'Chaiyaphum','ชุมพร':'Chumphon',
+  'เชียงราย':'Chiang Rai','เชียงใหม่':'Chiang Mai','ตรัง':'Trang','ตราด':'Trat',
+  'ตาก':'Tak','นครนายก':'Nakhon Nayok','นครปฐม':'Nakhon Pathom','นครพนม':'Nakhon Phanom',
+  'นครราชสีมา':'Nakhon Ratchasima','นครศรีธรรมราช':'Nakhon Si Thammarat','นครสวรรค์':'Nakhon Sawan',
+  'นนทบุรี':'Nonthaburi','นราธิวาส':'Narathiwat','น่าน':'Nan','บึงกาฬ':'Bueng Kan',
+  'บุรีรัมย์':'Buriram','ปทุมธานี':'Pathum Thani','ประจวบคีรีขันธ์':'Prachuap Khiri Khan',
+  'ปราจีนบุรี':'Prachinburi','ปัตตานี':'Pattani','พระนครศรีอยุธยา':'Phra Nakhon Si Ayutthaya',
+  'พะเยา':'Phayao','พังงา':'Phang Nga','พัทลุง':'Phatthalung','พิจิตร':'Phichit',
+  'พิษณุโลก':'Phitsanulok','เพชรบุรี':'Phetchaburi','เพชรบูรณ์':'Phetchabun',
+  'แพร่':'Phrae','ภูเก็ต':'Phuket','มหาสารคาม':'Maha Sarakham','มุกดาหาร':'Mukdahan',
+  'แม่ฮ่องสอน':'Mae Hong Son','ยโสธร':'Yasothon','ยะลา':'Yala','ร้อยเอ็ด':'Roi Et',
+  'ระนอง':'Ranong','ระยอง':'Rayong','ราชบุรี':'Ratchaburi','ลพบุรี':'Lop Buri',
+  'ลำปาง':'Lampang','ลำพูน':'Lamphun','เลย':'Loei','ศรีสะเกษ':'Si Sa Ket',
+  'สกลนคร':'Sakon Nakhon','สงขลา':'Songkhla','สตูล':'Satun','สมุทรปราการ':'Samut Prakan',
+  'สมุทรสงคราม':'Samut Songkhram','สมุทรสาคร':'Samut Sakhon','สระแก้ว':'Sa Kaeo',
+  'สระบุรี':'Saraburi','สิงห์บุรี':'Sing Buri','สุโขทัย':'Sukhothai','สุพรรณบุรี':'Suphan Buri',
+  'สุราษฎร์ธานี':'Surat Thani','สุรินทร์':'Surin','หนองคาย':'Nong Khai',
+  'หนองบัวลำภู':'Nong Bua Lamphu','อ่างทอง':'Ang Thong','อำนาจเจริญ':'Amnat Charoen',
+  'อุดรธานี':'Udon Thani','อุตรดิตถ์':'Uttaradit','อุทัยธานี':'Uthai Thani','อุบลราชธานี':'Ubon Ratchathani',
+};
+
+function apAutoFillProvinceEN(thVal) {
+  const en = _PROV_EN[thVal.trim()] || '';
+  const enEl = document.getElementById('apModalProvinceEN');
+  // Only auto-fill if EN field is still empty (don't overwrite user's manual input)
+  if (enEl && !enEl.value.trim()) enEl.value = en;
+}
+
 function apUpdateCategoryOptions() {
   const inst       = document.getElementById('apModalInst')?.value;
   const sel        = document.getElementById('apModalCat');
@@ -2379,13 +2417,21 @@ function apUpdateCategoryOptions() {
   const isUNI = inst === 'UNI';
   if (uniFields) uniFields.classList.toggle('hidden', !isUNI);
   if (nonUni)    nonUni.classList.toggle('hidden',    isUNI);
-  // Populate university name datalist from existing entries
   if (isUNI) {
+    // Populate university name datalist from existing entries
     const dl = document.getElementById('apUniNameList');
     if (dl) {
+      dl.innerHTML = '';
       const seen = new Set();
       _apState.filter(p => p.institution === 'UNI' && p.uniName).forEach(p => {
         if (!seen.has(p.uniName)) { seen.add(p.uniName); const o = document.createElement('option'); o.value = p.uniName; dl.appendChild(o); }
+      });
+    }
+    // Populate province datalist with all 77 Thai provinces
+    const pdl = document.getElementById('apProvinceList');
+    if (pdl && !pdl.children.length) {
+      Object.keys(_PROV_EN).forEach(th => {
+        const o = document.createElement('option'); o.value = th; pdl.appendChild(o);
       });
     }
   }
@@ -2393,7 +2439,7 @@ function apUpdateCategoryOptions() {
 
 function _apClearModal() {
   ['apModalNameTH','apModalNameEN','apModalUniName','apModalUniNameEN',
-   'apModalFaculty','apModalFacultyEN','apModalProvince'].forEach(id => {
+   'apModalFaculty','apModalFacultyEN','apModalProvince','apModalProvinceEN'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
 }
@@ -2427,9 +2473,10 @@ function apOpenEdit(id) {
   sv('apModalNameEN',    p.nameEN);
   sv('apModalUniName',   p.uniName);
   sv('apModalUniNameEN', p.uniNameEN);
-  sv('apModalFaculty',   p.faculty);
-  sv('apModalFacultyEN', p.facultyEN);
-  sv('apModalProvince',  p.province);
+  sv('apModalFaculty',    p.faculty);
+  sv('apModalFacultyEN',  p.facultyEN);
+  sv('apModalProvince',   p.province);
+  sv('apModalProvinceEN', p.provinceEN || _PROV_EN[p.province] || '');
   if (title) title.textContent = t('stMajModalEdit');
   modal.classList.remove('hidden');
   setTimeout(() => (document.getElementById('apModalUniName') || document.getElementById('apModalNameTH'))?.focus(), 80);
@@ -2452,6 +2499,7 @@ function apSaveEntry() {
   const faculty    = gv('apModalFaculty');
   const facultyEN  = gv('apModalFacultyEN');
   const province   = gv('apModalProvince');
+  const provinceEN = gv('apModalProvinceEN') || _PROV_EN[province] || '';
 
   // Validation
   if (inst === 'UNI') {
@@ -2478,7 +2526,7 @@ function apSaveEntry() {
   }
 
   const entry = { id: id || _genApId(), institution: inst, category: cat,
-    nameTH, nameEN, uniName, uniNameEN, faculty, facultyEN, province };
+    nameTH, nameEN, uniName, uniNameEN, faculty, facultyEN, province, provinceEN };
   if (id) {
     const idx = _apState.findIndex(p => p.id === id);
     if (idx !== -1) _apState[idx] = entry;
@@ -2490,7 +2538,7 @@ function apSaveEntry() {
 }
 
 // ─── CSV Import / Export ───────────────────────────────────
-const AP_CSV_HEADERS = ['institution','category','uniName','uniNameEN','nameTH','nameEN','faculty','facultyEN','province'];
+const AP_CSV_HEADERS = ['institution','category','uniName','uniNameEN','nameTH','nameEN','faculty','facultyEN','province','provinceEN'];
 
 function apExportCSV() {
   const rows = [AP_CSV_HEADERS];
@@ -2538,9 +2586,10 @@ function apHandleCSVFile(event) {
         const nameEN    = getCol(row, 'nameEN');
         const uniName   = getCol(row, 'uniName');
         const uniNameEN = getCol(row, 'uniNameEN');
-        const faculty   = getCol(row, 'faculty');
-        const facultyEN = getCol(row, 'facultyEN');
-        const province  = getCol(row, 'province');
+        const faculty    = getCol(row, 'faculty');
+        const facultyEN  = getCol(row, 'facultyEN');
+        const province   = getCol(row, 'province');
+        const provinceEN = getCol(row, 'provinceEN') || _PROV_EN[province] || '';
         if (!inst || (!nameTH && !nameEN && !uniName)) { skipped++; return; }
 
         // Find existing (match by inst+cat+uniName+nameTH for UNI; inst+cat+nameTH for others)
@@ -2552,7 +2601,7 @@ function apHandleCSVFile(event) {
           return (p.nameTH||'').toLowerCase() === (nameTH||'').toLowerCase();
         });
         const entry = { id: existIdx >= 0 ? _apState[existIdx].id : _genApId(),
-          institution: inst, category: cat, nameTH, nameEN, uniName, uniNameEN, faculty, facultyEN, province };
+          institution: inst, category: cat, nameTH, nameEN, uniName, uniNameEN, faculty, facultyEN, province, provinceEN };
         if (existIdx >= 0) { _apState[existIdx] = entry; updated++; }
         else               { _apState.push(entry); added++; }
       });
