@@ -281,12 +281,22 @@
             <span data-t="uniSection">ข้อมูลมหาวิทยาลัย</span>
           </p>
           <!-- SchPriority badge — read-only, set by promotion workflow -->
-          <span id="schPriorityBadge" class="hidden items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
-            style="background:#eff6ff;color:#1e3a8a;border:1.5px solid #bfdbfe">
-            <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>
-            <span data-t="schPriorityLabel">ลำดับเสนอทุน:</span>
-            <span id="schPriorityValue" class="text-base font-black" style="color:#1e3a8a">—</span>
-          </span>
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- SchPriority badge — read-only, set by promotion workflow -->
+            <span id="schPriorityBadge" class="hidden items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+              style="background:#eff6ff;color:#1e3a8a;border:1.5px solid #bfdbfe">
+              <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>
+              <span data-t="schPriorityLabel">ลำดับเสนอทุน:</span>
+              <span id="schPriorityValue" class="text-base font-black" style="color:#1e3a8a">—</span>
+            </span>
+            <!-- Change university button — visible only in edit mode (when uniSection is shown with data) -->
+            <button type="button" id="changeUniBtn" onclick="openUniTransferModal()"
+              class="hidden items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg no-print"
+              style="background:#faf5ff;color:#7c3aed;border:1.5px solid #c4b5fd">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span data-t="changeUni">เปลี่ยนมหาวิทยาลัย</span>
+            </button>
+          </div>
         </div>
         <!-- Thai fields row -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -338,6 +348,14 @@
             <i data-lucide="lock" class="w-3 h-3 inline mr-0.5"></i>
             <span data-t="uniENNote">ฟิลด์ภาษาอังกฤษแก้ไขได้โดยครูและแอดมินเท่านั้น</span>
           </p>
+        </div>
+        <!-- University transfer history — shown when history exists and user has viewUniHistory -->
+        <div id="uniTransferHistorySection" class="hidden mt-4 pt-3" style="border-top:1px dashed #c4b5fd">
+          <p class="text-xs font-bold text-purple-700 mb-2 flex items-center gap-1.5">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+            <span data-t="uniHistoryTitle">ประวัติการเปลี่ยนมหาวิทยาลัย</span>
+          </p>
+          <div id="uniTransferHistoryList" class="space-y-2"></div>
         </div>
       </div>
     </div>
@@ -870,6 +888,82 @@
     <span id="dbStatusText">กำลังตรวจสอบ...</span>
   </div>
 </footer>
+
+<!-- ─── University Transfer Modal ─── -->
+<div id="uniTransferOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background:rgba(15,23,42,.5);backdrop-filter:blur(4px)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
+    style="animation:popupIn .18s cubic-bezier(.34,1.36,.64,1)">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">
+      <h3 class="font-bold text-white flex items-center gap-2 text-base">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        <span data-t="changeUniTitle">เปลี่ยนสถานศึกษาระดับมหาวิทยาลัย</span>
+      </h3>
+      <button onclick="closeUniTransferModal()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="p-6 overflow-y-auto" style="max-height:75vh">
+      <!-- Reason -->
+      <div class="mb-5">
+        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">
+          <span class="text-red-500">*</span> <span data-t="changeUniReason">เหตุผลในการเปลี่ยนสถานศึกษา</span>
+        </label>
+        <textarea id="utReason" rows="3" maxlength="500"
+          class="w-full border-2 rounded-xl p-3 text-sm outline-none resize-none font-inherit"
+          style="border-color:#c4b5fd;font-family:inherit"
+          placeholder="กรุณาระบุเหตุผล เช่น ย้ายสถาบัน, เปลี่ยนสาขาวิชา, ฯลฯ (จำเป็น)"></textarea>
+      </div>
+      <!-- New university fields -->
+      <p class="text-xs font-bold text-purple-700 mb-3 uppercase tracking-wide" data-t="changeUniNewInfo">ข้อมูลมหาวิทยาลัยใหม่</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
+          <input type="text" id="ut_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย">
+        </div>
+        <div>
+          <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniNameEN">University Name</span> (EN)</label>
+          <input type="text" id="ut_uniNameEN" class="field-input" placeholder="University Name (English)" style="border-color:#c4b5fd">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="faculty">คณะ</span></label>
+          <input type="text" id="ut_uniFaculty" class="field-input" placeholder="ชื่อคณะ">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้ง</span></label>
+          <input type="text" id="ut_uniProvince" class="field-input" placeholder="จังหวัด">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
+          <input type="text" id="ut_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร">
+        </div>
+        <div>
+          <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniMajorEN">Major / Program</span> (EN)</label>
+          <input type="text" id="ut_uniMajorEN" class="field-input" placeholder="Major / Program (English)" style="border-color:#c4b5fd">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="courseDuration">ระยะเวลาหลักสูตร (ปี)</span></label>
+          <select id="ut_uniDuration" class="field-select">
+            <option value="">-- เลือก --</option>
+            <option value="1">1 ปี</option><option value="2">2 ปี</option>
+            <option value="3">3 ปี</option><option value="4">4 ปี</option><option value="5">5 ปี</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+      <button type="button" onclick="closeUniTransferModal()" class="btn btn-secondary btn-sm">
+        <span data-t="cancel">ยกเลิก</span>
+      </button>
+      <button type="button" id="utSaveBtn" onclick="submitUniTransfer()"
+        class="btn btn-sm font-bold text-white flex items-center gap-1.5"
+        style="background:#7c3aed;border-color:#6d28d9">
+        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+        <span data-t="saveTransfer">บันทึกการเปลี่ยน</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ─── OCR Modal ─── -->
 <div id="ocrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1636,6 +1730,22 @@ function fillForm(d) {
     if (p) { valEl.textContent = p; badge.classList.remove('hidden'); badge.classList.add('flex'); }
     else   { badge.classList.add('hidden'); badge.classList.remove('flex'); }
   })();
+  // Change university button — show only in edit mode (UNI institution)
+  (function() {
+    const btn = document.getElementById('changeUniBtn');
+    if (!btn) return;
+    const isUni = (d.Institution === 'UNI');
+    const canChange = isUni && (RBAC.isStudent() || RBAC.has('editStudents'));
+    if (canChange) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
+    else           { btn.classList.add('hidden'); btn.classList.remove('flex'); }
+  })();
+  // University transfer history
+  (function() {
+    try {
+      _uniTransferHistory = d.UniTransferHistory ? JSON.parse(d.UniTransferHistory) : [];
+    } catch(e) { _uniTransferHistory = []; }
+    renderUniTransferHistory(_uniTransferHistory);
+  })();
   sv('f_title', d.Title); sv('f_fname', d.FirstName); sv('f_lname', d.LastName);
   document.getElementById('f_noSurname').checked = d.HasNoSurname === 'true';
   sv('f_engTitle', d.EngTitle); sv('f_engFname', d.EngFirstName); sv('f_engLname', d.EngLastName);
@@ -1835,6 +1945,126 @@ async function loadUniNames() {
     (gasRes.data || []).forEach(n => { if (n) addOption(n, n); });
 
   } catch(e) { /* silently fail — datalist is optional */ }
+}
+
+// ─────────────────────────────────────────────
+// UNIVERSITY TRANSFER
+// ─────────────────────────────────────────────
+let _uniTransferHistory = []; // cached history for current student
+
+function openUniTransferModal() {
+  // Pre-fill new fields with current values so user only edits what changed
+  const g = id => document.getElementById(id);
+  const set = (id, val) => { const el = g(id); if (el) el.value = val || ''; };
+  set('ut_uniName',    g('f_uniName')?.value);
+  set('ut_uniNameEN',  g('f_uniNameEN')?.value);
+  set('ut_uniFaculty', g('f_uniFaculty')?.value);
+  set('ut_uniMajor',   g('f_uniMajor')?.value);
+  set('ut_uniMajorEN', g('f_uniMajorEN')?.value);
+  set('ut_uniProvince',g('f_uniProvince')?.value);
+  set('ut_uniDuration',g('f_uniDuration')?.value);
+  set('utReason', '');
+  const overlay = g('uniTransferOverlay');
+  if (overlay) { overlay.classList.remove('hidden'); lucide.createIcons(); }
+  setTimeout(() => { const r = g('utReason'); if (r) r.focus(); }, 80);
+}
+
+function closeUniTransferModal() {
+  const overlay = document.getElementById('uniTransferOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+async function submitUniTransfer() {
+  const g = id => document.getElementById(id);
+  const reason = (g('utReason')?.value || '').trim();
+  if (!reason) {
+    g('utReason').style.borderColor = '#dc2626';
+    g('utReason').focus();
+    Swal.fire({ icon:'warning', title: LANG==='en'?'Reason Required':'กรุณาระบุเหตุผล',
+      text: LANG==='en'?'Please enter a reason for the university change.':'กรุณากรอกเหตุผลในการเปลี่ยนสถานศึกษาก่อนบันทึก',
+      timer: 3000, showConfirmButton: false });
+    return;
+  }
+  g('utReason').style.borderColor = '';
+  const stipNo = document.getElementById('f_stipNo')?.value;
+  if (!stipNo) return;
+
+  const btn = g('utSaveBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin inline mr-1"></i> บันทึก...'; }
+
+  const data = {
+    StipNo:       stipNo,
+    reason:       reason,
+    toUniName:    g('ut_uniName')?.value    || '',
+    toUniNameEN:  g('ut_uniNameEN')?.value  || '',
+    toUniFaculty: g('ut_uniFaculty')?.value || '',
+    toUniMajor:   g('ut_uniMajor')?.value   || '',
+    toUniMajorEN: g('ut_uniMajorEN')?.value || '',
+    toUniProvince:g('ut_uniProvince')?.value|| '',
+    toUniDuration:g('ut_uniDuration')?.value|| '',
+  };
+  const reqUser = (getUser()||{}).username || 'unknown';
+
+  try {
+    const res = await API.addUniTransfer(data, reqUser);
+    if (res.status !== 'success') throw new Error(res.message || 'Error');
+
+    // Update profile fields with new values
+    const sv = (id, val) => { const el = g(id); if (el) el.value = val || ''; };
+    sv('f_uniName',    data.toUniName);
+    sv('f_uniNameEN',  data.toUniNameEN);
+    sv('f_uniFaculty', data.toUniFaculty);
+    sv('f_uniMajor',   data.toUniMajor);
+    sv('f_uniMajorEN', data.toUniMajorEN);
+    sv('f_uniProvince',data.toUniProvince);
+    sv('f_uniDuration',data.toUniDuration);
+
+    // Refresh history display
+    _uniTransferHistory = res.history || [];
+    renderUniTransferHistory(_uniTransferHistory);
+
+    closeUniTransferModal();
+    Swal.fire({ icon:'success',
+      title: LANG==='en'?'University Updated':'บันทึกการเปลี่ยนมหาวิทยาลัยสำเร็จ',
+      text: LANG==='en'?'The university information has been updated.':'ข้อมูลมหาวิทยาลัยถูกอัปเดตในระบบแล้ว',
+      timer: 2800, showConfirmButton: false });
+  } catch(e) {
+    Swal.fire({ icon:'error', title: LANG==='en'?'Error':'เกิดข้อผิดพลาด', text: e.message || 'Unknown error' });
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 inline mr-1"></i><span data-t="saveTransfer">บันทึกการเปลี่ยน</span>'; lucide.createIcons(); }
+  }
+}
+
+function renderUniTransferHistory(history) {
+  const section = document.getElementById('uniTransferHistorySection');
+  const list    = document.getElementById('uniTransferHistoryList');
+  if (!section || !list) return;
+  const canView = RBAC.has('viewUniHistory') || RBAC.isStudent(); // students can see own history
+  if (!canView || !Array.isArray(history) || history.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  const isEN = typeof LANG !== 'undefined' && LANG === 'en';
+  list.innerHTML = [...history].reverse().map((h, idx) => {
+    const from = [h.fromUniName, h.fromUniFaculty, h.fromUniMajor].filter(Boolean).join(' / ') || '—';
+    const to   = [h.toUniName,   h.toUniFaculty,   h.toUniMajor].filter(Boolean).join(' / ') || '—';
+    return `<div class="rounded-lg p-3 text-xs" style="background:#faf5ff;border:1px solid #e9d5ff">
+      <div class="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <span class="font-bold text-purple-800">${isEN?'Transfer #':'ครั้งที่ '}${history.length - idx}</span>
+          <span class="text-gray-400 ml-2">${h.date||''}</span>
+          <span class="text-gray-500 ml-2">${isEN?'by':'โดย'} <b>${h.changedBy||'—'}</b></span>
+        </div>
+      </div>
+      <div class="mt-1.5 flex items-center gap-2 flex-wrap">
+        <span style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:2px 8px;font-weight:700">${from}</span>
+        <span style="color:#7c3aed">→</span>
+        <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:2px 8px;font-weight:700">${to}</span>
+      </div>
+      <div class="mt-1 text-gray-600 italic">"${h.reason||''}"</div>
+    </div>`;
+  }).join('');
 }
 
 // ── Birthday dropdowns init ──

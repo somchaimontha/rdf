@@ -43,10 +43,11 @@ const RBAC_MAP = {
   Manager:     ['viewStudents','editStudents','deleteStudents','importStudents',
                 'viewPromotion','runPromotion',
                 'viewSettings',
-                'viewReports','exportData','printProfile'],
+                'viewReports','exportData','printProfile',
+                'viewUniHistory'],
   Finance:     ['viewStudents','viewReports','exportData','printProfile'],
   Committee:   ['viewStudents','viewReports','printProfile'],
-  DormTeacher: ['viewStudents','editStudents','printProfile'],
+  DormTeacher: ['viewStudents','editStudents','printProfile','viewUniHistory'],
   Student:     ['viewOwnProfile','editOwnProfile'],
 };
 
