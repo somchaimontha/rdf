@@ -2438,36 +2438,122 @@ async function _ensureUniProgs() {
   } catch(e) {}
 }
 
+// Helper: get programs filtered by selected university (if any)
+function _uniCandidates(stipNo) {
+  const dec = ROW_DECISIONS[stipNo] || {};
+  const selUni = (dec.uniName || '').trim().toLowerCase();
+  return selUni ? _UNI_PROGS.filter(p => (p.uniName||'').toLowerCase() === selUni) : _UNI_PROGS;
+}
+
+// Helper: render a program <li> item
+function _uniProgLI(stipNo, p) {
+  return `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+       onmousedown="event.preventDefault()"
+       onclick="_uniProgSelect('${stipNo}',${JSON.stringify(p).replace(/'/g,"&#39;").replace(/"/g,'&quot;')})">
+     ${p.uniName?`<div style="font-size:10px;color:#6d28d9;font-weight:700">${p.uniName}${p.uniNameEN?' / '+p.uniNameEN:''}</div>`:''}
+     <span class="font-medium">${p.nameTH||''}</span>
+     ${p.nameEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${p.nameEN}</span>`:''}
+     ${p.faculty?`<span style="color:#0369a1;font-size:10px;display:block">${p.faculty}${p.facultyEN?' / '+p.facultyEN:''}${p.province?' · '+p.province:''}</span>`:''}
+   </li>`;
+}
+
+// Autocomplete: Thai major field
 function _uniProgSuggest(stipNo, val) {
-  const q   = val.trim().toLowerCase();
-  const ul  = document.getElementById('uniAcUl_' + stipNo);
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniAcUl_' + stipNo);
   if (!ul) return;
-  const matches = q
-    ? _UNI_PROGS.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q))
-    : _UNI_PROGS;
+  const pool = _uniCandidates(stipNo);
+  const matches = q ? pool.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q)) : pool;
   if (!matches.length) { ul.classList.add('hidden'); return; }
-  ul.innerHTML = matches.slice(0,20).map(p =>
+  ul.innerHTML = matches.slice(0,20).map(p => _uniProgLI(stipNo, p)).join('');
+  ul.classList.remove('hidden');
+}
+
+// Autocomplete: EN major field
+function _uniMajorENSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniMajorENAcUl_' + stipNo);
+  if (!ul) return;
+  const pool = _uniCandidates(stipNo);
+  const matches = q ? pool.filter(p => (p.nameEN||'').toLowerCase().includes(q) || (p.nameTH||'').toLowerCase().includes(q)) : pool;
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = matches.slice(0,20).map(p => _uniProgLI(stipNo, p)).join('');
+  ul.classList.remove('hidden');
+}
+
+// Autocomplete: Thai university name field (unique unis)
+function _uniNameSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniNameAcUl_' + stipNo);
+  if (!ul) return;
+  const seen = new Set();
+  const unis = _UNI_PROGS.filter(p => {
+    if (!p.uniName) return false;
+    const key = (p.uniName||'') + '||' + (p.uniNameEN||'');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return !q || (p.uniName||'').toLowerCase().includes(q) || (p.uniNameEN||'').toLowerCase().includes(q);
+  });
+  if (!unis.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = unis.slice(0,15).map(p =>
     `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniProgSelect('${stipNo}',${JSON.stringify(p).replace(/'/g,"&#39;")})">
-       ${p.uniName?`<div style="font-size:10px;color:#6d28d9;font-weight:700">${p.uniName}${p.uniNameEN?' / '+p.uniNameEN:''}</div>`:''}
-       <span class="font-medium">${p.nameTH||''}</span>
-       ${p.nameEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${p.nameEN}</span>`:''}
-       ${p.faculty?`<span style="color:#0369a1;font-size:10px;display:block">${p.faculty}${p.facultyEN?' / '+p.facultyEN:''}${p.province?' · '+p.province:''}</span>`:''}
+         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(p.uniName||'')},${JSON.stringify(p.uniNameEN||'')})">
+       <div style="font-weight:600">${p.uniName}</div>
+       ${p.uniNameEN?`<div style="font-size:11px;color:#9ca3af">${p.uniNameEN}</div>`:''}
+       ${p.province?`<div style="font-size:10px;color:#0369a1">${p.province}${p.provinceEN?' / '+p.provinceEN:''}</div>`:''}
      </li>`
   ).join('');
   ul.classList.remove('hidden');
 }
 
+// Autocomplete: EN university name field (unique unis)
+function _uniNameENSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniNameENAcUl_' + stipNo);
+  if (!ul) return;
+  const seen = new Set();
+  const unis = _UNI_PROGS.filter(p => {
+    if (!p.uniName) return false;
+    const key = (p.uniName||'') + '||' + (p.uniNameEN||'');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return !q || (p.uniNameEN||'').toLowerCase().includes(q) || (p.uniName||'').toLowerCase().includes(q);
+  });
+  if (!unis.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = unis.slice(0,15).map(p =>
+    `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+         onmousedown="event.preventDefault()"
+         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(p.uniName||'')},${JSON.stringify(p.uniNameEN||'')})">
+       <div style="font-weight:600">${p.uniNameEN || p.uniName}</div>
+       ${p.uniNameEN?`<div style="font-size:11px;color:#9ca3af">${p.uniName}</div>`:''}
+       ${p.provinceEN?`<div style="font-size:10px;color:#0369a1">${p.provinceEN}${p.province?' / '+p.province:''}</div>`:''}
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+// Select a university (fills name TH+EN, keeps major as-is)
+function _uniNameSelect(stipNo, uniName, uniNameEN) {
+  setDec(stipNo, 'uniName',   uniName);
+  setDec(stipNo, 'uniNameEN', uniNameEN);
+  const row = document.getElementById('unirow_' + stipNo);
+  if (row) {
+    const setVal = (f,v) => { const el = row.querySelector('[data-field="'+f+'"]'); if (el) el.value = v; };
+    setVal('uniName',   uniName);
+    setVal('uniNameEN', uniNameEN);
+  }
+  document.getElementById('uniNameAcUl_'   + stipNo)?.classList.add('hidden');
+  document.getElementById('uniNameENAcUl_' + stipNo)?.classList.add('hidden');
+}
+
 function _uniProgSelect(stipNo, prog) {
-  // Fill university name from entry if available
   setDec(stipNo, 'uniName',    prog.uniName   || '');
   setDec(stipNo, 'uniNameEN',  prog.uniNameEN || '');
   setDec(stipNo, 'uniMajor',   prog.nameTH    || '');
   setDec(stipNo, 'uniMajorEN', prog.nameEN    || '');
   setDec(stipNo, 'uniFaculty', prog.faculty   || '');
   setDec(stipNo, 'uniProvince',prog.province  || '');
-  // Update DOM inputs
   const row = document.getElementById('unirow_' + stipNo);
   if (!row) return;
   const setVal = (field, v) => { const el = row.querySelector('[data-field="'+field+'"]'); if (el) el.value = v; };
@@ -2477,7 +2563,8 @@ function _uniProgSelect(stipNo, prog) {
   setVal('uniMajorEN', prog.nameEN   || '');
   setVal('uniFaculty', prog.faculty  || '');
   setVal('uniProvince',prog.province || '');
-  document.getElementById('uniAcUl_' + stipNo)?.classList.add('hidden');
+  ['uniAcUl_','uniMajorENAcUl_','uniNameAcUl_','uniNameENAcUl_'].forEach(p =>
+    document.getElementById(p + stipNo)?.classList.add('hidden'));
 }
 
 function renderUniDetailRow(stipNo, dec) {
@@ -2493,9 +2580,16 @@ function renderUniDetailRow(stipNo, dec) {
         <span class="text-xs font-bold text-purple-700 flex items-center gap-1">
           <i data-lucide="building-2" class="w-3 h-3"></i> ${t('promoUniDetails')}
         </span>
-        <input type="text" class="notes-input" style="width:160px" placeholder="${t('promoUniName')} (ไทย)"
-          data-field="uniName"
-          value="${dec.uniName||''}" onchange="setDec('${stipNo}','uniName',this.value)">
+        <!-- University Name TH with autocomplete -->
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:160px" placeholder="${t('promoUniName')} (ไทย)"
+            data-field="uniName"
+            value="${dec.uniName||''}"
+            oninput="_uniNameSuggest('${stipNo}',this.value);setDec('${stipNo}','uniName',this.value)"
+            onfocus="_uniNameSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniNameAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniNameAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
+        </div>
         <!-- Major Thai with autocomplete -->
         <div style="position:relative;display:inline-block">
           <input type="text" class="notes-input" style="width:130px" placeholder="${t('promoUniMajor')} (ไทย)"
@@ -2504,7 +2598,7 @@ function renderUniDetailRow(stipNo, dec) {
             oninput="_uniProgSuggest('${stipNo}',this.value);setDec('${stipNo}','uniMajor',this.value)"
             onfocus="_uniProgSuggest('${stipNo}',this.value)"
             onblur="setTimeout(()=>document.getElementById('uniAcUl_${stipNo}')?.classList.add('hidden'),200)">
-          <ul id="uniAcUl_${stipNo}" class="ac-list hidden" style="min-width:260px;z-index:500"></ul>
+          <ul id="uniAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
         </div>
         <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoFaculty')}"
           data-field="uniFaculty"
@@ -2520,12 +2614,26 @@ function renderUniDetailRow(stipNo, dec) {
       <!-- Row 2: English fields -->
       <div class="flex flex-wrap gap-2 items-center mt-1.5" style="border-top:1px dashed #e9d5ff;padding-top:6px">
         <span class="text-xs text-purple-400 font-semibold" style="min-width:52px">🇬🇧 EN</span>
-        <input type="text" class="notes-input" style="width:160px;border-color:#e9d5ff" placeholder="University Name (EN)"
-          data-field="uniNameEN"
-          value="${dec.uniNameEN||''}" onchange="setDec('${stipNo}','uniNameEN',this.value)">
-        <input type="text" class="notes-input" style="width:130px;border-color:#e9d5ff" placeholder="Major / Program (EN)"
-          data-field="uniMajorEN"
-          value="${dec.uniMajorEN||''}" onchange="setDec('${stipNo}','uniMajorEN',this.value)">
+        <!-- University Name EN with autocomplete -->
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:160px;border-color:#e9d5ff" placeholder="University Name (EN)"
+            data-field="uniNameEN"
+            value="${dec.uniNameEN||''}"
+            oninput="_uniNameENSuggest('${stipNo}',this.value);setDec('${stipNo}','uniNameEN',this.value)"
+            onfocus="_uniNameENSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniNameENAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniNameENAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
+        </div>
+        <!-- Major EN with autocomplete -->
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:130px;border-color:#e9d5ff" placeholder="Major / Program (EN)"
+            data-field="uniMajorEN"
+            value="${dec.uniMajorEN||''}"
+            oninput="_uniMajorENSuggest('${stipNo}',this.value);setDec('${stipNo}','uniMajorEN',this.value)"
+            onfocus="_uniMajorENSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniMajorENAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniMajorENAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
+        </div>
       </div>
     </td>
   </tr>`;
