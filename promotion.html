@@ -1307,9 +1307,12 @@ async function loadPage() {
             notes:              s.PromotionNotes || '',
             alreadyPromoted:    alreadyPromoted || approvedPromo,
             nextAcademicYear:   _nextYearBE,
-            uniName:            s.UniName || '', uniDuration: s.UniDuration || '',
+            uniName:            s.UniName || '', uniNameEN: s.UniNameEN || '',
+            uniDuration:        s.UniDuration || '',
             uniFaculty:         s.UniFaculty || '', uniMajor: s.UniMajor || '',
+            uniMajorEN:         s.UniMajorEN || '',
             uniProvince:        s.UniProvince || '',
+            schPriority:        s.SchPriority ? parseInt(s.SchPriority) : null,
             schApprovalStatus:  schApprSt,   // '' | 'Pending' | 'Approved' | 'Rejected'
             schApprovalBy:      s.SchApprovalBy || '',
             schApprovalDate:    s.SchApprovalDate || '',
@@ -1732,8 +1735,10 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
       p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
       p.UniScholarship = dec.uniScholarship || 'Yes';
       if (dec.uniName)     p.UniName     = dec.uniName;
+      if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
       if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
       if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+      if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
       if (dec.uniProvince) p.UniProvince = dec.uniProvince;
       if (dec.uniDuration) p.UniDuration = dec.uniDuration;
       { const og = ALL_GROUPS.find(g => g.institution === inst);
@@ -1744,8 +1749,10 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
     case 'uni_own':
       p.NewStatus = 'University'; p.UniScholarship = 'No';
       if (dec.uniName)     p.UniName     = dec.uniName;
+      if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
       if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
       if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+      if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
       if (dec.uniProvince) p.UniProvince = dec.uniProvince;
       if (dec.uniDuration) p.UniDuration = dec.uniDuration;
       break;
@@ -1758,6 +1765,7 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
   if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
     p.UniScholarship = dec.uniScholarship;
   if (dec.nextAcademicYear) p.NextAcademicYear = dec.nextAcademicYear;
+  if (dec.schPriority !== undefined && dec.schPriority !== null) p.SchPriority = dec.schPriority;
 
   const academicYear = document.getElementById('academicYear')?.value || '';
   if (academicYear) p.PromotionBatchID = academicYear + '_PROMO';
@@ -3035,10 +3043,10 @@ async function applyAllChanges() {
       const user = (getUser()||{}).username || 'admin';
       for (const [stipNo, dec] of uniPending) {
         const payload = {
-          StipNo: stipNo, UniName: dec.uniName||'', UniFaculty: dec.uniFaculty||'',
-          UniMajor: dec.uniMajor||'', UniDuration: dec.uniDuration||'',
-          UniProvince: dec.uniProvince||'', uniScholarship: dec.uniScholarship||'Yes',
-          notes: dec.notes||'',
+          StipNo: stipNo, UniName: dec.uniName||'', UniNameEN: dec.uniNameEN||'',
+          UniFaculty: dec.uniFaculty||'', UniMajor: dec.uniMajor||'', UniMajorEN: dec.uniMajorEN||'',
+          UniDuration: dec.uniDuration||'', UniProvince: dec.uniProvince||'',
+          uniScholarship: dec.uniScholarship||'Yes', notes: dec.notes||'',
         };
         try {
           const r = await API.post('submitScholarshipRequest', { data: payload, reqUser: user });
@@ -3146,8 +3154,10 @@ async function applyAllChanges() {
         p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
         p.UniScholarship = dec.uniScholarship || 'Yes';
         if (dec.uniName)     p.UniName     = dec.uniName;
+        if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
         if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
         if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+        if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
         if (dec.uniProvince) p.UniProvince = dec.uniProvince;
         if (dec.uniDuration) p.UniDuration = dec.uniDuration;
         { const og = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
@@ -3158,8 +3168,10 @@ async function applyAllChanges() {
       case 'uni_own':
         p.NewStatus = 'University'; p.UniScholarship = 'No';
         if (dec.uniName)     p.UniName     = dec.uniName;
+        if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
         if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
         if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
+        if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
         if (dec.uniProvince) p.UniProvince = dec.uniProvince;
         if (dec.uniDuration) p.UniDuration = dec.uniDuration;
         break;
@@ -3173,6 +3185,7 @@ async function applyAllChanges() {
       p.UniScholarship = dec.uniScholarship;
     // Next academic year — written to CurrentAcademicYear in DB
     if (dec.nextAcademicYear) p.NextAcademicYear = dec.nextAcademicYear;
+    if (dec.schPriority !== undefined && dec.schPriority !== null) p.SchPriority = dec.schPriority;
     // Mark this student as processed in this promotion cycle (prevents double-promotion)
     if (batchID) p.PromotionBatchID = batchID;
     promotions.push(p);
