@@ -2447,31 +2447,36 @@ function _uniProgSuggest(stipNo, val) {
     : _UNI_PROGS;
   if (!matches.length) { ul.classList.add('hidden'); return; }
   ul.innerHTML = matches.slice(0,20).map(p =>
-    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+    `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
          onclick="_uniProgSelect('${stipNo}',${JSON.stringify(p).replace(/'/g,"&#39;")})">
+       ${p.uniName?`<div style="font-size:10px;color:#6d28d9;font-weight:700">${p.uniName}${p.uniNameEN?' / '+p.uniNameEN:''}</div>`:''}
        <span class="font-medium">${p.nameTH||''}</span>
        ${p.nameEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${p.nameEN}</span>`:''}
-       ${p.faculty?`<span style="color:#7c3aed;font-size:10px;display:block">${p.faculty}${p.province?' · '+p.province:''}</span>`:''}
+       ${p.faculty?`<span style="color:#0369a1;font-size:10px;display:block">${p.faculty}${p.facultyEN?' / '+p.facultyEN:''}${p.province?' · '+p.province:''}</span>`:''}
      </li>`
   ).join('');
   ul.classList.remove('hidden');
 }
 
 function _uniProgSelect(stipNo, prog) {
-  setDec(stipNo, 'uniMajor',    prog.nameTH   || '');
-  setDec(stipNo, 'uniMajorEN',  prog.nameEN   || '');
-  setDec(stipNo, 'uniFaculty',  prog.faculty  || '');
-  setDec(stipNo, 'uniProvince', prog.province || '');
+  // Fill university name from entry if available
+  setDec(stipNo, 'uniName',    prog.uniName   || '');
+  setDec(stipNo, 'uniNameEN',  prog.uniNameEN || '');
+  setDec(stipNo, 'uniMajor',   prog.nameTH    || '');
+  setDec(stipNo, 'uniMajorEN', prog.nameEN    || '');
+  setDec(stipNo, 'uniFaculty', prog.faculty   || '');
+  setDec(stipNo, 'uniProvince',prog.province  || '');
   // Update DOM inputs
   const row = document.getElementById('unirow_' + stipNo);
   if (!row) return;
-  const inp = id => row.querySelector('#' + id);
-  const setVal = (id, v) => { const el = row.querySelector('[data-field="'+id+'"]'); if (el) el.value = v; };
-  setVal('uniMajor',    prog.nameTH   || '');
-  setVal('uniMajorEN',  prog.nameEN   || '');
-  setVal('uniFaculty',  prog.faculty  || '');
-  setVal('uniProvince', prog.province || '');
+  const setVal = (field, v) => { const el = row.querySelector('[data-field="'+field+'"]'); if (el) el.value = v; };
+  setVal('uniName',    prog.uniName   || '');
+  setVal('uniNameEN',  prog.uniNameEN || '');
+  setVal('uniMajor',   prog.nameTH   || '');
+  setVal('uniMajorEN', prog.nameEN   || '');
+  setVal('uniFaculty', prog.faculty  || '');
+  setVal('uniProvince',prog.province || '');
   document.getElementById('uniAcUl_' + stipNo)?.classList.add('hidden');
 }
 

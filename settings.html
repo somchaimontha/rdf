@@ -385,13 +385,20 @@
                data-t="stMajSearch" data-t-attr="placeholder" placeholder="ค้นหา / Search...">
       </div>
       <div class="ml-auto flex gap-2">
+        <button onclick="apImportCSV()" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #c4b5fd" title="นำเข้าจาก CSV">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span>นำเข้า CSV</span>
+        </button>
+        <button onclick="apExportCSV()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0" title="ส่งออก CSV">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> <span>ส่งออก CSV</span>
+        </button>
         <button onclick="apOpenAdd()" class="btn btn-primary btn-sm">
           <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-t="stMajAddItem">เพิ่มรายการ</span>
         </button>
-        <button onclick="apSaveAll()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
+        <button onclick="apSaveAll()" class="btn btn-sm" style="background:#1e3a8a;color:#fff;border:1.5px solid #1e3a8a">
           <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stMajSaveAll">บันทึกทั้งหมด</span>
         </button>
       </div>
+      <input type="file" id="apCsvFileInput" accept=".csv" class="hidden" onchange="apHandleCSVFile(event)">
     </div>
 
     <!-- ── Summary badges ── -->
@@ -403,11 +410,11 @@
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb">
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap" data-t="stMajColInst">สถานศึกษา</th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap" data-t="stMajColType">ประเภท / Type</th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151" data-t="stMajColNameTH">ชื่อภาษาไทย</th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151" data-t="stMajColNameEN">English Name</th>
-              <th style="padding:10px 14px;text-align:center;font-weight:700;color:#374151;white-space:nowrap" data-t="stMajColManage">จัดการ</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap">สถานศึกษา</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap">ประเภท</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">ชื่อ (ไทย) / มหาวิทยาลัย · สาขา · คณะ · จังหวัด</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">English Name / University · Major · Faculty</th>
+              <th style="padding:10px 14px;text-align:center;font-weight:700;color:#374151;white-space:nowrap">จัดการ</th>
             </tr>
           </thead>
           <tbody id="apTableBody">
@@ -457,7 +464,7 @@
 
   <!-- ─── Academic Program Edit Modal ─── -->
   <div id="apModal" class="hidden modal-overlay" style="z-index:10000">
-    <div class="modal-box" style="max-width:500px">
+    <div class="modal-box" style="max-width:680px;width:95vw">
       <div class="modal-header" style="background:#1e3a8a;color:#fff;border-radius:16px 16px 0 0">
         <span class="font-bold flex items-center gap-2">
           <i data-lucide="book-open" class="w-4 h-4"></i>
@@ -465,11 +472,12 @@
         </span>
         <button onclick="apCloseModal()" style="background:none;border:none;color:#fff;opacity:.7;cursor:pointer;font-size:20px;line-height:1">×</button>
       </div>
-      <div class="modal-body space-y-4">
+      <div class="modal-body space-y-4" style="max-height:75vh;overflow-y:auto">
         <input type="hidden" id="apModalId">
+        <!-- Institution + Category -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="field-label"><span data-t="stMajModalInst">สถานศึกษา / Institution</span> <span class="text-red-500">*</span></label>
+            <label class="field-label">สถานศึกษา / Institution <span class="text-red-500">*</span></label>
             <select id="apModalInst" class="field-select text-sm" onchange="apUpdateCategoryOptions()">
               <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
               <option value="VC">VC — Maesariang Industrial and Community Education College</option>
@@ -477,7 +485,7 @@
             </select>
           </div>
           <div>
-            <label class="field-label"><span data-t="stMajModalCat">ประเภท / Category</span> <span class="text-red-500">*</span></label>
+            <label class="field-label">ประเภท / Category <span class="text-red-500">*</span></label>
             <select id="apModalCat" class="field-select text-sm">
               <option value="plan">แผนการเรียน (Study Plan)</option>
               <option value="program">สาขาวิชา (Program)</option>
@@ -485,39 +493,79 @@
             </select>
           </div>
         </div>
-        <div>
-          <label class="field-label">ชื่อภาษาไทย <span class="text-red-500">*</span></label>
-          <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาศาสตร์-คณิตศาสตร์">
-        </div>
-        <div>
-          <label class="field-label">English Name <span class="text-red-500">*</span></label>
-          <input type="text" id="apModalNameEN" class="field-input" placeholder="e.g. Science-Mathematics">
-        </div>
-        <!-- UNI-only: Faculty + Province fields -->
-        <div id="apUniFields" class="hidden space-y-3 pt-2 border-t border-purple-100">
-          <p class="text-xs text-purple-700 font-semibold flex items-center gap-1.5">
-            <i data-lucide="building-2" class="w-3.5 h-3.5"></i> ข้อมูลเพิ่มเติมสำหรับมหาวิทยาลัย
-          </p>
+
+        <!-- Non-UNI: nameTH/nameEN only -->
+        <div id="apNonUniFields">
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="field-label">คณะ / Faculty</label>
+              <label class="field-label" id="apLabelNameTH">ชื่อภาษาไทย <span class="text-red-500">*</span></label>
+              <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาศาสตร์-คณิตศาสตร์">
+            </div>
+            <div>
+              <label class="field-label" id="apLabelNameEN">English Name <span class="text-red-500">*</span></label>
+              <input type="text" id="apModalNameEN" class="field-input" placeholder="e.g. Science-Mathematics">
+            </div>
+          </div>
+        </div>
+
+        <!-- UNI-only: full bilingual fields -->
+        <div id="apUniFields" class="hidden space-y-3 pt-2 border-t-2 border-purple-100">
+          <p class="text-xs text-purple-700 font-bold flex items-center gap-1.5">
+            <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 🏛 ข้อมูลมหาวิทยาลัย (กรอกให้ครบทั้งไทยและอังกฤษ)
+          </p>
+          <!-- University Name TH + EN -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label">ชื่อมหาวิทยาลัย (ไทย) <span class="text-red-500">*</span></label>
+              <input type="text" id="apModalUniName" class="field-input" list="apUniNameList" placeholder="เช่น มหาวิทยาลัยเชียงใหม่">
+              <datalist id="apUniNameList"></datalist>
+            </div>
+            <div>
+              <label class="field-label">🇬🇧 University Name (EN) <span class="text-red-500">*</span></label>
+              <input type="text" id="apModalUniNameEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Chiang Mai University">
+            </div>
+          </div>
+          <!-- Major / Program TH + EN -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label">สาขาวิชา / Program (ไทย) <span class="text-red-500">*</span></label>
+              <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาการคอมพิวเตอร์">
+            </div>
+            <div>
+              <label class="field-label">🇬🇧 Major / Program (EN) <span class="text-red-500">*</span></label>
+              <input type="text" id="apModalNameEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Computer Science">
+            </div>
+          </div>
+          <!-- Faculty TH + EN -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label">คณะ / Faculty (ไทย)</label>
               <input type="text" id="apModalFaculty" class="field-input" placeholder="เช่น คณะวิทยาศาสตร์">
             </div>
+            <div>
+              <label class="field-label">🇬🇧 Faculty (EN)</label>
+              <input type="text" id="apModalFacultyEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Faculty of Science">
+            </div>
+          </div>
+          <!-- Province -->
+          <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="field-label">จังหวัดที่ตั้ง / Province</label>
               <input type="text" id="apModalProvince" class="field-input" placeholder="จังหวัด...">
             </div>
+            <div></div>
           </div>
         </div>
+
         <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
           <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-          <span data-t="stMajModalNote">รายการนี้จะแสดงใน dropdown ของฟอร์มนักเรียน, ระบบเลื่อนชั้น และรายงาน ตามสถาบันและภาษาที่เลือก</span>
+          <span>รายการนี้จะแสดงใน dropdown ของฟอร์มนักเรียน, ระบบเลื่อนชั้น และรายงาน ตามสถาบันและภาษาที่เลือก</span>
         </div>
       </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px">
-        <button onclick="apCloseModal()" class="btn btn-secondary btn-sm" data-t="stCancel">ยกเลิก</button>
+        <button onclick="apCloseModal()" class="btn btn-secondary btn-sm">ยกเลิก</button>
         <button onclick="apSaveEntry()" class="btn btn-primary btn-sm font-bold">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stSave">บันทึก</span>
+          <i data-lucide="save" class="w-3.5 h-3.5"></i> <span>บันทึก</span>
         </button>
       </div>
     </div>
@@ -2201,7 +2249,11 @@ function apRender() {
   const filtered = _apState.filter(p => {
     if (_apInst && p.institution !== _apInst) return false;
     if (_apCat  && p.category    !== _apCat)  return false;
-    if (q && !(p.nameTH||'').toLowerCase().includes(q) && !(p.nameEN||'').toLowerCase().includes(q)) return false;
+    if (q) {
+      const hay = [p.nameTH, p.nameEN, p.uniName, p.uniNameEN, p.faculty, p.facultyEN, p.province]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
     return true;
   });
 
@@ -2233,20 +2285,44 @@ function apRender() {
   const catColor  = { plan:'background:#dbeafe;color:#1e40af', program:'background:#fce7f3;color:#9d174d', department:'background:#ede9fe;color:#5b21b6' };
   const instColor = { MBS:'background:#dbeafe;color:#1d4ed8', VC:'background:#fce7f3;color:#be185d', UNI:'background:#ede9fe;color:#6d28d9' };
 
-  tableBody.innerHTML = filtered.map(p => `
+  tableBody.innerHTML = filtered.map(p => {
+    const isUNI = p.institution === 'UNI';
+    // TH cell: for UNI show uniName > major · faculty · province
+    let thCell = '';
+    if (isUNI) {
+      thCell = `<div style="font-weight:700;color:#1e293b;font-size:13px">${_esc(p.uniName||p.nameTH||'—')}</div>`;
+      const sub = [
+        p.nameTH ? `<span style="color:#7c3aed">สาขา: ${_esc(p.nameTH)}</span>` : '',
+        p.faculty ? `<span style="color:#0369a1">คณะ: ${_esc(p.faculty)}</span>` : '',
+        p.province ? `<span style="color:#0f766e">${_esc(p.province)}</span>` : '',
+      ].filter(Boolean);
+      if (sub.length) thCell += `<div style="font-size:11px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">${sub.join('')}</div>`;
+    } else {
+      thCell = `<div style="font-weight:600;color:#1e293b;font-size:13px">${_esc(p.nameTH||'—')}</div>`;
+    }
+    // EN cell: for UNI show uniNameEN > major EN · faculty EN
+    let enCell = '';
+    if (isUNI) {
+      enCell = `<div style="font-size:13px;color:#475569">${_esc(p.uniNameEN||p.nameEN||'—')}</div>`;
+      const subEN = [
+        p.nameEN   ? `<span style="color:#7c3aed">${_esc(p.nameEN)}</span>` : '',
+        p.facultyEN? `<span style="color:#0369a1">${_esc(p.facultyEN)}</span>` : '',
+      ].filter(Boolean);
+      if (subEN.length) enCell += `<div style="font-size:11px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">${subEN.join('')}</div>`;
+    } else {
+      enCell = `<div style="font-size:13px;color:#475569">${_esc(p.nameEN||'—')}</div>`;
+    }
+    return `
     <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
-      <td style="padding:10px 12px">
+      <td style="padding:10px 12px;vertical-align:top">
         <span style="${instColor[p.institution]||'background:#f1f5f9;color:#374151'};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700">${instLabel[p.institution]||p.institution}</span>
       </td>
-      <td style="padding:10px 12px">
+      <td style="padding:10px 12px;vertical-align:top">
         <span style="${catColor[p.category]||'background:#f1f5f9;color:#374151'};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600">${catLabel[p.category]||p.category}</span>
       </td>
-      <td style="padding:10px 12px;font-size:13px;color:#1e293b;font-weight:500">
-        ${_esc(p.nameTH||'—')}
-        ${p.institution==='UNI' && (p.faculty||p.province) ? `<div style="font-size:11px;color:#7c3aed;margin-top:2px">${[p.faculty,p.province].filter(Boolean).map(x=>`<span>${_esc(x)}</span>`).join(' <span style="color:#c4b5fd">•</span> ')}</div>` : ''}
-      </td>
-      <td style="padding:10px 12px;font-size:13px;color:#475569">${_esc(p.nameEN||'—')}</td>
-      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+      <td style="padding:10px 12px;vertical-align:top">${thCell}</td>
+      <td style="padding:10px 12px;vertical-align:top">${enCell}</td>
+      <td style="padding:10px 12px;text-align:right;white-space:nowrap;vertical-align:top">
         <button onclick="apOpenEdit('${p.id}')" title="แก้ไข"
                 style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;border-radius:8px;padding:4px 10px;cursor:pointer;margin-right:4px;font-size:12px">
           <i data-lucide="pencil" class="w-3.5 h-3.5" style="display:inline-block;vertical-align:middle"></i>
@@ -2256,7 +2332,8 @@ function apRender() {
           <i data-lucide="trash-2" class="w-3.5 h-3.5" style="display:inline-block;vertical-align:middle"></i>
         </button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   lucide.createIcons();
 }
 
@@ -2285,37 +2362,54 @@ function apSetCat(cat) {
 }
 
 function apUpdateCategoryOptions() {
-  const inst      = document.getElementById('apModalInst')?.value;
-  const sel       = document.getElementById('apModalCat');
-  const uniFields = document.getElementById('apUniFields');
+  const inst       = document.getElementById('apModalInst')?.value;
+  const sel        = document.getElementById('apModalCat');
+  const uniFields  = document.getElementById('apUniFields');
+  const nonUni     = document.getElementById('apNonUniFields');
   if (!sel) return;
   let opts;
   if (inst === 'MBS') {
-    opts = [['plan', t('stApCatPlan') + ' / Study Plan']];
+    opts = [['plan', 'แผนการเรียน / Study Plan']];
   } else if (inst === 'UNI') {
     opts = [['program', 'สาขาวิชา / Program']];
   } else {
-    opts = [['program', t('stApCatProgram') + ' / Program'], ['department', t('stApCatDept') + ' / Department']];
+    opts = [['program', 'สาขาวิชา / Program'], ['department', 'แผนกวิชา / Department']];
   }
   sel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
-  if (uniFields) uniFields.classList.toggle('hidden', inst !== 'UNI');
+  const isUNI = inst === 'UNI';
+  if (uniFields) uniFields.classList.toggle('hidden', !isUNI);
+  if (nonUni)    nonUni.classList.toggle('hidden',    isUNI);
+  // Populate university name datalist from existing entries
+  if (isUNI) {
+    const dl = document.getElementById('apUniNameList');
+    if (dl) {
+      const seen = new Set();
+      _apState.filter(p => p.institution === 'UNI' && p.uniName).forEach(p => {
+        if (!seen.has(p.uniName)) { seen.add(p.uniName); const o = document.createElement('option'); o.value = p.uniName; dl.appendChild(o); }
+      });
+    }
+  }
+}
+
+function _apClearModal() {
+  ['apModalNameTH','apModalNameEN','apModalUniName','apModalUniNameEN',
+   'apModalFaculty','apModalFacultyEN','apModalProvince'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
 }
 
 function apOpenAdd() {
   const modal = document.getElementById('apModal');
   const title = document.getElementById('apModalTitle');
   if (!modal) return;
-  document.getElementById('apModalId').value     = '';
-  document.getElementById('apModalInst').value   = _apInst || 'MBS';
+  document.getElementById('apModalId').value   = '';
+  document.getElementById('apModalInst').value = _apInst || 'MBS';
   apUpdateCategoryOptions();
   if (_apCat) document.getElementById('apModalCat').value = _apCat;
-  document.getElementById('apModalNameTH').value  = '';
-  document.getElementById('apModalNameEN').value  = '';
-  const _f = document.getElementById('apModalFaculty');  if (_f) _f.value  = '';
-  const _p = document.getElementById('apModalProvince'); if (_p) _p.value = '';
+  _apClearModal();
   if (title) title.textContent = t('stMajModalAdd');
   modal.classList.remove('hidden');
-  setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
+  setTimeout(() => (document.getElementById('apModalUniName') || document.getElementById('apModalNameTH'))?.focus(), 80);
 }
 
 function apOpenEdit(id) {
@@ -2324,17 +2418,21 @@ function apOpenEdit(id) {
   const modal = document.getElementById('apModal');
   const title = document.getElementById('apModalTitle');
   if (!modal) return;
-  document.getElementById('apModalId').value     = p.id;
-  document.getElementById('apModalInst').value   = p.institution;
+  document.getElementById('apModalId').value   = p.id;
+  document.getElementById('apModalInst').value = p.institution;
   apUpdateCategoryOptions();
-  document.getElementById('apModalCat').value    = p.category;
-  document.getElementById('apModalNameTH').value  = p.nameTH   || '';
-  document.getElementById('apModalNameEN').value  = p.nameEN   || '';
-  const _fe = document.getElementById('apModalFaculty');  if (_fe) _fe.value  = p.faculty  || '';
-  const _pe = document.getElementById('apModalProvince'); if (_pe) _pe.value  = p.province || '';
+  document.getElementById('apModalCat').value  = p.category;
+  const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  sv('apModalNameTH',    p.nameTH);
+  sv('apModalNameEN',    p.nameEN);
+  sv('apModalUniName',   p.uniName);
+  sv('apModalUniNameEN', p.uniNameEN);
+  sv('apModalFaculty',   p.faculty);
+  sv('apModalFacultyEN', p.facultyEN);
+  sv('apModalProvince',  p.province);
   if (title) title.textContent = t('stMajModalEdit');
   modal.classList.remove('hidden');
-  setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
+  setTimeout(() => (document.getElementById('apModalUniName') || document.getElementById('apModalNameTH'))?.focus(), 80);
 }
 
 function apCloseModal() {
@@ -2343,35 +2441,143 @@ function apCloseModal() {
 }
 
 function apSaveEntry() {
-  const id       = document.getElementById('apModalId').value.trim();
-  const inst     = document.getElementById('apModalInst').value;
-  const cat      = document.getElementById('apModalCat').value;
-  const nameTH   = document.getElementById('apModalNameTH').value.trim();
-  const nameEN   = document.getElementById('apModalNameEN').value.trim();
-  const faculty  = document.getElementById('apModalFaculty')?.value.trim()  || '';
-  const province = document.getElementById('apModalProvince')?.value.trim() || '';
-  if (!nameTH && !nameEN) {
-    Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return;
+  const gv = id => (document.getElementById(id)?.value || '').trim();
+  const id       = gv('apModalId');
+  const inst     = gv('apModalInst');
+  const cat      = gv('apModalCat');
+  const nameTH   = gv('apModalNameTH');
+  const nameEN   = gv('apModalNameEN');
+  const uniName    = gv('apModalUniName');
+  const uniNameEN  = gv('apModalUniNameEN');
+  const faculty    = gv('apModalFaculty');
+  const facultyEN  = gv('apModalFacultyEN');
+  const province   = gv('apModalProvince');
+
+  // Validation
+  if (inst === 'UNI') {
+    if (!uniName && !uniNameEN) { Swal.fire('⚠️', 'กรุณากรอกชื่อมหาวิทยาลัย', 'warning'); return; }
+    if (!nameTH  && !nameEN)   { Swal.fire('⚠️', 'กรุณากรอกสาขาวิชา', 'warning'); return; }
+  } else {
+    if (!nameTH && !nameEN) { Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return; }
   }
-  // Duplicate check (same inst+cat+name)
-  const dup = _apState.find(p =>
-    p.id !== id &&
-    p.institution === inst &&
-    p.category === cat &&
-    ((nameTH && (p.nameTH||'').toLowerCase() === nameTH.toLowerCase()) ||
-     (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase()))
-  );
+
+  // Duplicate check: for UNI use uniName+nameTH+faculty combo; for others inst+cat+name
+  const dup = _apState.find(p => {
+    if (p.id === id) return false;
+    if (p.institution !== inst || p.category !== cat) return false;
+    if (inst === 'UNI') {
+      return (uniName && (p.uniName||'').toLowerCase() === uniName.toLowerCase()) &&
+             (nameTH  && (p.nameTH ||'').toLowerCase() === nameTH.toLowerCase())  &&
+             (faculty === (p.faculty||''));
+    }
+    return (nameTH && (p.nameTH||'').toLowerCase() === nameTH.toLowerCase()) ||
+           (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase());
+  });
   if (dup) {
-    Swal.fire(t('warning'), `"${dup.nameTH||dup.nameEN}" — ${t('stMajDuplicate')}`, 'warning'); return;
+    Swal.fire(t('warning'), `"${dup.uniName||dup.nameTH||dup.nameEN}" — ${t('stMajDuplicate')}`, 'warning'); return;
   }
+
+  const entry = { id: id || _genApId(), institution: inst, category: cat,
+    nameTH, nameEN, uniName, uniNameEN, faculty, facultyEN, province };
   if (id) {
     const idx = _apState.findIndex(p => p.id === id);
-    if (idx !== -1) _apState[idx] = { id, institution: inst, category: cat, nameTH, nameEN, faculty, province };
+    if (idx !== -1) _apState[idx] = entry;
   } else {
-    _apState.push({ id: _genApId(), institution: inst, category: cat, nameTH, nameEN, faculty, province });
+    _apState.push(entry);
   }
   apCloseModal();
   apRender();
+}
+
+// ─── CSV Import / Export ───────────────────────────────────
+const AP_CSV_HEADERS = ['institution','category','uniName','uniNameEN','nameTH','nameEN','faculty','facultyEN','province'];
+
+function apExportCSV() {
+  const rows = [AP_CSV_HEADERS];
+  _apState.forEach(p => {
+    rows.push(AP_CSV_HEADERS.map(h => {
+      const v = (p[h] || '').toString().replace(/"/g, '""');
+      return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v}"` : v;
+    }));
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: 'academic_programs.csv' });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function apImportCSV() {
+  document.getElementById('apCsvFileInput').value = '';
+  document.getElementById('apCsvFileInput').click();
+}
+
+function apHandleCSVFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result.replace(/^﻿/, ''); // strip BOM
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { Swal.fire('⚠️', 'ไฟล์ CSV ว่างเปล่าหรือไม่มีข้อมูล', 'warning'); return; }
+
+      // Parse header row
+      const headers = _csvSplitLine(lines[0]).map(h => h.trim().toLowerCase());
+      const idx = {};
+      AP_CSV_HEADERS.forEach(h => { idx[h] = headers.indexOf(h.toLowerCase()); });
+
+      const getCol = (row, key) => idx[key] >= 0 ? (row[idx[key]] || '').trim() : '';
+
+      let added = 0, updated = 0, skipped = 0;
+      lines.slice(1).forEach(line => {
+        const row  = _csvSplitLine(line);
+        const inst = getCol(row, 'institution');
+        const cat  = getCol(row, 'category') || (inst === 'MBS' ? 'plan' : 'program');
+        const nameTH    = getCol(row, 'nameTH');
+        const nameEN    = getCol(row, 'nameEN');
+        const uniName   = getCol(row, 'uniName');
+        const uniNameEN = getCol(row, 'uniNameEN');
+        const faculty   = getCol(row, 'faculty');
+        const facultyEN = getCol(row, 'facultyEN');
+        const province  = getCol(row, 'province');
+        if (!inst || (!nameTH && !nameEN && !uniName)) { skipped++; return; }
+
+        // Find existing (match by inst+cat+uniName+nameTH for UNI; inst+cat+nameTH for others)
+        const existIdx = _apState.findIndex(p => {
+          if (p.institution !== inst || p.category !== cat) return false;
+          if (inst === 'UNI')
+            return (p.uniName||'').toLowerCase() === (uniName||'').toLowerCase() &&
+                   (p.nameTH ||'').toLowerCase() === (nameTH ||'').toLowerCase();
+          return (p.nameTH||'').toLowerCase() === (nameTH||'').toLowerCase();
+        });
+        const entry = { id: existIdx >= 0 ? _apState[existIdx].id : _genApId(),
+          institution: inst, category: cat, nameTH, nameEN, uniName, uniNameEN, faculty, facultyEN, province };
+        if (existIdx >= 0) { _apState[existIdx] = entry; updated++; }
+        else               { _apState.push(entry); added++; }
+      });
+      apRender();
+      Swal.fire({ icon:'success', title:'นำเข้า CSV สำเร็จ',
+        html:`เพิ่มใหม่ <b>${added}</b> รายการ · อัปเดต <b>${updated}</b> รายการ · ข้าม <b>${skipped}</b> รายการ<br><small style="color:#6b7280">กด "บันทึกทั้งหมด" เพื่อบันทึกลงระบบ</small>`,
+        timer: 5000, showConfirmButton: true, confirmButtonText: 'ตกลง' });
+    } catch(err) { Swal.fire('⚠️', 'ไม่สามารถอ่านไฟล์ CSV: ' + err.message, 'error'); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function _csvSplitLine(line) {
+  // Handles quoted fields with commas inside
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; } // escaped quote
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
 }
 
 function apDelete(id) {

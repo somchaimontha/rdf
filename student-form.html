@@ -1937,6 +1937,11 @@ async function loadUniNames() {
     };
 
     // 1. Centralized UNIVERSITY_LIST (settings) — highest priority
+    // 1. From ACADEMIC_PROGRAMS UNI entries (uniName/uniNameEN) — highest priority
+    const acProgs = settingsRes.status === 'success' ? (settingsRes.data?.ACADEMIC_PROGRAMS || []) : [];
+    acProgs.filter(p => p.institution === 'UNI' && (p.uniName || p.uniNameEN))
+      .forEach(p => addOption(p.uniName || '', p.uniNameEN || ''));
+    // 2. UNIVERSITY_LIST (legacy)
     const settingsList = settingsRes.status === 'success'
       ? (settingsRes.data?.UNIVERSITY_LIST || []) : [];
     settingsList.forEach(u => addOption(u.nameTH || '', u.nameEN || ''));
