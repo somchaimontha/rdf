@@ -275,13 +275,23 @@
 
       <!-- University sub-section -->
       <div id="uniSection" class="hidden rounded-xl p-4 border border-purple-200 bg-purple-50">
-        <p class="font-bold text-sm text-purple-800 mb-3 flex items-center gap-2">
-          <i data-lucide="building-2" class="w-4 h-4"></i>
-          <span data-t="uniSection">ข้อมูลมหาวิทยาลัย</span>
-        </p>
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <p class="font-bold text-sm text-purple-800 flex items-center gap-2 m-0">
+            <i data-lucide="building-2" class="w-4 h-4"></i>
+            <span data-t="uniSection">ข้อมูลมหาวิทยาลัย</span>
+          </p>
+          <!-- SchPriority badge — read-only, set by promotion workflow -->
+          <span id="schPriorityBadge" class="hidden items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+            style="background:#eff6ff;color:#1e3a8a;border:1.5px solid #bfdbfe">
+            <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>
+            <span data-t="schPriorityLabel">ลำดับเสนอทุน:</span>
+            <span id="schPriorityValue" class="text-base font-black" style="color:#1e3a8a">—</span>
+          </span>
+        </div>
+        <!-- Thai fields row -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span></label>
+            <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
             <input type="text" id="f_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย">
             <datalist id="uniList"></datalist>
           </div>
@@ -302,9 +312,32 @@
             <input type="text" id="f_uniFaculty" class="field-input" placeholder="ชื่อคณะ">
           </div>
           <div>
-            <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span></label>
+            <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
             <input type="text" id="f_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร">
           </div>
+        </div>
+        <!-- English fields row (admin/teacher editable only) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pt-3" style="border-top:1px dashed #c4b5fd">
+          <div>
+            <label class="field-label">
+              <span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span>
+              <span data-t="uniNameEN">University Name</span> <span class="text-purple-400 text-xs">(EN)</span>
+            </label>
+            <input type="text" id="f_uniNameEN" class="field-input" placeholder="University Name (English)"
+              style="border-color:#c4b5fd">
+          </div>
+          <div>
+            <label class="field-label">
+              <span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span>
+              <span data-t="uniMajorEN">Major / Program</span> <span class="text-purple-400 text-xs">(EN)</span>
+            </label>
+            <input type="text" id="f_uniMajorEN" class="field-input" placeholder="Major / Program (English)"
+              style="border-color:#c4b5fd">
+          </div>
+          <p class="text-xs text-purple-400 col-span-full -mt-1" id="uniENEditNote">
+            <i data-lucide="lock" class="w-3 h-3 inline mr-0.5"></i>
+            <span data-t="uniENNote">ฟิลด์ภาษาอังกฤษแก้ไขได้โดยครูและแอดมินเท่านั้น</span>
+          </p>
         </div>
       </div>
     </div>
@@ -1302,8 +1335,15 @@ function _acKeyNav(e, field) {
     if (bulkSec) bulkSec.style.display = 'none';
     // Student opening own form: apply field locks after DOM is ready
     window.addEventListener('load', () => RBAC.applyFieldGuards());
-  } else if (!RBAC.has('editStudents') && !RBAC.has('viewStudents')) {
-    RBAC.enforcePage(['editStudents']);
+  } else {
+    // Admin/Teacher: hide the "EN fields admin-only" note (they can already edit)
+    window.addEventListener('load', () => {
+      const note = document.getElementById('uniENEditNote');
+      if (note) note.style.display = 'none';
+    });
+    if (!RBAC.has('editStudents') && !RBAC.has('viewStudents')) {
+      RBAC.enforcePage(['editStudents']);
+    }
   }
 })();
 
@@ -1586,6 +1626,16 @@ function fillForm(d) {
   sv('f_otherInst', d.OtherInstitution);
   sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration);
   sv('f_uniProvince', d.UniProvince); sv('f_uniFaculty', d.UniFaculty); sv('f_uniMajor', d.UniMajor);
+  sv('f_uniNameEN', d.UniNameEN); sv('f_uniMajorEN', d.UniMajorEN);
+  // SchPriority — read-only badge (set by promotion workflow, never editable in profile)
+  (function() {
+    const badge = document.getElementById('schPriorityBadge');
+    const valEl = document.getElementById('schPriorityValue');
+    if (!badge || !valEl) return;
+    const p = d.SchPriority ? parseInt(d.SchPriority) : null;
+    if (p) { valEl.textContent = p; badge.classList.remove('hidden'); badge.classList.add('flex'); }
+    else   { badge.classList.add('hidden'); badge.classList.remove('flex'); }
+  })();
   sv('f_title', d.Title); sv('f_fname', d.FirstName); sv('f_lname', d.LastName);
   document.getElementById('f_noSurname').checked = d.HasNoSurname === 'true';
   sv('f_engTitle', d.EngTitle); sv('f_engFname', d.EngFirstName); sv('f_engLname', d.EngLastName);
@@ -2210,6 +2260,8 @@ async function collectForm() {
     LastEducation: get('f_lastEducation'),
     UniName: get('f_uniName'), UniDuration: get('f_uniDuration'),
     UniProvince: get('f_uniProvince'), UniFaculty: get('f_uniFaculty'), UniMajor: get('f_uniMajor'),
+    UniNameEN: get('f_uniNameEN'), UniMajorEN: get('f_uniMajorEN'),
+    // SchPriority intentionally omitted — managed by promotion workflow only, never overwritten from profile form
     Title: get('f_title'), FirstName: get('f_fname'), LastName: get('f_lname'),
     HasNoSurname: document.getElementById('f_noSurname').checked.toString(),
     EngTitle: get('f_engTitle'), EngFirstName: get('f_engFname'), EngLastName: get('f_engLname'),

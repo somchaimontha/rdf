@@ -192,6 +192,8 @@ const T = {
     uniSection: "ข้อมูลมหาวิทยาลัย", uniName: "ชื่อมหาวิทยาลัย",
     courseDuration: "ระยะเวลาหลักสูตร (ปี)", uniProvince: "จังหวัดที่ตั้ง",
     faculty: "คณะ", uniMajor: "สาขาวิชา",
+    uniNameEN: "ชื่อมหาวิทยาลัย (EN)", uniMajorEN: "สาขาวิชา (EN)",
+    schPriorityLabel: "ลำดับเสนอทุน:", uniENNote: "ฟิลด์ภาษาอังกฤษแก้ไขได้โดยครูและแอดมินเท่านั้น",
     /* Personal */
     uploadPhoto: "อัปโหลดรูปภาพ", photoHint: "JPG/PNG ขนาดไม่เกิน 2MB",
     driveUrl: "หรือวาง Google Drive URL",
@@ -918,6 +920,8 @@ const T = {
     uniSection: "University Details", uniName: "University Name",
     courseDuration: "Course Duration (years)", uniProvince: "Province",
     faculty: "Faculty", uniMajor: "Major / Program",
+    uniNameEN: "University Name (EN)", uniMajorEN: "Major / Program (EN)",
+    schPriorityLabel: "Scholarship Priority:", uniENNote: "English fields are editable by teachers and admins only",
     uploadPhoto: "Upload Photo", photoHint: "JPG/PNG max 2MB",
     driveUrl: "Or paste Google Drive URL",
     scanIdCard: "Scan ID Card (OCR)", scanHint: "Take a photo to auto-fill data",
