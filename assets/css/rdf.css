@@ -374,3 +374,36 @@ h1,h2,h3,h4 { font-weight: 700; line-height: 1.3; }
 .crm-row + .crm-row { border-top: 1px solid #fee2e2; }
 /* Cancelled import row */
 .csv-row-cancelled { background: #f3f4f6; opacity: 0.7; }
+
+/* ── Address / Program Autocomplete Dropdown (shared) ── */
+.ac-wrap { position: relative; }
+.ac-list {
+  position: absolute; z-index: 300;
+  left: 0; right: 0; top: calc(100% + 2px);
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+  list-style: none;
+  margin: 0; padding: 2px 0;
+}
+.ac-list li {
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ac-list li:hover, .ac-list li.ac-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.ac-list li.ac-loading {
+  color: #9ca3af;
+  font-style: italic;
+  cursor: default;
+}

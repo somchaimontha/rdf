@@ -868,6 +868,7 @@ let ALL_GROUPS    = [];
 let PROMO_RULES   = {};
 let SETTINGS      = {};
 let ROW_DECISIONS = {};
+let _UNI_PROGS    = [];   // ACADEMIC_PROGRAMS where institution === 'UNI', loaded on first uni row open
 // StipNos of students successfully promoted/graduated/processed in the CURRENT session.
 // Used to show "สำเร็จแล้ว" badge in groups without requiring a DB round-trip.
 let PROMOTED_THIS_SESSION = new Set();
@@ -1446,6 +1447,13 @@ function renderGroups() {
               ${buildYearOpts(gNextYear, acadYearSetting)}
             </select>
           </div>
+          ${(isGradLevel || isUniTransferLevel(inst, level)) ? `
+          <label class="flex items-center gap-1 cursor-pointer no-print" title="${LANG==='th'?'เรียงตามลำดับชื่อเสนอรับทุน':'Sort by scholarship priority'}">
+            <input type="checkbox" id="sortChk_${CSS.escape(gKey)}"
+              style="accent-color:#1e3a8a;width:13px;height:13px;cursor:pointer"
+              onchange="sortGroupByPriority('${inst}','${level}','${curYear}',this.checked)">
+            <span style="font-size:10px;color:#1e3a8a;font-weight:700;white-space:nowrap">${LANG==='th'?'เรียงลำดับทุน':'Sort Priority'}</span>
+          </label>` : ''}
           <button onclick="promoteAllInGroup('${inst}','${level}','${curYear}')"
             class="btn btn-sm text-xs font-bold" style="background:${color}15;color:${color};border:1.5px solid ${color}40">
             <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5"></i> ${t('promoPromoteAll')}
@@ -1478,10 +1486,13 @@ function renderGroups() {
 
 function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLevel) {
   // UniSch column only shown for graduation/UNI levels (ม.6, ปวช.3, ปวส.2, UNI)
-  const showUniSchCol = isGradLevel || inst === 'UNI' || isUniTransferLevel(inst, level);
-  const rows = students.map(s => renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol)).join('');
+  const showUniSchCol    = isGradLevel || inst === 'UNI' || isUniTransferLevel(inst, level);
+  // Priority column shown for final-year groups that can go to university
+  const showPriorityCol  = isGradLevel || isUniTransferLevel(inst, level);
+  const gKey = inst + '||' + level + '||' + curYear;
+  const rows = students.map(s => renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol, showPriorityCol)).join('');
   return `<div class="overflow-x-auto">
-    <table class="promo-table">
+    <table class="promo-table" id="ptbl_${CSS.escape(gKey)}">
       <thead><tr>
         <th style="width:32px" class="no-print">
           <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}','${curYear}',this.checked)" class="rounded">
@@ -1494,17 +1505,19 @@ function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLev
         <th style="width:130px">${t('promoColNext')}</th>
         <th style="width:90px" class="promo-hide-sm">${t('promoColNextYear')}</th>
         ${showUniSchCol ? `<th style="width:90px" class="promo-hide-sm">${t('promoColUniSch')}</th>` : ''}
+        ${showPriorityCol ? `<th style="width:52px;text-align:center" title="${LANG==='th'?'ลำดับชื่อเสนอรับทุน':'Scholarship Priority'}">${LANG==='th'?'ลำดับ':'Order'}</th>` : ''}
         <th style="width:120px">${t('promoColNotes')}</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody id="ptbody_${CSS.escape(gKey)}">${rows}</tbody>
     </table>
   </div>`;
 }
 
-function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol) {
+function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCol, showPriorityCol) {
   // For UNI: effective graduation status is per-student (depends on individual UniDuration).
   const effectiveIsGrad = inst === 'UNI' ? _isUniStudentFinalYear(s) : isGradLevel;
-  if (showUniSchCol === undefined) showUniSchCol = effectiveIsGrad || inst === 'UNI' || isUniTransferLevel(inst, level);
+  if (showUniSchCol   === undefined) showUniSchCol   = effectiveIsGrad || inst === 'UNI' || isUniTransferLevel(inst, level);
+  if (showPriorityCol === undefined) showPriorityCol = isGradLevel || isUniTransferLevel(inst, level);
   const dec = ROW_DECISIONS[s.StipNo] || {};
   const act = dec.action || (effectiveIsGrad ? 'graduate' : 'promote');
 
@@ -1624,7 +1637,7 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
   const yearSelOpts = buildYearOpts(dec.nextAcademicYear || '', acadBase);
 
   return `
-  <tr id="row_${s.StipNo}" class="${act==='skip'?'excluded':''}" style="${rowStyle}">
+  <tr id="row_${s.StipNo}" data-stipno="${s.StipNo}" class="${act==='skip'?'excluded':''}" style="${rowStyle}">
     <td class="no-print">
       <input type="checkbox" class="rounded group-check" data-stipno="${s.StipNo}"
         ${act!=='skip'?'checked':''} onchange="onRowCheck('${s.StipNo}',this.checked)">
@@ -1658,6 +1671,14 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
       </select>` : `<span style="color:#9ca3af;font-size:10px">—</span>`}
     </td>
     ${showUniSchCol ? `<td id="schCell_${s.StipNo}" class="promo-hide-sm">${schCell}</td>` : ''}
+    ${showPriorityCol ? `<td style="text-align:center;vertical-align:middle">
+      <input type="number" min="1" max="999"
+        class="notes-input no-print" style="width:44px;text-align:center;padding:2px 4px"
+        placeholder="—" title="${LANG==='th'?'ลำดับชื่อเสนอรับทุน':'Scholarship priority'}"
+        value="${dec.schPriority||''}"
+        onchange="setDec('${s.StipNo}','schPriority',this.value?parseInt(this.value):null)">
+      <span class="print-only" style="font-size:12px;font-weight:700;color:#1e3a8a">${dec.schPriority||'—'}</span>
+    </td>` : ''}
     <td>${(()=>{
       const _nr = ['hold','suspend','resign','withdraw_sch'].includes(act);
       const _ne = !(dec.notes||'').trim();
@@ -2282,6 +2303,32 @@ function _rerenderGroupBody(inst, level, curYear) {
   lucide.createIcons();
 }
 
+// Sorts the visible tbody rows of a group by schPriority (ascending, nulls last).
+// When unchecked, restores original StipNo order.
+function sortGroupByPriority(inst, level, curYear, checked) {
+  const gKey  = inst + '||' + level + '||' + curYear;
+  const tbody = document.getElementById('ptbody_' + CSS.escape(gKey));
+  if (!tbody) return;
+  const rows  = Array.from(tbody.querySelectorAll('tr[data-stipno]'));
+  if (checked) {
+    rows.sort((a, b) => {
+      const pa = ROW_DECISIONS[a.dataset.stipno]?.schPriority;
+      const pb = ROW_DECISIONS[b.dataset.stipno]?.schPriority;
+      const na = pa ? parseInt(pa) : Infinity;
+      const nb = pb ? parseInt(pb) : Infinity;
+      return na - nb;
+    });
+  } else {
+    // Restore DB order (by StipNo numeric ascending)
+    rows.sort((a, b) => {
+      const sa = parseInt(a.dataset.stipno) || 0;
+      const sb = parseInt(b.dataset.stipno) || 0;
+      return sa - sb;
+    });
+  }
+  rows.forEach(r => tbody.appendChild(r));
+}
+
 // Returns a short display label for a level string (value stays unchanged).
 // TH: มัธยมศึกษาปีที่ 5 (Grade 11) → ม.5   EN: Grade 11
 // TH: ปวช. ชั้นปีที่ 2              → ปวช.2  EN: ปวช.2
@@ -2373,27 +2420,99 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
   return `<span class="text-xs text-gray-400">—</span>`;
 }
 
+// ─── UNI Program autocomplete from ACADEMIC_PROGRAMS ─────────────────────────
+async function _ensureUniProgs() {
+  if (_UNI_PROGS.length > 0) return;
+  try {
+    const r = await API.getSystemSettings();
+    const progs = (r.data?.ACADEMIC_PROGRAMS || []).filter(p => p.institution === 'UNI');
+    _UNI_PROGS = progs;
+  } catch(e) {}
+}
+
+function _uniProgSuggest(stipNo, val) {
+  const q   = val.trim().toLowerCase();
+  const ul  = document.getElementById('uniAcUl_' + stipNo);
+  if (!ul) return;
+  const matches = q
+    ? _UNI_PROGS.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q))
+    : _UNI_PROGS;
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = matches.slice(0,20).map(p =>
+    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+         onmousedown="event.preventDefault()"
+         onclick="_uniProgSelect('${stipNo}',${JSON.stringify(p).replace(/'/g,"&#39;")})">
+       <span class="font-medium">${p.nameTH||''}</span>
+       ${p.nameEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${p.nameEN}</span>`:''}
+       ${p.faculty?`<span style="color:#7c3aed;font-size:10px;display:block">${p.faculty}${p.province?' · '+p.province:''}</span>`:''}
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+function _uniProgSelect(stipNo, prog) {
+  setDec(stipNo, 'uniMajor',    prog.nameTH   || '');
+  setDec(stipNo, 'uniMajorEN',  prog.nameEN   || '');
+  setDec(stipNo, 'uniFaculty',  prog.faculty  || '');
+  setDec(stipNo, 'uniProvince', prog.province || '');
+  // Update DOM inputs
+  const row = document.getElementById('unirow_' + stipNo);
+  if (!row) return;
+  const inp = id => row.querySelector('#' + id);
+  const setVal = (id, v) => { const el = row.querySelector('[data-field="'+id+'"]'); if (el) el.value = v; };
+  setVal('uniMajor',    prog.nameTH   || '');
+  setVal('uniMajorEN',  prog.nameEN   || '');
+  setVal('uniFaculty',  prog.faculty  || '');
+  setVal('uniProvince', prog.province || '');
+  document.getElementById('uniAcUl_' + stipNo)?.classList.add('hidden');
+}
+
 function renderUniDetailRow(stipNo, dec) {
+  const isEN = typeof LANG !== 'undefined' && LANG === 'en';
+  // Fire-and-forget load of UNI programs for autocomplete
+  _ensureUniProgs();
   return `
   <tr id="unirow_${stipNo}" style="background:#faf5ff">
     <td class="no-print"></td><td></td>
     <td colspan="7" class="py-2 px-3">
+      <!-- Row 1: Thai fields -->
       <div class="flex flex-wrap gap-2 items-center">
         <span class="text-xs font-bold text-purple-700 flex items-center gap-1">
           <i data-lucide="building-2" class="w-3 h-3"></i> ${t('promoUniDetails')}
         </span>
-        <input type="text" class="notes-input" style="width:160px" placeholder="${t('promoUniName')}"
+        <input type="text" class="notes-input" style="width:160px" placeholder="${t('promoUniName')} (ไทย)"
+          data-field="uniName"
           value="${dec.uniName||''}" onchange="setDec('${stipNo}','uniName',this.value)">
+        <!-- Major Thai with autocomplete -->
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:130px" placeholder="${t('promoUniMajor')} (ไทย)"
+            data-field="uniMajor"
+            value="${dec.uniMajor||''}"
+            oninput="_uniProgSuggest('${stipNo}',this.value);setDec('${stipNo}','uniMajor',this.value)"
+            onfocus="_uniProgSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniAcUl_${stipNo}" class="ac-list hidden" style="min-width:260px;z-index:500"></ul>
+        </div>
         <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoFaculty')}"
+          data-field="uniFaculty"
           value="${dec.uniFaculty||''}" onchange="setDec('${stipNo}','uniFaculty',this.value)">
-        <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoUniMajor')}"
-          value="${dec.uniMajor||''}" onchange="setDec('${stipNo}','uniMajor',this.value)">
         <input type="text" class="notes-input" style="width:90px" placeholder="${t('promoProvince')}"
+          data-field="uniProvince"
           value="${dec.uniProvince||''}" onchange="setDec('${stipNo}','uniProvince',this.value)">
         <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniDuration',this.value)" style="width:90px">
           <option value="">${t('promoDuration')}</option>
           ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${dec.uniDuration==n?'selected':''}>${n} ${LANG==='th'?'ปี':'yr'}</option>`).join('')}
         </select>
+      </div>
+      <!-- Row 2: English fields -->
+      <div class="flex flex-wrap gap-2 items-center mt-1.5" style="border-top:1px dashed #e9d5ff;padding-top:6px">
+        <span class="text-xs text-purple-400 font-semibold" style="min-width:52px">🇬🇧 EN</span>
+        <input type="text" class="notes-input" style="width:160px;border-color:#e9d5ff" placeholder="University Name (EN)"
+          data-field="uniNameEN"
+          value="${dec.uniNameEN||''}" onchange="setDec('${stipNo}','uniNameEN',this.value)">
+        <input type="text" class="notes-input" style="width:130px;border-color:#e9d5ff" placeholder="Major / Program (EN)"
+          data-field="uniMajorEN"
+          value="${dec.uniMajorEN||''}" onchange="setDec('${stipNo}','uniMajorEN',this.value)">
       </div>
     </td>
   </tr>`;

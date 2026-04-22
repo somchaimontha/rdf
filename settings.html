@@ -370,6 +370,7 @@
         <button onclick="apSetInst('')"    id="apInstAll"  class="btn btn-sm btn-primary ap-inst-btn" data-t="stMajAll">ทั้งหมด</button>
         <button onclick="apSetInst('MBS')" id="apInstMBS"  class="btn btn-sm btn-secondary ap-inst-btn">MBS</button>
         <button onclick="apSetInst('VC')"  id="apInstVC"   class="btn btn-sm btn-secondary ap-inst-btn">VC</button>
+        <button onclick="apSetInst('UNI')" id="apInstUNI"  class="btn btn-sm btn-secondary ap-inst-btn">🏛 UNI</button>
       </div>
       <!-- Category filter -->
       <div class="flex gap-1.5" id="apCatFilter">
@@ -472,6 +473,7 @@
             <select id="apModalInst" class="field-select text-sm" onchange="apUpdateCategoryOptions()">
               <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
               <option value="VC">VC — Maesariang Industrial and Community Education College</option>
+              <option value="UNI">🏛 UNI — มหาวิทยาลัย / University</option>
             </select>
           </div>
           <div>
@@ -490,6 +492,22 @@
         <div>
           <label class="field-label">English Name <span class="text-red-500">*</span></label>
           <input type="text" id="apModalNameEN" class="field-input" placeholder="e.g. Science-Mathematics">
+        </div>
+        <!-- UNI-only: Faculty + Province fields -->
+        <div id="apUniFields" class="hidden space-y-3 pt-2 border-t border-purple-100">
+          <p class="text-xs text-purple-700 font-semibold flex items-center gap-1.5">
+            <i data-lucide="building-2" class="w-3.5 h-3.5"></i> ข้อมูลเพิ่มเติมสำหรับมหาวิทยาลัย
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label">คณะ / Faculty</label>
+              <input type="text" id="apModalFaculty" class="field-input" placeholder="เช่น คณะวิทยาศาสตร์">
+            </div>
+            <div>
+              <label class="field-label">จังหวัดที่ตั้ง / Province</label>
+              <input type="text" id="apModalProvince" class="field-input" placeholder="จังหวัด...">
+            </div>
+          </div>
         </div>
         <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
           <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
@@ -2190,12 +2208,14 @@ function apRender() {
   // Summary badges
   const mbsCount  = _apState.filter(p => p.institution === 'MBS').length;
   const vcCount   = _apState.filter(p => p.institution === 'VC').length;
+  const uniCount  = _apState.filter(p => p.institution === 'UNI').length;
   const planCount = _apState.filter(p => p.category === 'plan').length;
   const progCount = _apState.filter(p => p.category === 'program').length;
   const deptCount = _apState.filter(p => p.category === 'department').length;
   if (summary) summary.innerHTML = `
     <span style="background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">MBS ${mbsCount}</span>
     <span style="background:#fce7f3;color:#9d174d;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">VC ${vcCount}</span>
+    <span style="background:#ede9fe;color:#5b21b6;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">🏛 UNI ${uniCount}</span>
     <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">${t('stApPlanLabel')} ${planCount}</span>
     <span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">${t('stApProgLabel')} ${progCount}</span>
     <span style="background:#ede9fe;color:#5b21b6;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600">${t('stApDeptLabel')} ${deptCount}</span>
@@ -2208,10 +2228,10 @@ function apRender() {
   }
   if (emptyEl) emptyEl.classList.add('hidden');
 
-  const instLabel = { MBS:'MBS', VC:'VC' };
+  const instLabel = { MBS:'MBS', VC:'VC', UNI:'🏛 UNI' };
   const catLabel  = { plan: t('stApCatPlan'), program: t('stApCatProgram'), department: t('stApCatDept') };
   const catColor  = { plan:'background:#dbeafe;color:#1e40af', program:'background:#fce7f3;color:#9d174d', department:'background:#ede9fe;color:#5b21b6' };
-  const instColor = { MBS:'background:#dbeafe;color:#1d4ed8', VC:'background:#fce7f3;color:#be185d' };
+  const instColor = { MBS:'background:#dbeafe;color:#1d4ed8', VC:'background:#fce7f3;color:#be185d', UNI:'background:#ede9fe;color:#6d28d9' };
 
   tableBody.innerHTML = filtered.map(p => `
     <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
@@ -2221,7 +2241,10 @@ function apRender() {
       <td style="padding:10px 12px">
         <span style="${catColor[p.category]||'background:#f1f5f9;color:#374151'};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600">${catLabel[p.category]||p.category}</span>
       </td>
-      <td style="padding:10px 12px;font-size:13px;color:#1e293b;font-weight:500">${_esc(p.nameTH||'—')}</td>
+      <td style="padding:10px 12px;font-size:13px;color:#1e293b;font-weight:500">
+        ${_esc(p.nameTH||'—')}
+        ${p.institution==='UNI' && (p.faculty||p.province) ? `<div style="font-size:11px;color:#7c3aed;margin-top:2px">${[p.faculty,p.province].filter(Boolean).map(x=>`<span>${_esc(x)}</span>`).join(' <span style="color:#c4b5fd">•</span> ')}</div>` : ''}
+      </td>
       <td style="padding:10px 12px;font-size:13px;color:#475569">${_esc(p.nameEN||'—')}</td>
       <td style="padding:10px 12px;text-align:right;white-space:nowrap">
         <button onclick="apOpenEdit('${p.id}')" title="แก้ไข"
@@ -2239,7 +2262,7 @@ function apRender() {
 
 function apSetInst(inst) {
   _apInst = inst;
-  const ids = { '':'apInstAll', 'MBS':'apInstMBS', 'VC':'apInstVC' };
+  const ids = { '':'apInstAll', 'MBS':'apInstMBS', 'VC':'apInstVC', 'UNI':'apInstUNI' };
   document.querySelectorAll('.ap-inst-btn').forEach(b => {
     const active = b.id === ids[inst];
     b.style.background = active ? '#1e3a8a' : '#f8fafc';
@@ -2262,13 +2285,20 @@ function apSetCat(cat) {
 }
 
 function apUpdateCategoryOptions() {
-  const inst = document.getElementById('apModalInst')?.value;
-  const sel  = document.getElementById('apModalCat');
+  const inst      = document.getElementById('apModalInst')?.value;
+  const sel       = document.getElementById('apModalCat');
+  const uniFields = document.getElementById('apUniFields');
   if (!sel) return;
-  const opts = inst === 'MBS'
-    ? [['plan', t('stApCatPlan') + ' / Study Plan']]
-    : [['program', t('stApCatProgram') + ' / Program'], ['department', t('stApCatDept') + ' / Department']];
+  let opts;
+  if (inst === 'MBS') {
+    opts = [['plan', t('stApCatPlan') + ' / Study Plan']];
+  } else if (inst === 'UNI') {
+    opts = [['program', 'สาขาวิชา / Program']];
+  } else {
+    opts = [['program', t('stApCatProgram') + ' / Program'], ['department', t('stApCatDept') + ' / Department']];
+  }
   sel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+  if (uniFields) uniFields.classList.toggle('hidden', inst !== 'UNI');
 }
 
 function apOpenAdd() {
@@ -2279,8 +2309,10 @@ function apOpenAdd() {
   document.getElementById('apModalInst').value   = _apInst || 'MBS';
   apUpdateCategoryOptions();
   if (_apCat) document.getElementById('apModalCat').value = _apCat;
-  document.getElementById('apModalNameTH').value = '';
-  document.getElementById('apModalNameEN').value = '';
+  document.getElementById('apModalNameTH').value  = '';
+  document.getElementById('apModalNameEN').value  = '';
+  const _f = document.getElementById('apModalFaculty');  if (_f) _f.value  = '';
+  const _p = document.getElementById('apModalProvince'); if (_p) _p.value = '';
   if (title) title.textContent = t('stMajModalAdd');
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
@@ -2296,8 +2328,10 @@ function apOpenEdit(id) {
   document.getElementById('apModalInst').value   = p.institution;
   apUpdateCategoryOptions();
   document.getElementById('apModalCat').value    = p.category;
-  document.getElementById('apModalNameTH').value = p.nameTH || '';
-  document.getElementById('apModalNameEN').value = p.nameEN || '';
+  document.getElementById('apModalNameTH').value  = p.nameTH   || '';
+  document.getElementById('apModalNameEN').value  = p.nameEN   || '';
+  const _fe = document.getElementById('apModalFaculty');  if (_fe) _fe.value  = p.faculty  || '';
+  const _pe = document.getElementById('apModalProvince'); if (_pe) _pe.value  = p.province || '';
   if (title) title.textContent = t('stMajModalEdit');
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('apModalNameTH')?.focus(), 80);
@@ -2309,11 +2343,13 @@ function apCloseModal() {
 }
 
 function apSaveEntry() {
-  const id     = document.getElementById('apModalId').value.trim();
-  const inst   = document.getElementById('apModalInst').value;
-  const cat    = document.getElementById('apModalCat').value;
-  const nameTH = document.getElementById('apModalNameTH').value.trim();
-  const nameEN = document.getElementById('apModalNameEN').value.trim();
+  const id       = document.getElementById('apModalId').value.trim();
+  const inst     = document.getElementById('apModalInst').value;
+  const cat      = document.getElementById('apModalCat').value;
+  const nameTH   = document.getElementById('apModalNameTH').value.trim();
+  const nameEN   = document.getElementById('apModalNameEN').value.trim();
+  const faculty  = document.getElementById('apModalFaculty')?.value.trim()  || '';
+  const province = document.getElementById('apModalProvince')?.value.trim() || '';
   if (!nameTH && !nameEN) {
     Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return;
   }
@@ -2330,9 +2366,9 @@ function apSaveEntry() {
   }
   if (id) {
     const idx = _apState.findIndex(p => p.id === id);
-    if (idx !== -1) _apState[idx] = { id, institution: inst, category: cat, nameTH, nameEN };
+    if (idx !== -1) _apState[idx] = { id, institution: inst, category: cat, nameTH, nameEN, faculty, province };
   } else {
-    _apState.push({ id: _genApId(), institution: inst, category: cat, nameTH, nameEN });
+    _apState.push({ id: _genApId(), institution: inst, category: cat, nameTH, nameEN, faculty, province });
   }
   apCloseModal();
   apRender();
