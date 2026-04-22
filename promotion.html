@@ -1309,9 +1309,9 @@ async function loadPage() {
             nextAcademicYear:   _nextYearBE,
             uniName:            s.UniName || '', uniNameEN: s.UniNameEN || '',
             uniDuration:        s.UniDuration || '',
-            uniFaculty:         s.UniFaculty || '', uniMajor: s.UniMajor || '',
-            uniMajorEN:         s.UniMajorEN || '',
-            uniProvince:        s.UniProvince || '',
+            uniFaculty:         s.UniFaculty || '', uniFacultyEN: s.UniFacultyEN || '',
+            uniMajor:           s.UniMajor || '', uniMajorEN: s.UniMajorEN || '',
+            uniProvince:        s.UniProvince || '', uniProvinceEN: s.UniProvinceEN || '',
             schPriority:        s.SchPriority ? parseInt(s.SchPriority) : null,
             schApprovalStatus:  schApprSt,   // '' | 'Pending' | 'Approved' | 'Rejected'
             schApprovalBy:      s.SchApprovalBy || '',
@@ -1734,13 +1734,15 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
     case 'uni':
       p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
       p.UniScholarship = dec.uniScholarship || 'Yes';
-      if (dec.uniName)     p.UniName     = dec.uniName;
-      if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
-      if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
-      if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
-      if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
-      if (dec.uniProvince) p.UniProvince = dec.uniProvince;
-      if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+      if (dec.uniName)       p.UniName       = dec.uniName;
+      if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
+      if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
+      if (dec.uniFacultyEN)  p.UniFacultyEN  = dec.uniFacultyEN;
+      if (dec.uniMajor)      p.UniMajor      = dec.uniMajor;
+      if (dec.uniMajorEN)    p.UniMajorEN    = dec.uniMajorEN;
+      if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
+      if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
+      if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
       { const og = ALL_GROUPS.find(g => g.institution === inst);
         if (og?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
         else if (og?.institution === 'VC') p.LastEducation = level.includes('ปวส.')
@@ -1748,13 +1750,15 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
       break;
     case 'uni_own':
       p.NewStatus = 'University'; p.UniScholarship = 'No';
-      if (dec.uniName)     p.UniName     = dec.uniName;
-      if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
-      if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
-      if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
-      if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
-      if (dec.uniProvince) p.UniProvince = dec.uniProvince;
-      if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+      if (dec.uniName)       p.UniName       = dec.uniName;
+      if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
+      if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
+      if (dec.uniFacultyEN)  p.UniFacultyEN  = dec.uniFacultyEN;
+      if (dec.uniMajor)      p.UniMajor      = dec.uniMajor;
+      if (dec.uniMajorEN)    p.UniMajorEN    = dec.uniMajorEN;
+      if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
+      if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
+      if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
       break;
     case 'suspend':      p.NewStatus = 'Suspended';            break;
     case 'resign':       p.NewStatus = 'Resigned';             break;
@@ -1899,14 +1903,18 @@ async function submitScholarshipRequest(stipNo) {
 
   const user = (getUser()||{}).username || 'admin';
   const payload = {
-    StipNo:       stipNo,
-    UniName:      dec.uniName     || '',
-    UniFaculty:   dec.uniFaculty  || '',
-    UniMajor:     dec.uniMajor    || '',
-    UniDuration:  dec.uniDuration || '',
-    UniProvince:  dec.uniProvince || '',
+    StipNo:         stipNo,
+    UniName:        dec.uniName       || '',
+    UniNameEN:      dec.uniNameEN     || '',
+    UniFaculty:     dec.uniFaculty    || '',
+    UniFacultyEN:   dec.uniFacultyEN  || '',
+    UniMajor:       dec.uniMajor      || '',
+    UniMajorEN:     dec.uniMajorEN    || '',
+    UniDuration:    dec.uniDuration   || '',
+    UniProvince:    dec.uniProvince   || '',
+    UniProvinceEN:  dec.uniProvinceEN || '',
     uniScholarship: dec.uniScholarship || 'Yes',
-    notes:        dec.notes || '',
+    notes:          dec.notes || '',
   };
 
   showLoader(true, LANG==='th' ? 'กำลังส่งคำขอ...' : 'Submitting...');
@@ -2548,21 +2556,25 @@ function _uniNameSelect(stipNo, uniName, uniNameEN) {
 }
 
 function _uniProgSelect(stipNo, prog) {
-  setDec(stipNo, 'uniName',    prog.uniName   || '');
-  setDec(stipNo, 'uniNameEN',  prog.uniNameEN || '');
-  setDec(stipNo, 'uniMajor',   prog.nameTH    || '');
-  setDec(stipNo, 'uniMajorEN', prog.nameEN    || '');
-  setDec(stipNo, 'uniFaculty', prog.faculty   || '');
-  setDec(stipNo, 'uniProvince',prog.province  || '');
+  setDec(stipNo, 'uniName',      prog.uniName     || '');
+  setDec(stipNo, 'uniNameEN',    prog.uniNameEN   || '');
+  setDec(stipNo, 'uniMajor',     prog.nameTH      || '');
+  setDec(stipNo, 'uniMajorEN',   prog.nameEN      || '');
+  setDec(stipNo, 'uniFaculty',   prog.faculty     || '');
+  setDec(stipNo, 'uniFacultyEN', prog.facultyEN   || '');
+  setDec(stipNo, 'uniProvince',  prog.province    || '');
+  setDec(stipNo, 'uniProvinceEN',prog.provinceEN  || '');
   const row = document.getElementById('unirow_' + stipNo);
   if (!row) return;
   const setVal = (field, v) => { const el = row.querySelector('[data-field="'+field+'"]'); if (el) el.value = v; };
-  setVal('uniName',    prog.uniName   || '');
-  setVal('uniNameEN',  prog.uniNameEN || '');
-  setVal('uniMajor',   prog.nameTH   || '');
-  setVal('uniMajorEN', prog.nameEN   || '');
-  setVal('uniFaculty', prog.faculty  || '');
-  setVal('uniProvince',prog.province || '');
+  setVal('uniName',      prog.uniName     || '');
+  setVal('uniNameEN',    prog.uniNameEN   || '');
+  setVal('uniMajor',     prog.nameTH      || '');
+  setVal('uniMajorEN',   prog.nameEN      || '');
+  setVal('uniFaculty',   prog.faculty     || '');
+  setVal('uniFacultyEN', prog.facultyEN   || '');
+  setVal('uniProvince',  prog.province    || '');
+  setVal('uniProvinceEN',prog.provinceEN  || '');
   ['uniAcUl_','uniMajorENAcUl_','uniNameAcUl_','uniNameENAcUl_'].forEach(p =>
     document.getElementById(p + stipNo)?.classList.add('hidden'));
 }
@@ -2634,6 +2646,12 @@ function renderUniDetailRow(stipNo, dec) {
             onblur="setTimeout(()=>document.getElementById('uniMajorENAcUl_${stipNo}')?.classList.add('hidden'),200)">
           <ul id="uniMajorENAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
         </div>
+        <input type="text" class="notes-input" style="width:120px;border-color:#e9d5ff" placeholder="Faculty (EN)"
+          data-field="uniFacultyEN"
+          value="${dec.uniFacultyEN||''}" onchange="setDec('${stipNo}','uniFacultyEN',this.value)">
+        <input type="text" class="notes-input" style="width:90px;border-color:#e9d5ff" placeholder="Province (EN)"
+          data-field="uniProvinceEN"
+          value="${dec.uniProvinceEN||''}" onchange="setDec('${stipNo}','uniProvinceEN',this.value)">
       </div>
     </td>
   </tr>`;
@@ -3157,8 +3175,9 @@ async function applyAllChanges() {
       for (const [stipNo, dec] of uniPending) {
         const payload = {
           StipNo: stipNo, UniName: dec.uniName||'', UniNameEN: dec.uniNameEN||'',
-          UniFaculty: dec.uniFaculty||'', UniMajor: dec.uniMajor||'', UniMajorEN: dec.uniMajorEN||'',
-          UniDuration: dec.uniDuration||'', UniProvince: dec.uniProvince||'',
+          UniFaculty: dec.uniFaculty||'', UniFacultyEN: dec.uniFacultyEN||'',
+          UniMajor: dec.uniMajor||'', UniMajorEN: dec.uniMajorEN||'',
+          UniDuration: dec.uniDuration||'', UniProvince: dec.uniProvince||'', UniProvinceEN: dec.uniProvinceEN||'',
           uniScholarship: dec.uniScholarship||'Yes', notes: dec.notes||'',
         };
         try {
@@ -3266,13 +3285,15 @@ async function applyAllChanges() {
       case 'uni':
         p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
         p.UniScholarship = dec.uniScholarship || 'Yes';
-        if (dec.uniName)     p.UniName     = dec.uniName;
-        if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
-        if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
-        if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
-        if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
-        if (dec.uniProvince) p.UniProvince = dec.uniProvince;
-        if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+        if (dec.uniName)       p.UniName       = dec.uniName;
+        if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
+        if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
+        if (dec.uniFacultyEN)  p.UniFacultyEN  = dec.uniFacultyEN;
+        if (dec.uniMajor)      p.UniMajor      = dec.uniMajor;
+        if (dec.uniMajorEN)    p.UniMajorEN    = dec.uniMajorEN;
+        if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
+        if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
+        if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
         { const og = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
           if (og?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
           else if (og?.institution === 'VC') p.LastEducation = og.level.includes('ปวส.')
@@ -3280,13 +3301,15 @@ async function applyAllChanges() {
         break;
       case 'uni_own':
         p.NewStatus = 'University'; p.UniScholarship = 'No';
-        if (dec.uniName)     p.UniName     = dec.uniName;
-        if (dec.uniNameEN)   p.UniNameEN   = dec.uniNameEN;
-        if (dec.uniFaculty)  p.UniFaculty  = dec.uniFaculty;
-        if (dec.uniMajor)    p.UniMajor    = dec.uniMajor;
-        if (dec.uniMajorEN)  p.UniMajorEN  = dec.uniMajorEN;
-        if (dec.uniProvince) p.UniProvince = dec.uniProvince;
-        if (dec.uniDuration) p.UniDuration = dec.uniDuration;
+        if (dec.uniName)       p.UniName       = dec.uniName;
+        if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
+        if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
+        if (dec.uniFacultyEN)  p.UniFacultyEN  = dec.uniFacultyEN;
+        if (dec.uniMajor)      p.UniMajor      = dec.uniMajor;
+        if (dec.uniMajorEN)    p.UniMajorEN    = dec.uniMajorEN;
+        if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
+        if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
+        if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
         break;
       case 'suspend':      p.NewStatus = 'Suspended';           break;
       case 'resign':       p.NewStatus = 'Resigned';            break;
