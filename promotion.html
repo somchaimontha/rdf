@@ -1776,6 +1776,45 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
   return p;
 }
 
+// ── Warn when uni/uni_own action is missing university data (skippable) ──────
+// Returns true = proceed, false = user wants to go back and fill in.
+async function _warnMissingUniData(pairs) {
+  // pairs = [[stipNo, dec], ...] filtered to only uni/uni_own actions
+  const missing = pairs.filter(([, dec]) =>
+    (dec.action === 'uni' || dec.action === 'uni_own') && !dec.uniName
+  );
+  if (!missing.length) return true;
+
+  const names = missing.map(([sn]) => {
+    for (const g of ALL_GROUPS) {
+      const s = g.students.find(x => x.StipNo === sn);
+      if (s) return `${s.FirstName||''} ${s.LastName||''} (${sn})`.trim();
+    }
+    return sn;
+  });
+
+  const { isConfirmed } = await Swal.fire({
+    icon: 'warning',
+    title: LANG === 'th' ? '⚠️ ข้อมูลมหาวิทยาลัยไม่ครบ' : '⚠️ Missing University Info',
+    html: `<div class="text-sm text-left">
+      <p>${LANG === 'th'
+        ? 'นักเรียนต่อไปนี้ยังไม่มีข้อมูล <b>ชื่อมหาวิทยาลัย</b> — กรอกข้อมูลเพื่อความสมบูรณ์ของฐานข้อมูล'
+        : 'The following students are missing <b>university name</b> — fill in for complete records.'}</p>
+      <ul class="mt-2 ml-4 list-disc text-orange-600 text-xs space-y-0.5">${names.map(n=>`<li>${n}</li>`).join('')}</ul>
+      <p class="mt-3 text-gray-500 text-xs">${LANG === 'th'
+        ? 'กด "กรอกข้อมูล" เพื่อกลับไปกรอก หรือ "ข้ามและบันทึก" เพื่อบันทึกต่อได้เลย'
+        : 'Click "Fill in" to go back, or "Skip & Save" to proceed anyway.'}</p>
+    </div>`,
+    showCancelButton: true,
+    confirmButtonText: LANG === 'th' ? '← กรอกข้อมูล' : '← Fill in',
+    cancelButtonText:  LANG === 'th' ? 'ข้ามและบันทึก →' : 'Skip & Save →',
+    confirmButtonColor: '#d97706',
+    cancelButtonColor:  '#16a34a',
+    reverseButtons: false,
+  });
+  return !isConfirmed; // isConfirmed = "กรอกข้อมูล" → return false (stop); cancel = "ข้าม" → return true (proceed)
+}
+
 // Apply promotion for ONE student only — no full page reload, no blocking other rows.
 async function applyOneStudent(stipNo) {
   const dec = ROW_DECISIONS[stipNo];
@@ -1789,6 +1828,9 @@ async function applyOneStudent(stipNo) {
     Swal.fire({ icon:'warning', title: t('promoNotesRequired'), timer:2500, showConfirmButton:false });
     return;
   }
+
+  // Warn if uni/uni_own but no university name filled
+  if (!await _warnMissingUniData([[stipNo, dec]])) return;
 
   const grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
   if (!grp) return;
@@ -2930,6 +2972,12 @@ async function promoteAllInGroup(inst, level, curYear) {
     return;
   }
 
+  // ── Warn if uni/uni_own but no university name filled ──
+  const uniPairs = targetStudents
+    .filter(s => ['uni','uni_own'].includes(ROW_DECISIONS[s.StipNo]?.action))
+    .map(s => [s.StipNo, ROW_DECISIONS[s.StipNo]]);
+  if (!await _warnMissingUniData(uniPairs)) return;
+
   // ── Build per-action summary for confirmation dialog ──
   const actionGroups = {};
   targetStudents.forEach(s => {
@@ -3155,6 +3203,12 @@ async function applyAllChanges() {
   if (active.length === 0 && uniPending.length === 0) {
     return Swal.fire(t('promoNothingToApply'), t('promoNothingDesc'), 'info');
   }
+
+  // Warn if any uni_own without university name
+  const uniOwnMissing = active.filter(([, d]) => d.action === 'uni_own');
+  if (!await _warnMissingUniData(uniOwnMissing)) return;
+  // Warn if any uni (pending) without university name
+  if (!await _warnMissingUniData(uniPending)) return;
 
   // Auto-submit any un-submitted 'uni' scholarship requests
   if (uniPending.length > 0) {

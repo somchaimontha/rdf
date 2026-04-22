@@ -498,66 +498,81 @@
         <div id="apNonUniFields">
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="field-label" id="apLabelNameTH">ชื่อภาษาไทย <span class="text-red-500">*</span></label>
+              <label class="field-label">ชื่อภาษาไทย <span class="text-red-500">*</span></label>
               <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาศาสตร์-คณิตศาสตร์">
             </div>
             <div>
-              <label class="field-label" id="apLabelNameEN">English Name <span class="text-red-500">*</span></label>
+              <label class="field-label">English Name <span class="text-red-500">*</span></label>
               <input type="text" id="apModalNameEN" class="field-input" placeholder="e.g. Science-Mathematics">
             </div>
           </div>
         </div>
 
-        <!-- UNI-only: full bilingual fields -->
-        <div id="apUniFields" class="hidden space-y-3 pt-2 border-t-2 border-purple-100">
-          <p class="text-xs text-purple-700 font-bold flex items-center gap-1.5">
-            <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 🏛 ข้อมูลมหาวิทยาลัย (กรอกให้ครบทั้งไทยและอังกฤษ)
-          </p>
-          <!-- University Name TH + EN -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="field-label">ชื่อมหาวิทยาลัย (ไทย) <span class="text-red-500">*</span></label>
-              <input type="text" id="apModalUniName" class="field-input" list="apUniNameList" placeholder="เช่น มหาวิทยาลัยเชียงใหม่">
-              <datalist id="apUniNameList"></datalist>
+        <!-- UNI-only: card layout -->
+        <div id="apUniFields" class="hidden space-y-3">
+          <!-- Card: University Name -->
+          <div class="rounded-lg overflow-hidden border border-purple-200">
+            <div style="background:#7c3aed;color:#fff;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:6px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              ชื่อมหาวิทยาลัย / University Name
             </div>
-            <div>
-              <label class="field-label">🇬🇧 University Name (EN) <span class="text-red-500">*</span></label>
-              <input type="text" id="apModalUniNameEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Chiang Mai University">
-            </div>
-          </div>
-          <!-- Major / Program TH + EN -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="field-label">สาขาวิชา / Program (ไทย) <span class="text-red-500">*</span></label>
-              <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาการคอมพิวเตอร์">
-            </div>
-            <div>
-              <label class="field-label">🇬🇧 Major / Program (EN) <span class="text-red-500">*</span></label>
-              <input type="text" id="apModalNameEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Computer Science">
+            <div class="p-3 grid grid-cols-2 gap-3" style="background:#faf5ff">
+              <div>
+                <label class="field-label">ชื่อมหาวิทยาลัย (ไทย) <span class="text-red-500">*</span></label>
+                <input type="text" id="apModalUniName" class="field-input" list="apUniNameList" placeholder="เช่น มหาวิทยาลัยเชียงใหม่">
+                <datalist id="apUniNameList"></datalist>
+              </div>
+              <div>
+                <label class="field-label">🇬🇧 University Name (EN) <span class="text-red-500">*</span></label>
+                <input type="text" id="apModalUniNameEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Chiang Mai University">
+              </div>
             </div>
           </div>
-          <!-- Faculty TH + EN -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="field-label">คณะ / Faculty (ไทย)</label>
-              <input type="text" id="apModalFaculty" class="field-input" placeholder="เช่น คณะวิทยาศาสตร์">
+          <!-- Card: Program / Major -->
+          <div class="rounded-lg overflow-hidden border border-purple-200">
+            <div style="background:#6d28d9;color:#fff;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:6px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              สาขาวิชา / Program <span style="opacity:.7;font-weight:400;margin-left:4px">* required</span>
             </div>
-            <div>
-              <label class="field-label">🇬🇧 Faculty (EN)</label>
-              <input type="text" id="apModalFacultyEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Faculty of Science">
+            <div class="p-3 grid grid-cols-2 gap-3" style="background:#faf5ff">
+              <div>
+                <label class="field-label">สาขาวิชา / Program (ไทย) <span class="text-red-500">*</span></label>
+                <input type="text" id="apModalUniMajorTH" class="field-input" placeholder="เช่น วิทยาการคอมพิวเตอร์">
+              </div>
+              <div>
+                <label class="field-label">🇬🇧 Major / Program (EN) <span class="text-red-500">*</span></label>
+                <input type="text" id="apModalUniMajorEN" class="field-input" style="border-color:#c4b5fd" placeholder="e.g. Computer Science">
+              </div>
             </div>
           </div>
-          <!-- Province -->
-          <div class="grid grid-cols-2 gap-3">
+          <!-- Card: Faculty -->
+          <div class="rounded-lg overflow-hidden border border-blue-200">
+            <div style="background:#1d4ed8;color:#fff;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:6px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+              คณะ (มหาวิทยาลัย) / Faculty
+            </div>
+            <div class="p-3 grid grid-cols-2 gap-3" style="background:#eff6ff">
+              <div>
+                <label class="field-label">คณะ / Faculty (ไทย)</label>
+                <input type="text" id="apModalFaculty" class="field-input" placeholder="เช่น คณะวิทยาศาสตร์">
+              </div>
+              <div>
+                <label class="field-label">🇬🇧 Faculty (EN)</label>
+                <input type="text" id="apModalFacultyEN" class="field-input" style="border-color:#bfdbfe" placeholder="e.g. Faculty of Science">
+              </div>
+            </div>
+          </div>
+          <!-- Province: plain row (no card, auto-fill) -->
+          <div class="grid grid-cols-2 gap-3 px-1">
             <div>
-              <label class="field-label">จังหวัดที่ตั้ง / Province (ไทย)</label>
+              <label class="field-label text-gray-500">📍 จังหวัดที่ตั้ง / Province (ไทย)</label>
               <input type="text" id="apModalProvince" class="field-input" list="apProvinceList"
                 placeholder="จังหวัด..." oninput="apAutoFillProvinceEN(this.value)">
               <datalist id="apProvinceList"></datalist>
             </div>
             <div>
-              <label class="field-label">🇬🇧 Province (EN) <span class="text-gray-400 text-xs font-normal">auto-fill</span></label>
-              <input type="text" id="apModalProvinceEN" class="field-input" style="border-color:#c4b5fd"
+              <label class="field-label text-gray-500">🇬🇧 Province (EN) <span class="text-gray-400 text-xs font-normal">auto-fill</span></label>
+              <input type="text" id="apModalProvinceEN" class="field-input" style="border-color:#d1d5db"
                 placeholder="e.g. Chiang Mai">
             </div>
           </div>
@@ -2438,8 +2453,11 @@ function apUpdateCategoryOptions() {
 }
 
 function _apClearModal() {
-  ['apModalNameTH','apModalNameEN','apModalUniName','apModalUniNameEN',
-   'apModalFaculty','apModalFacultyEN','apModalProvince','apModalProvinceEN'].forEach(id => {
+  ['apModalNameTH','apModalNameEN',
+   'apModalUniName','apModalUniNameEN',
+   'apModalUniMajorTH','apModalUniMajorEN',
+   'apModalFaculty','apModalFacultyEN',
+   'apModalProvince','apModalProvinceEN'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
 }
@@ -2469,10 +2487,12 @@ function apOpenEdit(id) {
   apUpdateCategoryOptions();
   document.getElementById('apModalCat').value  = p.category;
   const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-  sv('apModalNameTH',    p.nameTH);
-  sv('apModalNameEN',    p.nameEN);
-  sv('apModalUniName',   p.uniName);
-  sv('apModalUniNameEN', p.uniNameEN);
+  sv('apModalNameTH',     p.nameTH);
+  sv('apModalNameEN',     p.nameEN);
+  sv('apModalUniName',    p.uniName);
+  sv('apModalUniNameEN',  p.uniNameEN);
+  sv('apModalUniMajorTH', p.nameTH);
+  sv('apModalUniMajorEN', p.nameEN);
   sv('apModalFaculty',    p.faculty);
   sv('apModalFacultyEN',  p.facultyEN);
   sv('apModalProvince',   p.province);
@@ -2492,14 +2512,16 @@ function apSaveEntry() {
   const id       = gv('apModalId');
   const inst     = gv('apModalInst');
   const cat      = gv('apModalCat');
-  const nameTH   = gv('apModalNameTH');
-  const nameEN   = gv('apModalNameEN');
   const uniName    = gv('apModalUniName');
   const uniNameEN  = gv('apModalUniNameEN');
   const faculty    = gv('apModalFaculty');
   const facultyEN  = gv('apModalFacultyEN');
   const province   = gv('apModalProvince');
   const provinceEN = gv('apModalProvinceEN') || _PROV_EN[province] || '';
+
+  // For UNI: nameTH/nameEN come from apModalUniMajorTH/EN; for non-UNI from apModalNameTH/EN
+  const nameTH = inst === 'UNI' ? gv('apModalUniMajorTH') : gv('apModalNameTH');
+  const nameEN = inst === 'UNI' ? gv('apModalUniMajorEN') : gv('apModalNameEN');
 
   // Validation
   if (inst === 'UNI') {
