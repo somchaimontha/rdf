@@ -131,6 +131,98 @@
 }
 .tag-add-input::placeholder { color: #94a3b8; font-size: 12.5px; }
 
+/* ── Tab Sub-menu Dropdown ── */
+.s-tab-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  /* extend bottom area so mouse can travel to dropdown without losing hover */
+  padding-bottom: 8px;
+  margin-bottom: -8px;
+}
+.s-chevron {
+  transition: transform 0.2s ease;
+  margin-left: 1px;
+  opacity: 0.45;
+}
+.s-tab-wrap:hover .s-chevron { transform: rotate(180deg); opacity: 0.9; }
+.s-tab-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 230px;
+  background: #fff;
+  border: 1px solid #dde3f0;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(15,23,42,0.16), 0 2px 8px rgba(15,23,42,0.08);
+  padding: 6px;
+  z-index: 9000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+  pointer-events: none;
+}
+/* invisible bridge to prevent hover gap */
+.s-tab-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: 0; right: 0;
+  height: 10px;
+}
+/* arrow */
+.s-tab-dropdown::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 24px;
+  width: 13px; height: 7px;
+  background: #fff;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  filter: drop-shadow(0 -1px 0 #dde3f0);
+}
+.s-tab-wrap:hover .s-tab-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: all;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0s;
+}
+.s-dd-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 5px 10px 3px;
+}
+.s-tab-sub {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.s-tab-sub:hover { background: #f0f4ff; color: #1e3a8a; }
+.s-sub-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.8), 0 0 0 3px currentColor;
+  opacity: 0.85;
+}
+
 /* ── Modal ── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 200;
@@ -207,30 +299,143 @@
 
   <!-- Tabs -->
   <div class="settings-tab-bar fade-in-up">
-    <button class="s-tab active" id="tabAdmins" onclick="switchTab('admins')">
-      <i data-lucide="users" class="w-4 h-4"></i> <span data-t="stTabAdmins">ผู้ดูแลระบบ</span>
-    </button>
-    <button class="s-tab" id="tabOverview" onclick="window.location.href='dashboard.html'" title="ดูภาพรวมระบบที่หน้าหลัก">
-      <i data-lucide="bar-chart-2" class="w-4 h-4"></i> <span data-t="stTabOverview">ภาพรวมระบบ</span> <i data-lucide="external-link" class="w-3 h-3 opacity-60"></i>
-    </button>
-    <button class="s-tab" id="tabMajors" onclick="switchTab('majors')">
-      <i data-lucide="book-open" class="w-4 h-4"></i> <span data-t="stTabMajors">สาขาวิชา</span>
-    </button>
-    <button class="s-tab" id="tabGeneral" onclick="switchTab('general')">
-      <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> <span data-t="stTabGeneral">ตั้งค่าทั่วไป</span>
-    </button>
-    <button class="s-tab" id="tabLogs" onclick="switchTab('logs')">
-      <i data-lucide="scroll-text" class="w-4 h-4"></i> <span data-t="stTabLogs">ประวัติการใช้งาน</span>
-    </button>
-    <button class="s-tab" id="tabApikeys" onclick="switchTab('apikeys')">
-      <i data-lucide="key" class="w-4 h-4"></i> <span data-t="stTabApiKeys">API Keys</span>
-    </button>
-    <button class="s-tab" id="tabSessions" onclick="switchTab('sessions')">
-      <i data-lucide="activity" class="w-4 h-4"></i> <span data-t="stTabSessions">เซสชัน</span>
-    </button>
-    <button class="s-tab" id="tabRoles" onclick="switchTab('roles')">
-      <i data-lucide="shield" class="w-4 h-4"></i> <span data-t="stTabRoles">สิทธิ์ผู้ใช้</span>
-    </button>
+
+    <!-- ผู้ดูแลระบบ — no sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab active" id="tabAdmins" onclick="switchTab('admins')">
+        <i data-lucide="users" class="w-4 h-4"></i> <span data-t="stTabAdmins">ผู้ดูแลระบบ</span>
+      </button>
+    </div>
+
+    <!-- ภาพรวมระบบ — external link -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabOverview" onclick="window.location.href='dashboard.html'" title="ดูภาพรวมระบบที่หน้าหลัก">
+        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> <span data-t="stTabOverview">ภาพรวมระบบ</span>
+        <i data-lucide="external-link" class="w-3 h-3 opacity-60"></i>
+      </button>
+    </div>
+
+    <!-- สาขาวิชา — 4 sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabMajors" onclick="switchTab('majors')">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span data-t="stTabMajors">สาขาวิชา</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 s-chevron"></i>
+      </button>
+      <div class="s-tab-dropdown">
+        <div class="s-dd-label">สาขาวิชา</div>
+        <button class="s-tab-sub" onclick="goSection('majors','cardMajorsTable')">
+          <span class="s-sub-dot" style="background:#1e3a8a;color:#1e3a8a"></span> สาขาวิชาทั้งหมด (MBS / VC)
+        </button>
+        <button class="s-tab-sub" onclick="goSection('majors','cardUniList')">
+          <span class="s-sub-dot" style="background:#0369a1;color:#0369a1"></span> รายชื่อมหาวิทยาลัย
+        </button>
+        <button class="s-tab-sub" onclick="goSection('majors','cardUniProg')">
+          <span class="s-sub-dot" style="background:#7c3aed;color:#7c3aed"></span> สาขาวิชา (มหาวิทยาลัย)
+        </button>
+        <button class="s-tab-sub" onclick="goSection('majors','cardUniFac')">
+          <span class="s-sub-dot" style="background:#1d4ed8;color:#1d4ed8"></span> คณะ (มหาวิทยาลัย)
+        </button>
+      </div>
+    </div>
+
+    <!-- ตั้งค่าทั่วไป — 7 sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabGeneral" onclick="switchTab('general')">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+        <span data-t="stTabGeneral">ตั้งค่าทั่วไป</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 s-chevron"></i>
+      </button>
+      <div class="s-tab-dropdown">
+        <div class="s-dd-label">ตั้งค่าทั่วไป</div>
+        <button class="s-tab-sub" onclick="goSection('general','cardStipPrefix')">
+          <span class="s-sub-dot" style="background:#1e3a8a;color:#1e3a8a"></span> หมายเลขนักเรียนทุน (StipNo)
+        </button>
+        <button class="s-tab-sub" onclick="goSection('general','cardUploadLimits')">
+          <span class="s-sub-dot" style="background:#0369a1;color:#0369a1"></span> ขนาดไฟล์อัปโหลด
+        </button>
+        <button class="s-tab-sub" onclick="goSection('general','cardNotice')">
+          <span class="s-sub-dot" style="background:#7c3aed;color:#7c3aed"></span> ข้อความแจ้งเตือนระบบ
+        </button>
+        <button class="s-tab-sub" onclick="goSection('general','cardPrintTitle')">
+          <span class="s-sub-dot" style="background:#0f172a;color:#0f172a"></span> ชื่อแบบฟอร์มการพิมพ์
+        </button>
+        <button class="s-tab-sub" onclick="goSection('general','cardPrintLayout')">
+          <span class="s-sub-dot" style="background:#334155;color:#334155"></span> ขนาดและระยะห่างเอกสาร
+        </button>
+        <button class="s-tab-sub" onclick="goSection('general','cardSignature')">
+          <span class="s-sub-dot" style="background:#0d9488;color:#0d9488"></span> ผู้ลงนามในเอกสาร
+        </button>
+        <button class="s-tab-sub" onclick="goSection('general','cardAbout')">
+          <span class="s-sub-dot" style="background:#7c3aed;color:#7c3aed"></span> เกี่ยวกับระบบ
+        </button>
+      </div>
+    </div>
+
+    <!-- ประวัติการใช้งาน — no sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabLogs" onclick="switchTab('logs')">
+        <i data-lucide="scroll-text" class="w-4 h-4"></i> <span data-t="stTabLogs">ประวัติการใช้งาน</span>
+      </button>
+    </div>
+
+    <!-- API Keys — 3 sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabApikeys" onclick="switchTab('apikeys')">
+        <i data-lucide="key" class="w-4 h-4"></i>
+        <span data-t="stTabApiKeys">API Keys</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 s-chevron"></i>
+      </button>
+      <div class="s-tab-dropdown">
+        <div class="s-dd-label">API Keys</div>
+        <button class="s-tab-sub" onclick="goSection('apikeys','cardGemini')">
+          <span class="s-sub-dot" style="background:#ea580c;color:#ea580c"></span> Gemini API Key
+        </button>
+        <button class="s-tab-sub" onclick="goSection('apikeys','cardGoogleOAuth')">
+          <span class="s-sub-dot" style="background:#4285f4;color:#4285f4"></span> Google OAuth Client ID
+        </button>
+        <button class="s-tab-sub" onclick="goSection('apikeys','cardGmailLinked')">
+          <span class="s-sub-dot" style="background:#1d4ed8;color:#1d4ed8"></span> อีเมลที่อนุญาต
+        </button>
+      </div>
+    </div>
+
+    <!-- เซสชัน — 2 sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabSessions" onclick="switchTab('sessions')">
+        <i data-lucide="activity" class="w-4 h-4"></i>
+        <span data-t="stTabSessions">เซสชัน</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 s-chevron"></i>
+      </button>
+      <div class="s-tab-dropdown">
+        <div class="s-dd-label">เซสชัน</div>
+        <button class="s-tab-sub" onclick="goSection('sessions','cardActiveSess')">
+          <span class="s-sub-dot" style="background:#1e3a8a;color:#1e3a8a"></span> เซสชันที่กำลังใช้งาน
+        </button>
+        <button class="s-tab-sub" onclick="goSection('sessions','cardLoginStats')">
+          <span class="s-sub-dot" style="background:#1e3a8a;color:#1e3a8a"></span> สถิติการเข้าระบบ
+        </button>
+      </div>
+    </div>
+
+    <!-- สิทธิ์ผู้ใช้ — 2 sub-sections -->
+    <div class="s-tab-wrap">
+      <button class="s-tab" id="tabRoles" onclick="switchTab('roles')">
+        <i data-lucide="shield" class="w-4 h-4"></i>
+        <span data-t="stTabRoles">สิทธิ์ผู้ใช้</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 s-chevron"></i>
+      </button>
+      <div class="s-tab-dropdown">
+        <div class="s-dd-label">สิทธิ์ผู้ใช้</div>
+        <button class="s-tab-sub" onclick="goSection('roles','cardPermMatrix')">
+          <span class="s-sub-dot" style="background:#1e3a8a;color:#1e3a8a"></span> ตาราง Permission Matrix
+        </button>
+        <button class="s-tab-sub" onclick="goSection('roles','cardStudentAccess')">
+          <span class="s-sub-dot" style="background:#0ea5e9;color:#0ea5e9"></span> กำหนดสิทธิ์นักเรียน
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -405,7 +610,7 @@
     <div id="apSummary" class="flex flex-wrap gap-2 mb-4"></div>
 
     <!-- ── Table ── -->
-    <div class="card" style="overflow:hidden">
+    <div id="cardMajorsTable" class="card" style="overflow:hidden">
       <div class="overflow-x-auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
@@ -432,7 +637,7 @@
     </div>
 
     <!-- ── University List ── (separate section, same panel) -->
-    <div class="card mt-5 fade-in-up">
+    <div id="cardUniList" class="card mt-5 fade-in-up">
       <div class="card-header" style="background:#0369a1">
         <i data-lucide="building-2" class="w-4 h-4"></i> รายชื่อมหาวิทยาลัย / University List
         <span id="uniListCount" class="ml-auto text-xs font-normal opacity-70">0 รายการ</span>
@@ -462,7 +667,7 @@
     </div>
 
     <!-- ── UNI Programs Inline Section ── -->
-    <div class="card mt-5 fade-in-up">
+    <div id="cardUniProg" class="card mt-5 fade-in-up">
       <div class="card-header" style="background:#7c3aed">
         <i data-lucide="book-open" class="w-4 h-4"></i> สาขาวิชา / Program (มหาวิทยาลัย)
         <span id="uniProgCount" class="ml-auto text-xs font-normal opacity-70">0 รายการ</span>
@@ -496,7 +701,7 @@
     </div>
 
     <!-- ── UNI Faculties Inline Section ── -->
-    <div class="card mt-5 fade-in-up">
+    <div id="cardUniFac" class="card mt-5 fade-in-up">
       <div class="card-header" style="background:#1d4ed8">
         <i data-lucide="graduation-cap" class="w-4 h-4"></i> คณะ / Faculty (มหาวิทยาลัย)
         <span id="uniFacCount" class="ml-auto text-xs font-normal opacity-70">0 รายการ</span>
@@ -665,7 +870,7 @@
   <div id="panelGeneral" class="hidden">
 
     <!-- StipNo Prefix Card -->
-    <div class="card fade-in-up mb-5">
+    <div id="cardStipPrefix" class="card fade-in-up mb-5">
       <div class="card-header" style="background:#1e3a8a">
         <i data-lucide="hash" class="w-4 h-4"></i> <span data-t="stGenStipHeader">อักษรนำหน้าหมายเลขนักเรียนทุน (StipNo Prefix)</span>
       </div>
@@ -683,7 +888,7 @@
     </div>
 
     <!-- Upload Limits Card -->
-    <div class="card fade-in-up delay-1 mb-5">
+    <div id="cardUploadLimits" class="card fade-in-up delay-1 mb-5">
       <div class="card-header" style="background:#0369a1">
         <i data-lucide="image-up" class="w-4 h-4"></i>
         <span data-t="stUploadLimitsHeader">ขนาดไฟล์สูงสุดสำหรับการอัปโหลด</span>
@@ -765,7 +970,7 @@
     </div>
 
     <!-- System Notice Card -->
-    <div class="card fade-in-up delay-2">
+    <div id="cardNotice" class="card fade-in-up delay-2">
       <div class="card-header" style="background:#7c3aed">
         <i data-lucide="megaphone" class="w-4 h-4"></i> <span data-t="stGenNoticeHeader">ข้อความแจ้งเตือนระบบ</span>
       </div>
@@ -808,7 +1013,7 @@
     </div>
 
     <!-- Print Form Title Card -->
-    <div class="card fade-in-up delay-2 mb-5">
+    <div id="cardPrintTitle" class="card fade-in-up delay-2 mb-5">
       <div class="card-header" style="background:#0f172a">
         <i data-lucide="file-text" class="w-4 h-4"></i> <span data-t="stGenPrintHeader">ชื่อแบบฟอร์มการพิมพ์ (Print Form Title)</span>
       </div>
@@ -862,7 +1067,7 @@
     </div>
 
     <!-- Print Layout Card -->
-    <div class="card fade-in-up delay-2 mb-5">
+    <div id="cardPrintLayout" class="card fade-in-up delay-2 mb-5">
       <div class="card-header" style="background:#334155">
         <i data-lucide="sliders" class="w-4 h-4"></i> <span data-t="stGenLayoutHeader">ขนาดและระยะห่างในเอกสาร (Print Layout)</span>
       </div>
@@ -915,7 +1120,7 @@
     </div>
 
     <!-- Signature Block Card -->
-    <div class="card fade-in-up delay-2">
+    <div id="cardSignature" class="card fade-in-up delay-2">
       <div class="card-header" style="background:#0d9488">
         <i data-lucide="pen-line" class="w-4 h-4"></i> <span data-t="stGenSigHeader">ผู้ลงนามในเอกสาร (Signature Block)</span>
       </div>
@@ -936,7 +1141,7 @@
     </div>
 
     <!-- Developer Info Card -->
-    <div class="card fade-in-up delay-3 mt-5">
+    <div id="cardAbout" class="card fade-in-up delay-3 mt-5">
       <div class="card-header" style="background:linear-gradient(90deg,#1e3a8a 0%,#7c3aed 100%)">
         <i data-lucide="code-2" class="w-4 h-4"></i> <span data-t="stGenAboutHeader">เกี่ยวกับระบบ / About System</span>
       </div>
@@ -1099,7 +1304,7 @@
       </div>
 
       <!-- Gemini API Key card -->
-      <div class="card fade-in-up delay-1">
+      <div id="cardGemini" class="card fade-in-up delay-1">
         <div class="card-header flex items-center justify-between">
           <div class="flex items-center gap-2 font-bold text-gray-700">
             <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" alt="Gemini" style="width:20px;height:20px">
@@ -1149,7 +1354,7 @@
       </div>
 
       <!-- Google Client ID card -->
-      <div class="card fade-in-up delay-2 mt-4">
+      <div id="cardGoogleOAuth" class="card fade-in-up delay-2 mt-4">
         <div class="card-header flex items-center justify-between">
           <div class="flex items-center gap-2 font-bold text-gray-700">
             <svg viewBox="0 0 48 48" style="width:20px;height:20px" xmlns="http://www.w3.org/2000/svg">
@@ -1210,7 +1415,7 @@
       </div>
 
       <!-- Google Authorized Emails — linked to Admin accounts (no separate storage) -->
-      <div class="card fade-in-up delay-2 mt-4">
+      <div id="cardGmailLinked" class="card fade-in-up delay-2 mt-4">
         <div class="card-header flex items-center justify-between">
           <div class="flex items-center gap-2 font-bold text-gray-700">
             <i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i>
@@ -1252,7 +1457,7 @@
        PANEL: SESSIONS (Active Sessions)
   ════════════════════════════════════════════ -->
   <div id="panelSessions" class="hidden">
-    <div class="card fade-in-up mb-4">
+    <div id="cardActiveSess" class="card fade-in-up mb-4">
       <div class="card-header flex items-center justify-between">
         <div class="flex items-center gap-2 font-bold text-gray-700">
           <i data-lucide="activity" class="w-4 h-4" style="color:#1e3a8a"></i>
@@ -1277,7 +1482,7 @@
     </div>
 
     <!-- Login stats from Admins sheet -->
-    <div class="card fade-in-up delay-1">
+    <div id="cardLoginStats" class="card fade-in-up delay-1">
       <div class="card-header"><span class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="bar-chart" class="w-4 h-4" style="color:#1e3a8a"></i> <span data-t="stSessStatsTitle">สถิติการเข้าระบบ</span></span></div>
       <div class="card-body">
         <div id="loginStatsBody" class="text-gray-400 text-sm text-center py-4">กำลังโหลด...</div>
@@ -1437,7 +1642,7 @@
     </div>
 
     <!-- Permission Matrix (Editable) -->
-    <div class="card fade-in-up delay-1">
+    <div id="cardPermMatrix" class="card fade-in-up delay-1">
       <div class="card-header flex items-center justify-between">
         <span class="font-bold text-gray-700 flex items-center gap-2">
           <i data-lucide="table" class="w-4 h-4" style="color:#1e3a8a"></i>
@@ -1479,7 +1684,7 @@
     </div>
 
     <!-- ── Student Access Configuration ── -->
-    <div class="card fade-in-up delay-2 mt-4" style="border-left:4px solid #0ea5e9">
+    <div id="cardStudentAccess" class="card fade-in-up delay-2 mt-4" style="border-left:4px solid #0ea5e9">
       <div class="card-header flex items-center justify-between">
         <span class="font-bold text-gray-700 flex items-center gap-2">
           <i data-lucide="shield-check" class="w-4 h-4" style="color:#0ea5e9"></i>
@@ -4183,6 +4388,19 @@ async function saveSignatureBlock() {
       Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stSigSaved'), timer:2000, showConfirmButton:false });
     } else { Swal.fire(t('error'), res.message || t('error'), 'error'); }
   } catch(e) { showLoader(false); Swal.fire(t('error'), t('network_error'), 'error'); }
+}
+
+// ─────────────────────────────────────────────
+// TAB SUB-NAVIGATION — goSection
+// ─────────────────────────────────────────────
+function goSection(tabName, cardId) {
+  switchTab(tabName);
+  requestAnimationFrame(() => {
+    const el = document.getElementById(cardId);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top, behavior: 'smooth' });
+  });
 }
 
 // ─────────────────────────────────────────────
