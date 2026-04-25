@@ -18,19 +18,38 @@ function avatarUrl(name, size) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=1e3a8a&color=fff&bold=true&size=${size || 64}`;
 }
 
+function _getToken() {
+  try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
+}
+
 async function apiGet(params) {
-  const url = RDF.GAS_URL + '?' + new URLSearchParams(params).toString();
+  const token = _getToken();
+  const p = token ? { ...params, token } : { ...params };
+  const url = RDF.GAS_URL + '?' + new URLSearchParams(p).toString();
   const res = await fetch(url);
-  return res.json();
+  const data = await res.json();
+  if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
+    // Session expired — force re-login
+    localStorage.removeItem('rdfUser');
+    window.location.href = 'index.html?expired=1';
+  }
+  return data;
 }
 
 async function apiPost(body) {
+  const token = _getToken();
+  const b = token ? { ...body, token } : { ...body };
   const res = await fetch(RDF.GAS_URL, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(b),
     headers: { 'Content-Type': 'text/plain' }
   });
-  return res.json();
+  const data = await res.json();
+  if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
+    localStorage.removeItem('rdfUser');
+    window.location.href = 'index.html?expired=1';
+  }
+  return data;
 }
 
 const API = {
@@ -75,6 +94,9 @@ const API = {
   },
   async addUniTransfer(data, reqUser) {
     return apiPost({ action: 'addUniTransfer', data, reqUser });
+  },
+  async changeAdminPassword(username, currentPassword, newPassword) {
+    return apiPost({ action: 'changeAdminPassword', username, currentPassword, newPassword });
   },
   // Generic helpers for pages that call API.get / API.post directly
   async get(action, params) { return apiGet({ action, ...(params||{}) }); },

@@ -1224,6 +1224,7 @@
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/rbac.js"></script>
+<script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
@@ -2724,7 +2725,7 @@ function _runOCR(canvas) {
     _lastOCRText = text;
     const parsed = parseIDCard(text);
     status.textContent = '✅ อ่านสำเร็จ — ตรวจสอบข้อมูลด้านล่าง';
-    document.getElementById('ocrResult').innerHTML = renderOCRResult(parsed);
+    renderOCRResult(parsed);
     lucide.createIcons();
   }).catch(err => {
     document.getElementById('ocrCaptureBtn').disabled = false;
@@ -2767,23 +2768,69 @@ function parseIDCard(text) {
   else if (/เด็กหญิง/.test(clean)) r.title='เด็กหญิง';
   return r;
 }
-function renderOCRResult(d) {
-  if (!Object.keys(d).length)
-    return `<p class="text-red-500 text-xs">ไม่พบข้อมูล — ลองถ่ายรูปใหม่หรืออัปโหลดรูปภาพที่ชัดกว่านี้ หรือกด AI แปลอัจฉริยะ</p>
-    <button id="ocrAIBtn" onclick="ocrAIFill()" class="btn btn-secondary btn-sm mt-2">🤖 AI แปลอัจฉริยะ</button>`;
-  const rows = [
-    d.idCard    ? `<div><b>เลขบัตร:</b> <span class="text-blue-700 font-bold">${d.idCard}</span></div>` : '',
-    d.title     ? `<div><b>คำนำหน้า:</b> ${d.title}</div>` : '',
-    d.firstName ? `<div><b>ชื่อ:</b> ${d.firstName}</div>` : '',
-    d.lastName  ? `<div><b>นามสกุล:</b> ${d.lastName}</div>` : '',
-    d.birthYear ? `<div><b>ปีเกิด (ค.ศ.):</b> ${d.birthYear}</div>` : '',
-  ].filter(Boolean).join('');
-  return `<div class="space-y-1 text-sm mb-2">${rows}</div>
-    <div class="flex gap-2 flex-wrap">
-      <button onclick='applyOCR(${JSON.stringify(d)})' class="btn btn-primary btn-sm">✓ ใช้ข้อมูลนี้</button>
-      <button id="ocrAIBtn" onclick="ocrAIFill()" class="btn btn-secondary btn-sm">🤖 AI แปลอัจฉริยะ</button>
-    </div>`;
+/* XSS-safe text escape for HTML context */
+function _escHtml(str) {
+  return (str || '').toString()
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+function renderOCRResult(d) {
+  const container = document.getElementById('ocrResult');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!Object.keys(d).length) {
+    const p = document.createElement('p');
+    p.className = 'text-red-500 text-xs';
+    p.textContent = 'ไม่พบข้อมูล — ลองถ่ายรูปใหม่หรืออัปโหลดรูปภาพที่ชัดกว่านี้ หรือกด AI แปลอัจฉริยะ';
+    const btn = document.createElement('button');
+    btn.id = 'ocrAIBtn'; btn.className = 'btn btn-secondary btn-sm mt-2';
+    btn.textContent = '🤖 AI แปลอัจฉริยะ'; btn.onclick = ocrAIFill;
+    container.appendChild(p); container.appendChild(btn); return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'space-y-1 text-sm mb-2';
+
+  const fields = [
+    { label: 'เลขบัตร', val: d.idCard,    cls: 'text-blue-700 font-bold' },
+    { label: 'คำนำหน้า', val: d.title },
+    { label: 'ชื่อ',     val: d.firstName },
+    { label: 'นามสกุล', val: d.lastName },
+    { label: 'ปีเกิด (ค.ศ.)', val: d.birthYear },
+  ];
+  fields.forEach(({ label, val, cls }) => {
+    if (!val) return;
+    const row = document.createElement('div');
+    const b = document.createElement('b'); b.textContent = label + ': ';
+    const span = document.createElement('span');
+    if (cls) span.className = cls;
+    span.textContent = val;
+    row.appendChild(b); row.appendChild(span);
+    wrap.appendChild(row);
+  });
+  container.appendChild(wrap);
+
+  const btnWrap = document.createElement('div');
+  btnWrap.className = 'flex gap-2 flex-wrap';
+
+  const applyBtn = document.createElement('button');
+  applyBtn.className = 'btn btn-primary btn-sm';
+  applyBtn.textContent = '✓ ใช้ข้อมูลนี้';
+  // Store data safely via closure — no inline JSON in HTML attributes
+  applyBtn.onclick = () => applyOCR(d);
+
+  const aiBtn = document.createElement('button');
+  aiBtn.id = 'ocrAIBtn'; aiBtn.className = 'btn btn-secondary btn-sm';
+  aiBtn.textContent = '🤖 AI แปลอัจฉริยะ'; aiBtn.onclick = ocrAIFill;
+
+  btnWrap.appendChild(applyBtn); btnWrap.appendChild(aiBtn);
+  container.appendChild(btnWrap);
+}
+
+// renderOCRResult now writes directly to DOM — callers that used innerHTML = renderOCRResult() must be updated:
+// (handled below in docScanResult error messages)
 function applyOCR(d) {
   const sv = (id, v) => { const el=document.getElementById(id); if(el&&v!==undefined) el.value=v; };
   sv('f_idcard', d.idCard); sv('f_title', d.title);
@@ -2796,6 +2843,17 @@ function applyOCR(d) {
 // ── Document AI Scanner ──────────────────────────────────────────
 let _docScanData  = null;  // last AI-parsed result
 let _docScanFile  = null;  // last processed file
+
+function _showDocScanError(msg) {
+  const el = document.getElementById('docScanResult');
+  if (!el) return;
+  el.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700';
+  div.textContent = msg; // textContent — safe, no XSS
+  el.appendChild(div);
+  el.classList.remove('hidden');
+}
 
 function openDocScanModal() {
   document.getElementById('docScanModal').classList.remove('hidden');
@@ -2887,24 +2945,16 @@ async function _docScanRunFile(file) {
         _docScanData = res.data;
         _renderDocScanResult(res.data);
       } else {
-        document.getElementById('docScanResult').innerHTML =
-          `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-            <b>AI ไม่พบข้อมูล</b> — ${res.message || 'ลองใช้ไฟล์รูปภาพที่ชัดเจนกว่านี้'}
-           </div>`;
-        document.getElementById('docScanResult').classList.remove('hidden');
+        _showDocScanError('AI ไม่พบข้อมูล — ' + (res.message || 'ลองใช้ไฟล์รูปภาพที่ชัดเจนกว่านี้'));
       }
     } catch(e) {
       clearInterval(_counter);
       statusEl.classList.add('hidden');
-      document.getElementById('docScanResult').innerHTML =
-        `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">เกิดข้อผิดพลาด: ${e.message}</div>`;
-      document.getElementById('docScanResult').classList.remove('hidden');
+      _showDocScanError('เกิดข้อผิดพลาด: ' + e.message);
     }
   } catch(e) {
     document.getElementById('docScanStatus').classList.add('hidden');
-    document.getElementById('docScanResult').innerHTML =
-      `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">เกิดข้อผิดพลาด: ${e.message}</div>`;
-    document.getElementById('docScanResult').classList.remove('hidden');
+    _showDocScanError('เกิดข้อผิดพลาด: ' + e.message);
   }
 }
 

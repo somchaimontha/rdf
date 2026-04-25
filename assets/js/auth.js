@@ -7,6 +7,9 @@ function getUser() {
 }
 function setUser(data) { localStorage.setItem('rdfUser', JSON.stringify(data)); }
 function clearUser() { localStorage.removeItem('rdfUser'); }
+function getSessionToken() {
+  try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
+}
 
 function requireAuth(redirectTo = 'index.html') {
   const user = getUser();
@@ -45,25 +48,27 @@ async function handleLogin() {
   if (!id || !pass) { Swal.fire(t('warning'), t('fillRequired'), 'warning'); return; }
   showLoader(true, t('connecting'));
   try {
-    const res = await fetch(`${RDF.GAS_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}&role=${role}`);
+    // POST login so password never appears in URL / server logs
+    const res = await fetch(RDF.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'login', id, pass, role }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
     const result = await res.json();
     showLoader(false);
     if (result.status === 'success') {
-      const loginTime = Date.now();
       setUser({
         name: result.name, role: result.role,
         stipNo: result.stipNo || '', pic: result.pic || '',
-        username: id, loginTime,
+        username: id, loginTime: Date.now(),
         loginCount: result.loginCount || 0,
-        lastLogin: result.lastLogin || ''
+        lastLogin: result.lastLogin || '',
+        sessionToken: result.sessionToken || ''
       });
-      // Warn if duplicate session detected (same username already logged in)
       if (result.duplicateSession) {
         await Swal.fire({
-          icon: 'warning',
-          title: t('warning'),
-          text: t('duplicateLogin'),
-          confirmButtonText: t('confirm')
+          icon: 'warning', title: t('warning'),
+          text: t('duplicateLogin'), confirmButtonText: t('confirm')
         });
       }
       window.location.href = 'dashboard.html';
@@ -83,15 +88,16 @@ async function handleGoogleLogin(idToken) {
     showLoader(false);
     if (result.status === 'success') {
       setUser({
-        name:       result.name,
-        role:       result.role,
-        stipNo:     result.stipNo     || '',
-        pic:        result.pic        || '',
-        username:   result.username   || result.email || '',
-        loginTime:  Date.now(),
-        loginCount: result.loginCount || 0,
-        lastLogin:  result.lastLogin  || '',
-        authMethod: 'google'
+        name:         result.name,
+        role:         result.role,
+        stipNo:       result.stipNo       || '',
+        pic:          result.pic          || '',
+        username:     result.username     || result.email || '',
+        loginTime:    Date.now(),
+        loginCount:   result.loginCount   || 0,
+        lastLogin:    result.lastLogin    || '',
+        authMethod:   'google',
+        sessionToken: result.sessionToken || ''
       });
       if (result.duplicateSession) {
         await Swal.fire({
@@ -119,11 +125,13 @@ function logout() {
   }).then(r => {
     if (r.isConfirmed) {
       const u = getUser();
-      if (u && u.username && typeof API !== 'undefined') {
-        // Best-effort: notify server of logout (don't await)
-        API.clearSession(u.username).catch(() => {});
+      if (u && typeof API !== 'undefined') {
+        const token = u.sessionToken || '';
+        if (u.username) API.clearSession(u.username).catch(() => {});
+        if (token) API.post('logoutToken', { token }).catch(() => {});
       }
-      clearUser(); window.location.href = 'index.html';
+      clearUser();
+      window.location.href = 'index.html';
     }
   });
 }
