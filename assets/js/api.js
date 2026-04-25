@@ -29,9 +29,13 @@ async function apiGet(params) {
   const res = await fetch(url);
   const data = await res.json();
   if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
-    // Session expired — force re-login
-    localStorage.removeItem('rdfUser');
-    window.location.href = 'index.html?expired=1';
+    // Session expired — force re-login (only if NOT already on the login page)
+    const path = window.location.pathname;
+    const onLogin = path.endsWith('index.html') || path.endsWith('/') || path === '';
+    if (!onLogin) {
+      localStorage.removeItem('rdfUser');
+      window.location.href = 'index.html?expired=1';
+    }
   }
   return data;
 }
@@ -46,8 +50,12 @@ async function apiPost(body) {
   });
   const data = await res.json();
   if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
-    localStorage.removeItem('rdfUser');
-    window.location.href = 'index.html?expired=1';
+    const path = window.location.pathname;
+    const onLogin = path.endsWith('index.html') || path.endsWith('/') || path === '';
+    if (!onLogin) {
+      localStorage.removeItem('rdfUser');
+      window.location.href = 'index.html?expired=1';
+    }
   }
   return data;
 }
