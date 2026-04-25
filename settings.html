@@ -1193,6 +1193,25 @@
             </div>
           </div>
         </div>
+        <!-- Developer Mode Toggle -->
+        <div class="border-t border-gray-100 pt-4 mt-4">
+          <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <i data-lucide="terminal" class="w-3.5 h-3.5" style="color:#ea580c"></i>
+            โหมดพัฒนา (Developer Mode)
+          </p>
+          <p class="text-xs text-gray-400 mb-3">เปิดเพื่อปิด Tamper Guard ชั่วคราว — อนุญาตให้คลิกขวา, เปิด DevTools, ดู Source ได้ ใช้เฉพาะระหว่างพัฒนา</p>
+          <div class="flex items-center gap-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="devModeToggle" class="sr-only peer" onchange="toggleDevMode(this.checked)">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+            </label>
+            <span id="devModeLabel" class="text-sm font-semibold text-gray-600">ปิดอยู่</span>
+            <span id="devModeBadge" class="hidden text-xs font-bold px-2 py-0.5 rounded-full" style="background:#fff3cd;color:#856404;border:1px solid #ffc107">
+              🔧 DEV MODE — รีโหลดหน้าเพื่อใช้งาน
+            </span>
+          </div>
+        </div>
+
         <!-- Admin Contact URL (shown on login page) -->
         <div class="border-t border-gray-100 pt-4 mt-4">
           <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -3958,6 +3977,28 @@ async function saveUploadLimits() {
   } catch(e) { Swal.fire(t('error'), t('network_error'), 'error'); }
 }
 
+function toggleDevMode(enabled) {
+  if (enabled) {
+    localStorage.setItem('rdfDevMode', '1');
+  } else {
+    localStorage.removeItem('rdfDevMode');
+  }
+  const label = document.getElementById('devModeLabel');
+  const badge = document.getElementById('devModeBadge');
+  if (label) label.textContent = enabled ? 'เปิดอยู่ — รีโหลดหน้าเพื่อใช้งาน' : 'ปิดอยู่';
+  if (badge) badge.classList.toggle('hidden', !enabled);
+}
+
+function _initDevModeToggle() {
+  const toggle = document.getElementById('devModeToggle');
+  const label  = document.getElementById('devModeLabel');
+  const badge  = document.getElementById('devModeBadge');
+  const isOn   = localStorage.getItem('rdfDevMode') === '1';
+  if (toggle) toggle.checked = isOn;
+  if (label)  label.textContent = isOn ? 'เปิดอยู่' : 'ปิดอยู่';
+  if (badge)  badge.classList.toggle('hidden', !isOn);
+}
+
 async function saveAdminContactUrl() {
   const url = (document.getElementById('adminContactUrl')?.value || '').trim();
   try {
@@ -4411,6 +4452,7 @@ loadAdmins();
 apLoad();
 loadUniList();
 initDBStatus();
+_initDevModeToggle();
 </script>
 </body>
 </html>

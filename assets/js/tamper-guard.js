@@ -2,22 +2,35 @@
  * Discourages casual inspection / tampering.
  * NOTE: This is a deterrent only — not a hard security boundary.
  * Real security is enforced server-side in Code.gs.
+ *
+ * Can be disabled for development via Settings → About → Developer Mode
+ * (stored as localStorage key "rdfDevMode" = "1")
  * ───────────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
+
+  // Developer mode — disable tamper guard entirely
+  if (localStorage.getItem('rdfDevMode') === '1') return;
 
   // Block right-click context menu
   document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
   });
 
-  // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U (view-source)
+  // Block DevTools shortcuts — Windows/Linux (Ctrl) and Mac (Cmd/Meta)
   document.addEventListener('keydown', function (e) {
+    const ctrl = e.ctrlKey || e.metaKey;
+    const shift = e.shiftKey;
+    const key = e.key.toUpperCase();
+
     if (e.key === 'F12') { e.preventDefault(); return; }
-    if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
-      e.preventDefault(); return;
-    }
-    if (e.ctrlKey && e.key.toUpperCase() === 'U') { e.preventDefault(); return; }
+
+    // Ctrl+Shift+I/J/C  (Windows) or Cmd+Option+I/J/C (Mac)
+    if (ctrl && shift && ['I', 'J', 'C'].includes(key)) { e.preventDefault(); return; }
+    if (e.metaKey && e.altKey && ['I', 'J', 'C'].includes(key)) { e.preventDefault(); return; }
+
+    // Ctrl+U / Cmd+U (view source)
+    if (ctrl && key === 'U') { e.preventDefault(); return; }
   });
 
   // Detect DevTools open via size difference (rough heuristic)
