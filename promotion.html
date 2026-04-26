@@ -1252,9 +1252,17 @@ async function loadPage() {
     renderPromotionRules(rules);
 
     if (studRes.status !== 'success') {
-      // Unauthorized is handled by api.js (redirect to login) — hide loader and exit silently
-      if ((studRes.message || '').includes('Unauthorized')) { showLoader(false); return; }
-      throw new Error(studRes.message || t('promoLoadError'));
+      showLoader(false);
+      // api.js already redirects to login on Unauthorized; show a visible fallback in case redirect is blocked
+      const _gc = document.getElementById('groupsContainer');
+      if (_gc) _gc.innerHTML = `
+        <div class="card p-8 text-center">
+          <i data-lucide="lock" class="w-10 h-10 mx-auto mb-3 text-red-400"></i>
+          <p class="font-semibold text-red-600 mb-1">${(studRes.message||'').includes('Unauthorized') ? (LANG==='th'?'เซสชันหมดอายุ — กรุณาเข้าสู่ระบบใหม่':'Session expired — please log in again') : (studRes.message || t('promoLoadError'))}</p>
+          <a href="index.html" class="btn btn-primary mt-3">${LANG==='th'?'เข้าสู่ระบบ':'Log In'}</a>
+        </div>`;
+      lucide.createIcons();
+      return;
     }
 
     ALL_GROUPS = studRes.groups || [];
@@ -1336,9 +1344,21 @@ async function loadPage() {
     if (_FOCUS_STIP) setTimeout(() => _highlightStipNo(_FOCUS_STIP), 300); // wait for DOM paint
   } catch(e) {
     showLoader(false);
-    document.getElementById('groupsContainer').innerHTML =
-      `<div class="card p-8 text-center text-red-500"><i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-2"></i><p>${e.message}</p></div>`;
-    lucide.createIcons();
+    RDF.logError('promotion.html', 'loadPage()', e.message || 'Unknown error');
+    const _gc = document.getElementById('groupsContainer');
+    if (_gc) {
+      _gc.innerHTML = `
+        <div class="card p-8 text-center">
+          <i data-lucide="alert-triangle" class="w-10 h-10 mx-auto mb-3 text-red-400"></i>
+          <p class="font-semibold text-red-600 mb-1">${LANG==='th'?'โหลดข้อมูลไม่สำเร็จ':'Failed to load data'}</p>
+          <p class="text-xs text-gray-400 mb-4">${e.message || ''}</p>
+          <button onclick="loadPage()" class="btn btn-primary">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            ${LANG==='th'?'ลองใหม่':'Retry'}
+          </button>
+        </div>`;
+      lucide.createIcons();
+    }
   }
 }
 

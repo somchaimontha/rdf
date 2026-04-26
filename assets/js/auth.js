@@ -49,11 +49,17 @@ async function handleLogin() {
   showLoader(true, t('connecting'));
   try {
     // POST login so password never appears in URL / server logs
-    const res = await fetch(RDF.GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'login', id, pass, role }),
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    const _ctrl  = new AbortController();
+    const _timer = setTimeout(() => _ctrl.abort(), 45000);
+    let res;
+    try {
+      res = await fetch(RDF.GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'login', id, pass, role }),
+        headers: { 'Content-Type': 'text/plain' },
+        signal: _ctrl.signal
+      });
+    } finally { clearTimeout(_timer); }
     const result = await res.json();
     showLoader(false);
     if (result.status === 'success') {
@@ -77,7 +83,8 @@ async function handleLogin() {
     }
   } catch (e) {
     showLoader(false);
-    Swal.fire(t('error'), t('network_error'), 'error');
+    const msg = e.name === 'AbortError' ? 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่' : (t('network_error') || e.message);
+    Swal.fire(t('error'), msg, 'error');
   }
 }
 
