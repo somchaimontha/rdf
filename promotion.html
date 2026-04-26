@@ -651,16 +651,22 @@ img.student-avatar {
         </div>
       </div>
 
-      <!-- Institution + Language -->
-      <div class="grid grid-cols-2 gap-3 pr-section">
+      <!-- Institution + Level + Language -->
+      <div class="grid grid-cols-3 gap-3 pr-section">
         <div>
           <span class="pr-label">กรองสถานศึกษา / Institution</span>
-          <select id="prModalInst" class="pr-field">
+          <select id="prModalInst" class="pr-field" onchange="_prUpdateLevelOpts()">
             <option value="">ทุกสถานศึกษา / All Institutions</option>
             <option value="MBS">MBS</option>
             <option value="VC">VC</option>
             <option value="UNI">University</option>
             <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div>
+          <span class="pr-label">ระดับชั้น / Level</span>
+          <select id="prModalLevel" class="pr-field">
+            <option value="">ทุกระดับชั้น / All Levels</option>
           </select>
         </div>
         <div>
@@ -1273,7 +1279,8 @@ async function loadPage() {
     ALL_GROUPS.forEach(g => {
       g.students.forEach(s => {
         if (!ROW_DECISIONS[s.StipNo]) {
-          const rule = PROMO_RULES[g.institution + '||' + g.level];
+          const rule = PROMO_RULES[g.institution + '||' + g.level]
+            || DEFAULT_RULES.find(r => r.inst === g.institution && r.from === g.level);
           const defTo = rule ? rule.to : '';
           const comp  = rule ? rule.completion : 'promote';
 
@@ -3785,8 +3792,32 @@ function openPrintReportModal() {
     }
   }
 
+  _prUpdateLevelOpts();
   document.getElementById('printReportModal').classList.remove('hidden');
   lucide.createIcons();
+}
+
+// Rebuild prModalLevel dropdown based on selected institution
+function _prUpdateLevelOpts() {
+  const sel   = document.getElementById('prModalLevel');
+  if (!sel) return;
+  const inst  = document.getElementById('prModalInst')?.value || '';
+  const cur   = sel.value;
+  const levels = new Set();
+  ALL_GROUPS.forEach(g => {
+    if (inst && g.institution !== inst) return;
+    if (g.level) levels.add(g.level);
+  });
+  const sorted = [...levels].sort((a, b) => {
+    const io = { MBS:0, VC:1, UNI:2, OTHER:3 };
+    const gi = g2 => (ALL_GROUPS.find(x => x.level === g2) || {}).institution || '';
+    const d = (io[gi(a)] ?? 9) - (io[gi(b)] ?? 9);
+    if (d !== 0) return d;
+    const lvA = LEVEL_OPTIONS[gi(a)] || [];
+    return lvA.indexOf(a) - lvA.indexOf(b);
+  });
+  sel.innerHTML = '<option value="">ทุกระดับชั้น / All Levels</option>' +
+    sorted.map(l => `<option value="${l}"${l === cur ? ' selected' : ''}>${abbrevLevel(l)} — ${l}</option>`).join('');
 }
 
 function closePrintReportModal() {
@@ -3802,6 +3833,7 @@ function doPrintReport() {
     lang:       document.querySelector('input[name="prLang"]:checked').value,
     reportType: document.querySelector('input[name="prType"]:checked').value,
     inst:       document.getElementById('prModalInst').value,
+    level:      document.getElementById('prModalLevel')?.value || '',
     school:     document.getElementById('prModalSchool').value.trim(),
     subject:    document.getElementById('prModalSubject').value.trim(),
     acad:       document.getElementById('prModalAcad').value,
@@ -3834,17 +3866,29 @@ function generateFormalReportHTML(opts) {
     return (LEVEL_OPTIONS[a.institution]||[]).indexOf(a.level) - (LEVEL_OPTIONS[b.institution]||[]).indexOf(b.level);
   });
 
+  // Helper: returns true when this group's level is a graduation completion level
+  const _isGradLevel = g => {
+    const r = PROMO_RULES[g.institution + '||' + g.level]
+      || DEFAULT_RULES.find(x => x.inst === g.institution && x.from === g.level);
+    return !!(r && (r.completion === 'graduate' || r.completion === 'graduate_uni'));
+  };
+
   // Collect matching rows
   const dataRows = [];
   sorted.forEach(g => {
     if (opts.inst && g.institution !== opts.inst) return;
+    if (opts.level && g.level !== opts.level) return;
     g.students.forEach(s => {
       const dec = ROW_DECISIONS[s.StipNo] || {};
-      const act = dec.action || 'promote';
-      if (opts.reportType === 'graduation' && !gradActions.has(act)) return;
+      let act = dec.action || 'promote';
+      if (opts.reportType === 'graduation') {
+        // alreadyPromoted students from graduation levels still belong in the graduation report
+        if (act === 'skip' && dec.alreadyPromoted && _isGradLevel(g)) act = 'graduate';
+        if (!gradActions.has(act)) return;
+      }
       if (opts.reportType === 'promotion'  && act === 'skip') return;
       if (opts.reportType === 'withdrawal' && !withdrawalActions.has(act)) return;
-      dataRows.push({ g, s, dec });
+      dataRows.push({ g, s, dec: { ...dec, action: act } });
     });
   });
 
@@ -3862,13 +3906,13 @@ function generateFormalReportHTML(opts) {
   const S = STR[isEN ? 'en' : 'th'];
 
   const org  = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
-  const instLbl = opts.inst
-    ? (instLabelMap[opts.inst] || opts.inst)
-    : S.allInst;
+  const instLbl  = opts.inst  ? (instLabelMap[opts.inst] || opts.inst) : S.allInst;
+  const levelLbl = opts.level ? (abbrevLevel(opts.level) + ' — ' + opts.level) : '';
   const schoolDisplay = opts.school || instLbl;
   const rptTitle = opts.reportType === 'graduation' ? S.grad
     : opts.reportType === 'withdrawal' ? S.withdrawal : S.promo;
-  const subject  = opts.subject || `${schoolDisplay}${opts.acad?' '+opts.acad:''} (${rptTitle})`;
+  const subject  = opts.subject ||
+    `${schoolDisplay}${levelLbl ? ' / ' + levelLbl : ''}${opts.acad ? ' ' + opts.acad : ''} (${rptTitle})`;
 
   const tableHTML     = opts.reportType === 'graduation'
     ? buildGradTableHTML(dataRows, isEN)
