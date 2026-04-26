@@ -4485,22 +4485,6 @@ function renderStatsChart() {
   });
 }
 
-// ─────────────────────────────────────────────
-// API HELPERS
-// ─────────────────────────────────────────────
-API.get = async function(action, params) {
-  const qs = new URLSearchParams({ action, ...(params||{}) });
-  const res = await fetch(RDF.GAS_URL + '?' + qs);
-  return res.json();
-};
-API.post = async function(action, body) {
-  const res = await fetch(RDF.GAS_URL, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action, ...body }),
-  });
-  return res.json();
-};
 
 // ─────────────────────────────────────────────
 // BOOT
