@@ -1252,8 +1252,8 @@ async function loadPage() {
     renderPromotionRules(rules);
 
     if (studRes.status !== 'success') {
-      // Unauthorized is handled by api.js (redirect to login) — don't show error UI
-      if ((studRes.message || '').includes('Unauthorized')) return;
+      // Unauthorized is handled by api.js (redirect to login) — hide loader and exit silently
+      if ((studRes.message || '').includes('Unauthorized')) { showLoader(false); return; }
       throw new Error(studRes.message || t('promoLoadError'));
     }
 
