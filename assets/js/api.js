@@ -22,11 +22,21 @@ function _getToken() {
   try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
 }
 
-async function apiGet(params) {
+async function apiGet(params, timeoutMs) {
   const token = _getToken();
   const p = token ? { ...params, token } : { ...params };
   const url = RDF.GAS_URL + '?' + new URLSearchParams(p).toString();
-  const res = await fetch(url);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || 45000);
+  let res;
+  try {
+    res = await fetch(url, { signal: ctrl.signal });
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา กรุณาลองใหม่');
+    throw e;
+  }
+  clearTimeout(timer);
   const data = await res.json();
   if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
     // Session expired — force re-login (only if NOT already on the login page)
@@ -40,14 +50,25 @@ async function apiGet(params) {
   return data;
 }
 
-async function apiPost(body) {
+async function apiPost(body, timeoutMs) {
   const token = _getToken();
   const b = token ? { ...body, token } : { ...body };
-  const res = await fetch(RDF.GAS_URL, {
-    method: 'POST',
-    body: JSON.stringify(b),
-    headers: { 'Content-Type': 'text/plain' }
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || 45000);
+  let res;
+  try {
+    res = await fetch(RDF.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(b),
+      headers: { 'Content-Type': 'text/plain' },
+      signal: ctrl.signal
+    });
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา กรุณาลองใหม่');
+    throw e;
+  }
+  clearTimeout(timer);
   const data = await res.json();
   if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
     const path = window.location.pathname;
