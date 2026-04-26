@@ -1251,7 +1251,11 @@ async function loadPage() {
     if (_el('ps_uniDefaultStatus')) _el('ps_uniDefaultStatus').value = ps.uniDefaultStatus || 'Pending';
     renderPromotionRules(rules);
 
-    if (studRes.status !== 'success') throw new Error(studRes.message || t('promoLoadError'));
+    if (studRes.status !== 'success') {
+      // Unauthorized is handled by api.js (redirect to login) — don't show error UI
+      if ((studRes.message || '').includes('Unauthorized')) return;
+      throw new Error(studRes.message || t('promoLoadError'));
+    }
 
     ALL_GROUPS = studRes.groups || [];
 
