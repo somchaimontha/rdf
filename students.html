@@ -860,10 +860,15 @@ function renderTable() {
         ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
       </td>
       <td class="hide-mobile text-xs">
-        ${s.currentAcademicYear
-          ? `<span class="font-semibold" style="color:#1d4ed8">${s.currentAcademicYear}</span>
-             <span class="text-gray-400"> / ${parseInt(s.currentAcademicYear) - 543}</span>`
-          : '<span class="text-gray-300">—</span>'}
+        ${(() => {
+          const isAlumni = ['Graduated','University','Resigned','WithdrawnScholarship','Incomplete'].includes(s.status);
+          const yr = s.currentAcademicYear || (isAlumni && s.scholarshipYear ? String(parseInt(s.scholarshipYear)+543) : '');
+          if (!yr) return '<span class="text-gray-300">—</span>';
+          const ce = parseInt(yr) - 543;
+          return `<span class="font-semibold" style="color:${isAlumni ? '#7c3aed' : '#1d4ed8'}">${yr}</span>
+                  <span class="text-gray-400"> / ${ce}</span>
+                  ${isAlumni ? '<br><span style="font-size:10px;color:#9ca3af;font-weight:600">ปีสุดท้าย</span>' : ''}`;
+        })()}
       </td>
       <td class="text-sm text-gray-600">${fmtPhone(s.phone)}</td>
       <td><span class="badge ${statusColor}">${statusLabel}</span></td>
@@ -901,6 +906,14 @@ function renderTable() {
              class="btn btn-icon btn-secondary">
             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
           </a>
+          ${s.status === 'Graduated' && s.uniName && (s.uniScholarship||'').toLowerCase() !== 'no'
+            ? `<button onclick="confirmMoveToUni('${s.stipNo}','${(s.uniName||'').replace(/'/g,"&#39;")}')"
+                       title="ย้ายสถานะไปทุนมหาลัย (อนุมัติทุน RDF ต่อ มหาวิทยาลัย)"
+                       style="background:#ede9fe;color:#6d28d9;border:1.5px solid #c4b5fd;border-radius:8px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1.3;white-space:nowrap">
+                 <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                 <span>อนุมัติทุน ม.</span>
+               </button>`
+            : ''}
           <button onclick="confirmDelete('${s.stipNo}')" title="${t('delete')}"
                   class="btn btn-icon btn-danger">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -1090,6 +1103,59 @@ function openGradeModal(stipNo) {
 
 function closeGradeModal() {
   document.getElementById('gradeModal').classList.add('hidden');
+}
+
+// Move a Graduated student (pending RDF uni scholarship) to Active status at UNI institution.
+// Called after scholarship is approved by the foundation.
+async function confirmMoveToUni(stipNo, uniName) {
+  const { isConfirmed } = await Swal.fire({
+    icon: 'question',
+    title: 'อนุมัติทุนมหาวิทยาลัย',
+    html: `<div style="text-align:left;font-size:14px;line-height:1.8">
+      <b>${stipNo}</b><br>
+      ยืนยันการอนุมัติทุน RDF ให้นักเรียนเข้าศึกษาต่อมหาวิทยาลัย<br>
+      <span style="color:#6d28d9;font-weight:700">${uniName || '—'}</span><br>
+      <span style="color:#6b7280;font-size:12px">สถานะจะเปลี่ยนจาก <b>ศิษย์เก่า</b> → <b>Active (University / ชั้นปีที่ 1)</b></span>
+    </div>`,
+    showCancelButton: true,
+    confirmButtonColor: '#6d28d9',
+    confirmButtonText: '✓ อนุมัติ',
+    cancelButtonText: 'ยกเลิก'
+  });
+  if (!isConfirmed) return;
+
+  showLoader(true, 'กำลังอัปเดตสถานะ…');
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const r = await API.promoteStudents(
+      [{ StipNo: stipNo, NewStatus: 'Active', NewInstitution: 'UNI', NewLevel: 'ชั้นปีที่ 1' }],
+      (getUser()||{}).username || 'Admin',
+      today
+    );
+    showLoader(false);
+    if (r.status === 'success') {
+      await Swal.fire({
+        icon: 'success', title: 'อนุมัติสำเร็จ',
+        html: `<b>${stipNo}</b> ย้ายไปอยู่ในกลุ่ม University (ชั้นปีที่ 1) แล้ว`,
+        timer: 2500, showConfirmButton: false
+      });
+      // Update local data so the row reflects the new status without a full reload
+      const idx = allStudents.findIndex(s => s.stipNo === stipNo);
+      if (idx !== -1) {
+        allStudents[idx].status      = 'Active';
+        allStudents[idx].institution = 'UNI';
+        allStudents[idx].level       = 'ชั้นปีที่ 1';
+      }
+      applyFilters();
+    } else {
+      RDF.logError('students.html', 'confirmMoveToUni()', r.message || 'failed');
+      Swal.fire('ผิดพลาด', r.message || 'ไม่สามารถอัปเดตสถานะได้', 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    RDF.logError('students.html', 'confirmMoveToUni()', e.message || 'network error');
+    Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+  }
 }
 
 async function confirmDelete(stipNo) {

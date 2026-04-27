@@ -1786,8 +1786,9 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
     case 'promote':   p.NewLevel = dec.nextLevel; break;
     case 'graduate':  p.NewStatus = 'Graduated'; break;
     case 'uni':
-      p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
-      p.UniScholarship = dec.uniScholarship || 'Yes';
+      // Status='Graduated' first — scholarship hasn't been approved yet.
+      // Admin moves to Active+UNI from students.html once scholarship is confirmed.
+      p.NewStatus = 'Graduated'; p.UniScholarship = dec.uniScholarship || 'Yes';
       if (dec.uniName)       p.UniName       = dec.uniName;
       if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
       if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
@@ -1803,7 +1804,8 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
           ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)' : 'ประกาศนียบัตรวิชาชีพ (ปวช.)'; }
       break;
     case 'uni_own':
-      p.NewStatus = 'University'; p.UniScholarship = 'No';
+      // Alumni — continuing on own funding, no RDF scholarship at university level.
+      p.NewStatus = 'Graduated'; p.UniScholarship = 'No';
       if (dec.uniName)       p.UniName       = dec.uniName;
       if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
       if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
@@ -2791,8 +2793,8 @@ function _actionDoneLabel(act) {
   const map = {
     promote:      { emoji:'⬆', th:'เลื่อนชั้นแล้ว',         en:'Promoted',              bg:'#dcfce7', border:'#86efac', color:'#16a34a' },
     graduate:     { emoji:'🎓', th:'จบการศึกษาแล้ว',          en:'Graduated',             bg:'#dcfce7', border:'#86efac', color:'#16a34a' },
-    uni:          { emoji:'🏛', th:'ต่อ ม. (RDF) แล้ว',       en:'Moved to UNI (RDF)',    bg:'#ede9fe', border:'#c4b5fd', color:'#6d28d9' },
-    uni_own:      { emoji:'🏛', th:'ต่อ ม. (ตนเอง) แล้ว',    en:'Moved to UNI (own)',    bg:'#ede9fe', border:'#c4b5fd', color:'#6d28d9' },
+    uni:          { emoji:'🏛', th:'รอผลอนุมัติทุน ม.',        en:'Pending UNI Approval',  bg:'#faf5ff', border:'#c4b5fd', color:'#6d28d9' },
+    uni_own:      { emoji:'🏛', th:'ต่อ ม. (ทุนตนเอง) — ศิษย์เก่า', en:'Alumni (own funding)', bg:'#f0fdf4', border:'#86efac', color:'#16a34a' },
     hold:         { emoji:'⏸', th:'ซ้ำชั้นแล้ว',             en:'Held Back',             bg:'#ffedd5', border:'#fdba74', color:'#c2410c' },
     suspend:      { emoji:'⚠', th:'พักการเรียนแล้ว',          en:'Suspended',             bg:'#fef9c3', border:'#fde047', color:'#a16207' },
     resign:       { emoji:'✕', th:'ลาออกจากสถาบันแล้ว',       en:'Resigned',              bg:'#fee2e2', border:'#fca5a5', color:'#dc2626' },
@@ -3391,8 +3393,7 @@ async function applyAllChanges() {
       case 'promote':   p.NewLevel = dec.nextLevel; break;
       case 'graduate':  p.NewStatus = 'Graduated'; break;
       case 'uni':
-        p.NewInstitution = 'UNI'; p.NewLevel = 'ชั้นปีที่ 1'; p.NewStatus = 'Active';
-        p.UniScholarship = dec.uniScholarship || 'Yes';
+        p.NewStatus = 'Graduated'; p.UniScholarship = dec.uniScholarship || 'Yes';
         if (dec.uniName)       p.UniName       = dec.uniName;
         if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
         if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
@@ -3408,7 +3409,7 @@ async function applyAllChanges() {
             ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)' : 'ประกาศนียบัตรวิชาชีพ (ปวช.)'; }
         break;
       case 'uni_own':
-        p.NewStatus = 'University'; p.UniScholarship = 'No';
+        p.NewStatus = 'Graduated'; p.UniScholarship = 'No';
         if (dec.uniName)       p.UniName       = dec.uniName;
         if (dec.uniNameEN)     p.UniNameEN     = dec.uniNameEN;
         if (dec.uniFaculty)    p.UniFaculty    = dec.uniFaculty;
