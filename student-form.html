@@ -1722,6 +1722,11 @@ function fillForm(d) {
   sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration);
   sv('f_uniProvince', d.UniProvince); sv('f_uniFaculty', d.UniFaculty); sv('f_uniMajor', d.UniMajor);
   sv('f_uniNameEN', d.UniNameEN); sv('f_uniMajorEN', d.UniMajorEN);
+  // Show uniSection even when institution is not UNI yet (e.g. Graduated + pending scholarship)
+  if (d.UniName && d.Institution !== 'UNI') {
+    const uniSec = document.getElementById('uniSection');
+    if (uniSec) uniSec.classList.remove('hidden');
+  }
   // SchPriority — read-only badge (set by promotion workflow, never editable in profile)
   (function() {
     const badge = document.getElementById('schPriorityBadge');
