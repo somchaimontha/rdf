@@ -2384,13 +2384,23 @@ async function undoPromotion(stipNo, inst, level) {
   });
   if (!isConfirmed) return;
 
-  // Revert payload: restore original level (= group level), status, and academic year
+  // Revert payload: restore original level (= group level), status, and academic year.
+  // Include uni fields so GAS doesn't clear them during revert.
   const payload = {
     StipNo:            stipNo,
     NewLevel:          grp.level,
     NewStatus:         stu.Status || 'Active',
     NextAcademicYear:  stu.CurrentAcademicYear || '',
-    PromotionBatchID:  '',  // clear batch ID so it's no longer counted as promoted
+    PromotionBatchID:  '',
+    UniName:           stu.UniName        || '',
+    UniNameEN:         stu.UniNameEN      || '',
+    UniMajor:          stu.UniMajor       || '',
+    UniMajorEN:        stu.UniMajorEN     || '',
+    UniFaculty:        stu.UniFaculty     || '',
+    UniFacultyEN:      stu.UniFacultyEN   || '',
+    UniProvince:       stu.UniProvince    || '',
+    UniProvinceEN:     stu.UniProvinceEN  || '',
+    UniScholarship:    stu.UniScholarship || '',
   };
 
   const user = (getUser()||{}).username || 'admin';

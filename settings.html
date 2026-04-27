@@ -754,8 +754,8 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-3">สาขาวิชาที่เปิดสอนในมหาวิทยาลัย — ใช้ใน autocomplete ระบบเลื่อนชั้นและฟอร์มนักเรียน</p>
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
-          <span>มหาวิทยาลัย</span><span>สาขาวิชา (ไทย)</span><span>Major (EN)</span><span>คณะ</span><span></span>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
+          <span>สาขาวิชา (ไทย)</span><span>Major (EN)</span><span>คณะ</span><span></span>
         </div>
         <div id="uniProgRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm">กำลังโหลด...</div>
@@ -788,8 +788,8 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-3">รายชื่อคณะในมหาวิทยาลัย — ใช้เป็น autocomplete ในช่องคณะของสาขาวิชา</p>
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
-          <span>มหาวิทยาลัย</span><span>คณะ (ไทย)</span><span>Faculty (EN)</span><span></span>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
+          <span>คณะ (ไทย)</span><span>Faculty (EN)</span><span></span>
         </div>
         <div id="uniFacRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm">กำลังโหลด...</div>
@@ -871,8 +871,9 @@
             <div class="p-3 grid grid-cols-2 gap-3" style="background:#faf5ff">
               <div>
                 <label class="field-label">ชื่อมหาวิทยาลัย (ไทย) <span class="text-red-500">*</span></label>
-                <input type="text" id="apModalUniName" class="field-input" list="apUniNameList" placeholder="เช่น มหาวิทยาลัยเชียงใหม่">
-                <datalist id="apUniNameList"></datalist>
+                <select id="apModalUniName" class="field-select" onchange="_apAutoFillUniNameEN()">
+                  <option value="">เลือกมหาวิทยาลัย...</option>
+                </select>
               </div>
               <div>
                 <label class="field-label">🇬🇧 University Name (EN) <span class="text-red-500">*</span></label>
@@ -2986,8 +2987,26 @@ const _PROV_EN = {
 function apAutoFillProvinceEN(thVal) {
   const en = _PROV_EN[thVal.trim()] || '';
   const enEl = document.getElementById('apModalProvinceEN');
-  // Only auto-fill if EN field is still empty (don't overwrite user's manual input)
-  if (enEl && !enEl.value.trim()) enEl.value = en;
+  if (enEl) enEl.value = en;
+}
+
+function _apPopulateUniNameSel() {
+  const sel = document.getElementById('apModalUniName');
+  if (!sel) return;
+  const cur = sel.value;
+  const opts = uniListState.map(u =>
+    `<option value="${_esc(u.nameTH)}" data-en="${_esc(u.nameEN)}">${_esc(u.nameTH)}</option>`
+  ).join('');
+  sel.innerHTML = `<option value="">เลือกมหาวิทยาลัย...</option>` + opts;
+  if (cur) sel.value = cur;
+}
+
+function _apAutoFillUniNameEN() {
+  const sel = document.getElementById('apModalUniName');
+  if (!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  const enEl = document.getElementById('apModalUniNameEN');
+  if (enEl) enEl.value = opt?.dataset?.en || '';
 }
 
 function apUpdateCategoryOptions() {
@@ -3009,15 +3028,8 @@ function apUpdateCategoryOptions() {
   if (uniFields) uniFields.classList.toggle('hidden', !isUNI);
   if (nonUni)    nonUni.classList.toggle('hidden',    isUNI);
   if (isUNI) {
-    // Populate university name datalist from existing entries
-    const dl = document.getElementById('apUniNameList');
-    if (dl) {
-      dl.innerHTML = '';
-      const seen = new Set();
-      _apState.filter(p => p.institution === 'UNI' && p.uniName).forEach(p => {
-        if (!seen.has(p.uniName)) { seen.add(p.uniName); const o = document.createElement('option'); o.value = p.uniName; dl.appendChild(o); }
-      });
-    }
+    // Populate university name select from University List
+    _apPopulateUniNameSel();
     // Populate province datalist with all 77 Thai provinces
     const pdl = document.getElementById('apProvinceList');
     if (pdl && !pdl.children.length) {
@@ -3065,7 +3077,7 @@ function apOpenEdit(id) {
   const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   sv('apModalNameTH',     p.nameTH);
   sv('apModalNameEN',     p.nameEN);
-  sv('apModalUniName',    p.uniName);
+  sv('apModalUniName',    p.uniName);    // works for SELECT: sets selected option by value
   sv('apModalUniNameEN',  p.uniNameEN);
   sv('apModalUniMajorTH', p.nameTH);
   sv('apModalUniMajorEN', p.nameEN);
@@ -3075,7 +3087,7 @@ function apOpenEdit(id) {
   sv('apModalProvinceEN', p.provinceEN || _PROV_EN[p.province] || '');
   if (title) title.textContent = t('stMajModalEdit');
   modal.classList.remove('hidden');
-  setTimeout(() => (document.getElementById('apModalUniName') || document.getElementById('apModalNameTH'))?.focus(), 80);
+  setTimeout(() => document.getElementById('apModalUniMajorTH')?.focus() || document.getElementById('apModalNameTH')?.focus(), 80);
 }
 
 function apCloseModal() {
@@ -3425,9 +3437,8 @@ function renderUniProgRows() {
         ${_esc(uniName)}
       </div>
       ${progs.map(p => `
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr auto;gap:6px;align-items:center;
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;
                     padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
-          <span class="text-xs text-gray-500">${_esc(p.uniName||'')}</span>
           <span class="text-sm font-medium text-gray-800">${_esc(p.nameTH||'')}</span>
           <span class="text-sm text-gray-600">${_esc(p.nameEN||'')}</span>
           <span class="text-sm text-gray-500">${_esc(p.faculty||'')}</span>
@@ -3502,9 +3513,8 @@ function renderUniFacRows() {
         ${_esc(uniName)}
       </div>
       ${facs.map(f => `
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:6px;align-items:center;
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
                     padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
-          <span class="text-xs text-gray-500">${_esc(f.uniName||'')}</span>
           <span class="text-sm font-medium text-gray-800">${_esc(f.faculty||'')}</span>
           <span class="text-sm text-gray-600">${_esc(f.facultyEN||'')}</span>
           <button onclick="deleteUniFac('${f.id}')" title="ลบ"
