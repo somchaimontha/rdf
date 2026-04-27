@@ -681,12 +681,34 @@ img.student-avatar {
       <!-- Academic Year + Date -->
       <div class="grid grid-cols-2 gap-3 pr-section">
         <div>
-          <span class="pr-label">ปีการศึกษา / Academic Year</span>
-          <input type="text" id="prModalAcad" class="pr-field" placeholder="2024-2025">
+          <span class="pr-label">ปีการศึกษา / Academic Year <span class="text-gray-400 font-normal">(แสดงในหัวรายงาน)</span></span>
+          <div class="flex gap-1">
+            <input type="text" id="prModalAcad" class="pr-field flex-1" placeholder="เช่น 2567-2568 หรือ 2024-2025">
+            <button onclick="document.getElementById('prModalAcad').value=''" title="ล้างค่า" class="px-2 text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg text-xs">✕</button>
+          </div>
         </div>
         <div>
           <span class="pr-label">วันที่รายงาน / Report Date</span>
           <input type="date" id="prModalDate" class="pr-field">
+        </div>
+      </div>
+
+      <!-- Sort Options -->
+      <div class="pr-section">
+        <span class="pr-label">การเรียงลำดับ / Sort Options</span>
+        <div class="pr-radio-row flex-wrap gap-x-5 gap-y-2">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="prSortLevel" checked class="rounded accent-blue-600">
+            <span>เรียงตามชั้นปี / By Level</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="prSortPriority" class="rounded accent-blue-600">
+            <span>เรียงตามลำดับขอทุน / By Scholarship Priority</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="prSortName" class="rounded accent-blue-600">
+            <span>เรียงตามชื่อ / By Name (A-Z)</span>
+          </label>
         </div>
       </div>
 
@@ -3830,15 +3852,18 @@ function doPrintReport() {
   const selSigs  = (window._prSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selIdxs.has(i));
 
   const opts = {
-    lang:       document.querySelector('input[name="prLang"]:checked').value,
-    reportType: document.querySelector('input[name="prType"]:checked').value,
-    inst:       document.getElementById('prModalInst').value,
-    level:      document.getElementById('prModalLevel')?.value || '',
-    school:     document.getElementById('prModalSchool').value.trim(),
-    subject:    document.getElementById('prModalSubject').value.trim(),
-    acad:       document.getElementById('prModalAcad').value,
-    pDate:      document.getElementById('prModalDate').value,
-    sigs:       selSigs,
+    lang:           document.querySelector('input[name="prLang"]:checked').value,
+    reportType:     document.querySelector('input[name="prType"]:checked').value,
+    inst:           document.getElementById('prModalInst').value,
+    level:          document.getElementById('prModalLevel')?.value || '',
+    school:         document.getElementById('prModalSchool').value.trim(),
+    subject:        document.getElementById('prModalSubject').value.trim(),
+    acad:           document.getElementById('prModalAcad').value,
+    pDate:          document.getElementById('prModalDate').value,
+    sigs:           selSigs,
+    sortByLevel:    document.getElementById('prSortLevel')?.checked ?? true,
+    sortByPriority: document.getElementById('prSortPriority')?.checked ?? false,
+    sortByName:     document.getElementById('prSortName')?.checked ?? false,
   };
 
   const html = generateFormalReportHTML(opts);
@@ -3855,6 +3880,8 @@ function doPrintReport() {
 function generateFormalReportHTML(opts) {
   const tL   = key => (T[opts.lang]||{})[key] || T['th'][key] || key;
   const isEN = opts.lang === 'en';
+  // Level abbreviation that respects report language (not page LANG global)
+  opts._lvl  = l => { const sv = LANG; LANG = opts.lang; const r = abbrevLevel(l); LANG = sv; return r; };
   const gradActions       = new Set(['graduate','uni','uni_own']);
   const withdrawalActions = new Set(['resign','withdraw_sch']);
 
@@ -3873,17 +3900,27 @@ function generateFormalReportHTML(opts) {
     return !!(r && (r.completion === 'graduate' || r.completion === 'graduate_uni'));
   };
 
+  // Non-graduation actions that exclude a student from the graduation report even at a grad level
+  const nonGradExplicit = new Set(['hold','suspend','resign','withdraw_sch']);
+
   // Collect matching rows
   const dataRows = [];
   sorted.forEach(g => {
     if (opts.inst && g.institution !== opts.inst) return;
     if (opts.level && g.level !== opts.level) return;
+    const fromGradLevel = _isGradLevel(g) || g.institution === 'UNI';
     g.students.forEach(s => {
       const dec = ROW_DECISIONS[s.StipNo] || {};
       let act = dec.action || 'promote';
+
       if (opts.reportType === 'graduation') {
-        // alreadyPromoted students from graduation levels still belong in the graduation report
-        if (act === 'skip' && dec.alreadyPromoted && _isGradLevel(g)) act = 'graduate';
+        // Explicit non-grad actions always exclude (admin chose hold/suspend/resign/etc.)
+        if (nonGradExplicit.has(act)) return;
+        // For graduation-level groups: include regardless of whether rule lookup succeeded
+        // 'promote' may be a fallback when level key mismatches → treat as 'graduate'
+        // 'skip' (alreadyPromoted) from a grad level → treat as 'graduate'
+        if (fromGradLevel && (act === 'promote' || act === 'skip')) act = 'graduate';
+        // For non-grad groups: only explicit grad actions
         if (!gradActions.has(act)) return;
       }
       if (opts.reportType === 'promotion'  && act === 'skip') return;
@@ -3891,6 +3928,27 @@ function generateFormalReportHTML(opts) {
       dataRows.push({ g, s, dec: { ...dec, action: act } });
     });
   });
+
+  // Apply sort — priority wins over level; name is tiebreaker
+  const _instO = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  if (opts.sortByPriority) {
+    dataRows.sort((a, b) => {
+      const pa = a.dec.schPriority ?? 9999, pb = b.dec.schPriority ?? 9999;
+      if (pa !== pb) return pa - pb;
+      return ((a.s.FirstName||'') + (a.s.LastName||'')).localeCompare((b.s.FirstName||'') + (b.s.LastName||''), 'th');
+    });
+  } else if (opts.sortByName) {
+    dataRows.sort((a, b) =>
+      ((a.s.FirstName||'')+(a.s.LastName||'')).localeCompare((b.s.FirstName||'')+(b.s.LastName||''), 'th'));
+  } else {
+    // Default: institution → level → original student order
+    dataRows.sort((a, b) => {
+      const io = (_instO[a.g.institution]??9) - (_instO[b.g.institution]??9);
+      if (io !== 0) return io;
+      return (LEVEL_OPTIONS[a.g.institution]||[]).indexOf(a.g.level) -
+             (LEVEL_OPTIONS[b.g.institution]||[]).indexOf(b.g.level);
+    });
+  }
 
   // Bilingual strings — hardcoded to avoid i18n key lookup failures
   const STR = {
@@ -3907,7 +3965,7 @@ function generateFormalReportHTML(opts) {
 
   const org  = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
   const instLbl  = opts.inst  ? (instLabelMap[opts.inst] || opts.inst) : S.allInst;
-  const levelLbl = opts.level ? (abbrevLevel(opts.level) + ' — ' + opts.level) : '';
+  const levelLbl = opts.level ? (opts._lvl(opts.level) + ' — ' + opts.level) : '';
   const schoolDisplay = opts.school || instLbl;
   const rptTitle = opts.reportType === 'graduation' ? S.grad
     : opts.reportType === 'withdrawal' ? S.withdrawal : S.promo;
@@ -3915,10 +3973,10 @@ function generateFormalReportHTML(opts) {
     `${schoolDisplay}${levelLbl ? ' / ' + levelLbl : ''}${opts.acad ? ' ' + opts.acad : ''} (${rptTitle})`;
 
   const tableHTML     = opts.reportType === 'graduation'
-    ? buildGradTableHTML(dataRows, isEN)
+    ? buildGradTableHTML(dataRows, isEN, opts._lvl)
     : opts.reportType === 'withdrawal'
-      ? buildWithdrawalTableHTML(dataRows, isEN)
-      : buildPromoTableHTML(dataRows, isEN);
+      ? buildWithdrawalTableHTML(dataRows, isEN, opts._lvl)
+      : buildPromoTableHTML(dataRows, isEN, opts._lvl);
   const summaryHTML   = buildReportSummaryHTML(dataRows, opts.reportType, isEN, S);
   const signatureHTML = buildSignatureHTML(opts.sigs || [], opts.pDate, S, isEN);
 
@@ -3993,56 +4051,73 @@ ${signatureHTML}
 
 const instLabelMap = { MBS:'Maesaring (MBS)', VC:'Vocational College (VC)', UNI:'University (UNI)', OTHER:'Other' };
 
-function buildGradTableHTML(dataRows, isEN) {
+function buildGradTableHTML(dataRows, isEN, lvl) {
+  lvl = lvl || abbrevLevel;
   let seq = 1;
   const rows = dataRows.map(({ g, s, dec }) => {
-    const thaiName  = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const thaiName      = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
     const engTitleFirst = (getTitleEN(s.Title) ? getTitleEN(s.Title)+' ' : '') + (s.EngFirstName||'');
-    const engLast   = s.EngLastName || '';
-    const cont      = dec.action==='uni' || dec.action==='uni_own';
-    const newLevel  = cont ? (isEN?'University':'มหาวิทยาลัย') : '—';
-    const duration  = dec.uniDuration ? dec.uniDuration+(isEN?' yr':' ปี') : '—';
+    const engLast       = s.EngLastName || '';
+    const cont          = dec.action==='uni' || dec.action==='uni_own';
+    const newLevel      = cont ? (isEN?'University':'มหาวิทยาลัย') : '—';
+    const duration      = dec.uniDuration ? dec.uniDuration+(isEN?' yr':' ปี') : '—';
+    // Language-aware fields
+    const levelDisplay  = isEN ? lvl(g.level) : g.level;
+    const uniDisplay    = isEN ? (dec.uniNameEN || dec.uniName || '—') : (dec.uniName || '—');
+    const majorDisplay  = isEN ? (dec.uniMajorEN || dec.uniMajor || dec.uniFacultyEN || dec.uniFaculty || '—')
+                                : (dec.uniMajor || dec.uniFaculty || '—');
+    const provDisplay   = isEN ? (dec.uniProvinceEN || dec.uniProvince || '—') : (dec.uniProvince || '—');
+    // Primary name column order: EN report → EN name first; TH report → Thai name first
+    const col1 = isEN ? engTitleFirst : thaiName;
+    const col2 = isEN ? engLast       : '';
+    const col3 = isEN ? thaiName      : (engTitleFirst + ' ' + engLast).trim();
     return `<tr>
       <td class="seq">${seq++}</td>
-      <td>${engTitleFirst}</td>
-      <td>${engLast}</td>
-      <td>${thaiName}</td>
+      <td>${col1||'—'}</td>
+      ${isEN ? `<td>${col2||'—'}</td>` : ''}
+      <td>${col3||'—'}</td>
       <td>${s.Major||'—'}</td>
-      <td>${g.level}</td>
-      <td>${cont&&dec.uniName ? dec.uniName : '—'}</td>
-      <td>${cont&&(dec.uniMajor||dec.uniFaculty) ? (dec.uniMajor||dec.uniFaculty) : '—'}</td>
+      <td>${levelDisplay}</td>
+      <td>${cont ? uniDisplay : '—'}</td>
+      <td>${cont ? majorDisplay : '—'}</td>
       <td>${newLevel}</td>
       <td class="tc">${duration}</td>
       <td>${dec.notes||'—'}</td>
-      <td>${dec.uniProvince||'—'}</td>
+      <td>${cont ? provDisplay : '—'}</td>
     </tr>`;
-  }).join('') || noDataRow(12, isEN);
+  }).join('') || noDataRow(isEN ? 12 : 11, isEN);
 
+  const nameColspan = isEN ? 3 : 2;
+  const levelLblHdr = isEN ? lvl(dataRows[0]?.g?.level || '') || 'Level' : 'จบการศึกษาระดับ';
   return `<table>
     <thead>
       <tr>
         <th rowspan="2" style="width:3%">${isEN?'No.':'ลำดับ'}</th>
-        <th colspan="3" style="width:27%">${isEN?'Name':'ชื่อ-นามสกุล'}</th>
-        <th rowspan="2" style="width:8%">${isEN?'Major':'สาขา'}</th>
-        <th rowspan="2" style="width:10%">${isEN?'Graduated with a degree in':'จบการศึกษาระดับ'}</th>
-        <th rowspan="2" style="width:12%">${isEN?'Study in a new place':'สถานศึกษาใหม่'}</th>
-        <th rowspan="2" style="width:9%">${isEN?'Major (new)':'สาขา (ใหม่)'}</th>
-        <th rowspan="2" style="width:9%">${isEN?'Level of further new study (new)':'ระดับการศึกษาต่อ'}</th>
-        <th rowspan="2" style="width:6%">${isEN?'Duration (yr)':'ระยะเวลา'}</th>
-        <th rowspan="2" style="width:11%">${isEN?'Employment Status / Remarks':'สถานะ / หมายเหตุ'}</th>
+        <th colspan="${nameColspan}" style="width:${isEN?'27%':'19%'}">${isEN?'Name':'ชื่อ-นามสกุล'}</th>
+        <th rowspan="2" style="width:8%">${isEN?'Major / Program':'สาขา'}</th>
+        <th rowspan="2" style="width:10%">${isEN?'Graduated Level':'จบการศึกษาระดับ'}</th>
+        <th rowspan="2" style="width:12%">${isEN?'New Institution':'สถานศึกษาใหม่'}</th>
+        <th rowspan="2" style="width:9%">${isEN?'Major (New)':'สาขา (ใหม่)'}</th>
+        <th rowspan="2" style="width:9%">${isEN?'Next Level':'ระดับการศึกษาต่อ'}</th>
+        <th rowspan="2" style="width:6%">${isEN?'Duration':'ระยะเวลา'}</th>
+        <th rowspan="2" style="width:11%">${isEN?'Remarks':'หมายเหตุ'}</th>
         <th rowspan="2" style="width:5%">${isEN?'Province':'จังหวัด'}</th>
       </tr>
       <tr>
-        <th class="sub-h" style="width:9%">${isEN?'Title & First Name':'คำนำหน้า+ชื่อ (EN)'}</th>
-        <th class="sub-h" style="width:8%">${isEN?'Last Name':'นามสกุล (EN)'}</th>
-        <th class="sub-h" style="width:10%">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
+        ${isEN
+          ? `<th class="sub-h" style="width:9%">Title &amp; First Name</th>
+             <th class="sub-h" style="width:8%">Last Name</th>
+             <th class="sub-h" style="width:10%">Thai Name</th>`
+          : `<th class="sub-h" style="width:11%">ชื่อ-นามสกุล (ไทย)</th>
+             <th class="sub-h" style="width:8%">ชื่อ-นามสกุล (EN)</th>`}
       </tr>
     </thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
 
-function buildPromoTableHTML(dataRows, isEN) {
+function buildPromoTableHTML(dataRows, isEN, lvl) {
+  lvl = lvl || abbrevLevel;
   let seq = 1;
   const aMap = {
     promote:     { lbl:isEN?'Promote':'เลื่อนชั้น',                cls:'a-promote' },
@@ -4056,10 +4131,13 @@ function buildPromoTableHTML(dataRows, isEN) {
   };
   const rows = dataRows.map(({ g, s, dec }) => {
     const thaiName = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
-    const engName  = ((s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
+    const engName  = ((getTitleEN(s.Title) ? getTitleEN(s.Title)+' ' : '') + (s.EngFirstName||'') + ' ' + (s.EngLastName||'')).trim();
     const act = dec.action || 'promote';
     const { lbl, cls } = aMap[act] || { lbl:act, cls:'' };
-    const nextLvl = act==='promote' ? (dec.nextLevel||'—')
+    // nextLevel display — use abbrevLevel in EN to avoid Thai text
+    const nextLvlRaw = act==='promote' ? (dec.nextLevel||'—') : null;
+    const nextLvl = nextLvlRaw
+      ? (isEN ? abbrevLevel(nextLvlRaw) : nextLvlRaw)
       : act==='graduate' ? (isEN?'Graduated':'สำเร็จการศึกษา')
       : act==='uni'      ? (isEN?'UNI Year 1 (RDF Sch.)':'มหาวิทยาลัย ปี 1 (RDF)')
       : act==='uni_own'  ? (isEN?'University (Own funding)':'มหาวิทยาลัย (ทุนตนเอง)')
@@ -4069,13 +4147,18 @@ function buildPromoTableHTML(dataRows, isEN) {
       : act==='withdraw_sch' ? (isEN?'Withdrawn (Scholarship)':'ถอนทุนการศึกษา') : '—';
     const schMap = { Yes:isEN?'Yes':'ใช่', No:isEN?'No':'ไม่ใช่', Pending:isEN?'Pending':'รอพิจารณา' };
     const schLbl = ['uni','uni_own'].includes(act) ? (schMap[dec.uniScholarship]||'—') : '—';
+    // language-aware level display
+    const levelDisplay = isEN ? lvl(g.level) : g.level;
+    // name column order: EN → EN first; TH → Thai first
+    const nameA = isEN ? (engName||'—') : (thaiName||'—');
+    const nameB = isEN ? (thaiName||'—') : (engName||'—');
     return `<tr>
       <td class="seq">${seq++}</td>
-      <td>${thaiName}</td>
-      <td>${engName||'—'}</td>
+      <td>${nameA}</td>
+      <td>${nameB}</td>
       <td class="tc" style="font-size:7.5pt;font-family:monospace">${s.StipNo}</td>
       <td class="tc">${g.institution}</td>
-      <td>${g.level}</td>
+      <td>${levelDisplay}</td>
       <td class="tc"><span class="act-lbl ${cls}">${lbl}</span></td>
       <td>${nextLvl}</td>
       <td class="tc">${schLbl}</td>
@@ -4087,8 +4170,8 @@ function buildPromoTableHTML(dataRows, isEN) {
     <thead>
       <tr>
         <th style="width:3%">${isEN?'No.':'ลำดับ'}</th>
-        <th style="width:14%">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
-        <th style="width:12%">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
+        <th style="width:14%">${isEN?'Name (EN)':'ชื่อ-นามสกุล (ไทย)'}</th>
+        <th style="width:12%">${isEN?'Thai Name':'ชื่อ-นามสกุล (EN)'}</th>
         <th style="width:8%">${isEN?'StipNo':'รหัสทุน'}</th>
         <th style="width:5%">${isEN?'Inst.':'สถานศึกษา'}</th>
         <th style="width:14%">${isEN?'Current Level':'ระดับชั้นปัจจุบัน'}</th>
@@ -4425,21 +4508,25 @@ ${sigs.length > 0 ? `
 // ─────────────────────────────────────────────
 // WITHDRAWAL TABLE for formal print report
 // ─────────────────────────────────────────────
-function buildWithdrawalTableHTML(dataRows, isEN) {
+function buildWithdrawalTableHTML(dataRows, isEN, lvl) {
+  lvl = lvl || abbrevLevel;
   let seq = 1;
   const rows = dataRows.map(({ g, s, dec }) => {
-    const name = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
-    const eng  = ((s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
+    const thaiName = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const engName  = ((getTitleEN(s.Title) ? getTitleEN(s.Title)+' ' : '') + (s.EngFirstName||'') + ' ' + (s.EngLastName||'')).trim();
+    const nameA = isEN ? (engName||'—') : (thaiName||'—');
+    const nameB = isEN ? (thaiName||'—') : (engName||'—');
+    const levelDisplay = isEN ? lvl(g.level) : g.level;
     const type = dec.action === 'resign'
       ? (isEN?'Withdraw (Institution)':'ลาออกจากสถาบัน')
       : (isEN?'Withdraw (Scholarship)':'ถอนทุนการศึกษา');
     return `<tr>
       <td class="seq">${seq++}</td>
-      <td>${name}</td>
-      <td>${eng||'—'}</td>
+      <td>${nameA}</td>
+      <td>${nameB}</td>
       <td class="tc" style="font-family:monospace;font-size:7.5pt">${s.StipNo}</td>
       <td class="tc">${g.institution}</td>
-      <td>${g.level}</td>
+      <td>${levelDisplay}</td>
       <td style="color:#9f1239;font-weight:700">${type}</td>
       <td>${dec.notes||'—'}</td>
     </tr>`;
@@ -4447,8 +4534,8 @@ function buildWithdrawalTableHTML(dataRows, isEN) {
   return `<table>
     <thead><tr>
       <th style="width:3%">${isEN?'No.':'ลำดับ'}</th>
-      <th style="width:18%">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
-      <th style="width:14%">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
+      <th style="width:18%">${isEN?'Name (EN)':'ชื่อ-นามสกุล (ไทย)'}</th>
+      <th style="width:14%">${isEN?'Thai Name':'ชื่อ-นามสกุล (EN)'}</th>
       <th style="width:9%">${isEN?'StipNo':'รหัสทุน'}</th>
       <th style="width:6%">${isEN?'Inst.':'สถาบัน'}</th>
       <th style="width:14%">${isEN?'Level':'ระดับชั้น'}</th>
