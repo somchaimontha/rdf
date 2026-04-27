@@ -3846,7 +3846,7 @@ function closePrintReportModal() {
   document.getElementById('printReportModal').classList.add('hidden');
 }
 
-function doPrintReport() {
+async function doPrintReport() {
   // Collect selected signature slots
   const selIdxs  = new Set([...document.querySelectorAll('input[name="prSig"]:checked')].map(cb => +cb.value));
   const selSigs  = (window._prSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selIdxs.has(i));
@@ -3864,9 +3864,30 @@ function doPrintReport() {
     sortByLevel:    document.getElementById('prSortLevel')?.checked ?? true,
     sortByPriority: document.getElementById('prSortPriority')?.checked ?? false,
     sortByName:     document.getElementById('prSortName')?.checked ?? false,
+    graduatedStudents: [],
   };
 
-  const html = generateFormalReportHTML(opts);
+  // For graduation report: fetch already-promoted (Status='Graduated'/'University') students
+  // from the DB so the report works even after a page refresh when ALL_GROUPS only has Active students.
+  if (opts.reportType === 'graduation') {
+    try {
+      const res = await API.getStudents();
+      if (res.status === 'success' && Array.isArray(res.students)) {
+        const alreadyInGroups = new Set(ALL_GROUPS.flatMap(g => g.students.map(s => s.StipNo)));
+        opts.graduatedStudents = res.students.filter(s => {
+          if (!['Graduated', 'University'].includes(s.Status)) return false;
+          if (opts.inst  && (s.Institution || '') !== opts.inst)  return false;
+          if (opts.level && (s.Level || '') !== opts.level)       return false;
+          if (alreadyInGroups.has(s.StipNo)) return false; // avoid double-count
+          return true;
+        });
+      }
+    } catch(e) {
+      // Non-fatal: report will still show any pending decisions from ALL_GROUPS
+      RDF.logWarn('promotion.html', 'doPrintReport()', 'Could not fetch graduated students: ' + e.message);
+    }
+  }
+
   const isEN = opts.lang === 'en';
   const typeLabel = {
     graduation: isEN ? 'Graduation Report'    : 'รายงานผู้สำเร็จการศึกษา',
@@ -3874,6 +3895,10 @@ function doPrintReport() {
     withdrawal: isEN ? 'Withdrawal Report'    : 'รายงานนักเรียนลาออก / ถอนทุน',
   }[opts.reportType] || '';
   closePrintReportModal();
+  showLoader(true, isEN ? 'Generating report…' : 'กำลังสร้างรายงาน…');
+  await new Promise(r => setTimeout(r, 0)); // yield to allow loader to paint
+  const html = generateFormalReportHTML(opts);
+  showLoader(false);
   showPrintPreview(html, (isEN ? 'Preview — ' : 'ตัวอย่าง — ') + typeLabel);
 }
 
@@ -3928,6 +3953,31 @@ function generateFormalReportHTML(opts) {
       dataRows.push({ g, s, dec: { ...dec, action: act } });
     });
   });
+
+  // Merge already-promoted students fetched from DB (Status='Graduated'/'University').
+  // These are absent from ALL_GROUPS after a page refresh because getStudentsForPromotion
+  // only returns Active students.
+  if (opts.reportType === 'graduation' && Array.isArray(opts.graduatedStudents) && opts.graduatedStudents.length) {
+    opts.graduatedStudents.forEach(s => {
+      const syntheticG = { institution: s.Institution || '', level: s.Level || '' };
+      const act = s.Status === 'University' ? 'uni_own' : 'graduate';
+      const syntheticDec = {
+        action:         act,
+        uniName:        s.UniName       || '',
+        uniNameEN:      s.UniNameEN     || '',
+        uniFaculty:     s.UniFaculty    || '',
+        uniFacultyEN:   s.UniFacultyEN  || '',
+        uniMajor:       s.UniMajor      || '',
+        uniMajorEN:     s.UniMajorEN    || '',
+        uniProvince:    s.UniProvince   || '',
+        uniProvinceEN:  s.UniProvinceEN || '',
+        uniDuration:    s.UniDuration   || '',
+        schPriority:    s.SchPriority   || s.schPriority || undefined,
+        notes:          s.PromotionNotes || s.Notes || '',
+      };
+      dataRows.push({ g: syntheticG, s, dec: syntheticDec });
+    });
+  }
 
   // Apply sort — priority wins over level; name is tiebreaker
   const _instO = { MBS:0, VC:1, UNI:2, OTHER:3 };
