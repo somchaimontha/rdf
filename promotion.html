@@ -2130,21 +2130,37 @@ async function reviewScholarshipRequest(stipNo, approvalStatus) {
 // ─────────────────────────────────────────────
 // APPROVAL PANEL RENDER
 // ─────────────────────────────────────────────
-let _PENDING_APPROVALS = []; // cached from last load
+let _PENDING_APPROVALS     = []; // SchApprovalStatus='Pending' from GAS
+let _PENDING_UNI_GRADUATED = []; // Status='Graduated' + UniScholarship='Yes' (our new flow)
 
 async function loadApprovalPanel() {
   const user = getUser() || {};
-  // Only show for Manager / SuperAdmin
   if (!['Manager','SuperAdmin'].includes(user.role)) {
     document.getElementById('approvalPanelWrap')?.classList.add('hidden');
     return;
   }
   try {
-    const res = await API.get('getPendingScholarshipRequests');
-    _PENDING_APPROVALS = (res.pending || []);
+    // Fetch both sources in parallel
+    const [schRes, stuRes] = await Promise.allSettled([
+      API.get('getPendingScholarshipRequests'),
+      API.getStudents(),
+    ]);
+    _PENDING_APPROVALS = schRes.status === 'fulfilled' ? (schRes.value.pending || []) : [];
+    if (stuRes.status === 'fulfilled' && stuRes.value.status === 'success') {
+      const existingStipNos = new Set(_PENDING_APPROVALS.map(p => p.StipNo));
+      _PENDING_UNI_GRADUATED = (stuRes.value.students || []).filter(s =>
+        s.status === 'Graduated' &&
+        s.uniName &&
+        (s.uniScholarship || '').toLowerCase() !== 'no' &&
+        !existingStipNos.has(s.stipNo)  // avoid duplicates with SchApprovalStatus='Pending' entries
+      );
+    } else {
+      _PENDING_UNI_GRADUATED = [];
+    }
     renderApprovalPanel();
   } catch(e) {
     _PENDING_APPROVALS = [];
+    _PENDING_UNI_GRADUATED = [];
   }
 }
 
@@ -2154,13 +2170,16 @@ function renderApprovalPanel() {
   const user = getUser() || {};
   if (!['Manager','SuperAdmin'].includes(user.role)) { wrap.classList.add('hidden'); return; }
 
-  const pending = _PENDING_APPROVALS;
-  const badge = document.getElementById('approvalBadgeCount');
-  if (badge) badge.textContent = pending.length || '';
+  const pending    = _PENDING_APPROVALS;
+  const graduated  = _PENDING_UNI_GRADUATED;
+  const totalCount = pending.length + graduated.length;
 
-  if (pending.length === 0) {
+  const badge = document.getElementById('approvalBadgeCount');
+  if (badge) badge.textContent = totalCount || '';
+
+  if (totalCount === 0) {
     wrap.innerHTML = `
-      <div id="approvalPanelWrap" style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:12px 16px;margin-bottom:16px" class="no-print">
+      <div style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:12px 16px;margin-bottom:16px" class="no-print">
         <div class="flex items-center gap-2 text-purple-700 font-semibold text-sm">
           <i data-lucide="shield-check" class="w-4 h-4"></i>
           <span>${t('schApprovalPanel')}</span>
@@ -2170,32 +2189,59 @@ function renderApprovalPanel() {
     lucide.createIcons(); return;
   }
 
-  const rows = pending.map(p => `
+  // Helper to build a table row (shared between both data sources)
+  const _approvalRow = ({ stipNo, name, level, inst, uniName, uniFaculty, uniMajor, uniProvince, notes, onApprove, onReject }) => `
     <tr style="border-bottom:1px solid #ede9fe">
-      <td style="padding:6px 10px;font-size:12px;font-weight:600">${p.FirstName || ''} ${p.LastName || ''}<br>
-        <span style="font-size:10px;color:#9ca3af">${p.StipNo}</span>
+      <td style="padding:6px 10px;font-size:12px;font-weight:600">${name}<br>
+        <span style="font-size:10px;color:#9ca3af">${stipNo}</span>
       </td>
-      <td style="padding:6px 10px;font-size:11px">${p.Institution || '—'} / ${p.CurrentLevel || '—'}</td>
-      <td style="padding:6px 10px;font-size:11px">${p.UniName||'—'} ${p.UniFaculty?'/ '+p.UniFaculty:''}<br>
-        <span style="font-size:10px;color:#7c3aed">${p.UniMajor||''} ${p.UniProvince?'• '+p.UniProvince:''}</span>
+      <td style="padding:6px 10px;font-size:11px">${inst||'—'} / ${level||'—'}</td>
+      <td style="padding:6px 10px;font-size:11px">${uniName||'—'}${uniFaculty?' / '+uniFaculty:''}<br>
+        <span style="font-size:10px;color:#7c3aed">${uniMajor||''}${uniProvince?' • '+uniProvince:''}</span>
       </td>
-      <td style="padding:6px 10px;font-size:11px;color:#6b7280">${p.PromotionNotes||'—'}</td>
+      <td style="padding:6px 10px;font-size:11px;color:#6b7280">${notes||'—'}</td>
       <td style="padding:6px 10px;white-space:nowrap">
-        <button onclick="reviewScholarshipRequest('${p.StipNo}','Approved')"
+        <button onclick="${onApprove}"
           style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #16a34a;background:#f0fdf4;color:#16a34a;cursor:pointer;margin-right:4px">
           ✔ ${t('schApproveBtn')}</button>
-        <button onclick="reviewScholarshipRequest('${p.StipNo}','Rejected')"
+        <button onclick="${onReject}"
           style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid #dc2626;background:#fff1f2;color:#dc2626;cursor:pointer">
           ✕ ${t('schRejectBtn')}</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+
+  // Rows from SchApprovalStatus='Pending' (existing GAS flow)
+  const schRows = pending.map(p => _approvalRow({
+    stipNo: p.StipNo, name: `${p.FirstName||''} ${p.LastName||''}`.trim(),
+    level: p.CurrentLevel, inst: p.Institution,
+    uniName: p.UniName, uniFaculty: p.UniFaculty, uniMajor: p.UniMajor, uniProvince: p.UniProvince,
+    notes: p.PromotionNotes,
+    onApprove: `reviewScholarshipRequest('${p.StipNo}','Approved')`,
+    onReject:  `reviewScholarshipRequest('${p.StipNo}','Rejected')`,
+  })).join('');
+
+  // Rows from Status='Graduated' + UniScholarship='Yes' (new flow)
+  const gradRows = graduated.map(s => _approvalRow({
+    stipNo: s.stipNo, name: `${s.title||''}${s.fname||''} ${s.lname||''}`.trim(),
+    level: s.level, inst: s.institution,
+    uniName: s.uniName, uniFaculty: s.uniFaculty, uniMajor: s.uniMajor, uniProvince: s.uniProvince,
+    notes: s.promotionNotes || s.notes || '',
+    onApprove: `approveUniFromPanel('${s.stipNo}')`,
+    onReject:  `rejectUniFromPanel('${s.stipNo}')`,
+  })).join('');
+
+  const hasGrad = graduated.length > 0;
+  const hasSch  = pending.length > 0;
 
   wrap.innerHTML = `
     <div style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;overflow:hidden;margin-bottom:16px" class="no-print">
-      <div style="padding:10px 16px;background:#ede9fe;display:flex;align-items:center;gap:8px">
+      <div style="padding:10px 16px;background:#ede9fe;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <i data-lucide="shield-alert" class="w-4 h-4" style="color:#7c3aed"></i>
-        <span style="font-weight:700;color:#5b21b6;font-size:13px">${t('schApprovalPanel')}</span>
-        <span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px">${pending.length} ${t('schPendingCount')}</span>
+        <span style="font-weight:700;color:#5b21b6;font-size:13px">คำขออนุมัติทุนมหาวิทยาลัย (RDF)</span>
+        <span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px">${totalCount} รายการ</span>
+        <button onclick="loadApprovalPanel()" style="margin-left:auto;padding:2px 10px;font-size:11px;border-radius:6px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;cursor:pointer;font-weight:600">
+          <i data-lucide="refresh-cw" style="width:11px;height:11px;display:inline"></i> รีเฟรช
+        </button>
       </div>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -2203,16 +2249,111 @@ function renderApprovalPanel() {
             <tr style="background:#ede9fe">
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'นักเรียน':'Student'}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'ชั้น/สถาบัน':'Level'}</th>
-              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'มหาวิทยาลัย':'University'}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'มหาวิทยาลัยที่ต้องการเข้า':'Target University'}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${t('promoColNotes')}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'การดำเนินการ':'Action'}</th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>
+            ${hasGrad ? `<tr><td colspan="5" style="padding:4px 10px;background:#faf5ff;font-size:10px;font-weight:700;color:#6d28d9;border-bottom:1px solid #ede9fe">🎓 รายใหม่ — ศิษย์เก่า รอผลอนุมัติทุน (${graduated.length} คน)</td></tr>${gradRows}` : ''}
+            ${hasSch  ? `<tr><td colspan="5" style="padding:4px 10px;background:#ede9fe;font-size:10px;font-weight:700;color:#5b21b6;border-bottom:1px solid #ede9fe">⏳ ส่งคำขอแล้ว รอการอนุมัติ (${pending.length} คน)</td></tr>${schRows}` : ''}
+          </tbody>
         </table>
       </div>
     </div>`;
   lucide.createIcons();
+}
+
+// Approve a Graduated+pending-uni student from the approval panel in promotion.html.
+// Moves student to Status='Active', Institution='UNI', Level='ชั้นปีที่ 1'.
+async function approveUniFromPanel(stipNo) {
+  const { isConfirmed, value: notes } = await Swal.fire({
+    icon: 'question',
+    title: LANG==='th' ? '✔ อนุมัติทุนมหาวิทยาลัย' : '✔ Approve University Scholarship',
+    html: `<div style="font-size:13px;text-align:left;line-height:1.8">
+      นักเรียน <b>${stipNo}</b><br>
+      <span style="color:#6b7280;font-size:11px">จะย้ายจากกลุ่ม ศิษย์เก่า → Active (University / ชั้นปีที่ 1)</span>
+    </div>`,
+    input: 'text',
+    inputLabel: LANG==='th' ? 'หมายเหตุ (ไม่บังคับ)' : 'Notes (optional)',
+    inputPlaceholder: '...',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    confirmButtonText: LANG==='th' ? '✔ อนุมัติ' : '✔ Approve',
+    cancelButtonText: LANG==='th' ? 'ยกเลิก' : 'Cancel',
+  });
+  if (!isConfirmed) return;
+
+  showLoader(true, LANG==='th' ? 'กำลังบันทึก...' : 'Saving...');
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const reqUser = (getUser()||{}).username || 'Admin';
+    const payload = [{ StipNo: stipNo, NewStatus: 'Active', NewInstitution: 'UNI', NewLevel: 'ชั้นปีที่ 1',
+                        SchApprovalStatus: 'Approved', SchApprovalBy: reqUser,
+                        SchApprovalDate: today, SchApprovalNotes: notes || '' }];
+    const res = await API.promoteStudents(payload, reqUser, today);
+    showLoader(false);
+    if (res.status === 'success') {
+      await Swal.fire({ icon:'success', title: LANG==='th' ? 'อนุมัติสำเร็จ' : 'Approved',
+        text: LANG==='th' ? `${stipNo} ย้ายไปกลุ่ม University แล้ว` : `${stipNo} moved to University group`,
+        timer: 2000, showConfirmButton: false });
+      // Remove from local cache and re-render panel
+      _PENDING_UNI_GRADUATED = _PENDING_UNI_GRADUATED.filter(s => s.stipNo !== stipNo);
+      renderApprovalPanel();
+      // Reload groups so the student appears in UNI group
+      try {
+        const studRes = await API.get('getStudentsForPromotion');
+        if (studRes.status === 'success') {
+          const prev = Object.assign({}, ROW_DECISIONS);
+          ALL_GROUPS = studRes.groups || [];
+          ALL_GROUPS.forEach(g => g.students.forEach(s => { if (prev[s.StipNo]) ROW_DECISIONS[s.StipNo] = prev[s.StipNo]; }));
+          renderGroups();
+        }
+      } catch(e) { /* stale until refresh */ }
+    } else {
+      Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
+    }
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), e.message || 'Network error', 'error');
+  }
+}
+
+// Reject a Graduated+pending-uni student from the approval panel.
+// Marks rejection notes but keeps Status='Graduated' (remains alumni).
+async function rejectUniFromPanel(stipNo) {
+  const { isConfirmed, value: notes } = await Swal.fire({
+    icon: 'warning',
+    title: LANG==='th' ? '✕ ไม่อนุมัติทุน' : '✕ Reject University Scholarship',
+    html: `<div style="font-size:13px;text-align:left"><b>${stipNo}</b> — นักเรียนจะยังคงอยู่ในกลุ่มศิษย์เก่า</div>`,
+    input: 'text',
+    inputLabel: LANG==='th' ? 'เหตุผล (แนะนำให้ระบุ)' : 'Reason (recommended)',
+    inputPlaceholder: '...',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    confirmButtonText: LANG==='th' ? '✕ ไม่อนุมัติ' : '✕ Reject',
+    cancelButtonText: LANG==='th' ? 'ยกเลิก' : 'Cancel',
+  });
+  if (!isConfirmed) return;
+
+  showLoader(true, LANG==='th' ? 'กำลังบันทึก...' : 'Saving...');
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const reqUser = (getUser()||{}).username || 'Admin';
+    const payload = [{ StipNo: stipNo, SchApprovalStatus: 'Rejected', SchApprovalBy: reqUser,
+                        SchApprovalDate: today, SchApprovalNotes: notes || '' }];
+    // Just record the rejection — no status change (remains Graduated/Alumni)
+    await API.promoteStudents(payload, reqUser, today);
+    showLoader(false);
+    await Swal.fire({ icon:'info', title: LANG==='th' ? 'บันทึกแล้ว' : 'Saved',
+      text: LANG==='th' ? `บันทึกการไม่อนุมัติสำหรับ ${stipNo} แล้ว` : `Rejection recorded for ${stipNo}`,
+      timer: 2000, showConfirmButton: false });
+    _PENDING_UNI_GRADUATED = _PENDING_UNI_GRADUATED.filter(s => s.stipNo !== stipNo);
+    renderApprovalPanel();
+  } catch(e) {
+    showLoader(false);
+    Swal.fire(t('error'), e.message || 'Network error', 'error');
+  }
 }
 
 // Revert a single student's promotion — restores original level/status in DB,
@@ -3249,9 +3390,9 @@ function updateStats() {
 // APPLY ALL CHANGES
 // ─────────────────────────────────────────────
 async function applyAllChanges() {
-  // 'uni' (RDF scholarship) goes through the approval workflow — exclude from bulk apply.
-  // Students with action='uni' that haven't been submitted yet are auto-submitted below.
-  const active = Object.entries(ROW_DECISIONS).filter(([, d]) => d.action !== 'skip' && d.action !== 'uni');
+  // Include 'uni' students in active — they get Status='Graduated' first (pending scholarship approval).
+  // Their scholarship request is also separately submitted below so the approval panel shows them.
+  const active = Object.entries(ROW_DECISIONS).filter(([, d]) => d.action !== 'skip');
   const uniPending = Object.entries(ROW_DECISIONS).filter(
     ([, d]) => d.action === 'uni' && !d.schApprovalStatus
   );
