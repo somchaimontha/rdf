@@ -4102,7 +4102,11 @@ function generateFormalReportHTML(opts) {
   if (opts.reportType === 'graduation' && Array.isArray(opts.graduatedStudents) && opts.graduatedStudents.length) {
     opts.graduatedStudents.forEach(s => {
       const syntheticG = { institution: s.Institution || '', level: s.Level || '' };
-      const act = s.Status === 'University' ? 'uni_own' : 'graduate';
+      // 'uni_own' = self-funded university; 'uni' = RDF scholarship pending (has uniName + scholarship='Yes');
+      // 'graduate' = graduated without continuing to university (new flow)
+      const act = s.Status === 'University' ? 'uni_own'
+                : (s.UniName && (s.UniScholarship||'').toLowerCase() !== 'no') ? 'uni'
+                : 'graduate';
       const syntheticDec = {
         action:         act,
         uniName:        s.UniName       || '',
@@ -4250,7 +4254,8 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
     const thaiName      = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
     const engTitleFirst = (getTitleEN(s.Title) ? getTitleEN(s.Title)+' ' : '') + (s.EngFirstName||'');
     const engLast       = s.EngLastName || '';
-    const cont          = dec.action==='uni' || dec.action==='uni_own';
+    // cont = student is going to / already at university → show uni columns
+    const cont          = dec.action==='uni' || dec.action==='uni_own' || g.institution === 'UNI';
     const newLevel      = cont ? (isEN?'University':'มหาวิทยาลัย') : '—';
     const duration      = dec.uniDuration ? dec.uniDuration+(isEN?' yr':' ปี') : '—';
     // Language-aware fields
@@ -4381,33 +4386,54 @@ function buildReportSummaryHTML(dataRows, reportType, isEN, S) {
   if (dataRows.length === 0) return '';
 
   if (reportType === 'graduation') {
-    const byInst = {};
+    // Group by institution + VC sub-type (ปวช. vs ปวส.)
+    const byGroup = {};
+    const _groupKey = (g) => {
+      if (g.institution === 'VC') {
+        return (g.level||'').includes('ปวส.') ? 'VC_hs' : 'VC_voc';
+      }
+      return g.institution;
+    };
     dataRows.forEach(({ g, dec }) => {
-      const inst = g.institution;
-      if (!byInst[inst]) byInst[inst] = { total:0, cont:0 };
-      byInst[inst].total++;
-      if (dec.action==='uni'||dec.action==='uni_own') byInst[inst].cont++;
+      const key = _groupKey(g);
+      if (!byGroup[key]) byGroup[key] = { total:0, cont:0 };
+      byGroup[key].total++;
+      if (['uni','uni_own'].includes(dec.action) || g.institution==='UNI') byGroup[key].cont++;
     });
-    const instNames = {
-      MBS:  isEN ? 'Vocational Certificate Level (V.C.) — MBS'  : 'ระดับอาชีวศึกษา (ปวช./ปวส.) — MBS',
-      VC:   isEN ? 'Vocational Certificate Level (V.C.) — VC'   : 'ระดับอาชีวศึกษา (ปวช./ปวส.) — VC',
-      UNI:  isEN ? 'University Level (UNI)'                      : 'ระดับมหาวิทยาลัย',
-      OTHER:isEN ? 'Other Level'                                  : 'ระดับอื่นๆ',
+    // Section display config keyed by group key
+    const groupCfg = {
+      MBS:    {
+        head: isEN ? 'Secondary School Level — MBS'            : 'ระดับมัธยมศึกษา — MBS',
+        rows: isEN ? ['Secondary School Total','continue.','not continue.'] : ['ระดับ ม. ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
+      },
+      VC_voc: {
+        head: isEN ? 'Vocational Certificate (ปวช.) — VC'      : 'ระดับ ปวช. — VC',
+        rows: isEN ? ['ปวช. Total','continue their studies.','not to continue.'] : ['ระดับ ปวช. ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
+      },
+      VC_hs:  {
+        head: isEN ? 'High Vocational Certificate (ปวส.) — VC' : 'ระดับ ปวส. — VC',
+        rows: isEN ? ['ปวส. Total','continue their studies.','not to continue.'] : ['ระดับ ปวส. ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
+      },
+      UNI:    {
+        head: isEN ? 'University Level (UNI)'                   : 'ระดับมหาวิทยาลัย',
+        rows: isEN ? ['University Total','—','—']                : ['มหาวิทยาลัย ทั้งหมด','—','—'],
+      },
+      OTHER:  {
+        head: isEN ? 'Other Level'                              : 'ระดับอื่นๆ',
+        rows: isEN ? ['Total','continue.','not continue.']      : ['ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
+      },
     };
-    const lbls = {
-      MBS:   isEN?['Vocational Certificate (V.C.) Level Total','continue their studies.','not to continue their studies.']:['ระดับ ปวช. ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
-      VC:    isEN?['Hight Vocational Certificate (H.V.) Level Total','continue their studies.','not to continue their studies.']:['ระดับ ปวส. ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
-      UNI:   isEN?['University Total','—','—']:['มหาวิทยาลัย ทั้งหมด','—','—'],
-      OTHER: isEN?['Total','continue their studies.','not to continue their studies.']:['ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'],
-    };
-    const tables = Object.entries(byInst).map(([inst, c]) => {
-      const lb = lbls[inst] || (isEN?['Total','Continue','Not continue']:['ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ']);
+    // Preserve institution display order
+    const ORDER = ['MBS','VC_voc','VC_hs','UNI','OTHER'];
+    const tables = ORDER.filter(k => byGroup[k]).map(k => {
+      const c  = byGroup[k];
+      const cf = groupCfg[k] || { head: k, rows: ['ทั้งหมด','เรียนต่อ','ไม่เรียนต่อ'] };
       return `<table class="sum-tbl">
-        <thead><tr><th colspan="2">${instNames[inst]||inst}</th></tr></thead>
+        <thead><tr><th colspan="2">${cf.head}</th></tr></thead>
         <tbody>
-          <tr><td>${lb[0]}</td><td class="tc" style="width:60px"><b>${c.total}</b></td></tr>
-          <tr><td>${lb[1]}</td><td class="tc">${c.cont || '—'}</td></tr>
-          <tr><td>${lb[2]}</td><td class="tc">${c.total - c.cont > 0 ? c.total - c.cont : '—'}</td></tr>
+          <tr><td>${cf.rows[0]}</td><td class="tc" style="width:60px"><b>${c.total}</b></td></tr>
+          <tr><td>${cf.rows[1]}</td><td class="tc">${c.cont || '—'}</td></tr>
+          <tr><td>${cf.rows[2]}</td><td class="tc">${c.total - c.cont > 0 ? c.total - c.cont : '—'}</td></tr>
         </tbody>
       </table>`;
     }).join('');
