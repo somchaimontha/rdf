@@ -584,14 +584,23 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
   ]);
 
   // University
-  if (d.UniName) {
+  if (d.UniName || d.UniNameEN) {
     document.getElementById('uniCard').classList.remove('hidden');
+    // Show TH first in TH mode, EN first in EN mode; secondary language shown dimmer below
+    const _biling = (th, en) => {
+      if (!th && !en) return null;
+      if (lang === 'en') return en ? (th ? `${en}<br><span style="color:#9ca3af;font-size:11px">${th}</span>` : en) : th;
+      return th ? (en ? `${th}<br><span style="color:#9ca3af;font-size:11px">${en}</span>` : th) : en;
+    };
+    const _schLabel = { Yes: lang==='th'?'ได้รับทุน RDF':'RDF Scholarship', No: lang==='th'?'ทุนตนเอง':'Self-funded', Pending: lang==='th'?'รอพิจารณา':'Pending' };
     document.getElementById('uniInfo').innerHTML = infoSection([
-      [lang==='th'?'มหาวิทยาลัย':'University',    d.UniName],
-      [lang==='th'?'ระยะเวลาหลักสูตร':'Duration', (d.UniDuration||'—') + (lang==='th'?' ปี':' years')],
-      [lang==='th'?'จังหวัดที่ตั้ง':'Province',  d.UniProvince],
-      [lang==='th'?'คณะ':'Faculty',              d.UniFaculty],
-      [lang==='th'?'สาขาวิชา':'Major',           d.UniMajor],
+      [lang==='th'?'มหาวิทยาลัย':'University',              _biling(d.UniName, d.UniNameEN)],
+      [lang==='th'?'ระยะเวลาหลักสูตร':'Duration',           (d.UniDuration||'—') + (lang==='th'?' ปี':' years')],
+      [lang==='th'?'จังหวัดที่ตั้ง':'Province',             _biling(d.UniProvince, d.UniProvinceEN)],
+      [lang==='th'?'คณะ':'Faculty',                         _biling(d.UniFaculty, d.UniFacultyEN)],
+      [lang==='th'?'สาขาวิชา':'Major / Program',            _biling(d.UniMajor, d.UniMajorEN)],
+      [lang==='th'?'ทุนมหาวิทยาลัย (RDF)':'Uni Scholarship', _schLabel[d.UniScholarship] || d.UniScholarship || null],
+      [lang==='th'?'การศึกษาก่อนรับทุน':'Prior Qualification', d.LastEducation || null],
     ]);
   }
 
@@ -873,7 +882,12 @@ function renderEduPath(d, lang) {
         ${lastEdu}
       </span>
     </div>` : ''}
-    ${d.UniName ? `<div class="mt-2 text-xs text-gray-500 border-t pt-2"><span class="font-semibold text-purple-700">มหาวิทยาลัย:</span> ${d.UniName}${d.UniFaculty?` — ${d.UniFaculty}`:''}${d.UniMajor?` / ${d.UniMajor}`:''}</div>` : ''}
+    ${d.UniName || d.UniNameEN ? `<div class="mt-2 text-xs text-gray-500 border-t pt-2">
+      <span class="font-semibold text-purple-700">${lang==='en'?'University:':'มหาวิทยาลัย:'}</span>
+      ${lang==='en' ? (d.UniNameEN||d.UniName) : d.UniName}
+      ${(d.UniFaculty||d.UniFacultyEN) ? ` — ${lang==='en' ? (d.UniFacultyEN||d.UniFaculty) : d.UniFaculty}` : ''}
+      ${(d.UniMajor||d.UniMajorEN) ? ` / ${lang==='en' ? (d.UniMajorEN||d.UniMajor) : d.UniMajor}` : ''}
+    </div>` : ''}
     <p class="text-xs text-gray-400 mt-2">${lang==='en'?'Education path based on current data':'เส้นทางการศึกษาตามข้อมูลในระบบ'}</p>`;
   lucide.createIcons();
 }
@@ -1033,12 +1047,13 @@ function renderPrintLayout(d, sigBlock, printTitle, printLayout) {
 
   // ── Section 5: University (conditional) ────
   let secCounter = 5;
-  if (d.UniName) {
+  if (d.UniName || d.UniNameEN) {
     document.getElementById('pUniSection').style.display = '';
+    const _pe = (th, en) => (th||'—') + (en ? `<br><span style="color:#6b7280;font-size:8.5pt">${en}</span>` : '');
     _fillDocTable('pUni', [
-      ['มหาวิทยาลัย',      _s(d.UniName),     'จังหวัดที่ตั้ง',    _s(d.UniProvince)||'—'],
-      ['คณะ',              _s(d.UniFaculty)||'—', 'สาขาวิชา',       _s(d.UniMajor)||'—'],
-      ['ระยะเวลาหลักสูตร', (_s(d.UniDuration)||'—')+' ปี', '', ''],
+      ['มหาวิทยาลัย',      _pe(_s(d.UniName), d.UniNameEN),    'จังหวัดที่ตั้ง', _pe(_s(d.UniProvince)||'—', d.UniProvinceEN)],
+      ['คณะ',              _pe(_s(d.UniFaculty)||'—', d.UniFacultyEN), 'สาขาวิชา', _pe(_s(d.UniMajor)||'—', d.UniMajorEN)],
+      ['ระยะเวลาหลักสูตร', (_s(d.UniDuration)||'—')+' ปี', 'การศึกษาก่อนรับทุน', _s(d.LastEducation)||'—'],
     ]);
     secCounter = 6;
   }
