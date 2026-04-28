@@ -760,10 +760,7 @@
         <div id="uniProgRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm">กำลังโหลด...</div>
         </div>
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-purple-100 mb-3">
-          <select id="uniProgUniSel" class="field-select text-sm" style="margin:0" onchange="_uniProgAutoFillEN()">
-            <option value="">เลือกมหาวิทยาลัย...</option>
-          </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-purple-100 mb-3">
           <input type="text" id="uniProgNameTH" class="field-input text-sm" style="margin:0" placeholder="สาขาวิชา (ไทย) *">
           <input type="text" id="uniProgNameEN" class="field-input text-sm" style="margin:0;border-color:#c4b5fd" placeholder="Major (EN) *">
           <input type="text" id="uniProgFaculty" class="field-input text-sm" style="margin:0" placeholder="คณะ (ไทย)" list="uniFacultyDL">
@@ -794,10 +791,7 @@
         <div id="uniFacRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm">กำลังโหลด...</div>
         </div>
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-blue-100 mb-3">
-          <select id="uniFacUniSel" class="field-select text-sm" style="margin:0">
-            <option value="">เลือกมหาวิทยาลัย...</option>
-          </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-blue-100 mb-3">
           <input type="text" id="uniFacNameTH" class="field-input text-sm" style="margin:0" placeholder="คณะ (ไทย) *">
           <input type="text" id="uniFacNameEN" class="field-input text-sm" style="margin:0;border-color:#bfdbfe" placeholder="Faculty (EN)">
           <button onclick="addUniFac()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;white-space:nowrap">
@@ -3408,9 +3402,7 @@ function _uniProgAutoFillEN() {
 function _refreshFacultyDL() {
   const dl = document.getElementById('uniFacultyDL');
   if (!dl) return;
-  const uniName = (document.getElementById('uniProgUniSel')?.value || '').toLowerCase();
-  const facs = uniFacultyState.filter(f => !uniName || (f.uniName||'').toLowerCase() === uniName);
-  dl.innerHTML = facs.map(f => `<option value="${_esc(f.faculty)}">`).join('');
+  dl.innerHTML = uniFacultyState.map(f => `<option value="${_esc(f.faculty)}">`).join('');
 }
 
 function renderUniProgRows() {
@@ -3423,54 +3415,34 @@ function renderUniProgRows() {
     el.innerHTML = `<div class="text-center text-gray-400 py-6 text-sm">ยังไม่มีสาขาวิชา</div>`;
     return;
   }
-  // Group by uniName
-  const grouped = {};
-  uniProgs.forEach(p => {
-    const key = p.uniName || '(ไม่ระบุมหาวิทยาลัย)';
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(p);
-  });
-  el.innerHTML = Object.entries(grouped).map(([uniName, progs]) => `
-    <div class="mb-2">
-      <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;
-                  letter-spacing:.05em;padding:3px 8px;background:#f5f3ff;border-radius:6px;margin-bottom:4px">
-        ${_esc(uniName)}
-      </div>
-      ${progs.map(p => `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;
-                    padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
-          <span class="text-sm font-medium text-gray-800">${_esc(p.nameTH||'')}</span>
-          <span class="text-sm text-gray-600">${_esc(p.nameEN||'')}</span>
-          <span class="text-sm text-gray-500">${_esc(p.faculty||'')}</span>
-          <button onclick="deleteUniProg('${p.id}')" title="ลบ"
-                  style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
-                         padding:4px 7px;cursor:pointer">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>`).join('')}
+  el.innerHTML = uniProgs.map(p => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;
+                padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
+      <span class="text-sm font-medium text-gray-800">${_esc(p.nameTH||'')}</span>
+      <span class="text-sm text-gray-600">${_esc(p.nameEN||'')}</span>
+      <span class="text-sm text-gray-500">${_esc(p.faculty||'')}</span>
+      <button onclick="deleteUniProg('${p.id}')" title="ลบ"
+              style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
+                     padding:4px 7px;cursor:pointer">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+      </button>
     </div>`).join('');
   lucide.createIcons();
 }
 
 function addUniProg() {
-  const uniName = document.getElementById('uniProgUniSel')?.value.trim() || '';
   const nameTH  = document.getElementById('uniProgNameTH')?.value.trim() || '';
   const nameEN  = document.getElementById('uniProgNameEN')?.value.trim() || '';
   const faculty = document.getElementById('uniProgFaculty')?.value.trim() || '';
-  if (!uniName) { Swal.fire(t('warning'), 'กรุณาเลือกมหาวิทยาลัย', 'warning'); return; }
   if (!nameTH && !nameEN) { Swal.fire(t('warning'), 'กรุณากรอกชื่อสาขาวิชา', 'warning'); return; }
-  // Get uniNameEN from select option
-  const sel = document.getElementById('uniProgUniSel');
-  const uniNameEN = sel?.options[sel.selectedIndex]?.dataset?.en || '';
   // Duplicate check
   const dup = _apState.find(p => p.institution === 'UNI' &&
-    (p.uniName||'').toLowerCase() === uniName.toLowerCase() &&
     ((nameTH && (p.nameTH||'').toLowerCase() === nameTH.toLowerCase()) ||
      (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase())));
   if (dup) { Swal.fire(t('warning'), `สาขาวิชาซ้ำ: "${dup.nameTH||dup.nameEN}"`, 'warning'); return; }
   _apState.push({
     id: _genApId(), institution: 'UNI', category: 'program',
-    uniName, uniNameEN, nameTH, nameEN, faculty, facultyEN: ''
+    uniName: '', uniNameEN: '', nameTH, nameEN, faculty, facultyEN: ''
   });
   document.getElementById('uniProgNameTH').value = '';
   document.getElementById('uniProgNameEN').value = '';
@@ -3499,51 +3471,29 @@ function renderUniFacRows() {
     _refreshFacultyDL();
     return;
   }
-  // Group by uniName
-  const grouped = {};
-  uniFacultyState.forEach(f => {
-    const key = f.uniName || '(ไม่ระบุมหาวิทยาลัย)';
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(f);
-  });
-  el.innerHTML = Object.entries(grouped).map(([uniName, facs]) => `
-    <div class="mb-2">
-      <div style="font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;
-                  letter-spacing:.05em;padding:3px 8px;background:#eff6ff;border-radius:6px;margin-bottom:4px">
-        ${_esc(uniName)}
-      </div>
-      ${facs.map(f => `
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
-                    padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
-          <span class="text-sm font-medium text-gray-800">${_esc(f.faculty||'')}</span>
-          <span class="text-sm text-gray-600">${_esc(f.facultyEN||'')}</span>
-          <button onclick="deleteUniFac('${f.id}')" title="ลบ"
-                  style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
-                         padding:4px 7px;cursor:pointer">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>`).join('')}
+  el.innerHTML = uniFacultyState.map(f => `
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
+                padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
+      <span class="text-sm font-medium text-gray-800">${_esc(f.faculty||'')}</span>
+      <span class="text-sm text-gray-600">${_esc(f.facultyEN||'')}</span>
+      <button onclick="deleteUniFac('${f.id}')" title="ลบ"
+              style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
+                     padding:4px 7px;cursor:pointer">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+      </button>
     </div>`).join('');
   lucide.createIcons();
   _refreshFacultyDL();
 }
 
 function addUniFac() {
-  const uniName  = document.getElementById('uniFacUniSel')?.value.trim() || '';
-  const faculty  = document.getElementById('uniFacNameTH')?.value.trim() || '';
+  const faculty   = document.getElementById('uniFacNameTH')?.value.trim() || '';
   const facultyEN = document.getElementById('uniFacNameEN')?.value.trim() || '';
-  if (!uniName) { Swal.fire(t('warning'), 'กรุณาเลือกมหาวิทยาลัย', 'warning'); return; }
   if (!faculty) { Swal.fire(t('warning'), 'กรุณากรอกชื่อคณะ (ไทย)', 'warning'); return; }
   // Duplicate check
-  const dup = uniFacultyState.find(f =>
-    (f.uniName||'').toLowerCase() === uniName.toLowerCase() &&
-    (f.faculty||'').toLowerCase() === faculty.toLowerCase()
-  );
+  const dup = uniFacultyState.find(f => (f.faculty||'').toLowerCase() === faculty.toLowerCase());
   if (dup) { Swal.fire(t('warning'), `คณะซ้ำ: "${dup.faculty}"`, 'warning'); return; }
-  // Get uniNameEN from select option
-  const sel = document.getElementById('uniFacUniSel');
-  const uniNameEN = sel?.options[sel.selectedIndex]?.dataset?.en || '';
-  uniFacultyState.push({ id: _genApId(), uniName, uniNameEN, faculty, facultyEN });
+  uniFacultyState.push({ id: _genApId(), uniName: '', uniNameEN: '', faculty, facultyEN });
   document.getElementById('uniFacNameTH').value = '';
   document.getElementById('uniFacNameEN').value = '';
   renderUniFacRows();

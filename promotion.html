@@ -898,6 +898,7 @@ let PROMO_RULES   = {};
 let SETTINGS      = {};
 let ROW_DECISIONS = {};
 let _UNI_PROGS    = [];   // ACADEMIC_PROGRAMS where institution === 'UNI', loaded on first uni row open
+let _UNI_LIST     = [];   // UNIVERSITY_LIST from settings — source of truth for uni names
 // StipNos of students successfully promoted/graduated/processed in the CURRENT session.
 // Used to show "สำเร็จแล้ว" badge in groups without requiring a DB round-trip.
 let PROMOTED_THIS_SESSION = new Set();
@@ -2687,19 +2688,17 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
 
 // ─── UNI Program autocomplete from ACADEMIC_PROGRAMS ─────────────────────────
 async function _ensureUniProgs() {
-  if (_UNI_PROGS.length > 0) return;
+  if (_UNI_PROGS.length > 0 && _UNI_LIST.length > 0) return;
   try {
     const r = await API.getSystemSettings();
-    const progs = (r.data?.ACADEMIC_PROGRAMS || []).filter(p => p.institution === 'UNI');
-    _UNI_PROGS = progs;
+    _UNI_PROGS = (r.data?.ACADEMIC_PROGRAMS || []).filter(p => p.institution === 'UNI');
+    _UNI_LIST  = r.data?.UNIVERSITY_LIST || [];
   } catch(e) {}
 }
 
-// Helper: get programs filtered by selected university (if any)
+// Helper: return all programs (university association removed from settings)
 function _uniCandidates(stipNo) {
-  const dec = ROW_DECISIONS[stipNo] || {};
-  const selUni = (dec.uniName || '').trim().toLowerCase();
-  return selUni ? _UNI_PROGS.filter(p => (p.uniName||'').toLowerCase() === selUni) : _UNI_PROGS;
+  return _UNI_PROGS;
 }
 
 // Helper: render a program <li> item
@@ -2707,10 +2706,9 @@ function _uniProgLI(stipNo, p) {
   return `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
        onmousedown="event.preventDefault()"
        onclick="_uniProgSelect('${stipNo}',${JSON.stringify(p).replace(/'/g,"&#39;").replace(/"/g,'&quot;')})">
-     ${p.uniName?`<div style="font-size:10px;color:#6d28d9;font-weight:700">${p.uniName}${p.uniNameEN?' / '+p.uniNameEN:''}</div>`:''}
      <span class="font-medium">${p.nameTH||''}</span>
      ${p.nameEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${p.nameEN}</span>`:''}
-     ${p.faculty?`<span style="color:#0369a1;font-size:10px;display:block">${p.faculty}${p.facultyEN?' / '+p.facultyEN:''}${p.province?' · '+p.province:''}</span>`:''}
+     ${p.faculty?`<span style="color:#0369a1;font-size:10px;display:block">${p.faculty}${p.facultyEN?' / '+p.facultyEN:''}</span>`:''}
    </li>`;
 }
 
@@ -2738,53 +2736,41 @@ function _uniMajorENSuggest(stipNo, val) {
   ul.classList.remove('hidden');
 }
 
-// Autocomplete: Thai university name field (unique unis)
+// Autocomplete: Thai university name — from UNIVERSITY_LIST in settings
 function _uniNameSuggest(stipNo, val) {
   const q  = val.trim().toLowerCase();
   const ul = document.getElementById('uniNameAcUl_' + stipNo);
   if (!ul) return;
-  const seen = new Set();
-  const unis = _UNI_PROGS.filter(p => {
-    if (!p.uniName) return false;
-    const key = (p.uniName||'') + '||' + (p.uniNameEN||'');
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return !q || (p.uniName||'').toLowerCase().includes(q) || (p.uniNameEN||'').toLowerCase().includes(q);
-  });
+  const unis = _UNI_LIST.filter(u =>
+    !q || (u.nameTH||'').toLowerCase().includes(q) || (u.nameEN||'').toLowerCase().includes(q)
+  );
   if (!unis.length) { ul.classList.add('hidden'); return; }
-  ul.innerHTML = unis.slice(0,15).map(p =>
+  ul.innerHTML = unis.slice(0,15).map(u =>
     `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(p.uniName||'')},${JSON.stringify(p.uniNameEN||'')})">
-       <div style="font-weight:600">${p.uniName}</div>
-       ${p.uniNameEN?`<div style="font-size:11px;color:#9ca3af">${p.uniNameEN}</div>`:''}
-       ${p.province?`<div style="font-size:10px;color:#0369a1">${p.province}${p.provinceEN?' / '+p.provinceEN:''}</div>`:''}
+         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(u.nameTH||'')},${JSON.stringify(u.nameEN||'')})">
+       <div style="font-weight:600">${u.nameTH||''}</div>
+       ${u.nameEN?`<div style="font-size:11px;color:#9ca3af">${u.nameEN}</div>`:''}
      </li>`
   ).join('');
   ul.classList.remove('hidden');
 }
 
-// Autocomplete: EN university name field (unique unis)
+// Autocomplete: EN university name — from UNIVERSITY_LIST in settings
 function _uniNameENSuggest(stipNo, val) {
   const q  = val.trim().toLowerCase();
   const ul = document.getElementById('uniNameENAcUl_' + stipNo);
   if (!ul) return;
-  const seen = new Set();
-  const unis = _UNI_PROGS.filter(p => {
-    if (!p.uniName) return false;
-    const key = (p.uniName||'') + '||' + (p.uniNameEN||'');
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return !q || (p.uniNameEN||'').toLowerCase().includes(q) || (p.uniName||'').toLowerCase().includes(q);
-  });
+  const unis = _UNI_LIST.filter(u =>
+    !q || (u.nameEN||'').toLowerCase().includes(q) || (u.nameTH||'').toLowerCase().includes(q)
+  );
   if (!unis.length) { ul.classList.add('hidden'); return; }
-  ul.innerHTML = unis.slice(0,15).map(p =>
+  ul.innerHTML = unis.slice(0,15).map(u =>
     `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(p.uniName||'')},${JSON.stringify(p.uniNameEN||'')})">
-       <div style="font-weight:600">${p.uniNameEN || p.uniName}</div>
-       ${p.uniNameEN?`<div style="font-size:11px;color:#9ca3af">${p.uniName}</div>`:''}
-       ${p.provinceEN?`<div style="font-size:10px;color:#0369a1">${p.provinceEN}${p.province?' / '+p.province:''}</div>`:''}
+         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(u.nameTH||'')},${JSON.stringify(u.nameEN||'')})">
+       <div style="font-weight:600">${u.nameEN||u.nameTH||''}</div>
+       ${u.nameEN&&u.nameTH?`<div style="font-size:11px;color:#9ca3af">${u.nameTH}</div>`:''}
      </li>`
   ).join('');
   ul.classList.remove('hidden');
