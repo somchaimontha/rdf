@@ -2750,7 +2750,7 @@ function _uniNameSuggest(stipNo, val) {
   ul.innerHTML = unis.slice(0,15).map(u =>
     `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(u.nameTH||'')},${JSON.stringify(u.nameEN||'')})">
+         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(u.nameTH||'').replace(/"/g,'&quot;')},${JSON.stringify(u.nameEN||'').replace(/"/g,'&quot;')})">
        <div style="font-weight:600">${u.nameTH||''}</div>
        ${u.nameEN?`<div style="font-size:11px;color:#9ca3af">${u.nameEN}</div>`:''}
      </li>`
@@ -2770,7 +2770,7 @@ function _uniNameENSuggest(stipNo, val) {
   ul.innerHTML = unis.slice(0,15).map(u =>
     `<li style="padding:6px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(u.nameTH||'')},${JSON.stringify(u.nameEN||'')})">
+         onclick="_uniNameSelect('${stipNo}',${JSON.stringify(u.nameTH||'').replace(/"/g,'&quot;')},${JSON.stringify(u.nameEN||'').replace(/"/g,'&quot;')})">
        <div style="font-weight:600">${u.nameEN||u.nameTH||''}</div>
        ${u.nameEN&&u.nameTH?`<div style="font-size:11px;color:#9ca3af">${u.nameTH}</div>`:''}
      </li>`
@@ -2790,7 +2790,7 @@ function _uniFacSuggest(stipNo, val) {
   ul.innerHTML = matches.slice(0,15).map(f =>
     `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniFacSelect('${stipNo}',${JSON.stringify(f.faculty||'')},${JSON.stringify(f.facultyEN||'')})">
+         onclick="_uniFacSelect('${stipNo}',${JSON.stringify(f.faculty||'').replace(/"/g,'&quot;')},${JSON.stringify(f.facultyEN||'').replace(/"/g,'&quot;')})">
        <span class="font-medium">${f.faculty||''}</span>
        ${f.facultyEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${f.facultyEN}</span>`:''}
      </li>`
@@ -2810,7 +2810,7 @@ function _uniFacENSuggest(stipNo, val) {
   ul.innerHTML = matches.slice(0,15).map(f =>
     `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
          onmousedown="event.preventDefault()"
-         onclick="_uniFacSelect('${stipNo}',${JSON.stringify(f.faculty||'')},${JSON.stringify(f.facultyEN||'')})">
+         onclick="_uniFacSelect('${stipNo}',${JSON.stringify(f.faculty||'').replace(/"/g,'&quot;')},${JSON.stringify(f.facultyEN||'').replace(/"/g,'&quot;')})">
        <span class="font-medium">${f.facultyEN||f.faculty||''}</span>
        ${f.facultyEN&&f.faculty?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${f.faculty}</span>`:''}
      </li>`
