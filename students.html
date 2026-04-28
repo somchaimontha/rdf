@@ -855,6 +855,20 @@ function renderTable() {
       <td>
         <div class="font-semibold text-xs" style="color:${instColor}">${instLabelBi(s.institution)}</div>
         <div class="text-xs text-gray-500" title="${s.level||''}">${levelLabelBi(s.level)}</div>
+        ${s.institution === 'UNI' ? (() => {
+          const uniName  = LANG === 'en' ? (s.uniNameEN  || s.uniName  || '') : (s.uniName  || '');
+          const uniMajor = LANG === 'en' ? (s.uniMajorEN || s.uniMajor || '') : (s.uniMajor || '');
+          const uniFac   = LANG === 'en' ? (s.uniFacultyEN || s.uniFaculty || '') : (s.uniFaculty || '');
+          const uniProv  = LANG === 'en' ? (s.uniProvinceEN || s.uniProvince || '') : (s.uniProvince || '');
+          const fromLabel = LANG === 'en' ? 'from' : 'จบจาก';
+          return `
+          <div class="mt-1 pt-1" style="border-top:1px dashed #e9d5ff">
+            ${uniName ? `<div class="font-semibold leading-tight" style="font-size:11px;color:#6d28d9" title="${s.uniNameEN||s.uniName||''}">${uniName}</div>` : ''}
+            ${uniMajor ? `<div style="font-size:10px;color:#7c3aed;line-height:1.3">${uniMajor}${uniFac ? ` · <span style="color:#9ca3af">${uniFac}</span>` : ''}</div>` : ''}
+            ${uniProv  ? `<div style="font-size:10px;color:#a78bfa">📍 ${uniProv}</div>` : ''}
+            ${s.lastEducation ? `<div style="font-size:10px;color:#9ca3af;margin-top:2px">${fromLabel}: ${s.lastEducation}</div>` : ''}
+          </div>`;
+        })() : ''}
       </td>
       <td class="hide-mobile text-xs text-gray-500">
         ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
@@ -1800,17 +1814,32 @@ const RPT_FIELD_DEFS = [
 
   // ── ข้อมูลมหาวิทยาลัย (University) ─────────────────────────
   { key:'uniName',       cat:'university', defaultOn:false,
-    labelTH:'ชื่อมหาวิทยาลัย',            labelEN:'University Name',
+    labelTH:'ชื่อมหาวิทยาลัย (ไทย)',      labelEN:'University Name (TH)',
     render:(s)=> s.uniName||'—' },
+  { key:'uniNameEN',     cat:'university', defaultOn:false,
+    labelTH:'ชื่อมหาวิทยาลัย (EN)',       labelEN:'University Name (EN)',
+    render:(s)=> s.uniNameEN||'—' },
   { key:'faculty',       cat:'university', defaultOn:false,
-    labelTH:'คณะ',                        labelEN:'Faculty',
+    labelTH:'คณะ (ไทย)',                  labelEN:'Faculty (TH)',
     render:(s)=> s.uniFaculty||'—' },
+  { key:'facultyEN',     cat:'university', defaultOn:false,
+    labelTH:'คณะ (EN)',                   labelEN:'Faculty (EN)',
+    render:(s)=> s.uniFacultyEN||'—' },
   { key:'uniMajor',      cat:'university', defaultOn:false,
-    labelTH:'สาขาวิชา (ม.)',              labelEN:'Uni Major',
+    labelTH:'สาขาวิชา ม. (ไทย)',          labelEN:'Uni Major (TH)',
     render:(s)=> s.uniMajor||'—' },
+  { key:'uniMajorEN',    cat:'university', defaultOn:false,
+    labelTH:'สาขาวิชา ม. (EN)',           labelEN:'Uni Major (EN)',
+    render:(s)=> s.uniMajorEN||'—' },
   { key:'uniProvince',   cat:'university', defaultOn:false,
-    labelTH:'จังหวัดมหาวิทยาลัย',         labelEN:'Uni Province',
+    labelTH:'จังหวัด ม. (ไทย)',           labelEN:'Uni Province (TH)',
     render:(s)=> s.uniProvince||'—' },
+  { key:'uniProvinceEN', cat:'university', defaultOn:false,
+    labelTH:'จังหวัด ม. (EN)',            labelEN:'Uni Province (EN)',
+    render:(s)=> s.uniProvinceEN||'—' },
+  { key:'uniScholarship',cat:'university', defaultOn:false,
+    labelTH:'ทุนมหาวิทยาลัย',             labelEN:'Uni Scholarship',
+    render:(s)=> s.uniScholarship||'—' },
 ];
 
 // ── Category metadata (section letters + colors match student-form.html) ──
@@ -1884,10 +1913,15 @@ const DYNAMIC_FIELD_LABEL_MAP = {
   passion:       { th:'อาชีพในฝัน / Passion',         en:'Dream Career / Passion' },
   bankName:      { th:'ธนาคาร',                       en:'Bank' },
   bankAccountNo: { th:'เลขบัญชีธนาคาร',              en:'Bank Account No.' },
-  uniName:       { th:'ชื่อมหาวิทยาลัย',              en:'University Name' },
-  uniFaculty:    { th:'คณะ',                          en:'Faculty' },
-  uniMajor:      { th:'สาขาวิชา (ม.)',                en:'Uni Major' },
-  uniProvince:   { th:'จังหวัดมหาวิทยาลัย',           en:'Uni Province' },
+  uniName:       { th:'ชื่อมหาวิทยาลัย (ไทย)',         en:'University Name (TH)' },
+  uniNameEN:     { th:'ชื่อมหาวิทยาลัย (EN)',          en:'University Name (EN)' },
+  uniFaculty:    { th:'คณะ (ไทย)',                     en:'Faculty (TH)' },
+  uniFacultyEN:  { th:'คณะ (EN)',                      en:'Faculty (EN)' },
+  uniMajor:      { th:'สาขาวิชา ม. (ไทย)',             en:'Uni Major (TH)' },
+  uniMajorEN:    { th:'สาขาวิชา ม. (EN)',              en:'Uni Major (EN)' },
+  uniProvince:   { th:'จังหวัด ม. (ไทย)',              en:'Uni Province (TH)' },
+  uniProvinceEN: { th:'จังหวัด ม. (EN)',               en:'Uni Province (EN)' },
+  uniScholarship:{ th:'ทุนมหาวิทยาลัย',               en:'Uni Scholarship' },
   pic:           { th:'URL รูปโปรไฟล์',               en:'Profile Photo URL' },
   createdAt:     { th:'วันที่สร้างข้อมูล',            en:'Created Date' },
   updatedAt:     { th:'วันที่แก้ไขล่าสุด',            en:'Last Updated' },
