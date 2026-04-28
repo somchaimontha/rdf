@@ -2818,6 +2818,80 @@ function _uniFacENSuggest(stipNo, val) {
   ul.classList.remove('hidden');
 }
 
+// Province TH → EN lookup (77 provinces)
+const _PROV_EN = {
+  'กรุงเทพมหานคร':'Bangkok','กระบี่':'Krabi','กาญจนบุรี':'Kanchanaburi','กาฬสินธุ์':'Kalasin',
+  'กำแพงเพชร':'Kamphaeng Phet','ขอนแก่น':'Khon Kaen','จันทบุรี':'Chanthaburi','ฉะเชิงเทรา':'Chachoengsao',
+  'ชลบุรี':'Chonburi','ชัยนาท':'Chai Nat','ชัยภูมิ':'Chaiyaphum','ชุมพร':'Chumphon',
+  'เชียงราย':'Chiang Rai','เชียงใหม่':'Chiang Mai','ตรัง':'Trang','ตราด':'Trat',
+  'ตาก':'Tak','นครนายก':'Nakhon Nayok','นครปฐม':'Nakhon Pathom','นครพนม':'Nakhon Phanom',
+  'นครราชสีมา':'Nakhon Ratchasima','นครศรีธรรมราช':'Nakhon Si Thammarat','นครสวรรค์':'Nakhon Sawan',
+  'นนทบุรี':'Nonthaburi','นราธิวาส':'Narathiwat','น่าน':'Nan','บึงกาฬ':'Bueng Kan',
+  'บุรีรัมย์':'Buriram','ปทุมธานี':'Pathum Thani','ประจวบคีรีขันธ์':'Prachuap Khiri Khan',
+  'ปราจีนบุรี':'Prachinburi','ปัตตานี':'Pattani','พระนครศรีอยุธยา':'Phra Nakhon Si Ayutthaya',
+  'พะเยา':'Phayao','พังงา':'Phang Nga','พัทลุง':'Phatthalung','พิจิตร':'Phichit',
+  'พิษณุโลก':'Phitsanulok','เพชรบุรี':'Phetchaburi','เพชรบูรณ์':'Phetchabun',
+  'แพร่':'Phrae','ภูเก็ต':'Phuket','มหาสารคาม':'Maha Sarakham','มุกดาหาร':'Mukdahan',
+  'แม่ฮ่องสอน':'Mae Hong Son','ยโสธร':'Yasothon','ยะลา':'Yala','ร้อยเอ็ด':'Roi Et',
+  'ระนอง':'Ranong','ระยอง':'Rayong','ราชบุรี':'Ratchaburi','ลพบุรี':'Lop Buri',
+  'ลำปาง':'Lampang','ลำพูน':'Lamphun','เลย':'Loei','ศรีสะเกษ':'Si Sa Ket',
+  'สกลนคร':'Sakon Nakhon','สงขลา':'Songkhla','สตูล':'Satun','สมุทรปราการ':'Samut Prakan',
+  'สมุทรสงคราม':'Samut Songkhram','สมุทรสาคร':'Samut Sakhon','สระแก้ว':'Sa Kaeo',
+  'สระบุรี':'Saraburi','สิงห์บุรี':'Sing Buri','สุโขทัย':'Sukhothai','สุพรรณบุรี':'Suphan Buri',
+  'สุราษฎร์ธานี':'Surat Thani','สุรินทร์':'Surin','หนองคาย':'Nong Khai',
+  'หนองบัวลำภู':'Nong Bua Lamphu','อ่างทอง':'Ang Thong','อำนาจเจริญ':'Amnat Charoen',
+  'อุดรธานี':'Udon Thani','อุตรดิตถ์':'Uttaradit','อุทัยธานี':'Uthai Thani','อุบลราชธานี':'Ubon Ratchathani',
+};
+const _PROV_LIST = Object.entries(_PROV_EN).map(([th, en]) => ({ th, en }));
+
+function _uniProvSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniProvAcUl_' + stipNo);
+  if (!ul) return;
+  const matches = _PROV_LIST.filter(p => !q || p.th.includes(val.trim()) || p.en.toLowerCase().includes(q));
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = matches.slice(0,15).map(p =>
+    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+         onmousedown="event.preventDefault()"
+         onclick="_uniProvSelect('${stipNo}',${JSON.stringify(p.th).replace(/"/g,'&quot;')},${JSON.stringify(p.en).replace(/"/g,'&quot;')})">
+       <span class="font-medium">${p.th}</span>
+       <span style="color:#9ca3af;font-size:11px;margin-left:6px">${p.en}</span>
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+function _uniProvENSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniProvENAcUl_' + stipNo);
+  if (!ul) return;
+  const matches = _PROV_LIST.filter(p => !q || p.en.toLowerCase().includes(q) || p.th.includes(val.trim()));
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = matches.slice(0,15).map(p =>
+    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+         onmousedown="event.preventDefault()"
+         onclick="_uniProvSelect('${stipNo}',${JSON.stringify(p.th).replace(/"/g,'&quot;')},${JSON.stringify(p.en).replace(/"/g,'&quot;')})">
+       <span class="font-medium">${p.en}</span>
+       <span style="color:#9ca3af;font-size:11px;margin-left:6px">${p.th}</span>
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+function _uniProvSelect(stipNo, provTH, provEN) {
+  setDec(stipNo, 'uniProvince',   provTH);
+  setDec(stipNo, 'uniProvinceEN', provEN);
+  const row = document.getElementById('unirow_' + stipNo);
+  if (row) {
+    const thEl = row.querySelector('[data-field="uniProvince"]');
+    const enEl = row.querySelector('[data-field="uniProvinceEN"]');
+    if (thEl) thEl.value = provTH;
+    if (enEl) enEl.value = provEN;
+  }
+  document.getElementById('uniProvAcUl_'  + stipNo)?.classList.add('hidden');
+  document.getElementById('uniProvENAcUl_'+ stipNo)?.classList.add('hidden');
+}
+
 function _uniFacSelect(stipNo, faculty, facultyEN) {
   setDec(stipNo, 'uniFaculty',   faculty);
   setDec(stipNo, 'uniFacultyEN', facultyEN);
@@ -2912,9 +2986,15 @@ function renderUniDetailRow(stipNo, dec) {
             onblur="setTimeout(()=>document.getElementById('uniFacAcUl_${stipNo}')?.classList.add('hidden'),200)">
           <ul id="uniFacAcUl_${stipNo}" class="ac-list hidden" style="min-width:240px;z-index:500"></ul>
         </div>
-        <input type="text" class="notes-input" style="width:90px" placeholder="${t('promoProvince')}"
-          data-field="uniProvince"
-          value="${dec.uniProvince||''}" onchange="setDec('${stipNo}','uniProvince',this.value)">
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:110px" placeholder="${t('promoProvince')}"
+            data-field="uniProvince"
+            value="${dec.uniProvince||''}"
+            oninput="_uniProvSuggest('${stipNo}',this.value);setDec('${stipNo}','uniProvince',this.value)"
+            onfocus="_uniProvSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniProvAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniProvAcUl_${stipNo}" class="ac-list hidden" style="min-width:220px;z-index:500"></ul>
+        </div>
         <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniDuration',this.value)" style="width:90px">
           <option value="">${t('promoDuration')}</option>
           ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${dec.uniDuration==n?'selected':''}>${n} ${LANG==='th'?'ปี':'yr'}</option>`).join('')}
@@ -2952,9 +3032,15 @@ function renderUniDetailRow(stipNo, dec) {
             onblur="setTimeout(()=>document.getElementById('uniFacENAcUl_${stipNo}')?.classList.add('hidden'),200)">
           <ul id="uniFacENAcUl_${stipNo}" class="ac-list hidden" style="min-width:240px;z-index:500"></ul>
         </div>
-        <input type="text" class="notes-input" style="width:90px;border-color:#e9d5ff" placeholder="Province (EN)"
-          data-field="uniProvinceEN"
-          value="${dec.uniProvinceEN||''}" onchange="setDec('${stipNo}','uniProvinceEN',this.value)">
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:110px;border-color:#e9d5ff" placeholder="Province (EN)"
+            data-field="uniProvinceEN"
+            value="${dec.uniProvinceEN||''}"
+            oninput="_uniProvENSuggest('${stipNo}',this.value);setDec('${stipNo}','uniProvinceEN',this.value)"
+            onfocus="_uniProvENSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniProvENAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniProvENAcUl_${stipNo}" class="ac-list hidden" style="min-width:220px;z-index:500"></ul>
+        </div>
       </div>
     </td>
   </tr>`;
