@@ -754,17 +754,15 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-3">สาขาวิชาที่เปิดสอนในมหาวิทยาลัย — ใช้ใน autocomplete ระบบเลื่อนชั้นและฟอร์มนักเรียน</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
-          <span>สาขาวิชา (ไทย)</span><span>Major (EN)</span><span>คณะ</span><span></span>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
+          <span>สาขาวิชา (ไทย)</span><span>Major (EN)</span><span></span>
         </div>
         <div id="uniProgRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm">กำลังโหลด...</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-purple-100 mb-3">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-purple-100 mb-3">
           <input type="text" id="uniProgNameTH" class="field-input text-sm" style="margin:0" placeholder="สาขาวิชา (ไทย) *">
           <input type="text" id="uniProgNameEN" class="field-input text-sm" style="margin:0;border-color:#c4b5fd" placeholder="Major (EN) *">
-          <input type="text" id="uniProgFaculty" class="field-input text-sm" style="margin:0" placeholder="คณะ (ไทย)" list="uniFacultyDL">
-          <datalist id="uniFacultyDL"></datalist>
           <button onclick="addUniProg()" class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1.5px solid #c4b5fd;white-space:nowrap">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม
           </button>
@@ -3416,11 +3414,10 @@ function renderUniProgRows() {
     return;
   }
   el.innerHTML = uniProgs.map(p => `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
                 padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
       <span class="text-sm font-medium text-gray-800">${_esc(p.nameTH||'')}</span>
       <span class="text-sm text-gray-600">${_esc(p.nameEN||'')}</span>
-      <span class="text-sm text-gray-500">${_esc(p.faculty||'')}</span>
       <button onclick="deleteUniProg('${p.id}')" title="ลบ"
               style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
                      padding:4px 7px;cursor:pointer">
@@ -3431,22 +3428,16 @@ function renderUniProgRows() {
 }
 
 function addUniProg() {
-  const nameTH  = document.getElementById('uniProgNameTH')?.value.trim() || '';
-  const nameEN  = document.getElementById('uniProgNameEN')?.value.trim() || '';
-  const faculty = document.getElementById('uniProgFaculty')?.value.trim() || '';
+  const nameTH = document.getElementById('uniProgNameTH')?.value.trim() || '';
+  const nameEN = document.getElementById('uniProgNameEN')?.value.trim() || '';
   if (!nameTH && !nameEN) { Swal.fire(t('warning'), 'กรุณากรอกชื่อสาขาวิชา', 'warning'); return; }
-  // Duplicate check
   const dup = _apState.find(p => p.institution === 'UNI' &&
     ((nameTH && (p.nameTH||'').toLowerCase() === nameTH.toLowerCase()) ||
      (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase())));
   if (dup) { Swal.fire(t('warning'), `สาขาวิชาซ้ำ: "${dup.nameTH||dup.nameEN}"`, 'warning'); return; }
-  _apState.push({
-    id: _genApId(), institution: 'UNI', category: 'program',
-    uniName: '', uniNameEN: '', nameTH, nameEN, faculty, facultyEN: ''
-  });
+  _apState.push({ id: _genApId(), institution: 'UNI', category: 'program', nameTH, nameEN });
   document.getElementById('uniProgNameTH').value = '';
   document.getElementById('uniProgNameEN').value = '';
-  document.getElementById('uniProgFaculty').value = '';
   renderUniProgRows();
 }
 

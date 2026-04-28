@@ -897,8 +897,9 @@ let ALL_GROUPS    = [];
 let PROMO_RULES   = {};
 let SETTINGS      = {};
 let ROW_DECISIONS = {};
-let _UNI_PROGS    = [];   // ACADEMIC_PROGRAMS where institution === 'UNI', loaded on first uni row open
-let _UNI_LIST     = [];   // UNIVERSITY_LIST from settings — source of truth for uni names
+let _UNI_PROGS    = [];   // ACADEMIC_PROGRAMS where institution === 'UNI'
+let _UNI_LIST     = [];   // UNIVERSITY_LIST — uni name autocomplete
+let _UNI_FACS     = [];   // UNI_FACULTIES — faculty autocomplete
 // StipNos of students successfully promoted/graduated/processed in the CURRENT session.
 // Used to show "สำเร็จแล้ว" badge in groups without requiring a DB round-trip.
 let PROMOTED_THIS_SESSION = new Set();
@@ -2693,6 +2694,7 @@ async function _ensureUniProgs() {
     const r = await API.getSystemSettings();
     _UNI_PROGS = (r.data?.ACADEMIC_PROGRAMS || []).filter(p => p.institution === 'UNI');
     _UNI_LIST  = r.data?.UNIVERSITY_LIST || [];
+    _UNI_FACS  = r.data?.UNI_FACULTIES   || [];
   } catch(e) {}
 }
 
@@ -2776,6 +2778,60 @@ function _uniNameENSuggest(stipNo, val) {
   ul.classList.remove('hidden');
 }
 
+// Autocomplete: Faculty TH — from UNI_FACULTIES in settings
+function _uniFacSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniFacAcUl_' + stipNo);
+  if (!ul) return;
+  const matches = _UNI_FACS.filter(f =>
+    !q || (f.faculty||'').toLowerCase().includes(q) || (f.facultyEN||'').toLowerCase().includes(q)
+  );
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = matches.slice(0,15).map(f =>
+    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+         onmousedown="event.preventDefault()"
+         onclick="_uniFacSelect('${stipNo}',${JSON.stringify(f.faculty||'')},${JSON.stringify(f.facultyEN||'')})">
+       <span class="font-medium">${f.faculty||''}</span>
+       ${f.facultyEN?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${f.facultyEN}</span>`:''}
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+// Autocomplete: Faculty EN — from UNI_FACULTIES in settings
+function _uniFacENSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('uniFacENAcUl_' + stipNo);
+  if (!ul) return;
+  const matches = _UNI_FACS.filter(f =>
+    !q || (f.facultyEN||'').toLowerCase().includes(q) || (f.faculty||'').toLowerCase().includes(q)
+  );
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = matches.slice(0,15).map(f =>
+    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+         onmousedown="event.preventDefault()"
+         onclick="_uniFacSelect('${stipNo}',${JSON.stringify(f.faculty||'')},${JSON.stringify(f.facultyEN||'')})">
+       <span class="font-medium">${f.facultyEN||f.faculty||''}</span>
+       ${f.facultyEN&&f.faculty?`<span style="color:#9ca3af;font-size:11px;margin-left:4px">${f.faculty}</span>`:''}
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+function _uniFacSelect(stipNo, faculty, facultyEN) {
+  setDec(stipNo, 'uniFaculty',   faculty);
+  setDec(stipNo, 'uniFacultyEN', facultyEN);
+  const row = document.getElementById('unirow_' + stipNo);
+  if (row) {
+    const thEl = row.querySelector('[data-field="uniFaculty"]');
+    const enEl = row.querySelector('[data-field="uniFacultyEN"]');
+    if (thEl) thEl.value = faculty;
+    if (enEl) enEl.value = facultyEN;
+  }
+  document.getElementById('uniFacAcUl_'  + stipNo)?.classList.add('hidden');
+  document.getElementById('uniFacENAcUl_'+ stipNo)?.classList.add('hidden');
+}
+
 // Select a university (fills name TH+EN, keeps major as-is)
 function _uniNameSelect(stipNo, uniName, uniNameEN) {
   setDec(stipNo, 'uniName',   uniName);
@@ -2847,9 +2903,15 @@ function renderUniDetailRow(stipNo, dec) {
             onblur="setTimeout(()=>document.getElementById('uniAcUl_${stipNo}')?.classList.add('hidden'),200)">
           <ul id="uniAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
         </div>
-        <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoFaculty')}"
-          data-field="uniFaculty"
-          value="${dec.uniFaculty||''}" onchange="setDec('${stipNo}','uniFaculty',this.value)">
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:120px" placeholder="${t('promoFaculty')}"
+            data-field="uniFaculty"
+            value="${dec.uniFaculty||''}"
+            oninput="_uniFacSuggest('${stipNo}',this.value);setDec('${stipNo}','uniFaculty',this.value)"
+            onfocus="_uniFacSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniFacAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniFacAcUl_${stipNo}" class="ac-list hidden" style="min-width:240px;z-index:500"></ul>
+        </div>
         <input type="text" class="notes-input" style="width:90px" placeholder="${t('promoProvince')}"
           data-field="uniProvince"
           value="${dec.uniProvince||''}" onchange="setDec('${stipNo}','uniProvince',this.value)">
@@ -2881,9 +2943,15 @@ function renderUniDetailRow(stipNo, dec) {
             onblur="setTimeout(()=>document.getElementById('uniMajorENAcUl_${stipNo}')?.classList.add('hidden'),200)">
           <ul id="uniMajorENAcUl_${stipNo}" class="ac-list hidden" style="min-width:280px;z-index:500"></ul>
         </div>
-        <input type="text" class="notes-input" style="width:120px;border-color:#e9d5ff" placeholder="Faculty (EN)"
-          data-field="uniFacultyEN"
-          value="${dec.uniFacultyEN||''}" onchange="setDec('${stipNo}','uniFacultyEN',this.value)">
+        <div style="position:relative;display:inline-block">
+          <input type="text" class="notes-input" style="width:120px;border-color:#e9d5ff" placeholder="Faculty (EN)"
+            data-field="uniFacultyEN"
+            value="${dec.uniFacultyEN||''}"
+            oninput="_uniFacENSuggest('${stipNo}',this.value);setDec('${stipNo}','uniFacultyEN',this.value)"
+            onfocus="_uniFacENSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('uniFacENAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <ul id="uniFacENAcUl_${stipNo}" class="ac-list hidden" style="min-width:240px;z-index:500"></ul>
+        </div>
         <input type="text" class="notes-input" style="width:90px;border-color:#e9d5ff" placeholder="Province (EN)"
           data-field="uniProvinceEN"
           value="${dec.uniProvinceEN||''}" onchange="setDec('${stipNo}','uniProvinceEN',this.value)">
