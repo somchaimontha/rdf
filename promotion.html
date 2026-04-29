@@ -4143,12 +4143,13 @@ function _prBuildLevelPicker() {
   });
   const insts = Object.keys(byInst).sort((a,b) => (INST_ORDER[a]??9) - (INST_ORDER[b]??9));
 
-  // Detect graduation levels (for preset highlights)
+  // Detect graduation-eligible levels (graduate / graduate_uni / allowUniTransfer)
+  // ปวช.3 has completion='promote' + allowUniTransfer=true → still a grad-eligible level
   const gradSet = new Set();
   ALL_GROUPS.forEach(g => {
     const r = PROMO_RULES[g.institution+'||'+g.level]
       || DEFAULT_RULES.find(x => x.inst === g.institution && x.from === g.level);
-    if (r && (r.completion === 'graduate' || r.completion === 'graduate_uni'))
+    if (r && (r.completion === 'graduate' || r.completion === 'graduate_uni' || r.allowUniTransfer))
       gradSet.add(g.institution+'||'+g.level);
   });
 
