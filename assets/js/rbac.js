@@ -41,7 +41,7 @@
 const RBAC_MAP = {
   SuperAdmin:  ['*'],
   Manager:     ['viewStudents','editStudents','deleteStudents','importStudents',
-                'viewPromotion','runPromotion',
+                'viewPromotion','runPromotion','viewSchApprovalPanel',
                 'viewSettings',
                 'viewReports','exportData','printProfile',
                 'viewUniHistory'],

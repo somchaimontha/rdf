@@ -2138,7 +2138,7 @@ let _PENDING_UNI_GRADUATED = []; // Status='Graduated' + UniScholarship='Yes' (o
 
 async function loadApprovalPanel() {
   const user = getUser() || {};
-  if (!['Manager','SuperAdmin'].includes(user.role)) {
+  if (!RBAC.has('viewSchApprovalPanel')) {
     document.getElementById('approvalPanelWrap')?.classList.add('hidden');
     return;
   }
@@ -2171,7 +2171,7 @@ function renderApprovalPanel() {
   const wrap = document.getElementById('approvalPanelWrap');
   if (!wrap) return;
   const user = getUser() || {};
-  if (!['Manager','SuperAdmin'].includes(user.role)) { wrap.classList.add('hidden'); return; }
+  if (!RBAC.has('viewSchApprovalPanel')) { wrap.classList.add('hidden'); return; }
 
   const pending    = _PENDING_APPROVALS;
   const graduated  = _PENDING_UNI_GRADUATED;
