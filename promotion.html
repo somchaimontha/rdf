@@ -686,6 +686,7 @@ img.student-avatar {
             <input type="text" id="prModalAcad" class="pr-field flex-1" placeholder="เช่น 2567-2568 หรือ 2024-2025">
             <button onclick="document.getElementById('prModalAcad').value=''" title="ล้างค่า" class="px-2 text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg text-xs">✕</button>
           </div>
+          <div id="prYearChips" class="flex flex-wrap gap-1 mt-1.5"></div>
         </div>
         <div>
           <span class="pr-label">วันที่รายงาน / Report Date</span>
@@ -4074,6 +4075,25 @@ function printFromPreview() {
 function openPrintReportModal() {
   document.getElementById('prModalAcad').value  = document.getElementById('academicYear').value  || '';
   document.getElementById('prModalDate').value  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+
+  // Populate clickable year chips from promoYearFilter
+  const chips = document.getElementById('prYearChips');
+  if (chips) {
+    const sel = document.getElementById('promoYearFilter');
+    const years = sel ? [...sel.options].map(o => o.value).filter(v => v) : [];
+    chips.innerHTML = years.map(y =>
+      `<button type="button"
+         onclick="document.getElementById('prModalAcad').value='${y}';document.querySelectorAll('#prYearChips button').forEach(b=>b.classList.remove('bg-blue-600','text-white','border-blue-600'));this.classList.add('bg-blue-600','text-white','border-blue-600')"
+         class="px-2 py-0.5 text-xs border border-gray-300 rounded-full hover:border-blue-500 hover:text-blue-600 transition-colors">
+         ${y}
+       </button>`
+    ).join('');
+    // Highlight the currently selected year
+    const cur = document.getElementById('prModalAcad').value;
+    chips.querySelectorAll('button').forEach(b => {
+      if (b.textContent.trim() === cur) b.classList.add('bg-blue-600','text-white','border-blue-600');
+    });
+  }
   document.getElementById('prModalSchool').value   = '';
   document.getElementById('prModalSubject').value  = '';
 
@@ -4429,8 +4449,8 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
       <td>${cont ? majorDisplay : '—'}</td>
       <td>${newLevel}</td>
       <td class="tc">${duration}</td>
-      <td>${dec.notes||'—'}</td>
       <td>${cont ? provDisplay : '—'}</td>
+      <td>${dec.notes||'—'}</td>
     </tr>`;
   }).join('') || noDataRow(isEN ? 12 : 11, isEN);
 
@@ -4447,8 +4467,8 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
         <th rowspan="2" style="width:9%">${isEN?'Major (New)':'สาขา (ใหม่)'}</th>
         <th rowspan="2" style="width:9%">${isEN?'Next Level':'ระดับการศึกษาต่อ'}</th>
         <th rowspan="2" style="width:6%">${isEN?'Duration':'ระยะเวลา'}</th>
-        <th rowspan="2" style="width:11%">${isEN?'Remarks':'หมายเหตุ'}</th>
         <th rowspan="2" style="width:5%">${isEN?'Province':'จังหวัด'}</th>
+        <th rowspan="2" style="width:11%">${isEN?'Remarks':'หมายเหตุ'}</th>
       </tr>
       <tr>
         ${isEN
