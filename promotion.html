@@ -651,30 +651,27 @@ img.student-avatar {
         </div>
       </div>
 
-      <!-- Institution + Level + Language -->
-      <div class="grid grid-cols-3 gap-3 pr-section">
-        <div>
-          <span class="pr-label">กรองสถานศึกษา / Institution</span>
-          <select id="prModalInst" class="pr-field" onchange="_prUpdateLevelOpts()">
-            <option value="">ทุกสถานศึกษา / All Institutions</option>
-            <option value="MBS">MBS</option>
-            <option value="VC">VC</option>
-            <option value="UNI">University</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-        <div>
-          <span class="pr-label">ระดับชั้น / Level</span>
-          <select id="prModalLevel" class="pr-field">
-            <option value="">ทุกระดับชั้น / All Levels</option>
-          </select>
-        </div>
-        <div>
-          <span class="pr-label">ภาษารายงาน / Report Language</span>
-          <div class="pr-radio-row" style="margin-top:8px">
-            <label><input type="radio" name="prLang" value="th" checked class="accent-blue-600"> ไทย</label>
-            <label><input type="radio" name="prLang" value="en" class="accent-blue-600"> English</label>
+      <!-- Level multi-select + Language -->
+      <div class="pr-section">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="pr-label" style="margin-bottom:0" id="prLevelLabel">กรองระดับชั้น / Filter Levels</span>
+          <div class="flex gap-3">
+            <button type="button" onclick="_prSelectAllLevels(true)"
+              class="text-xs text-blue-600 hover:underline font-medium">เลือกทั้งหมด / All</button>
+            <button type="button" onclick="_prSelectAllLevels(false)"
+              class="text-xs text-gray-400 hover:text-red-500 hover:underline">ล้าง / Clear</button>
           </div>
+        </div>
+        <!-- Quick preset chips -->
+        <div id="prPresetBtns" class="flex flex-wrap gap-1.5 mb-2"></div>
+        <!-- Grouped level checkboxes -->
+        <div id="prLevelCheckboxes" class="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100 bg-white text-sm"></div>
+      </div>
+      <div class="pr-section">
+        <span class="pr-label">ภาษารายงาน / Report Language</span>
+        <div class="pr-radio-row" style="margin-top:8px">
+          <label><input type="radio" name="prLang" value="th" checked class="accent-blue-600"> ไทย</label>
+          <label><input type="radio" name="prLang" value="en" class="accent-blue-600"> English</label>
         </div>
       </div>
 
@@ -4126,33 +4123,134 @@ function openPrintReportModal() {
     }
   }
 
-  _prUpdateLevelOpts();
+  _prBuildLevelPicker();
   document.getElementById('printReportModal').classList.remove('hidden');
   lucide.createIcons();
 }
 
-// Rebuild prModalLevel dropdown based on selected institution
-function _prUpdateLevelOpts() {
-  const sel   = document.getElementById('prModalLevel');
-  if (!sel) return;
-  const inst  = document.getElementById('prModalInst')?.value || '';
-  const cur   = sel.value;
-  const levels = new Set();
+// ─── Print modal: multi-select level picker ───────────────────────────────────
+let _PR_PRESETS = [];
+
+function _prBuildLevelPicker() {
+  const INST_ORDER = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const INST_LABEL = { MBS:'MBS', VC:'VC', UNI:'University', OTHER:'Other' };
+
+  // Group levels by institution from ALL_GROUPS
+  const byInst = {};
   ALL_GROUPS.forEach(g => {
-    if (inst && g.institution !== inst) return;
-    if (g.level) levels.add(g.level);
+    if (!byInst[g.institution]) byInst[g.institution] = [];
+    if (!byInst[g.institution].includes(g.level)) byInst[g.institution].push(g.level);
   });
-  const sorted = [...levels].sort((a, b) => {
-    const io = { MBS:0, VC:1, UNI:2, OTHER:3 };
-    const gi = g2 => (ALL_GROUPS.find(x => x.level === g2) || {}).institution || '';
-    const d = (io[gi(a)] ?? 9) - (io[gi(b)] ?? 9);
-    if (d !== 0) return d;
-    const lvA = LEVEL_OPTIONS[gi(a)] || [];
-    return lvA.indexOf(a) - lvA.indexOf(b);
+  const insts = Object.keys(byInst).sort((a,b) => (INST_ORDER[a]??9) - (INST_ORDER[b]??9));
+
+  // Detect graduation levels (for preset highlights)
+  const gradSet = new Set();
+  ALL_GROUPS.forEach(g => {
+    const r = PROMO_RULES[g.institution+'||'+g.level]
+      || DEFAULT_RULES.find(x => x.inst === g.institution && x.from === g.level);
+    if (r && (r.completion === 'graduate' || r.completion === 'graduate_uni'))
+      gradSet.add(g.institution+'||'+g.level);
   });
-  sel.innerHTML = '<option value="">ทุกระดับชั้น / All Levels</option>' +
-    sorted.map(l => `<option value="${l}"${l === cur ? ' selected' : ''}>${abbrevLevel(l)} — ${l}</option>`).join('');
+
+  // Build checkbox rows
+  const wrap = document.getElementById('prLevelCheckboxes');
+  if (!wrap) return;
+  wrap.innerHTML = insts.map(inst => {
+    const levels = byInst[inst].sort((a,b) => {
+      const lo = LEVEL_OPTIONS[inst] || [];
+      const ia = lo.indexOf(a), ib = lo.indexOf(b);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    });
+    const levelCbs = levels.map(l => {
+      const isGrad = gradSet.has(inst+'||'+l);
+      return `<label class="flex items-center gap-1.5 cursor-pointer text-xs ${isGrad?'font-semibold text-purple-700':'text-gray-600'}" title="${l}">
+        <input type="checkbox" class="prLevelCb accent-blue-600 rounded" data-inst="${inst}" data-level="${l}" checked>
+        <span>${abbrevLevel(l)||l}</span>${isGrad?'<span style="font-size:9px;color:#7c3aed;margin-left:2px">★</span>':''}
+      </label>`;
+    }).join('');
+    return `<div class="px-3 py-2 flex items-start gap-4 flex-wrap hover:bg-gray-50">
+      <label class="flex items-center gap-1.5 cursor-pointer min-w-[60px] mt-0.5">
+        <input type="checkbox" class="prInstCb accent-blue-600 rounded" data-inst="${inst}" checked
+          onchange="_prToggleInst('${inst}',this.checked)">
+        <span class="text-xs font-bold text-gray-700">${INST_LABEL[inst]||inst}</span>
+      </label>
+      <div class="flex flex-wrap gap-x-4 gap-y-1">${levelCbs}</div>
+    </div>`;
+  }).join('');
+
+  // Level checkboxes sync inst checkbox state
+  wrap.querySelectorAll('.prLevelCb').forEach(cb =>
+    cb.addEventListener('change', () => _prSyncInstCb(cb.dataset.inst))
+  );
+
+  // Build presets
+  _prBuildPresets(insts, byInst, gradSet);
 }
+
+function _prToggleInst(inst, checked) {
+  document.querySelectorAll(`.prLevelCb[data-inst="${inst}"]`).forEach(cb => cb.checked = checked);
+}
+
+function _prSyncInstCb(inst) {
+  const lvCbs = [...document.querySelectorAll(`.prLevelCb[data-inst="${inst}"]`)];
+  const instCb = document.querySelector(`.prInstCb[data-inst="${inst}"]`);
+  if (!instCb) return;
+  const all = lvCbs.every(c => c.checked), some = lvCbs.some(c => c.checked);
+  instCb.checked = some; instCb.indeterminate = some && !all;
+}
+
+function _prSelectAllLevels(checked) {
+  document.querySelectorAll('.prLevelCb,.prInstCb').forEach(cb => {
+    cb.checked = checked; cb.indeterminate = false;
+  });
+}
+
+function _prBuildPresets(insts, byInst, gradSet) {
+  const presets = document.getElementById('prPresetBtns');
+  if (!presets) return;
+  const isEN = (document.querySelector('input[name="prLang"]:checked')?.value || LANG) === 'en';
+  const chipCls = 'px-2.5 py-0.5 text-xs font-medium border rounded-full cursor-pointer transition-colors hover:bg-purple-600 hover:text-white hover:border-purple-600 border-gray-300 bg-white text-gray-600';
+
+  // Collect graduation level presets
+  const gradItems = [];
+  insts.forEach(inst => {
+    (byInst[inst]||[]).forEach(l => {
+      if (gradSet.has(inst+'||'+l)) gradItems.push({ inst, level:l });
+    });
+  });
+
+  _PR_PRESETS = [
+    { label: isEN ? 'All Levels' : 'ทั้งหมด', fn: () => _prSelectAllLevels(true) },
+    ...gradItems.map(({inst,level}) => ({
+      label: `${inst} — ${abbrevLevel(level)||level}`,
+      fn: () => {
+        _prSelectAllLevels(false);
+        const cb = document.querySelector(`.prLevelCb[data-inst="${inst}"][data-level="${level}"]`);
+        if (cb) { cb.checked = true; _prSyncInstCb(inst); }
+      }
+    })),
+  ];
+
+  if (gradItems.length > 1) {
+    _PR_PRESETS.push({
+      label: isEN ? 'Grad Levels' : 'ระดับจบทั้งหมด ★',
+      fn: () => {
+        _prSelectAllLevels(false);
+        gradItems.forEach(({inst,level}) => {
+          const cb = document.querySelector(`.prLevelCb[data-inst="${inst}"][data-level="${level}"]`);
+          if (cb) cb.checked = true;
+          _prSyncInstCb(inst);
+        });
+      }
+    });
+  }
+
+  presets.innerHTML = _PR_PRESETS.map((p,i) =>
+    `<button type="button" class="${chipCls}" onclick="_prApplyPreset(${i})">${p.label}</button>`
+  ).join('');
+}
+
+function _prApplyPreset(i) { _PR_PRESETS[i]?.fn?.(); }
 
 function closePrintReportModal() {
   document.getElementById('printReportModal').classList.add('hidden');
@@ -4163,11 +4261,18 @@ async function doPrintReport() {
   const selIdxs  = new Set([...document.querySelectorAll('input[name="prSig"]:checked')].map(cb => +cb.value));
   const selSigs  = (window._prSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selIdxs.has(i));
 
+  // Collect multi-select: empty Set = no filter (all)
+  const _allLvCbs   = [...document.querySelectorAll('.prLevelCb')];
+  const _chkLvCbs   = _allLvCbs.filter(cb => cb.checked);
+  const _allChecked = _chkLvCbs.length === _allLvCbs.length;
+  const _selInsts   = _allChecked ? new Set() : new Set(_chkLvCbs.map(cb => cb.dataset.inst));
+  const _selLevels  = _allChecked ? new Set() : new Set(_chkLvCbs.map(cb => cb.dataset.level));
+
   const opts = {
     lang:           document.querySelector('input[name="prLang"]:checked').value,
     reportType:     document.querySelector('input[name="prType"]:checked').value,
-    inst:           document.getElementById('prModalInst').value,
-    level:          document.getElementById('prModalLevel')?.value || '',
+    insts:          _selInsts,
+    levels:         _selLevels,
     school:         document.getElementById('prModalSchool').value.trim(),
     subject:        document.getElementById('prModalSubject').value.trim(),
     acad:           document.getElementById('prModalAcad').value,
@@ -4188,8 +4293,8 @@ async function doPrintReport() {
         const alreadyInGroups = new Set(ALL_GROUPS.flatMap(g => g.students.map(s => s.StipNo)));
         opts.graduatedStudents = res.students.filter(s => {
           if (!['Graduated', 'University'].includes(s.Status)) return false;
-          if (opts.inst  && (s.Institution || '') !== opts.inst)  return false;
-          if (opts.level && (s.Level || '') !== opts.level)       return false;
+          if (opts.insts?.size  && !opts.insts.has(s.Institution || ''))  return false;
+          if (opts.levels?.size && !opts.levels.has(s.Level || ''))       return false;
           if (alreadyInGroups.has(s.StipNo)) return false; // avoid double-count
           return true;
         });
@@ -4243,8 +4348,8 @@ function generateFormalReportHTML(opts) {
   // Collect matching rows
   const dataRows = [];
   sorted.forEach(g => {
-    if (opts.inst && g.institution !== opts.inst) return;
-    if (opts.level && g.level !== opts.level) return;
+    if (opts.insts?.size  && !opts.insts.has(g.institution))  return;
+    if (opts.levels?.size && !opts.levels.has(g.level))       return;
     const fromGradLevel = _isGradLevel(g) || g.institution === 'UNI';
     g.students.forEach(s => {
       const dec = ROW_DECISIONS[s.StipNo] || {};
@@ -4253,10 +4358,10 @@ function generateFormalReportHTML(opts) {
       if (opts.reportType === 'graduation') {
         // Explicit non-grad actions always exclude (admin chose hold/suspend/resign/etc.)
         if (nonGradExplicit.has(act)) return;
-        // For graduation-level groups: include regardless of whether rule lookup succeeded
-        // 'promote' may be a fallback when level key mismatches → treat as 'graduate'
-        // 'skip' (alreadyPromoted) from a grad level → treat as 'graduate'
-        if (fromGradLevel && (act === 'promote' || act === 'skip')) act = 'graduate';
+        // 'skip' = alreadyPromoted in a previous session → treat as 'graduate' for report
+        // 'promote' default is intentionally NOT converted: students just arriving at this
+        // level (promoted from level below) must have an explicit grad action to appear
+        if (fromGradLevel && act === 'skip') act = 'graduate';
         // For non-grad groups: only explicit grad actions
         if (!gradActions.has(act)) return;
       }
@@ -4330,8 +4435,12 @@ function generateFormalReportHTML(opts) {
   const S = STR[isEN ? 'en' : 'th'];
 
   const org  = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
-  const instLbl  = opts.inst  ? (instLabelMap[opts.inst] || opts.inst) : S.allInst;
-  const levelLbl = opts.level ? (opts._lvl(opts.level) + ' — ' + opts.level) : '';
+  const instLbl  = opts.insts?.size
+    ? [...opts.insts].map(i => instLabelMap[i]||i).join(', ')
+    : S.allInst;
+  const levelLbl = opts.levels?.size
+    ? [...opts.levels].map(l => opts._lvl(l)||l).join(' + ')
+    : '';
   const schoolDisplay = opts.school || instLbl;
   const rptTitle = opts.reportType === 'graduation' ? S.grad
     : opts.reportType === 'withdrawal' ? S.withdrawal : S.promo;
