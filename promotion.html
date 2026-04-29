@@ -641,12 +641,15 @@ img.student-avatar {
       <!-- Report Type -->
       <div class="pr-section">
         <span class="pr-label" id="prLblType">ประเภทรายงาน / Report Type</span>
-        <div class="pr-radio-row">
-          <label><input type="radio" name="prType" value="graduation" checked class="accent-blue-600">
+        <div class="pr-radio-row flex-wrap gap-y-1">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" name="prType" value="graduation" checked class="accent-blue-600 rounded">
             รายงานผู้สำเร็จการศึกษา <span class="text-gray-400 text-xs">/ Graduation Report</span></label>
-          <label><input type="radio" name="prType" value="promotion" class="accent-blue-600">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" name="prType" value="promotion" class="accent-blue-600 rounded">
             รายงานสรุปการเลื่อนชั้น <span class="text-gray-400 text-xs">/ Promotion Summary</span></label>
-          <label><input type="radio" name="prType" value="withdrawal" class="accent-blue-600">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" name="prType" value="withdrawal" class="accent-blue-600 rounded">
             รายงานนักเรียนลาออก/ถอนทุน <span class="text-gray-400 text-xs">/ Withdrawal Report</span></label>
         </div>
       </div>
@@ -4269,9 +4272,16 @@ async function doPrintReport() {
   const _selInsts   = _allChecked ? new Set() : new Set(_chkLvCbs.map(cb => cb.dataset.inst));
   const _selLevels  = _allChecked ? new Set() : new Set(_chkLvCbs.map(cb => cb.dataset.level));
 
+  const _selTypes = [...document.querySelectorAll('input[name="prType"]:checked')].map(cb => cb.value);
+  if (!_selTypes.length) {
+    Swal.fire({ icon:'warning', title: LANG==='th'?'กรุณาเลือกประเภทรายงาน':'Select report type',
+      text: LANG==='th'?'เลือกอย่างน้อย 1 ประเภท':'Select at least one report type.' });
+    return;
+  }
+
   const opts = {
     lang:           document.querySelector('input[name="prLang"]:checked').value,
-    reportType:     document.querySelector('input[name="prType"]:checked').value,
+    reportTypes:    _selTypes,
     insts:          _selInsts,
     levels:         _selLevels,
     school:         document.getElementById('prModalSchool').value.trim(),
@@ -4287,7 +4297,7 @@ async function doPrintReport() {
 
   // For graduation report: fetch already-promoted (Status='Graduated'/'University') students
   // from the DB so the report works even after a page refresh when ALL_GROUPS only has Active students.
-  if (opts.reportType === 'graduation') {
+  if (opts.reportTypes.includes('graduation')) {
     try {
       const res = await API.getStudents();
       if (res.status === 'success' && Array.isArray(res.students)) {
@@ -4307,11 +4317,12 @@ async function doPrintReport() {
   }
 
   const isEN = opts.lang === 'en';
-  const typeLabel = {
-    graduation: isEN ? 'Graduation Report'    : 'รายงานผู้สำเร็จการศึกษา',
-    promotion:  isEN ? 'Promotion Summary'    : 'รายงานสรุปการเลื่อนชั้น',
-    withdrawal: isEN ? 'Withdrawal Report'    : 'รายงานนักเรียนลาออก / ถอนทุน',
-  }[opts.reportType] || '';
+  const _typeLblMap = {
+    graduation: isEN ? 'Graduation Report'  : 'รายงานผู้สำเร็จการศึกษา',
+    promotion:  isEN ? 'Promotion Summary'  : 'รายงานสรุปการเลื่อนชั้น',
+    withdrawal: isEN ? 'Withdrawal Report'  : 'รายงานนักเรียนลาออก/ถอนทุน',
+  };
+  const typeLabel = opts.reportTypes.map(t => _typeLblMap[t]||t).join(' + ');
   closePrintReportModal();
   showLoader(true, isEN ? 'Generating report…' : 'กำลังสร้างรายงาน…');
   await new Promise(r => setTimeout(r, 0)); // yield to allow loader to paint
@@ -4321,108 +4332,27 @@ async function doPrintReport() {
 }
 
 function generateFormalReportHTML(opts) {
-  const tL   = key => (T[opts.lang]||{})[key] || T['th'][key] || key;
   const isEN = opts.lang === 'en';
-  // Level abbreviation that respects report language (not page LANG global)
   opts._lvl  = l => { const sv = LANG; LANG = opts.lang; const r = abbrevLevel(l); LANG = sv; return r; };
   const gradActions       = new Set(['graduate','uni','uni_own']);
   const withdrawalActions = new Set(['resign','withdraw_sch']);
+  const nonGradExplicit   = new Set(['hold','suspend','resign','withdraw_sch']);
+  const reportTypes = opts.reportTypes || [opts.reportType || 'graduation'];
 
-  // Sort groups by institution order
+  // Sort groups once (shared across all report types)
   const instOrder = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const sorted = [...ALL_GROUPS].sort((a,b) => {
     const io = (instOrder[a.institution]??9) - (instOrder[b.institution]??9);
     if (io!==0) return io;
     return (LEVEL_OPTIONS[a.institution]||[]).indexOf(a.level) - (LEVEL_OPTIONS[b.institution]||[]).indexOf(b.level);
   });
-
-  // Helper: returns true when this group's level is a graduation completion level
   const _isGradLevel = g => {
-    const r = PROMO_RULES[g.institution + '||' + g.level]
+    const r = PROMO_RULES[g.institution+'||'+g.level]
       || DEFAULT_RULES.find(x => x.inst === g.institution && x.from === g.level);
     return !!(r && (r.completion === 'graduate' || r.completion === 'graduate_uni'));
   };
 
-  // Non-graduation actions that exclude a student from the graduation report even at a grad level
-  const nonGradExplicit = new Set(['hold','suspend','resign','withdraw_sch']);
-
-  // Collect matching rows
-  const dataRows = [];
-  sorted.forEach(g => {
-    if (opts.insts?.size  && !opts.insts.has(g.institution))  return;
-    if (opts.levels?.size && !opts.levels.has(g.level))       return;
-    const fromGradLevel = _isGradLevel(g) || g.institution === 'UNI';
-    g.students.forEach(s => {
-      const dec = ROW_DECISIONS[s.StipNo] || {};
-      let act = dec.action || 'promote';
-
-      if (opts.reportType === 'graduation') {
-        // Explicit non-grad actions always exclude (admin chose hold/suspend/resign/etc.)
-        if (nonGradExplicit.has(act)) return;
-        // 'skip' = alreadyPromoted in a previous session → treat as 'graduate' for report
-        // 'promote' default is intentionally NOT converted: students just arriving at this
-        // level (promoted from level below) must have an explicit grad action to appear
-        if (fromGradLevel && act === 'skip') act = 'graduate';
-        // For non-grad groups: only explicit grad actions
-        if (!gradActions.has(act)) return;
-      }
-      if (opts.reportType === 'promotion'  && act === 'skip') return;
-      if (opts.reportType === 'withdrawal' && !withdrawalActions.has(act)) return;
-      dataRows.push({ g, s, dec: { ...dec, action: act } });
-    });
-  });
-
-  // Merge already-promoted students fetched from DB (Status='Graduated'/'University').
-  // These are absent from ALL_GROUPS after a page refresh because getStudentsForPromotion
-  // only returns Active students.
-  if (opts.reportType === 'graduation' && Array.isArray(opts.graduatedStudents) && opts.graduatedStudents.length) {
-    opts.graduatedStudents.forEach(s => {
-      const syntheticG = { institution: s.Institution || '', level: s.Level || '' };
-      // 'uni_own' = self-funded university; 'uni' = RDF scholarship pending (has uniName + scholarship='Yes');
-      // 'graduate' = graduated without continuing to university (new flow)
-      const act = s.Status === 'University' ? 'uni_own'
-                : (s.UniName && (s.UniScholarship||'').toLowerCase() !== 'no') ? 'uni'
-                : 'graduate';
-      const syntheticDec = {
-        action:         act,
-        uniName:        s.UniName       || '',
-        uniNameEN:      s.UniNameEN     || '',
-        uniFaculty:     s.UniFaculty    || '',
-        uniFacultyEN:   s.UniFacultyEN  || '',
-        uniMajor:       s.UniMajor      || '',
-        uniMajorEN:     s.UniMajorEN    || '',
-        uniProvince:    s.UniProvince   || '',
-        uniProvinceEN:  s.UniProvinceEN || '',
-        uniDuration:    s.UniDuration   || '',
-        schPriority:    s.SchPriority   || s.schPriority || undefined,
-        notes:          s.PromotionNotes || s.Notes || '',
-      };
-      dataRows.push({ g: syntheticG, s, dec: syntheticDec });
-    });
-  }
-
-  // Apply sort — priority wins over level; name is tiebreaker
-  const _instO = { MBS:0, VC:1, UNI:2, OTHER:3 };
-  if (opts.sortByPriority) {
-    dataRows.sort((a, b) => {
-      const pa = a.dec.schPriority ?? 9999, pb = b.dec.schPriority ?? 9999;
-      if (pa !== pb) return pa - pb;
-      return ((a.s.FirstName||'') + (a.s.LastName||'')).localeCompare((b.s.FirstName||'') + (b.s.LastName||''), 'th');
-    });
-  } else if (opts.sortByName) {
-    dataRows.sort((a, b) =>
-      ((a.s.FirstName||'')+(a.s.LastName||'')).localeCompare((b.s.FirstName||'')+(b.s.LastName||''), 'th'));
-  } else {
-    // Default: institution → level → original student order
-    dataRows.sort((a, b) => {
-      const io = (_instO[a.g.institution]??9) - (_instO[b.g.institution]??9);
-      if (io !== 0) return io;
-      return (LEVEL_OPTIONS[a.g.institution]||[]).indexOf(a.g.level) -
-             (LEVEL_OPTIONS[b.g.institution]||[]).indexOf(b.g.level);
-    });
-  }
-
-  // Bilingual strings — hardcoded to avoid i18n key lookup failures
+  // Bilingual strings
   const STR = {
     th: { grad:'รายงานผู้สำเร็จการศึกษา', promo:'รายงานสรุปการเลื่อนชั้น', withdrawal:'รายงานนักเรียนลาออก / ถอนทุน',
           date:'วันที่', acad:'ปีการศึกษา', total:'รวมทั้งหมด', person:'คน',
@@ -4434,31 +4364,103 @@ function generateFormalReportHTML(opts) {
           position:'Position', signDate:'Date', allInst:'All Institutions' },
   };
   const S = STR[isEN ? 'en' : 'th'];
-
-  const org  = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
-  const instLbl  = opts.insts?.size
-    ? [...opts.insts].map(i => instLabelMap[i]||i).join(', ')
-    : S.allInst;
-  const levelLbl = opts.levels?.size
-    ? [...opts.levels].map(l => opts._lvl(l)||l).join(' + ')
-    : '';
+  const org          = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
+  const instLbl      = opts.insts?.size ? [...opts.insts].map(i => instLabelMap[i]||i).join(', ') : S.allInst;
+  const levelLbl     = opts.levels?.size ? [...opts.levels].map(l => opts._lvl(l)||l).join(' + ') : '';
   const schoolDisplay = opts.school || instLbl;
-  const rptTitle = opts.reportType === 'graduation' ? S.grad
-    : opts.reportType === 'withdrawal' ? S.withdrawal : S.promo;
-  const subject  = opts.subject ||
-    `${schoolDisplay}${levelLbl ? ' / ' + levelLbl : ''}${opts.acad ? ' ' + opts.acad : ''} (${rptTitle})`;
+  const _instO       = { MBS:0, VC:1, UNI:2, OTHER:3 };
 
-  const tableHTML     = opts.reportType === 'graduation'
-    ? buildGradTableHTML(dataRows, isEN, opts._lvl)
-    : opts.reportType === 'withdrawal'
-      ? buildWithdrawalTableHTML(dataRows, isEN, opts._lvl)
-      : buildPromoTableHTML(dataRows, isEN, opts._lvl);
-  const summaryHTML   = buildReportSummaryHTML(dataRows, opts.reportType, isEN, S);
-  const signatureHTML = buildSignatureHTML(opts.sigs || [], opts.pDate, S, isEN);
+  // Collect and sort dataRows for a specific report type
+  const _collectRows = reportType => {
+    const rows = [];
+    sorted.forEach(g => {
+      if (opts.insts?.size  && !opts.insts.has(g.institution))  return;
+      if (opts.levels?.size && !opts.levels.has(g.level))       return;
+      const fromGradLevel = _isGradLevel(g) || g.institution === 'UNI';
+      g.students.forEach(s => {
+        const dec = ROW_DECISIONS[s.StipNo] || {};
+        let act = dec.action || 'promote';
+        if (reportType === 'graduation') {
+          if (nonGradExplicit.has(act)) return;
+          if (fromGradLevel && act === 'skip') act = 'graduate';
+          if (!gradActions.has(act)) return;
+        }
+        if (reportType === 'promotion'  && act === 'skip') return;
+        if (reportType === 'withdrawal' && !withdrawalActions.has(act)) return;
+        rows.push({ g, s, dec: { ...dec, action: act } });
+      });
+    });
+    // Merge DB-graduated students (graduation type only)
+    if (reportType === 'graduation' && Array.isArray(opts.graduatedStudents) && opts.graduatedStudents.length) {
+      opts.graduatedStudents.forEach(s => {
+        const syntheticG = { institution: s.Institution||'', level: s.Level||'' };
+        const act = s.Status === 'University' ? 'uni_own'
+          : (s.UniName && (s.UniScholarship||'').toLowerCase() !== 'no') ? 'uni' : 'graduate';
+        rows.push({ g: syntheticG, s, dec: {
+          action: act, uniName: s.UniName||'', uniNameEN: s.UniNameEN||'',
+          uniFaculty: s.UniFaculty||'', uniFacultyEN: s.UniFacultyEN||'',
+          uniMajor: s.UniMajor||'', uniMajorEN: s.UniMajorEN||'',
+          uniProvince: s.UniProvince||'', uniProvinceEN: s.UniProvinceEN||'',
+          uniDuration: s.UniDuration||'', schPriority: s.SchPriority||s.schPriority||undefined,
+          notes: s.PromotionNotes||s.Notes||'',
+        }});
+      });
+    }
+    // Sort
+    if (opts.sortByPriority) {
+      rows.sort((a,b) => {
+        const pa = a.dec.schPriority??9999, pb = b.dec.schPriority??9999;
+        if (pa!==pb) return pa-pb;
+        return ((a.s.FirstName||'')+(a.s.LastName||'')).localeCompare((b.s.FirstName||'')+(b.s.LastName||''), 'th');
+      });
+    } else if (opts.sortByName) {
+      rows.sort((a,b) => ((a.s.FirstName||'')+(a.s.LastName||'')).localeCompare((b.s.FirstName||'')+(b.s.LastName||''), 'th'));
+    } else {
+      rows.sort((a,b) => {
+        const io = (_instO[a.g.institution]??9)-(_instO[b.g.institution]??9);
+        if (io!==0) return io;
+        return (LEVEL_OPTIONS[a.g.institution]||[]).indexOf(a.g.level)-(LEVEL_OPTIONS[b.g.institution]||[]).indexOf(b.g.level);
+      });
+    }
+    return rows;
+  };
+
+  // Build one section per report type; signature only on last section
+  const bodySections = reportTypes.map((reportType, idx) => {
+    const dataRows = _collectRows(reportType);
+    const rptTitle = reportType === 'graduation' ? S.grad : reportType === 'withdrawal' ? S.withdrawal : S.promo;
+    const subject  = opts.subject ||
+      `${schoolDisplay}${levelLbl?' / '+levelLbl:''}${opts.acad?' '+opts.acad:''} (${rptTitle})`;
+    const tableHTML = reportType === 'graduation'
+      ? buildGradTableHTML(dataRows, isEN, opts._lvl)
+      : reportType === 'withdrawal'
+        ? buildWithdrawalTableHTML(dataRows, isEN, opts._lvl)
+        : buildPromoTableHTML(dataRows, isEN, opts._lvl);
+    const summaryHTML   = buildReportSummaryHTML(dataRows, reportType, isEN, S);
+    const signatureHTML = idx === reportTypes.length-1 ? buildSignatureHTML(opts.sigs||[], opts.pDate, S, isEN) : '';
+    const pageBreak     = idx > 0 ? '<div style="page-break-before:always;margin:0"></div>' : '';
+    return `${pageBreak}
+<div class="rpt-hdr">
+  <img class="rpt-logo" src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF">
+  <div style="flex:1">
+    <div class="rpt-org">${org}</div>
+    <div class="rpt-title">${rptTitle}</div>
+    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${subject}</div>
+  </div>
+  <div class="rpt-meta">
+    <div>${S.date}: <b>${opts.pDate||''}</b></div>
+    ${opts.acad?`<div>${S.acad}: <b>${opts.acad}</b></div>`:''}
+    <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${S.total}: ${dataRows.length} ${S.person}</div>
+  </div>
+</div>
+${tableHTML}
+${summaryHTML}
+${signatureHTML}`;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="${opts.lang}">
-<head><meta charset="UTF-8"><title>${subject}</title>
+<head><meta charset="UTF-8"><title>${opts.subject||(schoolDisplay+(opts.acad?' '+opts.acad:''))}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -4506,22 +4508,7 @@ tr:nth-child(even) td{background:#f8faff}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head>
 <body>
-<div class="rpt-hdr">
-  <img class="rpt-logo" src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF">
-  <div style="flex:1">
-    <div class="rpt-org">${org}</div>
-    <div class="rpt-title">${rptTitle}</div>
-    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${subject}</div>
-  </div>
-  <div class="rpt-meta">
-    <div>${S.date}: <b>${opts.pDate||''}</b></div>
-    ${opts.acad ? `<div>${S.acad}: <b>${opts.acad}</b></div>` : ''}
-    <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${S.total}: ${dataRows.length} ${S.person}</div>
-  </div>
-</div>
-${tableHTML}
-${summaryHTML}
-${signatureHTML}
+${bodySections}
 </body></html>`;
 }
 
