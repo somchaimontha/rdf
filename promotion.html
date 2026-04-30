@@ -2270,16 +2270,33 @@ function renderApprovalPanel() {
 // Approve a Graduated+pending-uni student from the approval panel in promotion.html.
 // Moves student to Status='Active', Institution='UNI', Level='ชั้นปีที่ 1'.
 async function approveUniFromPanel(stipNo) {
-  const { isConfirmed, value: notes } = await Swal.fire({
+  // Default entry academic year: use promotion page setting or current BE year
+  const _defaultYear = document.getElementById('academicYear')?.value ||
+    (() => { const y = new Date().getFullYear() + 543; return `${y}-${y+1}`; })();
+
+  const { isConfirmed, value: formVals } = await Swal.fire({
     icon: 'question',
     title: LANG==='th' ? '✔ อนุมัติทุนมหาวิทยาลัย' : '✔ Approve University Scholarship',
-    html: `<div style="font-size:13px;text-align:left;line-height:1.8">
+    html: `<div style="font-size:13px;text-align:left;line-height:2">
       นักเรียน <b>${stipNo}</b><br>
       <span style="color:#6b7280;font-size:11px">จะย้ายจากกลุ่ม ศิษย์เก่า → Active (University / ชั้นปีที่ 1)</span>
+    </div>
+    <div style="margin-top:10px;text-align:left">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">
+        📅 ${LANG==='th'?'ปีการศึกษาที่เข้ามหาวิทยาลัย':'University Entry Academic Year'}
+      </label>
+      <input id="swal_uniEntryYear" class="swal2-input" style="margin:0;width:100%;font-size:13px"
+        placeholder="เช่น 2568-2569" value="${_defaultYear}">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin:10px 0 4px">
+        💬 ${LANG==='th'?'หมายเหตุ (ไม่บังคับ)':'Notes (optional)'}
+      </label>
+      <input id="swal_uniNotes" class="swal2-input" style="margin:0;width:100%;font-size:13px" placeholder="...">
     </div>`,
-    input: 'text',
-    inputLabel: LANG==='th' ? 'หมายเหตุ (ไม่บังคับ)' : 'Notes (optional)',
-    inputPlaceholder: '...',
+    focusConfirm: false,
+    preConfirm: () => ({
+      entryYear: document.getElementById('swal_uniEntryYear')?.value?.trim() || _defaultYear,
+      notes:     document.getElementById('swal_uniNotes')?.value?.trim() || '',
+    }),
     showCancelButton: true,
     confirmButtonColor: '#16a34a',
     confirmButtonText: LANG==='th' ? '✔ อนุมัติ' : '✔ Approve',
@@ -2287,13 +2304,17 @@ async function approveUniFromPanel(stipNo) {
   });
   if (!isConfirmed) return;
 
+  const entryYear = formVals?.entryYear || _defaultYear;
+  const notes     = formVals?.notes || '';
+
   showLoader(true, LANG==='th' ? 'กำลังบันทึก...' : 'Saving...');
   try {
     const today = new Date().toISOString().slice(0,10);
     const reqUser = (getUser()||{}).username || 'Admin';
     const payload = [{ StipNo: stipNo, NewStatus: 'Active', NewInstitution: 'UNI', NewLevel: 'ชั้นปีที่ 1',
+                        NextAcademicYear: entryYear,
                         SchApprovalStatus: 'Approved', SchApprovalBy: reqUser,
-                        SchApprovalDate: today, SchApprovalNotes: notes || '' }];
+                        SchApprovalDate: today, SchApprovalNotes: notes }];
     const res = await API.promoteStudents(payload, reqUser, today);
     showLoader(false);
     if (res.status === 'success') {
