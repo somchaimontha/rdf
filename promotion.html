@@ -2944,8 +2944,10 @@ function _uniNameSelect(stipNo, uniName, uniNameEN) {
 }
 
 function _uniProgSelect(stipNo, prog) {
-  setDec(stipNo, 'uniName',      prog.uniName     || '');
-  setDec(stipNo, 'uniNameEN',    prog.uniNameEN   || '');
+  // Only overwrite university name if the program record has one — otherwise keep the
+  // value the user already typed (ACADEMIC_PROGRAMS entries rarely carry uniName).
+  if (prog.uniName)   setDec(stipNo, 'uniName',   prog.uniName);
+  if (prog.uniNameEN) setDec(stipNo, 'uniNameEN', prog.uniNameEN);
   setDec(stipNo, 'uniMajor',     prog.nameTH      || '');
   setDec(stipNo, 'uniMajorEN',   prog.nameEN      || '');
   setDec(stipNo, 'uniFaculty',   prog.faculty     || '');
@@ -2955,8 +2957,8 @@ function _uniProgSelect(stipNo, prog) {
   const row = document.getElementById('unirow_' + stipNo);
   if (!row) return;
   const setVal = (field, v) => { const el = row.querySelector('[data-field="'+field+'"]'); if (el) el.value = v; };
-  setVal('uniName',      prog.uniName     || '');
-  setVal('uniNameEN',    prog.uniNameEN   || '');
+  if (prog.uniName)   setVal('uniName',   prog.uniName);
+  if (prog.uniNameEN) setVal('uniNameEN', prog.uniNameEN);
   setVal('uniMajor',     prog.nameTH      || '');
   setVal('uniMajorEN',   prog.nameEN      || '');
   setVal('uniFaculty',   prog.faculty     || '');
