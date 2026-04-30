@@ -118,8 +118,9 @@ const API = {
   },
   async getStudentsForPromotion()        { return apiGet({ action: 'getStudentsForPromotion' }); },
   async getPendingScholarshipRequests()  { return apiGet({ action: 'getPendingScholarshipRequests' }); },
-  async promoteStudents(promotions, reqUser, promotionDate) {
-    return apiPost({ action: 'promoteStudents', promotions, reqUser, promotionDate });
+  async promoteStudents(promotions, reqUser, promotionDate, sendEmailNotif) {
+    return apiPost({ action: 'promoteStudents', promotions, reqUser, promotionDate,
+      sendEmailNotif: sendEmailNotif === true });
   },
   async addUniTransfer(data, reqUser) {
     return apiPost({ action: 'addUniTransfer', data, reqUser });
