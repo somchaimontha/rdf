@@ -2886,8 +2886,8 @@ function _uniProvSelect(stipNo, provTH, provEN) {
   if (row) {
     const thEl = row.querySelector('[data-field="uniProvince"]');
     const enEl = row.querySelector('[data-field="uniProvinceEN"]');
-    if (thEl) thEl.value = provTH;
-    if (enEl) enEl.value = provEN;
+    if (thEl) { thEl.value = provTH; thEl.blur(); }
+    if (enEl) { enEl.value = provEN; }
   }
   document.getElementById('uniProvAcUl_'  + stipNo)?.classList.add('hidden');
   document.getElementById('uniProvENAcUl_'+ stipNo)?.classList.add('hidden');
@@ -2900,8 +2900,8 @@ function _uniFacSelect(stipNo, faculty, facultyEN) {
   if (row) {
     const thEl = row.querySelector('[data-field="uniFaculty"]');
     const enEl = row.querySelector('[data-field="uniFacultyEN"]');
-    if (thEl) thEl.value = faculty;
-    if (enEl) enEl.value = facultyEN;
+    if (thEl) { thEl.value = faculty;   thEl.blur(); }
+    if (enEl) { enEl.value = facultyEN; }
   }
   document.getElementById('uniFacAcUl_'  + stipNo)?.classList.add('hidden');
   document.getElementById('uniFacENAcUl_'+ stipNo)?.classList.add('hidden');
@@ -2913,9 +2913,10 @@ function _uniNameSelect(stipNo, uniName, uniNameEN) {
   setDec(stipNo, 'uniNameEN', uniNameEN);
   const row = document.getElementById('unirow_' + stipNo);
   if (row) {
-    const setVal = (f,v) => { const el = row.querySelector('[data-field="'+f+'"]'); if (el) el.value = v; };
-    setVal('uniName',   uniName);
-    setVal('uniNameEN', uniNameEN);
+    const thEl = row.querySelector('[data-field="uniName"]');
+    const enEl = row.querySelector('[data-field="uniNameEN"]');
+    if (thEl) { thEl.value = uniName;   thEl.blur(); }
+    if (enEl) { enEl.value = uniNameEN; }
   }
   document.getElementById('uniNameAcUl_'   + stipNo)?.classList.add('hidden');
   document.getElementById('uniNameENAcUl_' + stipNo)?.classList.add('hidden');
