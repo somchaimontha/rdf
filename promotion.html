@@ -3544,19 +3544,93 @@ function updateStats() {
   Object.values(ROW_DECISIONS).forEach(d => { counts[d.action] = (counts[d.action]||0) + 1; });
   const bar = document.getElementById('promoStats');
   if (!bar) return;
+
+  const _n = (k) => counts[k] || 0;
+  const _item = (icon, label, n, col) => {
+    const zero = n === 0;
+    return `<span style="display:inline-flex;align-items:center;gap:3px;color:${zero?'#d1d5db':col};font-weight:${zero?'400':'700'}">
+      ${icon} ${label}: <b style="min-width:16px;text-align:right">${n}</b></span>`;
+  };
+
+  const uniTotal = _n('uni') + _n('uni_own');
   const parts = [
-    counts.promote   ? `<span>⬆ ${t('promoActPromote')}: <b>${counts.promote}</b></span>`    : '',
-    counts.graduate  ? `<span>🎓 ${t('promoActGraduate')}: <b>${counts.graduate}</b></span>`  : '',
-    (counts.uni||0)+(counts.uni_own||0) ? `<span>🏛 Uni: <b>${(counts.uni||0)+(counts.uni_own||0)}</b></span>` : '',
-    counts.hold      ? `<span>⏸ ${t('promoActHold')}: <b>${counts.hold}</b></span>`           : '',
-    counts.suspend   ? `<span>⚠ ${t('promoActSuspend')}: <b>${counts.suspend}</b></span>`     : '',
-    counts.resign       ? `<span>✕ ${t('promoActResign')}: <b>${counts.resign}</b></span>`             : '',
-    counts.withdraw_sch ? `<span>🚫 ${t('promoActWithdrawSch')}: <b>${counts.withdraw_sch}</b></span>` : '',
-    counts.skip         ? `<span>— ${t('promoActSkip')}: <b>${counts.skip}</b></span>`                 : '',
-  ].filter(Boolean);
-  bar.innerHTML = parts.join('<span class="mx-1 text-gray-200">|</span>');
-  // Refresh chart if stats section is open
+    _item('⬆', t('promoActPromote'),    _n('promote'),      '#16a34a'),
+    _item('🎓', t('promoActGraduate'),   _n('graduate'),     '#7c3aed'),
+    _item('🏛', LANG==='en'?'University':'ต่อ ม.',           uniTotal, '#6d28d9'),
+    _item('⏸', t('promoActHold'),       _n('hold'),         '#c2410c'),
+    _item('⚠', t('promoActSuspend'),    _n('suspend'),      '#d97706'),
+    _item('✕', t('promoActResign'),      _n('resign'),       '#dc2626'),
+    _item('🚫', t('promoActWithdrawSch'),_n('withdraw_sch'), '#9f1239'),
+    _item('—', t('promoActSkip'),        _n('skip'),         '#9ca3af'),
+  ];
+
+  const isSuperAdmin = (getUser()||{}).role === 'SuperAdmin';
+  const resetBtn = isSuperAdmin
+    ? `<span class="mx-1 text-gray-200">|</span>
+       <button onclick="resetAllDecisions()"
+         title="${LANG==='th'?'รีเซทการดำเนินการทั้งหมด (SuperAdmin)':'Reset all decisions (SuperAdmin)'}"
+         style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;
+                font-size:10px;font-weight:600;border:1px solid #e5e7eb;background:#fff;
+                color:#6b7280;cursor:pointer;transition:all .15s"
+         onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626';this.style.borderColor='#fca5a5'"
+         onmouseout="this.style.background='#fff';this.style.color='#6b7280';this.style.borderColor='#e5e7eb'">
+         <i data-lucide="rotate-ccw" style="width:10px;height:10px"></i>
+         ${LANG==='th'?'รีเซท':'Reset'}
+       </button>` : '';
+
+  bar.innerHTML = parts.join('<span class="mx-1 text-gray-200">|</span>') + resetBtn;
+  if (typeof lucide !== 'undefined') lucide.createIcons({ elements: [bar] });
   if (_statsSectionOpen) renderStatsChart();
+}
+
+async function resetAllDecisions() {
+  const { isConfirmed } = await Swal.fire({
+    icon: 'warning',
+    title: LANG==='th' ? '🔄 รีเซทการดำเนินการทั้งหมด?' : '🔄 Reset all decisions?',
+    html: `<div class="text-sm text-gray-600">
+      ${LANG==='th'
+        ? 'การดำเนินการที่เลือกไว้ทั้งหมดจะถูกล้าง<br>และกลับไปใช้ค่าเริ่มต้นตามกฎการเลื่อนชั้น<br><span style="color:#dc2626;font-weight:600">ข้อมูลที่ยังไม่บันทึกจะหายไป</span>'
+        : 'All assigned actions will be cleared<br>and reset to default promotion rules.<br><span style="color:#dc2626;font-weight:600">Unsaved changes will be lost.</span>'}
+    </div>`,
+    showCancelButton: true,
+    confirmButtonText: LANG==='th' ? '🔄 รีเซท' : '🔄 Reset',
+    cancelButtonText:  LANG==='th' ? 'ยกเลิก' : 'Cancel',
+    confirmButtonColor: '#dc2626',
+  });
+  if (!isConfirmed) return;
+
+  // Re-initialise ROW_DECISIONS from PROMO_RULES defaults (no network call needed)
+  const ps = SETTINGS.promotionSettings || {};
+  const currentBatchID = ps.academicYear ? ps.academicYear + '_PROMO' : '';
+  ALL_GROUPS.forEach(g => {
+    g.students.forEach(s => {
+      const rule = PROMO_RULES[g.institution + '||' + g.level];
+      const isGrad = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
+      const canUni = isGrad && (rule.allowUniTransfer || rule.completion === 'graduate_uni');
+      const alreadyPromoted = PROMOTED_THIS_SESSION.has(s.StipNo) ||
+        !!(currentBatchID && s.PromotionBatchID && s.PromotionBatchID === currentBatchID);
+      const defAction = alreadyPromoted ? 'skip'
+        : (g.institution === 'UNI' ? 'promote'
+          : (isGrad ? 'graduate' : 'promote'));
+      const nextLevel = rule ? (rule.to || '') : '';
+      ROW_DECISIONS[s.StipNo] = {
+        action:           defAction,
+        nextLevel:        defAction === 'promote' ? (nextLevel !== '—' ? nextLevel : '') : '',
+        uniName:'', uniNameEN:'', uniFaculty:'', uniFacultyEN:'',
+        uniMajor:'', uniMajorEN:'', uniProvince:'', uniProvinceEN:'',
+        uniDuration:'', uniScholarship: s.UniScholarship || (ps.uniDefaultStatus||'Pending'),
+        notes:'', alreadyPromoted, nextAcademicYear:'',
+        currentYear: s.CurrentAcademicYear || '',
+        schApprovalStatus: s.SchApprovalStatus || '',
+        schPriority: s.SchPriority ?? null,
+      };
+    });
+  });
+
+  renderGroups();
+  updateStats();
+  Swal.fire({ icon:'success', title: LANG==='th'?'รีเซทแล้ว':'Reset done',
+    timer:1500, showConfirmButton:false });
 }
 
 // ─────────────────────────────────────────────
