@@ -2151,7 +2151,7 @@ async function loadApprovalPanel() {
     _PENDING_APPROVALS = schRes.status === 'fulfilled' ? (schRes.value.pending || []) : [];
     if (stuRes.status === 'fulfilled' && stuRes.value.status === 'success') {
       const existingStipNos = new Set(_PENDING_APPROVALS.map(p => p.StipNo));
-      _PENDING_UNI_GRADUATED = (stuRes.value.students || []).filter(s =>
+      _PENDING_UNI_GRADUATED = (stuRes.value.data || []).filter(s =>
         s.status === 'Graduated' &&
         s.uniName &&
         (s.uniScholarship || '').toLowerCase() !== 'no' &&
@@ -4301,13 +4301,13 @@ async function doPrintReport() {
   if (opts.reportTypes.includes('graduation')) {
     try {
       const res = await API.getStudents();
-      if (res.status === 'success' && Array.isArray(res.students)) {
+      if (res.status === 'success' && Array.isArray(res.data)) {
         const alreadyInGroups = new Set(ALL_GROUPS.flatMap(g => g.students.map(s => s.StipNo)));
-        opts.graduatedStudents = res.students.filter(s => {
-          if (!['Graduated', 'University'].includes(s.Status)) return false;
-          if (opts.insts?.size  && !opts.insts.has(s.Institution || ''))  return false;
-          if (opts.levels?.size && !opts.levels.has(s.Level || ''))       return false;
-          if (alreadyInGroups.has(s.StipNo)) return false; // avoid double-count
+        opts.graduatedStudents = res.data.filter(s => {
+          if (!['Graduated', 'University'].includes(s.status)) return false;
+          if (opts.insts?.size  && !opts.insts.has(s.institution || ''))  return false;
+          if (opts.levels?.size && !opts.levels.has(s.level || ''))       return false;
+          if (alreadyInGroups.has(s.stipNo)) return false; // avoid double-count
           return true;
         });
       }
@@ -4394,16 +4394,16 @@ function generateFormalReportHTML(opts) {
     // Merge DB-graduated students (graduation type only)
     if (reportType === 'graduation' && Array.isArray(opts.graduatedStudents) && opts.graduatedStudents.length) {
       opts.graduatedStudents.forEach(s => {
-        const syntheticG = { institution: s.Institution||'', level: s.Level||'' };
-        const act = s.Status === 'University' ? 'uni_own'
-          : (s.UniName && (s.UniScholarship||'').toLowerCase() !== 'no') ? 'uni' : 'graduate';
+        const syntheticG = { institution: s.institution||'', level: s.level||'' };
+        const act = s.status === 'University' ? 'uni_own'
+          : (s.uniName && (s.uniScholarship||'').toLowerCase() !== 'no') ? 'uni' : 'graduate';
         rows.push({ g: syntheticG, s, dec: {
-          action: act, uniName: s.UniName||'', uniNameEN: s.UniNameEN||'',
-          uniFaculty: s.UniFaculty||'', uniFacultyEN: s.UniFacultyEN||'',
-          uniMajor: s.UniMajor||'', uniMajorEN: s.UniMajorEN||'',
-          uniProvince: s.UniProvince||'', uniProvinceEN: s.UniProvinceEN||'',
-          uniDuration: s.UniDuration||'', schPriority: s.SchPriority||s.schPriority||undefined,
-          notes: s.PromotionNotes||s.Notes||'',
+          action: act, uniName: s.uniName||'', uniNameEN: s.uniNameEN||'',
+          uniFaculty: s.uniFaculty||'', uniFacultyEN: s.uniFacultyEN||'',
+          uniMajor: s.uniMajor||'', uniMajorEN: s.uniMajorEN||'',
+          uniProvince: s.uniProvince||'', uniProvinceEN: s.uniProvinceEN||'',
+          uniDuration: s.uniDuration||'', schPriority: s.schPriority||undefined,
+          notes: s.promotionNotes||s.notes||'',
         }});
       });
     }
