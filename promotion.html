@@ -3589,8 +3589,8 @@ async function resetAllDecisions() {
     title: LANG==='th' ? '🔄 รีเซทการดำเนินการทั้งหมด?' : '🔄 Reset all decisions?',
     html: `<div class="text-sm text-gray-600">
       ${LANG==='th'
-        ? 'การดำเนินการที่เลือกไว้ทั้งหมดจะถูกล้าง<br>และกลับไปใช้ค่าเริ่มต้นตามกฎการเลื่อนชั้น<br><span style="color:#dc2626;font-weight:600">ข้อมูลที่ยังไม่บันทึกจะหายไป</span>'
-        : 'All assigned actions will be cleared<br>and reset to default promotion rules.<br><span style="color:#dc2626;font-weight:600">Unsaved changes will be lost.</span>'}
+        ? 'การดำเนินการที่เลือกไว้ทั้งหมดจะถูกล้าง<br>นักเรียนทุกคนจะถูกตั้งเป็น <b>ไม่เปลี่ยน</b><br><span style="color:#dc2626;font-weight:600">ข้อมูลที่ยังไม่บันทึกจะหายไป</span>'
+        : 'All assigned actions will be cleared.<br>Every student will be set to <b>skip</b>.<br><span style="color:#dc2626;font-weight:600">Unsaved changes will be lost.</span>'}
     </div>`,
     showCancelButton: true,
     confirmButtonText: LANG==='th' ? '🔄 รีเซท' : '🔄 Reset',
@@ -3599,27 +3599,16 @@ async function resetAllDecisions() {
   });
   if (!isConfirmed) return;
 
-  // Re-initialise ROW_DECISIONS from PROMO_RULES defaults (no network call needed)
+  // Clear all decisions to 'skip' so every counter becomes 0
   const ps = SETTINGS.promotionSettings || {};
-  const currentBatchID = ps.academicYear ? ps.academicYear + '_PROMO' : '';
   ALL_GROUPS.forEach(g => {
     g.students.forEach(s => {
-      const rule = PROMO_RULES[g.institution + '||' + g.level];
-      const isGrad = rule && (rule.completion === 'graduate' || rule.completion === 'graduate_uni');
-      const canUni = isGrad && (rule.allowUniTransfer || rule.completion === 'graduate_uni');
-      const alreadyPromoted = PROMOTED_THIS_SESSION.has(s.StipNo) ||
-        !!(currentBatchID && s.PromotionBatchID && s.PromotionBatchID === currentBatchID);
-      const defAction = alreadyPromoted ? 'skip'
-        : (g.institution === 'UNI' ? 'promote'
-          : (isGrad ? 'graduate' : 'promote'));
-      const nextLevel = rule ? (rule.to || '') : '';
       ROW_DECISIONS[s.StipNo] = {
-        action:           defAction,
-        nextLevel:        defAction === 'promote' ? (nextLevel !== '—' ? nextLevel : '') : '',
-        uniName:'', uniNameEN:'', uniFaculty:'', uniFacultyEN:'',
+        action: 'skip',
+        nextLevel: '', uniName:'', uniNameEN:'', uniFaculty:'', uniFacultyEN:'',
         uniMajor:'', uniMajorEN:'', uniProvince:'', uniProvinceEN:'',
         uniDuration:'', uniScholarship: s.UniScholarship || (ps.uniDefaultStatus||'Pending'),
-        notes:'', alreadyPromoted, nextAcademicYear:'',
+        notes:'', alreadyPromoted: false, nextAcademicYear:'',
         currentYear: s.CurrentAcademicYear || '',
         schApprovalStatus: s.SchApprovalStatus || '',
         schPriority: s.SchPriority ?? null,
