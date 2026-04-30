@@ -128,6 +128,9 @@ const API = {
   async changeAdminPassword(username, currentPassword, newPassword) {
     return apiPost({ action: 'changeAdminPassword', username, currentPassword, newPassword });
   },
+  async getPromotionHistory(batchID) {
+    return apiGet({ action: 'getPromotionHistory', batchID: batchID || '' });
+  },
   // Generic helpers for pages that call API.get / API.post directly
   async get(action, params) { return apiGet({ action, ...(params||{}) }); },
   async post(action, body)  { return apiPost({ action, ...body }); },

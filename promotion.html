@@ -2224,8 +2224,16 @@ function renderApprovalPanel() {
       </td>
     </tr>`;
 
+  // Sort helper: SchPriority ascending, nulls/empty last
+  const _sortByPrio = arr => [...arr].sort((a, b) => {
+    const pa = a.schPriority ?? a.SchPriority; const pb = b.schPriority ?? b.SchPriority;
+    const va = (pa !== null && pa !== undefined && pa !== '') ? parseInt(pa) : Infinity;
+    const vb = (pb !== null && pb !== undefined && pb !== '') ? parseInt(pb) : Infinity;
+    return va - vb;
+  });
+
   // Rows from SchApprovalStatus='Pending' (existing GAS flow)
-  const schRows = pending.map(p => _approvalRow({
+  const schRows = _sortByPrio(pending).map(p => _approvalRow({
     stipNo: p.StipNo, name: `${p.FirstName||''} ${p.LastName||''}`.trim(),
     level: p.CurrentLevel, inst: p.Institution,
     uniName: p.UniName, uniFaculty: p.UniFaculty, uniMajor: p.UniMajor, uniProvince: p.UniProvince,
@@ -2235,8 +2243,8 @@ function renderApprovalPanel() {
   })).join('');
 
   // Rows from Status='Graduated' + UniScholarship='Yes' (new flow)
-  const gradRows = graduated.map(s => _approvalRow({
-    stipNo: s.stipNo, name: `${s.title||''}${s.fname||''} ${s.lname||''}`.trim(),
+  const gradRows = _sortByPrio(graduated).map(s => _approvalRow({
+    stipNo: s.stipNo, name: `${s.title||''}${s.firstName||''} ${s.lastName||''}`.trim(),
     level: s.level, inst: s.institution,
     uniName: s.uniName, uniFaculty: s.uniFaculty, uniMajor: s.uniMajor, uniProvince: s.uniProvince,
     notes: s.promotionNotes || s.notes || '',
@@ -4221,7 +4229,7 @@ function printFromPreview() {
   }
 }
 
-function openPrintReportModal() {
+async function openPrintReportModal() {
   document.getElementById('prModalAcad').value  = document.getElementById('academicYear').value  || '';
   document.getElementById('prModalDate').value  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
 
@@ -4277,20 +4285,38 @@ function openPrintReportModal() {
 
   _prBuildLevelPicker();
 
-  // Populate batch selector from localStorage snapshots
+  // Populate batch selector — try DB history first, merge with localStorage snapshots
   const batchSel = document.getElementById('prBatchSel');
   if (batchSel) {
-    const snapKeys = Object.keys(localStorage)
-      .filter(k => k.startsWith('rdf_batch_')).sort().reverse();
-    const curBatch = (document.getElementById('academicYear')?.value || '') + '_PROMO';
+    const curBatch  = (document.getElementById('academicYear')?.value || '') + '_PROMO';
+    const snapKeys  = Object.keys(localStorage).filter(k => k.startsWith('rdf_batch_')).sort().reverse();
+    const localBids = new Set(snapKeys.map(k => k.replace('rdf_batch_', '')));
+
+    // Fetch DB batch list (requires Code.gs getPromotionHistory with empty batchID)
+    let dbBids = new Set();
+    try {
+      const histRes = await API.getPromotionHistory('');
+      if (histRes && histRes.status === 'success' && Array.isArray(histRes.batches)) {
+        histRes.batches.forEach(b => dbBids.add(b));
+      }
+    } catch(e) { /* Code.gs not yet updated */ }
+
+    const allBids = [...new Set([...dbBids, ...localBids])].sort().reverse();
+
     batchSel.innerHTML = `<option value="_session">ปัจจุบัน — ข้อมูลที่เลือกในหน้าจอ</option>` +
-      snapKeys.map(k => {
-        let d; try { d = JSON.parse(localStorage.getItem(k) || '{}'); } catch { d = {}; }
-        const bid = k.replace('rdf_batch_', '');
-        const tag = bid === curBatch ? ' ★ ล่าสุด' : '';
-        return `<option value="${bid}">${bid}${tag} — ${d.count || '?'} คน, ${d.date || '?'}</option>`;
+      allBids.map(bid => {
+        const inDB    = dbBids.has(bid);
+        const inLocal = localBids.has(bid);
+        const tag     = bid === curBatch ? ' ★ ล่าสุด' : '';
+        const src     = inDB ? ' [DB]' : ' [local]';
+        let count = '?', date = '?';
+        if (inLocal) {
+          try { const d = JSON.parse(localStorage.getItem('rdf_batch_' + bid) || '{}'); count = d.count || '?'; date = d.date || '?'; } catch {}
+        }
+        return `<option value="${bid}">${bid}${tag}${src} — ${count} คน, ${date}</option>`;
       }).join('');
-    const hasCurSnap = snapKeys.includes('rdf_batch_' + curBatch);
+
+    const hasCurSnap = localBids.has(curBatch) || dbBids.has(curBatch);
     batchSel.value = hasCurSnap ? curBatch : '_session';
     const batchNote = document.getElementById('prBatchNote');
     const _toggleNote = () => { if (batchNote) batchNote.classList.toggle('hidden', batchSel.value === '_session'); };
@@ -4482,23 +4508,66 @@ async function doPrintReport() {
   });
 
   // Load snapshot for historical batch (for promotion/withdrawal report types)
+  // Try DB history first (requires Code.gs getPromotionHistory), fall back to localStorage snapshot
   let _snapGroups = null, _snapDecisions = null;
   if (selectedBatch !== '_session') {
     try {
-      const raw = localStorage.getItem('rdf_batch_' + selectedBatch);
-      if (raw) {
-        const { snap } = JSON.parse(raw);
-        _snapDecisions = snap;
+      // Primary: fetch from Promotion_History sheet via API
+      const histRes = await API.getPromotionHistory(selectedBatch);
+      if (histRes && histRes.status === 'success' && Array.isArray(histRes.rows) && histRes.rows.length > 0) {
+        _snapDecisions = {};
         const gMap = {};
-        Object.entries(snap).forEach(([sno, item]) => {
-          if (!item._stu) return;
-          const key = item._stu.Institution + '||' + item._stu.Level;
-          if (!gMap[key]) gMap[key] = { institution: item._stu.Institution, level: item._stu.Level, students: [] };
-          gMap[key].students.push({ ...item._stu, StipNo: sno });
+        histRes.rows.forEach(row => {
+          const sno = row.StipNo || row.stipNo || '';
+          if (!sno) return;
+          _snapDecisions[sno] = {
+            action:       row.ActionTaken   || 'skip',
+            nextLevel:    row.NewLevel      || '',
+            uniName:      row.UniName       || '',
+            uniNameEN:    row.UniNameEN     || '',
+            uniFaculty:   row.UniFaculty    || '',
+            uniFacultyEN: row.UniFacultyEN  || '',
+            uniMajor:     row.UniMajor      || '',
+            uniMajorEN:   row.UniMajorEN    || '',
+            uniProvince:  row.UniProvince   || '',
+            uniProvinceEN:row.UniProvinceEN || '',
+            uniDuration:  row.UniDuration   || '',
+            notes:        row.Notes         || '',
+            schPriority:  row.SchPriority   ?? null,
+          };
+          const inst  = row.Institution || '';
+          const level = row.OldLevel    || '';
+          const key   = inst + '||' + level;
+          if (!gMap[key]) gMap[key] = { institution: inst, level, students: [] };
+          gMap[key].students.push({
+            StipNo: sno, Title: row.Title||'', FirstName: row.FirstName||'',
+            LastName: row.LastName||'', EngFirstName: row.EngFirstName||'',
+            EngLastName: row.EngLastName||'', Institution: inst, Level: level,
+            CurrentAcademicYear: row.AcademicYear||'',
+          });
         });
         _snapGroups = Object.values(gMap);
       }
-    } catch(e) { /* non-fatal */ }
+    } catch(e) { /* API not yet deployed — fall through to localStorage */ }
+
+    // Fallback: localStorage snapshot captured at save time
+    if (!_snapGroups) {
+      try {
+        const raw = localStorage.getItem('rdf_batch_' + selectedBatch);
+        if (raw) {
+          const { snap } = JSON.parse(raw);
+          _snapDecisions = snap;
+          const gMap = {};
+          Object.entries(snap).forEach(([sno, item]) => {
+            if (!item._stu) return;
+            const key = item._stu.Institution + '||' + item._stu.Level;
+            if (!gMap[key]) gMap[key] = { institution: item._stu.Institution, level: item._stu.Level, students: [] };
+            gMap[key].students.push({ ...item._stu, StipNo: sno });
+          });
+          _snapGroups = Object.values(gMap);
+        }
+      } catch(e) { /* non-fatal */ }
+    }
   }
 
   // Fetch graduates from DB (graduation report type)
