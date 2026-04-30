@@ -651,6 +651,11 @@ img.student-avatar {
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" name="prType" value="withdrawal" class="accent-blue-600 rounded">
             รายงานนักเรียนลาออก/ถอนทุน <span class="text-gray-400 text-xs">/ Withdrawal Report</span></label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" name="prType" value="nomination" class="accent-blue-600 rounded">
+            ลำดับชื่อเสนอรับทุน <span class="text-gray-400 text-xs">/ Nomination List</span>
+            <span style="margin-left:4px;font-size:10px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:4px;padding:1px 5px">🏛 เฉพาะขอรับทุน RDF</span>
+          </label>
         </div>
       </div>
 
@@ -4628,6 +4633,18 @@ async function doPrintReport() {
 
   showLoader(false);
   showPrintPreview(html, (isEN ? 'Preview — ' : 'ตัวอย่าง — ') + typeLabel);
+
+  // "บังคับพิมพ์" — nomination report auto-triggers the print dialog
+  if (_selTypes.includes('nomination')) {
+    const iframe = document.getElementById('previewIframe');
+    if (iframe) {
+      const _autoPrint = () => {
+        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {}
+      };
+      // Wait for iframe srcdoc to finish loading before printing
+      iframe.addEventListener('load', _autoPrint, { once: true });
+    }
+  }
 }
 
 function generateFormalReportHTML(opts) {
@@ -4654,10 +4671,12 @@ function generateFormalReportHTML(opts) {
   // Bilingual strings
   const STR = {
     th: { grad:'รายงานผู้สำเร็จการศึกษา', promo:'รายงานสรุปการเลื่อนชั้น', withdrawal:'รายงานนักเรียนลาออก / ถอนทุน',
+          nomination:'ลำดับชื่อเสนอรับทุนมหาวิทยาลัย (ขอรับทุน RDF ต่อ)',
           date:'วันที่', acad:'ปีการศึกษา', total:'รวมทั้งหมด', person:'คน',
           summary:'สรุป', preparedBy:'จัดทำโดย', signedBy:'ลงนามรับรองข้อมูล',
           position:'ตำแหน่ง', signDate:'วันที่', allInst:'ทุกสถานศึกษา' },
     en: { grad:'Graduation Report', promo:'Grade Promotion Summary Report', withdrawal:'Withdrawal Report',
+          nomination:'Scholarship Nomination List (Applying RDF University Scholarship)',
           date:'Date', acad:'Academic Year', total:'Total', person:'student(s)',
           summary:'Summary', preparedBy:'Prepared by', signedBy:'Certified by',
           position:'Position', signDate:'Date', allInst:'All Institutions' },
@@ -4686,6 +4705,12 @@ function generateFormalReportHTML(opts) {
         }
         if (reportType === 'promotion'  && act === 'skip') return;
         if (reportType === 'withdrawal' && !withdrawalActions.has(act)) return;
+        // Nomination: only graduating-level students (not UNI) with action='uni'
+        if (reportType === 'nomination') {
+          if (g.institution === 'UNI') return;
+          if (!fromGradLevel) return;
+          if (act !== 'uni') return;
+        }
         rows.push({ g, s, dec: { ...dec, action: act } });
       });
     });
@@ -4706,9 +4731,11 @@ function generateFormalReportHTML(opts) {
       });
     }
     // Sort
-    if (opts.sortByPriority) {
+    if (reportType === 'nomination' || opts.sortByPriority) {
+      // Nomination always sorts by SchPriority asc, nulls last, then name
+      const _pv = v => (v !== null && v !== undefined && v !== '') ? parseInt(v) : 999999;
       rows.sort((a,b) => {
-        const pa = a.dec.schPriority??9999, pb = b.dec.schPriority??9999;
+        const pa = _pv(a.dec.schPriority), pb = _pv(b.dec.schPriority);
         if (pa!==pb) return pa-pb;
         return ((a.s.FirstName||'')+(a.s.LastName||'')).localeCompare((b.s.FirstName||'')+(b.s.LastName||''), 'th');
       });
@@ -4727,14 +4754,19 @@ function generateFormalReportHTML(opts) {
   // Build one section per report type; signature only on last section
   const bodySections = reportTypes.map((reportType, idx) => {
     const dataRows = _collectRows(reportType);
-    const rptTitle = reportType === 'graduation' ? S.grad : reportType === 'withdrawal' ? S.withdrawal : S.promo;
+    const rptTitle = reportType === 'graduation' ? S.grad
+      : reportType === 'withdrawal' ? S.withdrawal
+      : reportType === 'nomination' ? S.nomination
+      : S.promo;
     const subject  = opts.subject ||
       `${schoolDisplay}${levelLbl?' / '+levelLbl:''}${opts.acad?' '+opts.acad:''} (${rptTitle})`;
     const tableHTML = reportType === 'graduation'
       ? buildGradTableHTML(dataRows, isEN, opts._lvl)
       : reportType === 'withdrawal'
         ? buildWithdrawalTableHTML(dataRows, isEN, opts._lvl)
-        : buildPromoTableHTML(dataRows, isEN, opts._lvl);
+        : reportType === 'nomination'
+          ? buildNominationTableHTML(dataRows, isEN, opts._lvl)
+          : buildPromoTableHTML(dataRows, isEN, opts._lvl);
     const summaryHTML   = buildReportSummaryHTML(dataRows, reportType, isEN, S);
     const signatureHTML = idx === reportTypes.length-1 ? buildSignatureHTML(opts.sigs||[], opts.pDate, S, isEN) : '';
     const pageBreak     = idx > 0 ? '<div style="page-break-before:always;margin:0"></div>' : '';
@@ -4879,6 +4911,65 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
   </table>`;
 }
 
+function buildNominationTableHTML(dataRows, isEN, lvl) {
+  lvl = lvl || abbrevLevel;
+  const _pv = v => (v !== null && v !== undefined && v !== '') ? parseInt(v) : null;
+
+  const rows = dataRows.map(({ g, s, dec }, idx) => {
+    const thaiName   = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
+    const engName    = ((getTitleEN(s.Title)?getTitleEN(s.Title)+' ':'')+(s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
+    const levelDisp  = isEN ? lvl(g.level) : g.level;
+    const instDisp   = isEN ? (RDF.INSTITUTION_LABELS[g.institution]||g.institution) : (RDF.INSTITUTION_LABELS_TH[g.institution]||g.institution);
+    const uniDisp    = isEN ? (dec.uniNameEN||dec.uniName||'—') : (dec.uniName||'—');
+    const facDisp    = isEN ? (dec.uniFacultyEN||dec.uniFaculty||'—') : (dec.uniFaculty||'—');
+    const majorDisp  = isEN ? (dec.uniMajorEN||dec.uniMajor||'—') : (dec.uniMajor||'—');
+    const provDisp   = isEN ? (dec.uniProvinceEN||dec.uniProvince||'—') : (dec.uniProvince||'—');
+    const duration   = dec.uniDuration ? dec.uniDuration+(isEN?' yr':' ปี') : '—';
+    const prioVal    = _pv(dec.schPriority);
+    const prioDisp   = prioVal !== null ? prioVal : (isEN?'—':'—');
+    const seqNum     = idx + 1;
+    return `<tr>
+      <td class="seq tc" style="font-size:10pt;font-weight:700;color:#1e3a8a">${seqNum}</td>
+      <td style="font-size:8.5pt">
+        <div style="font-weight:700">${thaiName||'—'}</div>
+        <div style="color:#6b7280;font-size:7.5pt">${engName||''}</div>
+      </td>
+      <td class="tc" style="font-size:8pt">${levelDisp}<br><span style="color:#6b7280;font-size:7.5pt">${instDisp}</span></td>
+      <td style="font-size:8pt">${s.Major||'—'}</td>
+      <td style="font-size:8pt;font-weight:600;color:#1e3a8a">${uniDisp}</td>
+      <td style="font-size:8pt">${facDisp}</td>
+      <td style="font-size:8pt">${majorDisp}</td>
+      <td class="tc" style="font-size:8pt">${duration}</td>
+      <td style="font-size:8pt">${provDisp}</td>
+      <td class="tc" style="font-size:8.5pt;font-weight:700;color:${prioVal?'#7c3aed':'#9ca3af'}">${prioDisp}</td>
+      <td style="font-size:8pt;color:#6b7280">${dec.notes||'—'}</td>
+    </tr>`;
+  }).join('') || noDataRow(isEN ? 11 : 11, isEN);
+
+  const gradLbl = isEN ? 'Graduating From' : 'จบจากระดับ';
+  return `<table>
+    <thead>
+      <tr>
+        <th rowspan="2" style="width:3%">${isEN?'No.':'ลำดับ'}</th>
+        <th rowspan="2" style="width:20%">${isEN?'Name':'ชื่อ-นามสกุล'}</th>
+        <th rowspan="2" style="width:10%">${gradLbl}</th>
+        <th rowspan="2" style="width:8%">${isEN?'Major (Current)':'สาขา (ปัจจุบัน)'}</th>
+        <th colspan="3" style="width:28%">${isEN?'Target University':'มหาวิทยาลัยที่ต้องการเข้าศึกษา'}</th>
+        <th rowspan="2" style="width:6%">${isEN?'Duration':'ระยะเวลา'}</th>
+        <th rowspan="2" style="width:8%">${isEN?'Province':'จังหวัด'}</th>
+        <th rowspan="2" style="width:5%">${isEN?'Priority':'ลำดับสิทธิ์'}</th>
+        <th rowspan="2" style="width:12%">${isEN?'Remarks':'หมายเหตุ'}</th>
+      </tr>
+      <tr>
+        <th class="sub-h" style="width:12%">${isEN?'University':'มหาวิทยาลัย'}</th>
+        <th class="sub-h" style="width:8%">${isEN?'Faculty':'คณะ'}</th>
+        <th class="sub-h" style="width:8%">${isEN?'Major':'สาขา'}</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
 function buildPromoTableHTML(dataRows, isEN, lvl) {
   lvl = lvl || abbrevLevel;
   let seq = 1;
@@ -4950,6 +5041,26 @@ function buildPromoTableHTML(dataRows, isEN, lvl) {
 
 function buildReportSummaryHTML(dataRows, reportType, isEN, S) {
   if (dataRows.length === 0) return '';
+
+  if (reportType === 'nomination') {
+    // Group by institution for summary
+    const byInst = {};
+    dataRows.forEach(({ g }) => {
+      byInst[g.institution] = (byInst[g.institution]||0) + 1;
+    });
+    const instNames = { MBS: isEN?'MBS':'MBS (ม.6)', VC: isEN?'VC':'VC (ปวช./ปวส.)' };
+    const instRows = Object.entries(byInst).map(([inst, n]) =>
+      `<tr><td>${instNames[inst]||inst}</td><td class="tc" style="width:60px">${n}</td></tr>`
+    ).join('');
+    return `<div class="sum-sec"><div class="sum-title">${S.summary}</div>
+      <div class="sum-wrap"><table class="sum-tbl">
+        <thead><tr><th>${isEN?'School':'สถานศึกษา'}</th><th style="min-width:60px;text-align:center">${isEN?'Nominees':'ผู้ได้รับการเสนอชื่อ'}</th></tr></thead>
+        <tbody>
+          ${instRows}
+          <tr class="sum-total"><td>${S.total}</td><td class="tc">${dataRows.length}</td></tr>
+        </tbody>
+      </table></div></div>`;
+  }
 
   if (reportType === 'graduation') {
     // Group by institution + VC sub-type (ปวช. vs ปวส.)
