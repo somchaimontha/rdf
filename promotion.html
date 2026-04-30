@@ -694,6 +694,17 @@ img.student-avatar {
         </div>
       </div>
 
+      <!-- Batch Selector -->
+      <div class="pr-section">
+        <span class="pr-label">ชุดข้อมูล / Promotion Batch
+          <span class="text-gray-400 font-normal text-xs">(เลือกเพื่อดูรายงานย้อนหลัง)</span>
+        </span>
+        <select id="prBatchSel" class="pr-field">
+          <option value="_session">ปัจจุบัน — ข้อมูลที่เลือกในหน้าจอ</option>
+        </select>
+        <p id="prBatchNote" class="text-xs text-blue-600 mt-1 hidden">ข้อมูลจาก snapshot ที่บันทึกไว้ขณะบันทึกชุดนี้</p>
+      </div>
+
       <!-- Sort Options -->
       <div class="pr-section">
         <span class="pr-label">การเรียงลำดับ / Sort Options</span>
@@ -3894,6 +3905,35 @@ async function applyAllChanges() {
         html: `<b>${res.success}</b> ${t('promoUpdated')}${res.errors?.length?`<br><span class='text-red-500 text-xs'>${res.errors.length} error(s)</span>`:''}${alumniHtml}`,
         confirmButtonColor:'#16a34a',
       });
+      // Save batch snapshot to localStorage so report modal can reconstruct historical data
+      if (batchID) {
+        try {
+          const snap = {};
+          meaningful.forEach(p => {
+            const grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === p.StipNo));
+            const stu = grp?.students.find(s => s.StipNo === p.StipNo);
+            const dec = ROW_DECISIONS[p.StipNo] || {};
+            snap[p.StipNo] = {
+              action: dec.action, nextLevel: dec.nextLevel || '',
+              uniName: dec.uniName || '', uniNameEN: dec.uniNameEN || '',
+              uniMajor: dec.uniMajor || '', uniMajorEN: dec.uniMajorEN || '',
+              uniFaculty: dec.uniFaculty || '', uniFacultyEN: dec.uniFacultyEN || '',
+              uniProvince: dec.uniProvince || '', uniProvinceEN: dec.uniProvinceEN || '',
+              uniDuration: dec.uniDuration || '', schPriority: dec.schPriority ?? null,
+              notes: dec.notes || '',
+              _stu: stu ? {
+                Title: stu.Title||'', FirstName: stu.FirstName||'', LastName: stu.LastName||'',
+                EngFirstName: stu.EngFirstName||'', EngLastName: stu.EngLastName||'',
+                StipNo: stu.StipNo||'', Institution: grp.institution, Level: grp.level,
+                CurrentAcademicYear: stu.CurrentAcademicYear||'',
+              } : null,
+            };
+          });
+          localStorage.setItem('rdf_batch_' + batchID, JSON.stringify({
+            date: promoDate, batchID, count: meaningful.length, snap,
+          }));
+        } catch(e) { /* non-fatal — localStorage may be full */ }
+      }
       // Full reload to get fresh level data from server (students moved to new groups)
       ROW_DECISIONS = {};
       loadPage();
@@ -4236,6 +4276,28 @@ function openPrintReportModal() {
   }
 
   _prBuildLevelPicker();
+
+  // Populate batch selector from localStorage snapshots
+  const batchSel = document.getElementById('prBatchSel');
+  if (batchSel) {
+    const snapKeys = Object.keys(localStorage)
+      .filter(k => k.startsWith('rdf_batch_')).sort().reverse();
+    const curBatch = (document.getElementById('academicYear')?.value || '') + '_PROMO';
+    batchSel.innerHTML = `<option value="_session">ปัจจุบัน — ข้อมูลที่เลือกในหน้าจอ</option>` +
+      snapKeys.map(k => {
+        let d; try { d = JSON.parse(localStorage.getItem(k) || '{}'); } catch { d = {}; }
+        const bid = k.replace('rdf_batch_', '');
+        const tag = bid === curBatch ? ' ★ ล่าสุด' : '';
+        return `<option value="${bid}">${bid}${tag} — ${d.count || '?'} คน, ${d.date || '?'}</option>`;
+      }).join('');
+    const hasCurSnap = snapKeys.includes('rdf_batch_' + curBatch);
+    batchSel.value = hasCurSnap ? curBatch : '_session';
+    const batchNote = document.getElementById('prBatchNote');
+    const _toggleNote = () => { if (batchNote) batchNote.classList.toggle('hidden', batchSel.value === '_session'); };
+    _toggleNote();
+    batchSel.onchange = _toggleNote;
+  }
+
   document.getElementById('printReportModal').classList.remove('hidden');
   lucide.createIcons();
 }
@@ -4404,23 +4466,68 @@ async function doPrintReport() {
     graduatedStudents: [],
   };
 
-  // For graduation report: fetch already-promoted (Status='Graduated'/'University') students
-  // from the DB so the report works even after a page refresh when ALL_GROUPS only has Active students.
+  const selectedBatch = document.getElementById('prBatchSel')?.value || '_session';
+
+  // Normalise camelCase fields from getStudents() to PascalCase for report builders
+  const _normStudent = s => ({
+    ...s,
+    StipNo:       s.stipNo       || s.StipNo       || '',
+    Title:        s.title        || s.Title         || '',
+    FirstName:    s.firstName    || s.FirstName     || '',
+    LastName:     s.lastName     || s.LastName      || '',
+    EngFirstName: s.engFirstName || s.EngFirstName  || '',
+    EngLastName:  s.engLastName  || s.EngLastName   || '',
+    Institution:  s.institution  || s.Institution   || '',
+    Level:        s.level        || s.Level         || '',
+  });
+
+  // Load snapshot for historical batch (for promotion/withdrawal report types)
+  let _snapGroups = null, _snapDecisions = null;
+  if (selectedBatch !== '_session') {
+    try {
+      const raw = localStorage.getItem('rdf_batch_' + selectedBatch);
+      if (raw) {
+        const { snap } = JSON.parse(raw);
+        _snapDecisions = snap;
+        const gMap = {};
+        Object.entries(snap).forEach(([sno, item]) => {
+          if (!item._stu) return;
+          const key = item._stu.Institution + '||' + item._stu.Level;
+          if (!gMap[key]) gMap[key] = { institution: item._stu.Institution, level: item._stu.Level, students: [] };
+          gMap[key].students.push({ ...item._stu, StipNo: sno });
+        });
+        _snapGroups = Object.values(gMap);
+      }
+    } catch(e) { /* non-fatal */ }
+  }
+
+  // Fetch graduates from DB (graduation report type)
   if (opts.reportTypes.includes('graduation')) {
     try {
       const res = await API.getStudents();
       if (res.status === 'success' && Array.isArray(res.data)) {
-        const alreadyInGroups = new Set(ALL_GROUPS.flatMap(g => g.students.map(s => s.StipNo)));
-        opts.graduatedStudents = res.data.filter(s => {
-          if (!['Graduated', 'University'].includes(s.status)) return false;
-          if (opts.insts?.size  && !opts.insts.has(s.institution || ''))  return false;
-          if (opts.levels?.size && !opts.levels.has(s.level || ''))       return false;
-          if (alreadyInGroups.has(s.stipNo)) return false; // avoid double-count
-          return true;
-        });
+        const filterInst = s => !opts.insts?.size || opts.insts.has(s.institution || s.Institution || '');
+        const filterLvl  = s => !opts.levels?.size || opts.levels.has(s.level || s.Level || '');
+        if (selectedBatch === '_session') {
+          // Default: graduates NOT already shown in ALL_GROUPS (current session view)
+          const inGroups = new Set(ALL_GROUPS.flatMap(g => g.students.map(s => s.StipNo)));
+          opts.graduatedStudents = res.data
+            .filter(s => ['Graduated','University'].includes(s.status))
+            .filter(s => !inGroups.has(s.stipNo || s.StipNo))
+            .filter(filterInst).filter(filterLvl)
+            .map(_normStudent);
+        } else {
+          // Historical: graduates whose promotionBatchID matches selected batch
+          opts.graduatedStudents = res.data
+            .filter(s => {
+              const bid = s.promotionBatchId || s.promotionBatchID || '';
+              return bid === selectedBatch && ['Graduated','University'].includes(s.status);
+            })
+            .filter(filterInst).filter(filterLvl)
+            .map(_normStudent);
+        }
       }
     } catch(e) {
-      // Non-fatal: report will still show any pending decisions from ALL_GROUPS
       RDF.logWarn('promotion.html', 'doPrintReport()', 'Could not fetch graduated students: ' + e.message);
     }
   }
@@ -4434,8 +4541,22 @@ async function doPrintReport() {
   const typeLabel = opts.reportTypes.map(t => _typeLblMap[t]||t).join(' + ');
   closePrintReportModal();
   showLoader(true, isEN ? 'Generating report…' : 'กำลังสร้างรายงาน…');
-  await new Promise(r => setTimeout(r, 0)); // yield to allow loader to paint
+  await new Promise(r => setTimeout(r, 0));
+
+  // Temporarily swap globals to inject snapshot data (promotion/withdrawal reports only)
+  const _origGroups = ALL_GROUPS, _origDecs = ROW_DECISIONS;
+  if (_snapGroups && _snapDecisions) {
+    ALL_GROUPS = _snapGroups;
+    ROW_DECISIONS = {};
+    Object.entries(_snapDecisions).forEach(([sno, item]) => { ROW_DECISIONS[sno] = { ...item }; });
+  }
+
   const html = generateFormalReportHTML(opts);
+
+  // Restore globals
+  ALL_GROUPS = _origGroups;
+  ROW_DECISIONS = _origDecs;
+
   showLoader(false);
   showPrintPreview(html, (isEN ? 'Preview — ' : 'ตัวอย่าง — ') + typeLabel);
 }
