@@ -2246,22 +2246,24 @@ function renderApprovalPanel() {
 
   // Rows from SchApprovalStatus='Pending' (existing GAS flow)
   const schRows = _sortByPrio(pending).map(p => _approvalRow({
-    stipNo: p.StipNo, name: `${p.FirstName||''} ${p.LastName||''}`.trim(),
-    level: p.CurrentLevel, inst: p.Institution,
-    uniName: p.UniName, uniFaculty: p.UniFaculty, uniMajor: p.UniMajor, uniProvince: p.UniProvince,
-    notes: p.PromotionNotes,
-    onApprove: `reviewScholarshipRequest('${p.StipNo}','Approved')`,
-    onReject:  `reviewScholarshipRequest('${p.StipNo}','Rejected')`,
+    stipNo: p.StipNo || p.stipNo,
+    name: `${p.Title || p.title || ''}${p.FirstName || p.firstName || p.fname || ''} ${p.LastName || p.lastName || p.lname || ''}`.trim(),
+    level: p.CurrentLevel || p.level, inst: p.Institution || p.institution,
+    uniName: p.UniName || p.uniName, uniFaculty: p.UniFaculty || p.uniFaculty, uniMajor: p.UniMajor || p.uniMajor, uniProvince: p.UniProvince || p.uniProvince,
+    notes: p.PromotionNotes || p.notes,
+    onApprove: `reviewScholarshipRequest('${p.StipNo || p.stipNo}','Approved')`,
+    onReject:  `reviewScholarshipRequest('${p.StipNo || p.stipNo}','Rejected')`,
   })).join('');
 
   // Rows from Status='Graduated' + UniScholarship='Yes' (new flow)
   const gradRows = _sortByPrio(graduated).map(s => _approvalRow({
-    stipNo: s.stipNo, name: `${s.title||''}${s.firstName||''} ${s.lastName||''}`.trim(),
-    level: s.level, inst: s.institution,
-    uniName: s.uniName, uniFaculty: s.uniFaculty, uniMajor: s.uniMajor, uniProvince: s.uniProvince,
-    notes: s.promotionNotes || s.notes || '',
-    onApprove: `approveUniFromPanel('${s.stipNo}')`,
-    onReject:  `rejectUniFromPanel('${s.stipNo}')`,
+    stipNo: s.StipNo || s.stipNo,
+    name: `${s.Title || s.title || ''}${s.FirstName || s.firstName || s.fname || ''} ${s.LastName || s.lastName || s.lname || ''}`.trim(),
+    level: s.Level || s.level, inst: s.Institution || s.institution,
+    uniName: s.uniName || s.UniName, uniFaculty: s.uniFaculty || s.UniFaculty, uniMajor: s.uniMajor || s.UniMajor, uniProvince: s.uniProvince || s.UniProvince,
+    notes: s.promotionNotes || s.notes || s.PromotionNotes || '',
+    onApprove: `approveUniFromPanel('${s.StipNo || s.stipNo}')`,
+    onReject:  `rejectUniFromPanel('${s.StipNo || s.stipNo}')`,
   })).join('');
 
   const hasGrad = graduated.length > 0;
