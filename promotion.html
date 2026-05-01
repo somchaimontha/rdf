@@ -1894,6 +1894,7 @@ async function _warnMissingUniData(pairs) {
 
 // Apply promotion for ONE student only — no full page reload, no blocking other rows.
 async function applyOneStudent(stipNo) {
+  if (_PROMOTING) return; // prevent double-click
   const dec = ROW_DECISIONS[stipNo];
   if (!dec || dec.action === 'skip' || dec.alreadyPromoted) return;
 
@@ -1922,16 +1923,21 @@ async function applyOneStudent(stipNo) {
   const user = (getUser()||{}).username || 'admin';
   const promoDate = document.getElementById('promotionDate')?.value || '';
 
-  // Dim the row while saving
+  // Lock before API call — dim the row while saving
+  _PROMOTING = true;
   const rowEl = document.getElementById('row_' + stipNo);
   const btn   = document.getElementById('quickApplyBtn_' + stipNo);
   if (rowEl) rowEl.style.opacity = '0.55';
   if (btn) btn.disabled = true;
+  const _releaseOneLock = () => {
+    _PROMOTING = false;
+    if (rowEl) rowEl.style.opacity = '';
+    if (btn) btn.disabled = false;
+  };
 
   try {
     const res = await API.promoteStudents([p], user, promoDate);
-    if (rowEl) rowEl.style.opacity = '';
-    if (btn) btn.disabled = false;
+    _releaseOneLock();
 
     if (res.status === 'success' && res.success > 0) {
       PROMOTED_THIS_SESSION.add(stipNo);
@@ -1971,8 +1977,7 @@ async function applyOneStudent(stipNo) {
       Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
     }
   } catch(e) {
-    if (rowEl) rowEl.style.opacity = '';
-    if (btn) btn.disabled = false;
+    _releaseOneLock();
     Swal.fire(t('error'), e.message || 'Network error', 'error');
   }
 }
@@ -3297,8 +3302,16 @@ function onRowCheck(stipNo, checked) {
 
 async function promoteAllInGroup(inst, level, curYear, btn) {
   if (_PROMOTING) return; // prevent double-click
+  // Lock immediately — before any validation or Swal dialogs so rapid clicks can't stack
+  _PROMOTING = true;
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  const _releaseLock = () => {
+    _PROMOTING = false;
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  };
+
   const group = ALL_GROUPS.find(g => g.institution === inst && g.level === level);
-  if (!group) return;
+  if (!group) { _releaseLock(); return; }
   const rule   = PROMO_RULES[inst + '||' + level];
   const comp   = rule ? rule.completion : 'promote';
   const defAct = (comp === 'graduate' || comp === 'graduate_uni') ? 'graduate' : 'promote';
@@ -3325,7 +3338,7 @@ async function promoteAllInGroup(inst, level, curYear, btn) {
       text:  LANG === 'th' ? 'กรุณาเลือก checkbox อย่างน้อย 1 คน' : 'Please select at least one student.',
       timer: 2500, showConfirmButton: false,
     });
-    return;
+    _releaseLock(); return;
   }
 
   const actEmoji = defAct === 'graduate' ? '🎓' : '⬆';
@@ -3368,14 +3381,14 @@ async function promoteAllInGroup(inst, level, curYear, btn) {
       </div>`,
       confirmButtonColor: '#dc2626',
     });
-    return;
+    _releaseLock(); return;
   }
 
   // ── Warn if uni/uni_own but no university name filled ──
   const uniPairs = targetStudents
     .filter(s => ['uni','uni_own'].includes(ROW_DECISIONS[s.StipNo]?.action))
     .map(s => [s.StipNo, ROW_DECISIONS[s.StipNo]]);
-  if (!await _warnMissingUniData(uniPairs)) return;
+  if (!await _warnMissingUniData(uniPairs)) { _releaseLock(); return; }
 
   // ── Build per-action summary for confirmation dialog ──
   const actionGroups = {};
@@ -3416,7 +3429,7 @@ async function promoteAllInGroup(inst, level, curYear, btn) {
     cancelButtonText:  LANG === 'th' ? 'ยกเลิก'   : 'Cancel',
     confirmButtonColor: '#16a34a',
   });
-  if (!confirmBulk) return;
+  if (!confirmBulk) { _releaseLock(); return; }
 
   // Build API payload and save to DB (same as applyAllChanges — not just a local state update)
   const promoDate    = document.getElementById('promotionDate').value;
@@ -3437,16 +3450,8 @@ async function promoteAllInGroup(inst, level, curYear, btn) {
   if (promotions.length === 0) {
     Swal.fire({ toast:true, position:'top-end', icon:'info', timer:2000, showConfirmButton:false,
       title: LANG==='th'?'ไม่มีข้อมูลที่จะบันทึก':'Nothing to save' });
-    return;
+    _releaseLock(); return;
   }
-
-  // Disable button + set global flag to prevent double-click
-  _PROMOTING = true;
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
-  const _releaseLock = () => {
-    _PROMOTING = false;
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
-  };
 
   showLoader(true, LANG==='th'
     ? `กำลังบันทึก ${promotions.length} รายการ...`
