@@ -2245,27 +2245,43 @@ function renderApprovalPanel() {
     return va - vb;
   });
 
+  const _isEN = LANG === 'en';
+
   // Rows from SchApprovalStatus='Pending' (existing GAS flow)
-  const schRows = _sortByPrio(pending).map(p => _approvalRow({
-    stipNo: p.StipNo || p.stipNo,
-    name: `${p.Title || p.title || ''}${p.FirstName || p.firstName || p.fname || ''} ${p.LastName || p.lastName || p.lname || ''}`.trim(),
-    level: p.CurrentLevel || p.level, inst: p.Institution || p.institution,
-    uniName: p.UniName || p.uniName, uniFaculty: p.UniFaculty || p.uniFaculty, uniMajor: p.UniMajor || p.uniMajor, uniProvince: p.UniProvince || p.uniProvince,
-    notes: p.PromotionNotes || p.notes,
-    onApprove: `reviewScholarshipRequest('${p.StipNo || p.stipNo}','Approved')`,
-    onReject:  `reviewScholarshipRequest('${p.StipNo || p.stipNo}','Rejected')`,
-  })).join('');
+  const schRows = _sortByPrio(pending).map(p => {
+    const _thName = `${p.Title || p.title || ''}${p.FirstName || p.firstName || p.fname || ''} ${p.LastName || p.lastName || p.lname || ''}`.trim();
+    const _enName = `${p.EngFirstName || p.engFirstName || ''} ${p.EngLastName || p.engLastName || ''}`.trim();
+    return _approvalRow({
+      stipNo: p.StipNo || p.stipNo,
+      name: _isEN ? (_enName || _thName) : _thName,
+      level: p.CurrentLevel || p.level, inst: p.Institution || p.institution,
+      uniName:    _isEN ? (p.UniNameEN    || p.uniNameEN    || p.UniName    || p.uniName)    : (p.UniName    || p.uniName),
+      uniFaculty: _isEN ? (p.UniFacultyEN || p.uniFacultyEN || p.UniFaculty || p.uniFaculty) : (p.UniFaculty || p.uniFaculty),
+      uniMajor:   _isEN ? (p.UniMajorEN   || p.uniMajorEN   || p.UniMajor   || p.uniMajor)   : (p.UniMajor   || p.uniMajor),
+      uniProvince:_isEN ? (p.UniProvinceEN|| p.uniProvinceEN|| p.UniProvince|| p.uniProvince) : (p.UniProvince|| p.uniProvince),
+      notes: p.PromotionNotes || p.notes,
+      onApprove: `reviewScholarshipRequest('${p.StipNo || p.stipNo}','Approved')`,
+      onReject:  `reviewScholarshipRequest('${p.StipNo || p.stipNo}','Rejected')`,
+    });
+  }).join('');
 
   // Rows from Status='Graduated' + UniScholarship='Yes' (new flow)
-  const gradRows = _sortByPrio(graduated).map(s => _approvalRow({
-    stipNo: s.StipNo || s.stipNo,
-    name: `${s.Title || s.title || ''}${s.FirstName || s.firstName || s.fname || ''} ${s.LastName || s.lastName || s.lname || ''}`.trim(),
-    level: s.Level || s.level, inst: s.Institution || s.institution,
-    uniName: s.uniName || s.UniName, uniFaculty: s.uniFaculty || s.UniFaculty, uniMajor: s.uniMajor || s.UniMajor, uniProvince: s.uniProvince || s.UniProvince,
-    notes: s.promotionNotes || s.notes || s.PromotionNotes || '',
-    onApprove: `approveUniFromPanel('${s.StipNo || s.stipNo}')`,
-    onReject:  `rejectUniFromPanel('${s.StipNo || s.stipNo}')`,
-  })).join('');
+  const gradRows = _sortByPrio(graduated).map(s => {
+    const _thName = `${s.Title || s.title || ''}${s.FirstName || s.firstName || s.fname || ''} ${s.LastName || s.lastName || s.lname || ''}`.trim();
+    const _enName = `${s.EngFirstName || s.engFirstName || ''} ${s.EngLastName || s.engLastName || ''}`.trim();
+    return _approvalRow({
+      stipNo: s.StipNo || s.stipNo,
+      name: _isEN ? (_enName || _thName) : _thName,
+      level: s.Level || s.level, inst: s.Institution || s.institution,
+      uniName:    _isEN ? (s.UniNameEN    || s.uniNameEN    || s.UniName    || s.uniName)    : (s.uniName    || s.UniName),
+      uniFaculty: _isEN ? (s.UniFacultyEN || s.uniFacultyEN || s.UniFaculty || s.uniFaculty) : (s.uniFaculty || s.UniFaculty),
+      uniMajor:   _isEN ? (s.UniMajorEN   || s.uniMajorEN   || s.UniMajor   || s.uniMajor)   : (s.uniMajor   || s.UniMajor),
+      uniProvince:_isEN ? (s.UniProvinceEN|| s.uniProvinceEN|| s.UniProvince|| s.uniProvince) : (s.uniProvince|| s.UniProvince),
+      notes: s.promotionNotes || s.notes || s.PromotionNotes || '',
+      onApprove: `approveUniFromPanel('${s.StipNo || s.stipNo}')`,
+      onReject:  `rejectUniFromPanel('${s.StipNo || s.stipNo}')`,
+    });
+  }).join('');
 
   const hasGrad = graduated.length > 0;
   const hasSch  = pending.length > 0;
