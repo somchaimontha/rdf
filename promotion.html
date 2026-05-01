@@ -3969,6 +3969,7 @@ async function applyAllChanges() {
                 EngFirstName: stu.EngFirstName||'', EngLastName: stu.EngLastName||'',
                 StipNo: stu.StipNo||'', Institution: grp.institution, Level: grp.level,
                 CurrentAcademicYear: stu.CurrentAcademicYear||'',
+                Major: stu.Major||'',
               } : null,
             };
           });
@@ -4750,10 +4751,21 @@ function generateFormalReportHTML(opts) {
     // Merge DB-graduated students (graduation type only)
     if (reportType === 'graduation' && Array.isArray(opts.graduatedStudents) && opts.graduatedStudents.length) {
       opts.graduatedStudents.forEach(s => {
-        const syntheticG = { institution: s.institution||'', level: s.level||'' };
+        const syntheticG = { institution: s.institution||s.Institution||'', level: s.level||s.Level||'' };
         const act = s.status === 'University' ? 'uni_own'
           : (s.uniName && (s.uniScholarship||'').toLowerCase() !== 'no') ? 'uni' : 'graduate';
-        rows.push({ g: syntheticG, s, dec: {
+        // Normalize camelCase → PascalCase so buildGradTableHTML can access names reliably
+        const normalized = {
+          ...s,
+          Title:        s.Title        || s.title        || '',
+          FirstName:    s.FirstName    || s.firstName    || '',
+          LastName:     s.LastName     || s.lastName     || '',
+          EngFirstName: s.EngFirstName || s.engFirstName || '',
+          EngLastName:  s.EngLastName  || s.engLastName  || '',
+          Major:        s.Major        || s.major        || '',
+          StipNo:       s.StipNo       || s.stipNo       || '',
+        };
+        rows.push({ g: syntheticG, s: normalized, dec: {
           action: act, uniName: s.uniName||'', uniNameEN: s.uniNameEN||'',
           uniFaculty: s.uniFaculty||'', uniFacultyEN: s.uniFacultyEN||'',
           uniMajor: s.uniMajor||'', uniMajorEN: s.uniMajorEN||'',
@@ -4882,9 +4894,17 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
   lvl = lvl || abbrevLevel;
   let seq = 1;
   const rows = dataRows.map(({ g, s, dec }) => {
-    const thaiName      = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
-    const engTitleFirst = (getTitleEN(s.Title) ? getTitleEN(s.Title)+' ' : '') + (s.EngFirstName||'');
-    const engLast       = s.EngLastName || '';
+    // Fallback to dec fields when s comes from a localStorage/DB snapshot with missing keys
+    const _title  = s.Title        || dec.Title        || '';
+    const _fName  = s.FirstName    || dec.FirstName    || '';
+    const _lName  = s.LastName     || dec.LastName     || '';
+    const _efName = s.EngFirstName || dec.EngFirstName || '';
+    const _elName = s.EngLastName  || dec.EngLastName  || '';
+    const _major  = s.Major        || dec.Major        || '—';
+
+    const thaiName      = (_title + _fName + ' ' + _lName).trim();
+    const engTitleFirst = (getTitleEN(_title) ? getTitleEN(_title)+' ' : '') + _efName;
+    const engLast       = _elName;
     // cont = student is going to / already at university → show uni columns
     const cont          = dec.action==='uni' || dec.action==='uni_own' || g.institution === 'UNI';
     const newLevel      = cont ? (isEN?'University':'มหาวิทยาลัย') : '—';
@@ -4904,7 +4924,7 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
       <td>${col1||'—'}</td>
       ${isEN ? `<td>${col2||'—'}</td>` : ''}
       <td>${col3||'—'}</td>
-      <td>${s.Major||'—'}</td>
+      <td>${_major}</td>
       <td>${levelDisplay}</td>
       <td>${cont ? uniDisplay : '—'}</td>
       <td>${cont ? majorDisplay : '—'}</td>
