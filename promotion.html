@@ -2217,12 +2217,16 @@ function renderApprovalPanel() {
   }
 
   // Helper to build a table row (shared between both data sources)
-  const _approvalRow = ({ stipNo, name, level, inst, uniName, uniFaculty, uniMajor, uniProvince, notes, onApprove, onReject }) => `
+  const _approvalRow = ({ stipNo, nameTH, nameEN, level, inst, uniName, uniFaculty, uniMajor, uniProvince, notes, onApprove, onReject }) => {
+    const _instDisp  = LANG==='en' ? (RDF.INSTITUTION_LABELS[inst]||inst||'—') : (RDF.INSTITUTION_LABELS_TH[inst]||inst||'—');
+    const _lvlDisp   = abbrevLevel(level) || level || '—';
+    const _nameSecond = (nameEN && nameEN !== nameTH) ? `<br><span style="font-size:10px;color:#6b7280;font-weight:400">${nameEN}</span>` : '';
+    return `
     <tr style="border-bottom:1px solid #ede9fe">
-      <td style="padding:6px 10px;font-size:12px;font-weight:600">${name}<br>
+      <td style="padding:6px 10px;font-size:12px;font-weight:600">${nameTH||'—'}${_nameSecond}<br>
         <span style="font-size:10px;color:#9ca3af">${stipNo}</span>
       </td>
-      <td style="padding:6px 10px;font-size:11px">${inst||'—'} / ${level||'—'}</td>
+      <td style="padding:6px 10px;font-size:11px">${_instDisp} / ${_lvlDisp}</td>
       <td style="padding:6px 10px;font-size:11px">${uniName||'—'}${uniFaculty?' / '+uniFaculty:''}<br>
         <span style="font-size:10px;color:#7c3aed">${uniMajor||''}${uniProvince?' • '+uniProvince:''}</span>
       </td>
@@ -2236,6 +2240,7 @@ function renderApprovalPanel() {
           ✕ ${t('schRejectBtn')}</button>
       </td>
     </tr>`;
+  };
 
   // Sort helper: SchPriority ascending, nulls/empty last
   const _sortByPrio = arr => [...arr].sort((a, b) => {
@@ -2253,7 +2258,7 @@ function renderApprovalPanel() {
     const _enName = `${p.EngFirstName || p.engFirstName || ''} ${p.EngLastName || p.engLastName || ''}`.trim();
     return _approvalRow({
       stipNo: p.StipNo || p.stipNo,
-      name: _isEN ? (_enName || _thName) : _thName,
+      nameTH: _thName, nameEN: _enName,
       level: p.CurrentLevel || p.level, inst: p.Institution || p.institution,
       uniName:    _isEN ? (p.UniNameEN    || p.uniNameEN    || p.UniName    || p.uniName)    : (p.UniName    || p.uniName),
       uniFaculty: _isEN ? (p.UniFacultyEN || p.uniFacultyEN || p.UniFaculty || p.uniFaculty) : (p.UniFaculty || p.uniFaculty),
@@ -2271,7 +2276,7 @@ function renderApprovalPanel() {
     const _enName = `${s.EngFirstName || s.engFirstName || ''} ${s.EngLastName || s.engLastName || ''}`.trim();
     return _approvalRow({
       stipNo: s.StipNo || s.stipNo,
-      name: _isEN ? (_enName || _thName) : _thName,
+      nameTH: _thName, nameEN: _enName,
       level: s.Level || s.level, inst: s.Institution || s.institution,
       uniName:    _isEN ? (s.UniNameEN    || s.uniNameEN    || s.UniName    || s.uniName)    : (s.uniName    || s.UniName),
       uniFaculty: _isEN ? (s.UniFacultyEN || s.uniFacultyEN || s.UniFaculty || s.uniFaculty) : (s.uniFaculty || s.UniFaculty),
