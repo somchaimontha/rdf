@@ -1846,7 +1846,8 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
   if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
   if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
     p.UniScholarship = dec.uniScholarship;
-  if (dec.nextAcademicYear) p.NextAcademicYear = dec.nextAcademicYear;
+  const _canAdvYear = ['promote', 'uni'].includes(dec.action);
+  p.NextAcademicYear = (_canAdvYear && dec.nextAcademicYear) ? dec.nextAcademicYear : 'FREEZE';
   if (dec.schPriority !== undefined && dec.schPriority !== null) p.SchPriority = dec.schPriority;
 
   const academicYear = document.getElementById('academicYear')?.value || '';
@@ -1919,7 +1920,7 @@ async function applyOneStudent(stipNo) {
   // Nothing meaningful to write
   if (!(p.NewLevel && p.NewLevel !== '—') && !p.NewStatus && !p.NewInstitution &&
       p.UniScholarship === undefined && p.PromotionNotes === undefined &&
-      !p.PromotionBatchID && !p.NextAcademicYear) return;
+      !p.PromotionBatchID && (!p.NextAcademicYear || p.NextAcademicYear === 'FREEZE')) return;
 
   const user = (getUser()||{}).username || 'admin';
   const promoDate = document.getElementById('promotionDate')?.value || '';
@@ -3907,8 +3908,9 @@ async function applyAllChanges() {
     if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
     if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
       p.UniScholarship = dec.uniScholarship;
-    // Next academic year — written to CurrentAcademicYear in DB
-    if (dec.nextAcademicYear) p.NextAcademicYear = dec.nextAcademicYear;
+    // Next academic year — FREEZE = do not touch CurrentAcademicYear in DB
+    const _canAdv = ['promote', 'uni'].includes(dec.action);
+    p.NextAcademicYear = (_canAdv && dec.nextAcademicYear) ? dec.nextAcademicYear : 'FREEZE';
     if (dec.schPriority !== undefined && dec.schPriority !== null) p.SchPriority = dec.schPriority;
     // Mark this student as processed in this promotion cycle (prevents double-promotion)
     if (batchID) p.PromotionBatchID = batchID;
@@ -3922,7 +3924,7 @@ async function applyAllChanges() {
   const meaningful = promotions.filter(p =>
     (p.NewLevel && p.NewLevel !== '—') || p.NewStatus || p.NewInstitution ||
     p.UniScholarship !== undefined || p.PromotionNotes !== undefined ||
-    p.PromotionBatchID || p.NextAcademicYear
+    p.PromotionBatchID || (p.NextAcademicYear && p.NextAcademicYear !== 'FREEZE')
   );
   if (meaningful.length === 0) return Swal.fire(t('warning'), t('promoNothingToSave'), 'info');
 
