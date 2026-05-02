@@ -2256,7 +2256,9 @@ function renderApprovalPanel() {
   // Rows from SchApprovalStatus='Pending' (existing GAS flow)
   const schRows = _sortByPrio(pending).map(p => {
     const _thName = `${p.Title || p.title || ''}${p.FirstName || p.firstName || p.fname || ''} ${p.LastName || p.lastName || p.lname || ''}`.trim();
-    const _enName = `${p.EngFirstName || p.engFirstName || ''} ${p.EngLastName || p.engLastName || ''}`.trim();
+    const _enRaw  = `${p.EngFirstName || p.engFirstName || p.engFname || ''} ${p.EngLastName || p.engLastName || p.engLname || ''}`.trim();
+    const _enTitle= p.EngTitle || p.engTitle || (getTitleEN(p.Title || p.title) ? getTitleEN(p.Title || p.title)+' ' : '');
+    const _enName = _enRaw ? _enTitle + _enRaw : '';
     return _approvalRow({
       stipNo: p.StipNo || p.stipNo,
       nameTH: _thName, nameEN: _enName,
@@ -2274,7 +2276,9 @@ function renderApprovalPanel() {
   // Rows from Status='Graduated' + UniScholarship='Yes' (new flow)
   const gradRows = _sortByPrio(graduated).map(s => {
     const _thName = `${s.Title || s.title || ''}${s.FirstName || s.firstName || s.fname || ''} ${s.LastName || s.lastName || s.lname || ''}`.trim();
-    const _enName = `${s.EngFirstName || s.engFirstName || ''} ${s.EngLastName || s.engLastName || ''}`.trim();
+    const _enRaw  = `${s.EngFirstName || s.engFirstName || s.engFname || ''} ${s.EngLastName || s.engLastName || s.engLname || ''}`.trim();
+    const _enTitle= s.EngTitle || s.engTitle || (getTitleEN(s.Title || s.title) ? getTitleEN(s.Title || s.title)+' ' : '');
+    const _enName = _enRaw ? _enTitle + _enRaw : '';
     return _approvalRow({
       stipNo: s.StipNo || s.stipNo,
       nameTH: _thName, nameEN: _enName,
