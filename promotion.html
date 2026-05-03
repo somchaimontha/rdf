@@ -4582,8 +4582,11 @@ async function openPrintReportModal() {
         return `<option value="${bid}">${bid}${tag}${src} — ${count} คน, ${date}</option>`;
       }).join('');
 
-    const hasCurSnap = localBids.has(curBatch) || dbBids.has(curBatch);
-    batchSel.value = hasCurSnap ? curBatch : '_session';
+    const hasCurSnap  = localBids.has(curBatch) || dbBids.has(curBatch);
+    // If the exact batch for the current year filter doesn't exist, prefer the most
+    // recent DB batch over _session so the report uses Promotion_History data.
+    const mostRecent  = allBids[0] || '';
+    batchSel.value = hasCurSnap ? curBatch : (mostRecent || '_session');
     const batchNote = document.getElementById('prBatchNote');
     const _toggleNote = () => { if (batchNote) batchNote.classList.toggle('hidden', batchSel.value === '_session'); };
     // When a historical batch is selected, auto-sync prModalAcad to the batch's base year
