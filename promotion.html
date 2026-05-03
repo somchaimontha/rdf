@@ -4410,22 +4410,32 @@ function _prBuildLevelPicker() {
   const INST_ORDER = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const INST_LABEL = { MBS:'MBS', VC:'VC', UNI:'University', OTHER:'Other' };
 
-  // Group levels by institution from ALL_GROUPS
+  // Build byInst from ALL_GROUPS first, then supplement with LEVEL_OPTIONS for any
+  // institution already present — ensures levels like ปวส.2 still appear after all
+  // students at that level have been promoted/graduated out of ALL_GROUPS.
   const byInst = {};
   ALL_GROUPS.forEach(g => {
     if (!byInst[g.institution]) byInst[g.institution] = [];
     if (!byInst[g.institution].includes(g.level)) byInst[g.institution].push(g.level);
   });
+  // Supplement: for every institution that has at least one group, add all LEVEL_OPTIONS
+  Object.keys(byInst).forEach(inst => {
+    (LEVEL_OPTIONS[inst] || []).forEach(l => {
+      if (!byInst[inst].includes(l)) byInst[inst].push(l);
+    });
+  });
   const insts = Object.keys(byInst).sort((a,b) => (INST_ORDER[a]??9) - (INST_ORDER[b]??9));
 
-  // Detect graduation-eligible levels (graduate / graduate_uni / allowUniTransfer)
-  // ปวช.3 has completion='promote' + allowUniTransfer=true → still a grad-eligible level
+  // Detect graduation-eligible levels — use DEFAULT_RULES/PROMO_RULES directly
+  // so gradSet is correct even for levels no longer in ALL_GROUPS
   const gradSet = new Set();
-  ALL_GROUPS.forEach(g => {
-    const r = PROMO_RULES[g.institution+'||'+g.level]
-      || DEFAULT_RULES.find(x => x.inst === g.institution && x.from === g.level);
-    if (r && (r.completion === 'graduate' || r.completion === 'graduate_uni' || r.allowUniTransfer))
-      gradSet.add(g.institution+'||'+g.level);
+  Object.keys(byInst).forEach(inst => {
+    (LEVEL_OPTIONS[inst] || []).forEach(l => {
+      const r = PROMO_RULES[inst+'||'+l]
+        || DEFAULT_RULES.find(x => x.inst === inst && x.from === l);
+      if (r && (r.completion === 'graduate' || r.completion === 'graduate_uni' || r.allowUniTransfer))
+        gradSet.add(inst+'||'+l);
+    });
   });
 
   // Build checkbox rows
