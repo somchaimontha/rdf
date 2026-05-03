@@ -131,6 +131,9 @@ const API = {
   async getPromotionHistory(batchID) {
     return apiGet({ action: 'getPromotionHistory', batchID: batchID || '' });
   },
+  async getStudentPromoHistory(stipNo) {
+    return apiGet({ action: 'getStudentPromoHistory', stipNo });
+  },
   // Generic helpers for pages that call API.get / API.post directly
   async get(action, params) { return apiGet({ action, ...(params||{}) }); },
   async post(action, body)  { return apiPost({ action, ...body }); },

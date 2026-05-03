@@ -301,6 +301,15 @@
       <div class="card-body" id="eduPathBody"></div>
     </div>
 
+    <!-- Promotion History (loaded async) -->
+    <div id="promoHistoryCard" class="card mb-4 hidden">
+      <div class="card-header" style="background:#1e40af">
+        <i data-lucide="history" class="w-4 h-4"></i>
+        <span>ประวัติการเลื่อนชั้น / สำเร็จการศึกษา</span>
+      </div>
+      <div class="card-body p-0" id="promoHistoryBody"></div>
+    </div>
+
     <!-- Remarks (conditional) -->
     <div id="remarksCard" class="card mb-4 hidden">
       <div class="card-header" style="background:#475569">
@@ -487,6 +496,7 @@ async function loadProfile() {
       printLayout = settingsResult.data['PRINT_LAYOUT']    || null;
     }
     renderProfile(result.data, sigBlock, printTitle, printLayout);
+    loadPromoHistory(stipNo);
     if (autoPrint) setTimeout(printProfile, 600);
   } catch(e) {
     showLoader(false);
@@ -889,6 +899,83 @@ function renderEduPath(d, lang) {
       ${(d.UniMajor||d.UniMajorEN) ? ` / ${lang==='en' ? (d.UniMajorEN||d.UniMajor) : d.UniMajor}` : ''}
     </div>` : ''}
     <p class="text-xs text-gray-400 mt-2">${lang==='en'?'Education path based on current data':'เส้นทางการศึกษาตามข้อมูลในระบบ'}</p>`;
+  lucide.createIcons();
+}
+
+// ── Promotion History ──────────────────────────────────────────────────────
+async function loadPromoHistory(sno) {
+  try {
+    const res = await API.getStudentPromoHistory(sno);
+    if (res.status === 'success') renderPromoHistory(res.rows, LANG);
+  } catch(e) { /* non-fatal */ }
+}
+
+function renderPromoHistory(rows, lang) {
+  const card = document.getElementById('promoHistoryCard');
+  const body = document.getElementById('promoHistoryBody');
+  if (!card || !body) return;
+  if (!rows || rows.length === 0) { card.classList.add('hidden'); return; }
+
+  const isEN = lang === 'en';
+  const ACT = {
+    promote:       { th:'เลื่อนชั้น',              en:'Grade Promotion',         color:'#1d4ed8', bg:'#eff6ff', icon:'trending-up' },
+    graduate:      { th:'สำเร็จการศึกษา',          en:'Graduated',               color:'#059669', bg:'#f0fdf4', icon:'graduation-cap' },
+    uni:           { th:'เรียนต่อมหาวิทยาลัย',     en:'University (RDF)',         color:'#7c3aed', bg:'#faf5ff', icon:'building-2' },
+    uni_own:       { th:'เรียนต่อ ม. (ทุนตัวเอง)', en:'University (Own Funding)', color:'#9333ea', bg:'#fdf4ff', icon:'building-2' },
+    continue_inst: { th:'จบ ปวช. + ต่อ ปวส.',      en:'Grad ปวช. + Continue ปวส.',color:'#0d9488', bg:'#f0fdfa', icon:'award' },
+    resign:        { th:'ลาออก',                   en:'Resigned',                color:'#dc2626', bg:'#fef2f2', icon:'log-out' },
+    withdraw_sch:  { th:'ถอนทุน',                  en:'Scholarship Withdrawn',   color:'#b91c1c', bg:'#fef2f2', icon:'x-circle' },
+    hold:          { th:'พักการเรียน',              en:'On Hold',                 color:'#d97706', bg:'#fffbeb', icon:'pause-circle' },
+    suspend:       { th:'ถูกพักการเรียน',           en:'Suspended',               color:'#d97706', bg:'#fffbeb', icon:'pause-circle' },
+  };
+
+  const html = rows.map((r, i) => {
+    const a   = ACT[r.ActionTaken] || { th: r.ActionTaken||'—', en: r.ActionTaken||'—', color:'#6b7280', bg:'#f9fafb', icon:'circle' };
+    const lbl = isEN ? a.en : a.th;
+    const isLast   = (i === rows.length - 1);
+    const isGrad   = ['graduate','uni','uni_own','continue_inst'].includes(r.ActionTaken);
+
+    const uniLine = (r.UniName || r.UniNameEN) ? `
+      <div style="margin-top:4px;font-size:11px;color:#6b7280;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+        <i data-lucide="building-2" style="width:11px;height:11px;flex-shrink:0"></i>
+        <span>${isEN ? (r.UniNameEN||r.UniName) : r.UniName}</span>
+        ${(r.UniFaculty||r.UniFacultyEN) ? `<span style="color:#9ca3af">·</span><span>${isEN?(r.UniFacultyEN||r.UniFaculty):r.UniFaculty}</span>` : ''}
+        ${(r.UniMajor||r.UniMajorEN)     ? `<span style="color:#9ca3af">·</span><span>${isEN?(r.UniMajorEN||r.UniMajor):r.UniMajor}</span>` : ''}
+      </div>` : '';
+
+    const notesLine = r.Notes ? `<div style="margin-top:3px;font-size:11px;color:#9ca3af;font-style:italic">${r.Notes}</div>` : '';
+
+    return `
+    <div style="display:flex;gap:0;position:relative">
+      <!-- Timeline spine -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:14px 0 0 16px;width:32px;flex-shrink:0">
+        <div style="width:12px;height:12px;border-radius:50%;background:${isGrad?a.color:'#d1d5db'};border:2px solid ${a.color};flex-shrink:0;z-index:1"></div>
+        ${!isLast ? `<div style="width:2px;flex:1;min-height:24px;background:#e5e7eb;margin-top:2px"></div>` : ''}
+      </div>
+      <!-- Content -->
+      <div style="flex:1;padding:10px 14px ${isLast?'14px':'8px'} 10px;border-bottom:${isLast?'none':'1px solid #f3f4f6'}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap-6px;flex-wrap:wrap;gap:6px">
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;color:${a.color};background:${a.bg};border:1px solid ${a.color}22">
+              <i data-lucide="${a.icon}" style="width:10px;height:10px"></i>${lbl}
+            </span>
+            <span style="font-size:12px;color:#374151;display:flex;align-items:center;gap:4px">
+              <span style="color:#6b7280">${r.OldLevel||'—'}</span>
+              ${r.NewLevel ? `<i data-lucide="arrow-right" style="width:11px;height:11px;color:#9ca3af"></i><span style="font-weight:600;color:${a.color}">${r.NewLevel}</span>` : ''}
+            </span>
+          </div>
+          <div style="font-size:10px;color:#9ca3af;white-space:nowrap;flex-shrink:0">
+            ${r.AcademicYear ? `<span style="font-weight:600;color:#6b7280">${isEN?'AY ':'ปีการศึกษา '}${r.AcademicYear}</span>` : ''}
+            ${r.Date ? `<span style="margin-left:4px">${r.Date}</span>` : ''}
+          </div>
+        </div>
+        ${uniLine}${notesLine}
+      </div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = html;
+  card.classList.remove('hidden');
   lucide.createIcons();
 }
 
