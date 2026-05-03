@@ -688,11 +688,9 @@ img.student-avatar {
       <div class="grid grid-cols-2 gap-3 pr-section">
         <div>
           <span class="pr-label">ปีการศึกษา / Academic Year <span class="text-gray-400 font-normal">(แสดงในหัวรายงาน)</span></span>
-          <div class="flex gap-1">
-            <input type="text" id="prModalAcad" class="pr-field flex-1" placeholder="เช่น 2567-2568 หรือ 2024-2025">
-            <button onclick="document.getElementById('prModalAcad').value=''" title="ล้างค่า" class="px-2 text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg text-xs">✕</button>
-          </div>
-          <div id="prYearChips" class="flex flex-wrap gap-1 mt-1.5"></div>
+          <select id="prModalAcad" class="pr-field">
+            <option value="">— เลือกปีการศึกษา —</option>
+          </select>
         </div>
         <div>
           <span class="pr-label">วันที่รายงาน / Report Date</span>
@@ -702,13 +700,12 @@ img.student-avatar {
 
       <!-- Batch Selector -->
       <div class="pr-section">
-        <span class="pr-label">ชุดข้อมูล / Promotion Batch
-          <span class="text-gray-400 font-normal text-xs">(เลือกเพื่อดูรายงานย้อนหลัง)</span>
-        </span>
+        <span class="pr-label">ข้อมูลสำหรับรายงาน / Report Data Source</span>
         <select id="prBatchSel" class="pr-field">
-          <option value="_session">ปัจจุบัน — ข้อมูลที่เลือกในหน้าจอ</option>
+          <option value="_session">ตามหน้าจอปัจจุบัน</option>
         </select>
-        <p id="prBatchNote" class="text-xs text-blue-600 mt-1 hidden">ข้อมูลจาก snapshot ที่บันทึกไว้ขณะบันทึกชุดนี้</p>
+        <p class="text-xs text-gray-400 mt-1">เลือก "ตามหน้าจอปัจจุบัน" เพื่อรายงานจากข้อมูลที่เห็นอยู่ หรือเลือกชุดที่บันทึกไว้เพื่อพิมพ์รายงานย้อนหลังได้อย่างถูกต้อง</p>
+        <p id="prBatchNote" class="text-xs text-blue-600 mt-1 hidden">⚠ รายงานนี้ใช้ข้อมูลที่ถ่ายภาพไว้ตอนบันทึก ผลลัพธ์จะตรงกับสถานะขณะนั้น</p>
       </div>
 
       <!-- Sort Options -->
@@ -4488,23 +4485,15 @@ async function openPrintReportModal() {
   document.getElementById('prModalAcad').value  = document.getElementById('academicYear').value  || '';
   document.getElementById('prModalDate').value  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
 
-  // Populate clickable year chips from promoYearFilter
-  const chips = document.getElementById('prYearChips');
-  if (chips) {
-    const sel = document.getElementById('promoYearFilter');
-    const years = sel ? [...sel.options].map(o => o.value).filter(v => v) : [];
-    chips.innerHTML = years.map(y =>
-      `<button type="button"
-         onclick="document.getElementById('prModalAcad').value='${y}';document.querySelectorAll('#prYearChips button').forEach(b=>b.classList.remove('bg-blue-600','text-white','border-blue-600'));this.classList.add('bg-blue-600','text-white','border-blue-600')"
-         class="px-2 py-0.5 text-xs border border-gray-300 rounded-full hover:border-blue-500 hover:text-blue-600 transition-colors">
-         ${y}
-       </button>`
-    ).join('');
-    // Highlight the currently selected year
-    const cur = document.getElementById('prModalAcad').value;
-    chips.querySelectorAll('button').forEach(b => {
-      if (b.textContent.trim() === cur) b.classList.add('bg-blue-600','text-white','border-blue-600');
-    });
+  // Populate prModalAcad <select> from promoYearFilter (exclude FREEZE and non-numeric)
+  const acadSel = document.getElementById('prModalAcad');
+  if (acadSel) {
+    const yfSel = document.getElementById('promoYearFilter');
+    const years = yfSel ? [...yfSel.options].map(o => o.value).filter(v => v && /^\d{4}$/.test(v)) : [];
+    const curAcad = document.getElementById('academicYear')?.value || '';
+    acadSel.innerHTML = `<option value="">— เลือกปีการศึกษา —</option>` +
+      years.map(y => `<option value="${y}">${y} (พ.ศ.) / ${parseInt(y)-543} (ค.ศ.)</option>`).join('');
+    if (curAcad && /^\d{4}$/.test(curAcad)) acadSel.value = curAcad;
   }
   document.getElementById('prModalSchool').value   = '';
   document.getElementById('prModalSubject').value  = '';
@@ -4539,6 +4528,8 @@ async function openPrintReportModal() {
   }
 
   _prBuildLevelPicker();
+  // Auto-filter to graduation levels if Graduation Report is already checked
+  if (document.getElementById('prTypeGraduation')?.checked) _prAutoSelectGradLevels();
 
   // Populate batch selector — try DB history first, merge with localStorage snapshots
   const batchSel = document.getElementById('prBatchSel');
@@ -4579,7 +4570,14 @@ async function openPrintReportModal() {
         if (inLocal) {
           try { const d = JSON.parse(localStorage.getItem('rdf_batch_' + bid) || '{}'); count = d.count || count; date = d.date || date; } catch {}
         }
-        return `<option value="${bid}">${bid}${tag}${src} — ${count} คน, ${date}</option>`;
+        // Human-readable label: strip _PROMO, format date
+        const yearPart = bid.replace(/_PROMO$/, '').replace(/_/g, '-');
+        const srcTxt   = inDB ? ' 🗄' : ' 💾';
+        const tagTxt   = bid === curBatch ? ' ★' : '';
+        const countTxt = count !== '?' ? `${count} คน` : '';
+        const dateTxt  = (date && date !== '?') ? `บันทึก ${date}` : '';
+        const meta     = [countTxt, dateTxt].filter(Boolean).join(', ');
+        return `<option value="${bid}">ปีการศึกษา ${yearPart}${tagTxt}${srcTxt}${meta ? ' — '+meta : ''}</option>`;
       }).join('');
 
     const hasCurSnap  = localBids.has(curBatch) || dbBids.has(curBatch);
@@ -4589,19 +4587,22 @@ async function openPrintReportModal() {
     batchSel.value = hasCurSnap ? curBatch : (mostRecent || '_session');
     const batchNote = document.getElementById('prBatchNote');
     const _toggleNote = () => { if (batchNote) batchNote.classList.toggle('hidden', batchSel.value === '_session'); };
-    // When a historical batch is selected, auto-sync prModalAcad to the batch's base year
+    // When a historical batch is selected, auto-sync prModalAcad <select> to the batch year
     const _syncBatchYear = () => {
       const val = batchSel.value;
       if (val === '_session') return;
       const acadEl = document.getElementById('prModalAcad');
       if (!acadEl) return;
-      if (dbBidsMeta.has(val) && dbBidsMeta.get(val).year) {
-        acadEl.value = dbBidsMeta.get(val).year;
-        return;
+      let yr = (dbBidsMeta.has(val) && dbBidsMeta.get(val).year) ? dbBidsMeta.get(val).year : '';
+      if (!yr) { const p = val.replace(/_PROMO$/, ''); if (/^\d{4}$/.test(p)) yr = p; }
+      if (!yr) return;
+      // If the year option doesn't exist in the select, add it
+      if (acadEl.tagName === 'SELECT' && ![...acadEl.options].some(o => o.value === yr)) {
+        const o = document.createElement('option');
+        o.value = yr; o.textContent = `${yr} (พ.ศ.) / ${parseInt(yr)-543} (ค.ศ.)`;
+        acadEl.add(o);
       }
-      // Fallback: parse year token from batchID (e.g. '2568_PROMO' → '2568')
-      const parsed = val.replace(/_PROMO$/, '');
-      if (/^\d{4}$/.test(parsed)) acadEl.value = parsed;
+      acadEl.value = yr;
     };
     _toggleNote();
     if (batchSel.value !== '_session') _syncBatchYear();
