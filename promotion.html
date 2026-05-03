@@ -643,7 +643,7 @@ img.student-avatar {
         <span class="pr-label" id="prLblType">ประเภทรายงาน / Report Type</span>
         <div class="pr-radio-row flex-wrap gap-y-1">
           <label class="flex items-center gap-1.5 cursor-pointer">
-            <input type="checkbox" name="prType" value="graduation" checked class="accent-blue-600 rounded">
+            <input type="checkbox" id="prTypeGraduation" name="prType" value="graduation" checked class="accent-blue-600 rounded" onchange="_prAutoSelectGradLevels()">
             รายงานผู้สำเร็จการศึกษา <span class="text-gray-400 text-xs">/ Graduation Report</span></label>
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" name="prType" value="promotion" class="accent-blue-600 rounded">
@@ -4461,6 +4461,10 @@ function _prBuildLevelPicker() {
 
   // Build presets
   _prBuildPresets(insts, byInst, gradSet);
+
+  // Dynamic: when Graduation Report is (re-)checked, auto-select only terminal levels
+  // Store gradSet on the wrapper so the checkbox handler can access it
+  wrap._gradSet = gradSet;
 }
 
 function _prToggleInst(inst, checked) {
@@ -4479,6 +4483,22 @@ function _prSelectAllLevels(checked) {
   document.querySelectorAll('.prLevelCb,.prInstCb').forEach(cb => {
     cb.checked = checked; cb.indeterminate = false;
   });
+}
+
+// Called when Graduation Report checkbox changes or when year input changes in the print modal.
+// If Graduation Report is selected, auto-tick only terminal-level checkboxes.
+function _prAutoSelectGradLevels() {
+  const isGrad = document.getElementById('prTypeGraduation')?.checked;
+  if (!isGrad) return;
+  const wrap = document.getElementById('prLevelCheckboxes');
+  if (!wrap || !wrap._gradSet) return;
+  wrap.querySelectorAll('.prLevelCb').forEach(cb => {
+    const key = cb.dataset.inst + '||' + cb.dataset.level;
+    cb.checked = wrap._gradSet.has(key);
+  });
+  // Sync inst-level checkboxes
+  const insts = new Set([...wrap.querySelectorAll('.prLevelCb')].map(cb => cb.dataset.inst));
+  insts.forEach(inst => _prSyncInstCb(inst));
 }
 
 function _prBuildPresets(insts, byInst, gradSet) {
@@ -4574,12 +4594,15 @@ async function doPrintReport() {
     ...s,
     StipNo:       s.stipNo       || s.StipNo       || '',
     Title:        s.title        || s.Title         || '',
-    FirstName:    s.firstName    || s.FirstName     || '',
-    LastName:     s.lastName     || s.LastName      || '',
-    EngFirstName: s.engFirstName || s.EngFirstName  || '',
-    EngLastName:  s.engLastName  || s.EngLastName   || '',
+    FirstName:    s.firstName    || s.FirstName     || s.fname  || '',
+    LastName:     s.lastName     || s.LastName      || s.lname  || '',
+    EngTitle:     s.engTitle     || s.EngTitle      || '',
+    EngFirstName: s.engFirstName || s.EngFirstName  || s.engFname || '',
+    EngLastName:  s.engLastName  || s.EngLastName   || s.engLname  || '',
     Institution:  s.institution  || s.Institution   || '',
     Level:        s.level        || s.Level         || '',
+    Major:        s.major        || s.Major         || '',
+    CurrentAcademicYear: s.currentAcademicYear || s.CurrentAcademicYear || '',
   });
 
   // Load snapshot for historical batch (for promotion/withdrawal report types)
@@ -4781,7 +4804,13 @@ function generateFormalReportHTML(opts) {
           if (!fromGradLevel) return;
           if (act !== 'uni') return;
         }
-        rows.push({ g, s, dec: { ...dec, action: act } });
+        // For graduation actions: strip next-year/next-level so report shows pre-promotion state
+        if (gradActions.has(act)) {
+          const { nextAcademicYear: _ny, nextLevel: _nl, ...cleanDec } = dec;
+          rows.push({ g, s, dec: { ...cleanDec, action: act } });
+        } else {
+          rows.push({ g, s, dec: { ...dec, action: act } });
+        }
       });
     });
     // Merge DB-graduated students (graduation type only)
@@ -4930,13 +4959,13 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
   lvl = lvl || abbrevLevel;
   let seq = 1;
   const rows = dataRows.map(({ g, s, dec }) => {
-    // Fallback to dec fields when s comes from a localStorage/DB snapshot with missing keys
-    const _title  = s.Title        || dec.Title        || '';
-    const _fName  = s.FirstName    || dec.FirstName    || '';
-    const _lName  = s.LastName     || dec.LastName     || '';
-    const _efName = s.EngFirstName || dec.EngFirstName || '';
-    const _elName = s.EngLastName  || dec.EngLastName  || '';
-    const _major  = s.Major        || dec.Major        || '—';
+    // Fallback: PascalCase (DB/snapshot) → camelCase (getStudents) → short-form (GAS mapper)
+    const _title  = s.Title        || dec.Title        || s.title        || '';
+    const _fName  = s.FirstName    || dec.FirstName    || s.firstName    || s.fname    || '';
+    const _lName  = s.LastName     || dec.LastName     || s.lastName     || s.lname    || '';
+    const _efName = s.EngFirstName || dec.EngFirstName || s.engFirstName || s.engFname || '';
+    const _elName = s.EngLastName  || dec.EngLastName  || s.engLastName  || s.engLname || '';
+    const _major  = s.Major        || dec.Major        || s.major        || '—';
 
     const thaiName      = (_title + _fName + ' ' + _lName).trim();
     const engTitleFirst = (getTitleEN(_title) ? getTitleEN(_title)+' ' : '') + _efName;
