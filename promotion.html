@@ -4547,12 +4547,18 @@ async function openPrintReportModal() {
     const snapKeys  = Object.keys(localStorage).filter(k => k.startsWith('rdf_batch_')).sort().reverse();
     const localBids = new Set(snapKeys.map(k => k.replace('rdf_batch_', '')));
 
-    // Fetch DB batch list (requires Code.gs getPromotionHistory with empty batchID)
+    // Fetch DB batch list — returns {id, count, date, year} objects (Code.gs v82+)
     let dbBids = new Set();
+    const dbBidsMeta = new Map(); // id → { count, date, year }
     try {
       const histRes = await API.getPromotionHistory('');
       if (histRes && histRes.status === 'success' && Array.isArray(histRes.batches)) {
-        histRes.batches.forEach(b => dbBids.add(b));
+        histRes.batches.forEach(b => {
+          const id = (typeof b === 'object') ? (b.id || '') : b;
+          if (!id) return;
+          dbBids.add(id);
+          if (typeof b === 'object') dbBidsMeta.set(id, { count: b.count, date: b.date, year: b.year });
+        });
       }
     } catch(e) { /* Code.gs not yet updated */ }
 
@@ -4565,8 +4571,13 @@ async function openPrintReportModal() {
         const tag     = bid === curBatch ? ' ★ ล่าสุด' : '';
         const src     = inDB ? ' [DB]' : ' [local]';
         let count = '?', date = '?';
+        if (inDB && dbBidsMeta.has(bid)) {
+          const m = dbBidsMeta.get(bid);
+          count = (m.count != null) ? m.count : '?';
+          date  = m.date  || '?';
+        }
         if (inLocal) {
-          try { const d = JSON.parse(localStorage.getItem('rdf_batch_' + bid) || '{}'); count = d.count || '?'; date = d.date || '?'; } catch {}
+          try { const d = JSON.parse(localStorage.getItem('rdf_batch_' + bid) || '{}'); count = d.count || count; date = d.date || date; } catch {}
         }
         return `<option value="${bid}">${bid}${tag}${src} — ${count} คน, ${date}</option>`;
       }).join('');
@@ -4575,8 +4586,23 @@ async function openPrintReportModal() {
     batchSel.value = hasCurSnap ? curBatch : '_session';
     const batchNote = document.getElementById('prBatchNote');
     const _toggleNote = () => { if (batchNote) batchNote.classList.toggle('hidden', batchSel.value === '_session'); };
+    // When a historical batch is selected, auto-sync prModalAcad to the batch's base year
+    const _syncBatchYear = () => {
+      const val = batchSel.value;
+      if (val === '_session') return;
+      const acadEl = document.getElementById('prModalAcad');
+      if (!acadEl) return;
+      if (dbBidsMeta.has(val) && dbBidsMeta.get(val).year) {
+        acadEl.value = dbBidsMeta.get(val).year;
+        return;
+      }
+      // Fallback: parse year token from batchID (e.g. '2568_PROMO' → '2568')
+      const parsed = val.replace(/_PROMO$/, '');
+      if (/^\d{4}$/.test(parsed)) acadEl.value = parsed;
+    };
     _toggleNote();
-    batchSel.onchange = _toggleNote;
+    if (batchSel.value !== '_session') _syncBatchYear();
+    batchSel.onchange = () => { _toggleNote(); _syncBatchYear(); };
   }
 
   document.getElementById('printReportModal').classList.remove('hidden');
