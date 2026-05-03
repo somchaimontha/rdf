@@ -1375,6 +1375,7 @@ async function loadPage() {
                               : defAction === 'continue_inst' ? 'ปวส. ชั้นปีที่ 1'
                               : '',
             newMajor:           '',
+            newDept:            '',
             uniScholarship:     s.UniScholarship || (ps.uniDefaultStatus || 'Pending'),
             notes:              s.PromotionNotes || '',
             alreadyPromoted:    alreadyPromoted || approvedPromo,
@@ -1713,7 +1714,8 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
     ? _renderSchToggle(s.StipNo, dec.uniScholarship || 'Pending')
     : `<span class="uni-sch-badge ${schCls}">${schLabel}</span>`;
 
-  const uniRowHTML = isUniAct ? renderUniDetailRow(s.StipNo, dec) : '';
+  const uniRowHTML         = isUniAct                                        ? renderUniDetailRow(s.StipNo, dec)      : '';
+  const vcContinueRowHTML  = (!alreadyPromoted && act === 'continue_inst')  ? renderVcContinueRow(s.StipNo, dec)     : '';
 
   // Row style: green left-border + tint when already promoted this cycle
   const rowStyle = alreadyPromoted
@@ -1797,7 +1799,8 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
       </div>`;
     })()}</td>
   </tr>
-  ${uniRowHTML}`;
+  ${uniRowHTML}
+  ${vcContinueRowHTML}`;
 }
 
 // ─────────────────────────────────────────────
@@ -1856,6 +1859,7 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
       p.NewLevel      = dec.nextLevel || 'ปวส. ชั้นปีที่ 1';
       p.LastEducation = 'ประกาศนียบัตรวิชาชีพ (ปวช.)';
       if (dec.newMajor) p.NewMajor = dec.newMajor;
+      if (dec.newDept)  p.NewDept  = dec.newDept;
       break;
     case 'hold': break; // no level/status change
   }
@@ -2530,6 +2534,7 @@ async function undoPromotion(stipNo, inst, level) {
         dec.action    = 'continue_inst';
         dec.nextLevel = 'ปวส. ชั้นปีที่ 1';
         dec.newMajor  = '';
+        dec.newDept   = '';
       } else {
         dec.action = (_comp === 'graduate' || _comp === 'graduate_uni') ? 'graduate' : 'promote';
       }
@@ -2786,32 +2791,17 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
 
   if (act === 'promote')   return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${levelOpts}</select>`;
   if (act === 'continue_inst') {
-    _ensureVcProgs();
     const _vcHsOpts = ['ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'].map(l =>
       `<option value="${l}" ${(dec.nextLevel||'ปวส. ชั้นปีที่ 1')===l?'selected':''}>${abbrevLevel(l)}</option>`
     ).join('');
-    const _safeVal = (dec.newMajor||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return `<div class="flex flex-col gap-1" style="min-width:160px">
-      <div class="flex items-center gap-1">
+    const majorBadge = dec.newMajor ? `<span style="font-size:9px;padding:1px 6px;border-radius:5px;background:#d1fae5;color:#059669;border:1px solid #6ee7b7;font-weight:700;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis" title="${(dec.newMajor||'').replace(/"/g,'&quot;')}">${dec.newMajor}</span>` : '';
+    const deptBadge  = dec.newDept  ? `<span style="font-size:9px;padding:1px 6px;border-radius:5px;background:#dbeafe;color:#0369a1;border:1px solid #93c5fd;font-weight:700;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis" title="${(dec.newDept||'').replace(/"/g,'&quot;')}">${dec.newDept}</span>`  : '';
+    return `<div class="flex flex-col gap-1">
+      <div class="flex items-center gap-1 flex-wrap">
         <span style="font-size:10px;font-weight:700;color:#059669;white-space:nowrap;padding:2px 6px;background:#d1fae5;border-radius:6px;border:1px solid #6ee7b7">🎓 ต่อ ปวส.</span>
         <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${_vcHsOpts}</select>
       </div>
-      <div style="position:relative">
-        <div style="display:flex;align-items:center;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;overflow:hidden;transition:border-color .15s"
-             onfocusin="this.style.borderColor='#059669'" onfocusout="this.style.borderColor='#e5e7eb'">
-          <input type="text" id="vcMajorInp_${stipNo}"
-            style="flex:1;border:none;outline:none;padding:4px 7px;font-size:11px;font-family:inherit;background:transparent;min-width:0"
-            placeholder="${LANG==='th'?'สาขา / แผนกวิชา...':'Major / Dept...'}"
-            value="${_safeVal}"
-            oninput="_vcProgSuggest('${stipNo}',this.value);setDec('${stipNo}','newMajor',this.value)"
-            onfocus="_vcProgSuggest('${stipNo}',this.value)"
-            onblur="setTimeout(()=>document.getElementById('vcMajorAcUl_${stipNo}')?.classList.add('hidden'),200)">
-          <span style="padding:0 6px;color:#9ca3af;font-size:13px;cursor:pointer;flex-shrink:0"
-                onclick="const i=document.getElementById('vcMajorInp_${stipNo}');if(i){i.value='';setDec('${stipNo}','newMajor','');i.focus();_vcProgSuggest('${stipNo}','')}"
-                title="ล้าง / เลือกใหม่">▾</span>
-        </div>
-        <ul id="vcMajorAcUl_${stipNo}" class="ac-list hidden" style="min-width:220px;z-index:500;max-height:200px;overflow-y:auto"></ul>
-      </div>
+      ${(majorBadge || deptBadge) ? `<div class="flex flex-wrap gap-1">${majorBadge}${deptBadge}</div>` : `<span style="font-size:9px;color:#9ca3af">↓ กรอกสาขาด้านล่าง</span>`}
     </div>`;
   }
   if (act === 'graduate')  return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>${alumniGraduate}</div>`;
@@ -2833,39 +2823,102 @@ async function _ensureVcProgs() {
   } catch(e) {}
 }
 
-function _vcProgSuggest(stipNo, val) {
-  const q  = val.trim().toLowerCase();
-  const ul = document.getElementById('vcMajorAcUl_' + stipNo);
-  if (!ul) return;
-  const matches = q
-    ? _VC_PROGS.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q))
-    : _VC_PROGS;
-  if (!matches.length) { ul.classList.add('hidden'); return; }
-  const catColor = { program:'#059669', department:'#0369a1' };
-  const catLabel = { program:'สาขาวิชา', department:'แผนกวิชา' };
-  ul.innerHTML = matches.slice(0, 30).map(p =>
-    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:6px"
-       onmousedown="event.preventDefault()"
-       onclick="_vcProgSelect('${stipNo}','${(p.nameTH||'').replace(/'/g,"&#39;")}')">
-       <span style="flex:1">
-         <span style="font-weight:600">${p.nameTH||'—'}</span>
-         ${p.nameEN?`<span style="color:#9ca3af;font-size:10px;margin-left:4px">${p.nameEN}</span>`:''}
-       </span>
-       <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap;
-         background:${(catColor[p.category]||'#6b7280')}18;color:${catColor[p.category]||'#6b7280'};
-         border:1px solid ${(catColor[p.category]||'#6b7280')}40">
-         ${catLabel[p.category]||p.category||''}
-       </span>
-     </li>`
-  ).join('');
-  ul.classList.remove('hidden');
+// Build a styled <li> for VC autocomplete — uses data-val to avoid escaping issues
+function _vcLI(val, nameTH, nameEN) {
+  return `<li data-val="${(val||'').replace(/"/g,'&quot;')}"
+     style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6"
+     onmousedown="event.preventDefault()">
+     <span style="font-weight:600">${nameTH||'—'}</span>
+     ${nameEN?`<span style="color:#9ca3af;font-size:10px;margin-left:4px">${nameEN}</span>`:''}
+  </li>`;
 }
 
-function _vcProgSelect(stipNo, nameTH) {
-  setDec(stipNo, 'newMajor', nameTH);
+// สาขาวิชา (category='program') suggest + select
+function _vcMajorSuggest(stipNo, val) {
+  const q = val.trim().toLowerCase();
+  const ul = document.getElementById('vcMajorAcUl_' + stipNo);
+  if (!ul) return;
+  const pool = _VC_PROGS.filter(p => p.category === 'program');
+  const hits = q ? pool.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q)) : pool;
+  if (!hits.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = hits.slice(0,25).map(p => _vcLI(p.nameTH, p.nameTH, p.nameEN)).join('');
+  ul.querySelectorAll('li').forEach(li => li.addEventListener('click', () => _vcMajorSelect(stipNo, li.dataset.val)));
+  ul.classList.remove('hidden');
+}
+function _vcMajorSelect(stipNo, val) {
+  setDec(stipNo, 'newMajor', val);
   const inp = document.getElementById('vcMajorInp_' + stipNo);
-  if (inp) inp.value = nameTH;
+  if (inp) inp.value = val;
   document.getElementById('vcMajorAcUl_' + stipNo)?.classList.add('hidden');
+}
+
+// แผนกวิชา (category='department') suggest + select
+function _vcDeptSuggest(stipNo, val) {
+  const q = val.trim().toLowerCase();
+  const ul = document.getElementById('vcDeptAcUl_' + stipNo);
+  if (!ul) return;
+  const pool = _VC_PROGS.filter(p => p.category === 'department');
+  const hits = q ? pool.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q)) : pool;
+  if (!hits.length) { ul.classList.add('hidden'); return; }
+  ul.innerHTML = hits.slice(0,25).map(p => _vcLI(p.nameTH, p.nameTH, p.nameEN)).join('');
+  ul.querySelectorAll('li').forEach(li => li.addEventListener('click', () => _vcDeptSelect(stipNo, li.dataset.val)));
+  ul.classList.remove('hidden');
+}
+function _vcDeptSelect(stipNo, val) {
+  setDec(stipNo, 'newDept', val);
+  const inp = document.getElementById('vcDeptInp_' + stipNo);
+  if (inp) inp.value = val;
+  document.getElementById('vcDeptAcUl_' + stipNo)?.classList.add('hidden');
+}
+
+// Extra row shown below a continue_inst student row (mirrors renderUniDetailRow pattern)
+function renderVcContinueRow(stipNo, dec) {
+  _ensureVcProgs();
+  const _e = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return `
+  <tr id="vcrow_${stipNo}" style="background:#f0fdf4;border-left:3px solid #34d399">
+    <td class="no-print"></td><td></td>
+    <td colspan="7" style="padding:8px 12px">
+      <div class="flex flex-wrap gap-3 items-end">
+        <span style="font-size:11px;font-weight:700;color:#059669;display:flex;align-items:center;gap:4px;white-space:nowrap;align-self:center">
+          <i data-lucide="graduation-cap" style="width:12px;height:12px"></i>
+          รายละเอียดการศึกษาต่อ ปวส.
+        </span>
+
+        <!-- สาขาวิชา -->
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669">สาขาวิชา</span>
+          <div style="position:relative">
+            <input type="text" id="vcMajorInp_${stipNo}" class="notes-input" style="width:150px"
+              placeholder="สาขาวิชา (ถ้าเปลี่ยน)..."
+              value="${_e(dec.newMajor||'')}"
+              autocomplete="off"
+              oninput="setDec('${stipNo}','newMajor',this.value);_vcMajorSuggest('${stipNo}',this.value)"
+              onfocus="_vcMajorSuggest('${stipNo}',this.value)"
+              onblur="setTimeout(()=>document.getElementById('vcMajorAcUl_${stipNo}')?.classList.add('hidden'),200)">
+            <ul id="vcMajorAcUl_${stipNo}" class="ac-list hidden" style="min-width:190px;z-index:600;max-height:180px;overflow-y:auto"></ul>
+          </div>
+        </div>
+
+        <!-- แผนกวิชา -->
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#0369a1">แผนกวิชา</span>
+          <div style="position:relative">
+            <input type="text" id="vcDeptInp_${stipNo}" class="notes-input" style="width:150px"
+              placeholder="แผนกวิชา (ถ้าเปลี่ยน)..."
+              value="${_e(dec.newDept||'')}"
+              autocomplete="off"
+              oninput="setDec('${stipNo}','newDept',this.value);_vcDeptSuggest('${stipNo}',this.value)"
+              onfocus="_vcDeptSuggest('${stipNo}',this.value)"
+              onblur="setTimeout(()=>document.getElementById('vcDeptAcUl_${stipNo}')?.classList.add('hidden'),200)">
+            <ul id="vcDeptAcUl_${stipNo}" class="ac-list hidden" style="min-width:190px;z-index:600;max-height:180px;overflow-y:auto"></ul>
+          </div>
+        </div>
+
+        <span style="font-size:10px;color:#9ca3af;align-self:center">เว้นว่างได้ถ้าไม่เปลี่ยนสาขา</span>
+      </div>
+    </td>
+  </tr>`;
 }
 
 // ─── UNI Program autocomplete from ACADEMIC_PROGRAMS ─────────────────────────
@@ -3330,6 +3383,7 @@ function onActionChange(stipNo, inst, level, newAct) {
   } else if (newAct === 'continue_inst') {
     dec.nextLevel = dec.nextLevel || 'ปวส. ชั้นปีที่ 1';
     dec.newMajor  = dec.newMajor  || '';
+    dec.newDept   = dec.newDept   || '';
   } else {
     dec.nextLevel = '';
   }
@@ -3350,6 +3404,17 @@ function onActionChange(stipNo, inst, level, newAct) {
     lucide.createIcons();
   } else if (!isUni && existUniRow) {
     existUniRow.remove();
+  }
+
+  // Toggle VC continue row
+  const existVcRow  = document.getElementById('vcrow_' + stipNo);
+  const isVcCont    = newAct === 'continue_inst';
+  if (isVcCont && !existVcRow && mainRow) {
+    const afterTarget = existUniRow || mainRow;
+    afterTarget.insertAdjacentHTML('afterend', renderVcContinueRow(stipNo, dec));
+    lucide.createIcons();
+  } else if (!isVcCont && existVcRow) {
+    existVcRow.remove();
   }
 
   // Update scholarship cell (by id — avoids column-index fragility)
@@ -3790,7 +3855,7 @@ async function resetAllDecisions() {
     g.students.forEach(s => {
       ROW_DECISIONS[s.StipNo] = {
         action: 'skip',
-        nextLevel: '', newMajor: '', uniName:'', uniNameEN:'', uniFaculty:'', uniFacultyEN:'',
+        nextLevel: '', newMajor: '', newDept: '', uniName:'', uniNameEN:'', uniFaculty:'', uniFacultyEN:'',
         uniMajor:'', uniMajorEN:'', uniProvince:'', uniProvinceEN:'',
         uniDuration:'', uniScholarship: s.UniScholarship || (ps.uniDefaultStatus||'Pending'),
         notes:'', alreadyPromoted: false, nextAcademicYear:'',
@@ -4021,6 +4086,7 @@ async function applyAllChanges() {
         p.NewLevel      = dec.nextLevel || 'ปวส. ชั้นปีที่ 1';
         p.LastEducation = 'ประกาศนียบัตรวิชาชีพ (ปวช.)';
         if (dec.newMajor) p.NewMajor = dec.newMajor;
+        if (dec.newDept)  p.NewDept  = dec.newDept;
         break;
       case 'suspend':      p.NewStatus = 'Suspended';           break;
       case 'resign':       p.NewStatus = 'Resigned';            break;
