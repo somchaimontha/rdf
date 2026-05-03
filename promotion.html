@@ -4892,23 +4892,36 @@ async function doPrintReport() {
         const filterInst = s => !opts.insts?.size || opts.insts.has(s.institution || s.Institution || '');
         const filterLvl  = s => !opts.levels?.size || opts.levels.has(s.level || s.Level || '');
         if (selectedBatch === '_session') {
-          // Default: graduates NOT already shown in ALL_GROUPS (current session view)
+          // Session: DB graduates not already in ALL_GROUPS, plus continue_inst
+          // graduates (status=Active but LastEducation set) from the current batch.
           const inGroups = new Set(ALL_GROUPS.flatMap(g => g.students.map(s => s.StipNo)));
+          const sessionBatchId = (document.getElementById('academicYear')?.value || '') + '_PROMO';
           opts.graduatedStudents = res.data
-            .filter(s => ['Graduated','University'].includes(s.status))
-            .filter(s => !inGroups.has(s.stipNo || s.StipNo))
+            .filter(s => {
+              if (inGroups.has(s.stipNo || s.StipNo)) return false;
+              const status = s.status  || s.Status  || '';
+              const le  = s.lastEducation || s.LastEducation || '';
+              const bid = s.promotionBatchId || s.promotionBatchID || '';
+              return ['Graduated','University'].includes(status) || (le && bid === sessionBatchId);
+            })
             .filter(filterInst).filter(filterLvl)
             .map(_normStudent);
-        } else {
-          // Historical: graduates whose promotionBatchID matches selected batch
+        } else if (!_snapGroups) {
+          // Historical fallback (snapshot failed): pull from DB with continue_inst guard
           opts.graduatedStudents = res.data
             .filter(s => {
               const bid = s.promotionBatchId || s.promotionBatchID || '';
-              return bid === selectedBatch && ['Graduated','University'].includes(s.status);
+              if (bid !== selectedBatch) return false;
+              const status = s.status || s.Status || '';
+              const le  = s.lastEducation || s.LastEducation || '';
+              return ['Graduated','University'].includes(status) || le !== '';
             })
             .filter(filterInst).filter(filterLvl)
             .map(_normStudent);
         }
+        // Historical with working snapshot: _snapGroups/_snapDecisions already contain
+        // all promotion actions (including continue_inst). opts.graduatedStudents stays []
+        // to prevent duplicates from the DB merge.
       }
     } catch(e) {
       RDF.logWarn('promotion.html', 'doPrintReport()', 'Could not fetch graduated students: ' + e.message);
