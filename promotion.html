@@ -4794,7 +4794,11 @@ function generateFormalReportHTML(opts) {
         if (reportType === 'graduation') {
           if (nonGradExplicit.has(act)) return;
           if (fromGradLevel && act === 'skip') act = 'graduate';
-          if (!gradActions.has(act)) return;
+          // Allow 'promote' from terminal-bridge levels (VC ปวช.3→ปวส.1, VC ปวส.2→—, MBS ม.6→—)
+          const isTerminalPromo =
+            (g.institution === 'VC' && (g.level === 'ปวช. ชั้นปีที่ 3' || g.level === 'ปวส. ชั้นปีที่ 2')) ||
+            (g.institution === 'MBS' && g.level.includes('มัธยมศึกษาปีที่ 6'));
+          if (!gradActions.has(act) && !(act === 'promote' && isTerminalPromo)) return;
         }
         if (reportType === 'promotion'  && act === 'skip') return;
         if (reportType === 'withdrawal' && !withdrawalActions.has(act)) return;
@@ -4970,16 +4974,29 @@ function buildGradTableHTML(dataRows, isEN, lvl) {
     const thaiName      = (_title + _fName + ' ' + _lName).trim();
     const engTitleFirst = (getTitleEN(_title) ? getTitleEN(_title)+' ' : '') + _efName;
     const engLast       = _elName;
-    // cont = student is going to / already at university → show uni columns
-    const cont          = dec.action==='uni' || dec.action==='uni_own' || g.institution === 'UNI';
-    const newLevel      = cont ? (isEN?'University':'มหาวิทยาลัย') : '—';
-    const duration      = dec.uniDuration ? dec.uniDuration+(isEN?' yr':' ปี') : '—';
-    // Language-aware fields
-    const levelDisplay  = isEN ? lvl(g.level) : g.level;
-    const uniDisplay    = isEN ? (dec.uniNameEN || dec.uniName || '—') : (dec.uniName || '—');
-    const majorDisplay  = isEN ? (dec.uniMajorEN || dec.uniMajor || dec.uniFacultyEN || dec.uniFaculty || '—')
-                                : (dec.uniMajor || dec.uniFaculty || '—');
-    const provDisplay   = isEN ? (dec.uniProvinceEN || dec.uniProvince || '—') : (dec.uniProvince || '—');
+    // cont = continuing to further education → show destination columns
+    const isPromoteContinue = dec.action === 'promote';
+    const cont = dec.action === 'uni' || dec.action === 'uni_own' || g.institution === 'UNI' || isPromoteContinue;
+
+    let newLevel, duration, uniDisplay, majorDisplay, provDisplay;
+    const levelDisplay = isEN ? lvl(g.level) : g.level;
+
+    if (isPromoteContinue) {
+      // ปวช.3 → ปวส.1 (or similar): show same institution, same major, next level
+      newLevel     = isEN ? lvl(dec.nextLevel) : (dec.nextLevel || '—');
+      duration     = '—';
+      uniDisplay   = isEN ? (RDF.INSTITUTION_LABELS[g.institution]    || g.institution)
+                           : (RDF.INSTITUTION_LABELS_TH[g.institution] || g.institution);
+      majorDisplay = _major;
+      provDisplay  = isEN ? 'Mae Hong Son' : 'แม่ฮ่องสอน';
+    } else {
+      newLevel     = cont ? (isEN ? 'University' : 'มหาวิทยาลัย') : '—';
+      duration     = dec.uniDuration ? dec.uniDuration + (isEN ? ' yr' : ' ปี') : '—';
+      uniDisplay   = isEN ? (dec.uniNameEN || dec.uniName || '—') : (dec.uniName || '—');
+      majorDisplay = isEN ? (dec.uniMajorEN || dec.uniMajor || dec.uniFacultyEN || dec.uniFaculty || '—')
+                           : (dec.uniMajor || dec.uniFaculty || '—');
+      provDisplay  = isEN ? (dec.uniProvinceEN || dec.uniProvince || '—') : (dec.uniProvince || '—');
+    }
     // Primary name column order: EN report → EN name first; TH report → Thai name first
     const col1 = isEN ? engTitleFirst : thaiName;
     const col2 = isEN ? engLast       : '';
