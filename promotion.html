@@ -2218,16 +2218,18 @@ function renderApprovalPanel() {
   }
 
   // Helper to build a table row (shared between both data sources)
-  const _approvalRow = ({ stipNo, nameTH, nameEN, level, inst, uniName, uniFaculty, uniMajor, uniProvince, notes, onApprove, onReject }) => {
-    const _instDisp  = LANG==='en' ? (RDF.INSTITUTION_LABELS[inst]||inst||'—') : (RDF.INSTITUTION_LABELS_TH[inst]||inst||'—');
-    const _lvlDisp   = abbrevLevel(level) || level || '—';
+  const _approvalRow = ({ stipNo, nameTH, nameEN, level, inst, schPriority, scholarshipYear, uniName, uniFaculty, uniMajor, uniProvince, notes, onApprove, onReject }) => {
+    const _instDisp   = LANG==='en' ? (RDF.INSTITUTION_LABELS[inst]||inst||'—') : (RDF.INSTITUTION_LABELS_TH[inst]||inst||'—');
+    const _lvlDisp    = abbrevLevel(level) || level || '—';
     const _nameSecond = (nameEN && nameEN !== nameTH) ? `<br><span style="font-size:10px;color:#6b7280;font-weight:400">${nameEN}</span>` : '';
+    const _prioBadge  = schPriority ? `<span style="display:inline-block;background:#7c3aed;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-right:4px">#${schPriority}</span>` : '';
+    const _yearDisp   = scholarshipYear ? `<br><span style="font-size:10px;color:#9ca3af">${LANG==='th'?'ทุนปี':'Sch.yr'} ${scholarshipYear}</span>` : '';
     return `
     <tr style="border-bottom:1px solid #ede9fe">
-      <td style="padding:6px 10px;font-size:12px;font-weight:600">${nameTH||'—'}${_nameSecond}<br>
+      <td style="padding:6px 10px;font-size:12px;font-weight:600">${_prioBadge}${nameTH||'—'}${_nameSecond}<br>
         <span style="font-size:10px;color:#9ca3af">${stipNo}</span>
       </td>
-      <td style="padding:6px 10px;font-size:11px">${_instDisp} / ${_lvlDisp}</td>
+      <td style="padding:6px 10px;font-size:11px">${_instDisp} / ${_lvlDisp}${_yearDisp}</td>
       <td style="padding:6px 10px;font-size:11px">${uniName||'—'}${uniFaculty?' / '+uniFaculty:''}<br>
         <span style="font-size:10px;color:#7c3aed">${uniMajor||''}${uniProvince?' • '+uniProvince:''}</span>
       </td>
@@ -2263,6 +2265,8 @@ function renderApprovalPanel() {
       stipNo: p.StipNo || p.stipNo,
       nameTH: _thName, nameEN: _enName,
       level: p.CurrentLevel || p.level, inst: p.Institution || p.institution,
+      schPriority:  p.SchPriority || p.schPriority || '',
+      scholarshipYear: p.ScholarshipYear || p.scholarshipYear || '',
       uniName:    _isEN ? (p.UniNameEN    || p.uniNameEN    || p.UniName    || p.uniName)    : (p.UniName    || p.uniName),
       uniFaculty: _isEN ? (p.UniFacultyEN || p.uniFacultyEN || p.UniFaculty || p.uniFaculty) : (p.UniFaculty || p.uniFaculty),
       uniMajor:   _isEN ? (p.UniMajorEN   || p.uniMajorEN   || p.UniMajor   || p.uniMajor)   : (p.UniMajor   || p.uniMajor),
@@ -2283,6 +2287,8 @@ function renderApprovalPanel() {
       stipNo: s.StipNo || s.stipNo,
       nameTH: _thName, nameEN: _enName,
       level: s.Level || s.level, inst: s.Institution || s.institution,
+      schPriority:  s.schPriority || s.SchPriority || '',
+      scholarshipYear: s.scholarshipYear || s.ScholarshipYear || '',
       uniName:    _isEN ? (s.UniNameEN    || s.uniNameEN    || s.UniName    || s.uniName)    : (s.uniName    || s.UniName),
       uniFaculty: _isEN ? (s.UniFacultyEN || s.uniFacultyEN || s.UniFaculty || s.uniFaculty) : (s.uniFaculty || s.UniFaculty),
       uniMajor:   _isEN ? (s.UniMajorEN   || s.uniMajorEN   || s.UniMajor   || s.uniMajor)   : (s.uniMajor   || s.UniMajor),
@@ -2311,7 +2317,7 @@ function renderApprovalPanel() {
           <thead>
             <tr style="background:#ede9fe">
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'นักเรียน':'Student'}</th>
-              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'ชั้น/สถาบัน':'Level'}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'ชั้น/สถาบันเดิม':'Prev. Level'}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'มหาวิทยาลัยที่ต้องการเข้า':'Target University'}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${t('promoColNotes')}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'การดำเนินการ':'Action'}</th>
