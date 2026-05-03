@@ -918,6 +918,7 @@ let ROW_DECISIONS = {};
 let _UNI_PROGS    = [];   // ACADEMIC_PROGRAMS where institution === 'UNI'
 let _UNI_LIST     = [];   // UNIVERSITY_LIST — uni name autocomplete
 let _UNI_FACS     = [];   // UNI_FACULTIES — faculty autocomplete
+let _VC_PROGS     = [];   // ACADEMIC_PROGRAMS where institution === 'VC' (program + department)
 // StipNos of students successfully promoted/graduated/processed in the CURRENT session.
 // Used to show "สำเร็จแล้ว" badge in groups without requiring a DB round-trip.
 let PROMOTED_THIS_SESSION = new Set();
@@ -1674,7 +1675,7 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
         <select class="promo-action-select flex-1" id="act_${s.StipNo}"
           onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)">
           ${showContinueInst ? `<option value="continue_inst" ${act==='continue_inst'?'selected':''}>🎓 ${LANG==='th'?'จบ + ศึกษาต่อ ปวส.':'Grad + Continue ปวส.'}</option>` : ''}
-          <option value="promote"  ${act==='promote' ?'selected':''}>⬆ ${t('promoActPromote')}</option>
+          ${!showContinueInst ? `<option value="promote" ${act==='promote'?'selected':''}>⬆ ${t('promoActPromote')}</option>` : ''}
           <option value="graduate" ${act==='graduate'?'selected':''}>🎓 ${t('promoActGraduate')}</option>
           ${showUniOpts ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
           ${showUniOpts ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
@@ -2785,18 +2786,32 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
 
   if (act === 'promote')   return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${levelOpts}</select>`;
   if (act === 'continue_inst') {
+    _ensureVcProgs();
     const _vcHsOpts = ['ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'].map(l =>
       `<option value="${l}" ${(dec.nextLevel||'ปวส. ชั้นปีที่ 1')===l?'selected':''}>${abbrevLevel(l)}</option>`
     ).join('');
-    return `<div class="flex flex-col gap-1">
+    const _safeVal = (dec.newMajor||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="flex flex-col gap-1" style="min-width:160px">
       <div class="flex items-center gap-1">
-        <span class="text-xs font-semibold" style="color:#059669;white-space:nowrap">🎓 ต่อ ปวส.</span>
+        <span style="font-size:10px;font-weight:700;color:#059669;white-space:nowrap;padding:2px 6px;background:#d1fae5;border-radius:6px;border:1px solid #6ee7b7">🎓 ต่อ ปวส.</span>
         <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${_vcHsOpts}</select>
       </div>
-      <input type="text" class="notes-input" style="width:130px"
-        placeholder="${LANG==='th'?'สาขาใหม่ (ถ้าเปลี่ยน)':'New Major (if changed)'}"
-        value="${(dec.newMajor||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}"
-        oninput="setDec('${stipNo}','newMajor',this.value)">
+      <div style="position:relative">
+        <div style="display:flex;align-items:center;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;overflow:hidden;transition:border-color .15s"
+             onfocusin="this.style.borderColor='#059669'" onfocusout="this.style.borderColor='#e5e7eb'">
+          <input type="text" id="vcMajorInp_${stipNo}"
+            style="flex:1;border:none;outline:none;padding:4px 7px;font-size:11px;font-family:inherit;background:transparent;min-width:0"
+            placeholder="${LANG==='th'?'สาขา / แผนกวิชา...':'Major / Dept...'}"
+            value="${_safeVal}"
+            oninput="_vcProgSuggest('${stipNo}',this.value);setDec('${stipNo}','newMajor',this.value)"
+            onfocus="_vcProgSuggest('${stipNo}',this.value)"
+            onblur="setTimeout(()=>document.getElementById('vcMajorAcUl_${stipNo}')?.classList.add('hidden'),200)">
+          <span style="padding:0 6px;color:#9ca3af;font-size:13px;cursor:pointer;flex-shrink:0"
+                onclick="const i=document.getElementById('vcMajorInp_${stipNo}');if(i){i.value='';setDec('${stipNo}','newMajor','');i.focus();_vcProgSuggest('${stipNo}','')}"
+                title="ล้าง / เลือกใหม่">▾</span>
+        </div>
+        <ul id="vcMajorAcUl_${stipNo}" class="ac-list hidden" style="min-width:220px;z-index:500;max-height:200px;overflow-y:auto"></ul>
+      </div>
     </div>`;
   }
   if (act === 'graduate')  return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>${alumniGraduate}</div>`;
@@ -2807,6 +2822,50 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
   if (act === 'resign')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>${alumniResign}${wdBtn}</div>`;
   if (act === 'withdraw_sch') return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs font-semibold" style="color:#9f1239">${t('promoStatusWithdrawnSch')}</span>${alumniWithdraw}${wdBtn}</div>`;
   return `<span class="text-xs text-gray-400">—</span>`;
+}
+
+// ─── VC Program autocomplete from ACADEMIC_PROGRAMS ──────────────────────────
+async function _ensureVcProgs() {
+  if (_VC_PROGS.length > 0) return;
+  try {
+    const r = await API.getSystemSettings();
+    _VC_PROGS = (r.data?.ACADEMIC_PROGRAMS || []).filter(p => p.institution === 'VC');
+  } catch(e) {}
+}
+
+function _vcProgSuggest(stipNo, val) {
+  const q  = val.trim().toLowerCase();
+  const ul = document.getElementById('vcMajorAcUl_' + stipNo);
+  if (!ul) return;
+  const matches = q
+    ? _VC_PROGS.filter(p => (p.nameTH||'').toLowerCase().includes(q) || (p.nameEN||'').toLowerCase().includes(q))
+    : _VC_PROGS;
+  if (!matches.length) { ul.classList.add('hidden'); return; }
+  const catColor = { program:'#059669', department:'#0369a1' };
+  const catLabel = { program:'สาขาวิชา', department:'แผนกวิชา' };
+  ul.innerHTML = matches.slice(0, 30).map(p =>
+    `<li style="padding:5px 10px;cursor:pointer;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:6px"
+       onmousedown="event.preventDefault()"
+       onclick="_vcProgSelect('${stipNo}','${(p.nameTH||'').replace(/'/g,"&#39;")}')">
+       <span style="flex:1">
+         <span style="font-weight:600">${p.nameTH||'—'}</span>
+         ${p.nameEN?`<span style="color:#9ca3af;font-size:10px;margin-left:4px">${p.nameEN}</span>`:''}
+       </span>
+       <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap;
+         background:${(catColor[p.category]||'#6b7280')}18;color:${catColor[p.category]||'#6b7280'};
+         border:1px solid ${(catColor[p.category]||'#6b7280')}40">
+         ${catLabel[p.category]||p.category||''}
+       </span>
+     </li>`
+  ).join('');
+  ul.classList.remove('hidden');
+}
+
+function _vcProgSelect(stipNo, nameTH) {
+  setDec(stipNo, 'newMajor', nameTH);
+  const inp = document.getElementById('vcMajorInp_' + stipNo);
+  if (inp) inp.value = nameTH;
+  document.getElementById('vcMajorAcUl_' + stipNo)?.classList.add('hidden');
 }
 
 // ─── UNI Program autocomplete from ACADEMIC_PROGRAMS ─────────────────────────
@@ -3244,9 +3303,12 @@ function onActionChange(stipNo, inst, level, newAct) {
   const dec = ROW_DECISIONS[stipNo];
 
   // Guard: 'uni'/'uni_own' are only valid for university-transfer levels.
-  // If somehow triggered on another level, fall back to 'graduate'.
   if (['uni','uni_own'].includes(newAct) && !isUniTransferLevel(inst, level)) {
     newAct = 'graduate';
+  }
+  // Guard: 'promote' is not valid for VC ปวช.3 — use continue_inst instead.
+  if (newAct === 'promote' && inst === 'VC' && level === 'ปวช. ชั้นปีที่ 3') {
+    newAct = 'continue_inst';
   }
   dec.action = newAct;
 
