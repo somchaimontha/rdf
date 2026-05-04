@@ -1816,15 +1816,16 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
   const _grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
   const _stu = _grp?.students.find(s => s.StipNo === stipNo);
   const p = {
-    StipNo:       stipNo,
-    Title:        _stu?.Title        || '',
-    FirstName:    _stu?.FirstName    || '',
-    LastName:     _stu?.LastName     || '',
-    EngFirstName: _stu?.EngFirstName || '',
-    EngLastName:  _stu?.EngLastName  || '',
-    Institution:  inst               || _grp?.institution || '',
-    CurrentLevel: level              || _grp?.level       || '',
-    Action:       dec.action         || '',
+    StipNo:             stipNo,
+    Title:              _stu?.Title              || '',
+    FirstName:          _stu?.FirstName          || '',
+    LastName:           _stu?.LastName           || '',
+    EngFirstName:       _stu?.EngFirstName       || '',
+    EngLastName:        _stu?.EngLastName        || '',
+    Institution:        inst                     || _grp?.institution || '',
+    CurrentLevel:       level                    || _grp?.level       || '',
+    CurrentAcademicYear: _stu?.CurrentAcademicYear || '',
+    Action:             dec.action               || '',
   };
   switch (dec.action) {
     case 'promote':   p.NewLevel = dec.nextLevel; break;
@@ -4061,15 +4062,16 @@ async function applyAllChanges() {
     const _grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
     const _stu = _grp?.students.find(s => s.StipNo === stipNo);
     const p = {
-      StipNo:       stipNo,
-      Title:        _stu?.Title        || '',
-      FirstName:    _stu?.FirstName    || '',
-      LastName:     _stu?.LastName     || '',
-      EngFirstName: _stu?.EngFirstName || '',
-      EngLastName:  _stu?.EngLastName  || '',
-      Institution:  _grp?.institution  || '',
-      CurrentLevel: _grp?.level        || '',
-      Action:       dec.action         || '',
+      StipNo:              stipNo,
+      Title:               _stu?.Title               || '',
+      FirstName:           _stu?.FirstName           || '',
+      LastName:            _stu?.LastName            || '',
+      EngFirstName:        _stu?.EngFirstName        || '',
+      EngLastName:         _stu?.EngLastName         || '',
+      Institution:         _grp?.institution         || '',
+      CurrentLevel:        _grp?.level               || '',
+      CurrentAcademicYear: _stu?.CurrentAcademicYear || '',
+      Action:              dec.action                || '',
     };
     switch (dec.action) {
       case 'promote':   p.NewLevel = dec.nextLevel; break;
