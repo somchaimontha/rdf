@@ -339,9 +339,25 @@
           <div>
             <label class="field-label">
               <span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span>
+              <span data-t="faculty">Faculty</span> <span class="text-purple-400 text-xs">(EN)</span>
+            </label>
+            <input type="text" id="f_uniFacultyEN" class="field-input" placeholder="Faculty (English)"
+              style="border-color:#c4b5fd">
+          </div>
+          <div>
+            <label class="field-label">
+              <span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span>
               <span data-t="uniMajorEN">Major / Program</span> <span class="text-purple-400 text-xs">(EN)</span>
             </label>
             <input type="text" id="f_uniMajorEN" class="field-input" placeholder="Major / Program (English)"
+              style="border-color:#c4b5fd">
+          </div>
+          <div>
+            <label class="field-label">
+              <span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span>
+              <span data-t="uniProvince">Province</span> <span class="text-purple-400 text-xs">(EN)</span>
+            </label>
+            <input type="text" id="f_uniProvinceEN" class="field-input" placeholder="Province (English)"
               style="border-color:#c4b5fd">
           </div>
           <p class="text-xs text-purple-400 col-span-full -mt-1" id="uniENEditNote">
@@ -929,8 +945,8 @@
           <input type="text" id="ut_uniFaculty" class="field-input" placeholder="ชื่อคณะ">
         </div>
         <div>
-          <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้ง</span></label>
-          <input type="text" id="ut_uniProvince" class="field-input" placeholder="จังหวัด">
+          <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="faculty">Faculty</span> (EN)</label>
+          <input type="text" id="ut_uniFacultyEN" class="field-input" placeholder="Faculty (English)" style="border-color:#c4b5fd">
         </div>
         <div>
           <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
@@ -939,6 +955,14 @@
         <div>
           <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniMajorEN">Major / Program</span> (EN)</label>
           <input type="text" id="ut_uniMajorEN" class="field-input" placeholder="Major / Program (English)" style="border-color:#c4b5fd">
+        </div>
+        <div>
+          <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้ง</span></label>
+          <input type="text" id="ut_uniProvince" class="field-input" placeholder="จังหวัด">
+        </div>
+        <div>
+          <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniProvince">Province</span> (EN)</label>
+          <input type="text" id="ut_uniProvinceEN" class="field-input" placeholder="Province (English)" style="border-color:#c4b5fd">
         </div>
         <div>
           <label class="field-label"><span data-t="courseDuration">ระยะเวลาหลักสูตร (ปี)</span></label>
@@ -1721,7 +1745,8 @@ function fillForm(d) {
   sv('f_otherInst', d.OtherInstitution);
   sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration);
   sv('f_uniProvince', d.UniProvince); sv('f_uniFaculty', d.UniFaculty); sv('f_uniMajor', d.UniMajor);
-  sv('f_uniNameEN', d.UniNameEN); sv('f_uniMajorEN', d.UniMajorEN);
+  sv('f_uniNameEN', d.UniNameEN); sv('f_uniFacultyEN', d.UniFacultyEN);
+  sv('f_uniMajorEN', d.UniMajorEN); sv('f_uniProvinceEN', d.UniProvinceEN);
   // Show uniSection even when institution is not UNI yet (e.g. Graduated + pending scholarship)
   if (d.UniName && d.Institution !== 'UNI') {
     const uniSec = document.getElementById('uniSection');
@@ -1967,13 +1992,15 @@ function openUniTransferModal() {
   // Pre-fill new fields with current values so user only edits what changed
   const g = id => document.getElementById(id);
   const set = (id, val) => { const el = g(id); if (el) el.value = val || ''; };
-  set('ut_uniName',    g('f_uniName')?.value);
-  set('ut_uniNameEN',  g('f_uniNameEN')?.value);
-  set('ut_uniFaculty', g('f_uniFaculty')?.value);
-  set('ut_uniMajor',   g('f_uniMajor')?.value);
-  set('ut_uniMajorEN', g('f_uniMajorEN')?.value);
-  set('ut_uniProvince',g('f_uniProvince')?.value);
-  set('ut_uniDuration',g('f_uniDuration')?.value);
+  set('ut_uniName',       g('f_uniName')?.value);
+  set('ut_uniNameEN',     g('f_uniNameEN')?.value);
+  set('ut_uniFaculty',    g('f_uniFaculty')?.value);
+  set('ut_uniFacultyEN',  g('f_uniFacultyEN')?.value);
+  set('ut_uniMajor',      g('f_uniMajor')?.value);
+  set('ut_uniMajorEN',    g('f_uniMajorEN')?.value);
+  set('ut_uniProvince',   g('f_uniProvince')?.value);
+  set('ut_uniProvinceEN', g('f_uniProvinceEN')?.value);
+  set('ut_uniDuration',   g('f_uniDuration')?.value);
   set('utReason', '');
   const overlay = g('uniTransferOverlay');
   if (overlay) { overlay.classList.remove('hidden'); lucide.createIcons(); }
@@ -2006,13 +2033,15 @@ async function submitUniTransfer() {
   const data = {
     StipNo:       stipNo,
     reason:       reason,
-    toUniName:    g('ut_uniName')?.value    || '',
-    toUniNameEN:  g('ut_uniNameEN')?.value  || '',
-    toUniFaculty: g('ut_uniFaculty')?.value || '',
-    toUniMajor:   g('ut_uniMajor')?.value   || '',
-    toUniMajorEN: g('ut_uniMajorEN')?.value || '',
-    toUniProvince:g('ut_uniProvince')?.value|| '',
-    toUniDuration:g('ut_uniDuration')?.value|| '',
+    toUniName:       g('ut_uniName')?.value       || '',
+    toUniNameEN:     g('ut_uniNameEN')?.value     || '',
+    toUniFaculty:    g('ut_uniFaculty')?.value    || '',
+    toUniFacultyEN:  g('ut_uniFacultyEN')?.value  || '',
+    toUniMajor:      g('ut_uniMajor')?.value      || '',
+    toUniMajorEN:    g('ut_uniMajorEN')?.value    || '',
+    toUniProvince:   g('ut_uniProvince')?.value   || '',
+    toUniProvinceEN: g('ut_uniProvinceEN')?.value || '',
+    toUniDuration:   g('ut_uniDuration')?.value   || '',
   };
   const reqUser = (getUser()||{}).username || 'unknown';
 
@@ -2022,13 +2051,15 @@ async function submitUniTransfer() {
 
     // Update profile fields with new values
     const sv = (id, val) => { const el = g(id); if (el) el.value = val || ''; };
-    sv('f_uniName',    data.toUniName);
-    sv('f_uniNameEN',  data.toUniNameEN);
-    sv('f_uniFaculty', data.toUniFaculty);
-    sv('f_uniMajor',   data.toUniMajor);
-    sv('f_uniMajorEN', data.toUniMajorEN);
-    sv('f_uniProvince',data.toUniProvince);
-    sv('f_uniDuration',data.toUniDuration);
+    sv('f_uniName',       data.toUniName);
+    sv('f_uniNameEN',     data.toUniNameEN);
+    sv('f_uniFaculty',    data.toUniFaculty);
+    sv('f_uniFacultyEN',  data.toUniFacultyEN);
+    sv('f_uniMajor',      data.toUniMajor);
+    sv('f_uniMajorEN',    data.toUniMajorEN);
+    sv('f_uniProvince',   data.toUniProvince);
+    sv('f_uniProvinceEN', data.toUniProvinceEN);
+    sv('f_uniDuration',   data.toUniDuration);
 
     // Refresh history display
     _uniTransferHistory = res.history || [];
@@ -2501,7 +2532,8 @@ async function collectForm() {
     LastEducation: get('f_lastEducation'),
     UniName: get('f_uniName'), UniDuration: get('f_uniDuration'),
     UniProvince: get('f_uniProvince'), UniFaculty: get('f_uniFaculty'), UniMajor: get('f_uniMajor'),
-    UniNameEN: get('f_uniNameEN'), UniMajorEN: get('f_uniMajorEN'),
+    UniNameEN: get('f_uniNameEN'), UniFacultyEN: get('f_uniFacultyEN'),
+    UniMajorEN: get('f_uniMajorEN'), UniProvinceEN: get('f_uniProvinceEN'),
     // SchPriority intentionally omitted — managed by promotion workflow only, never overwritten from profile form
     Title: get('f_title'), FirstName: get('f_fname'), LastName: get('f_lname'),
     HasNoSurname: document.getElementById('f_noSurname').checked.toString(),
