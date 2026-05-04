@@ -279,6 +279,25 @@
   padding: 14px 20px; border-top: 1px solid #f1f5f9;
   display: flex; justify-content: flex-end; gap: 10px;
 }
+
+/* ── Settings — sticky card headers ── */
+.settings-main .card {
+  overflow: clip; /* clips to border-radius without creating scroll container → allows sticky inside */
+  scroll-margin-top: 68px;
+}
+.settings-main .card-header {
+  position: sticky;
+  top: 60px;
+  z-index: 20;
+}
+/* ── Sidebar sub-menu label truncation ── */
+.sbar-sub-item span:not(.sbar-sub-dot) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
 </style>
 </head>
 <body class="bg-gray-50">
@@ -690,7 +709,7 @@
     <div id="apSummary" class="flex flex-wrap gap-2 mb-4"></div>
 
     <!-- ── Table ── -->
-    <div id="cardMajorsTable" class="card" style="overflow:hidden">
+    <div id="cardMajorsTable" class="card">
       <div class="overflow-x-auto">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
@@ -2075,11 +2094,12 @@ function sbarGoSub(cardId, parentPanelId, btn) {
   closeSidebar();
 }
 
-// ── Smooth scroll to element ──
+// ── Smooth scroll to element (offset-aware for 60px sticky navbar) ──
 function _scrollToSection(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const top = el.getBoundingClientRect().top + window.pageYOffset - 68;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
 // ── Mobile sidebar toggle ──
@@ -4687,8 +4707,8 @@ function goSection(tabName, cardId) {
   requestAnimationFrame(() => {
     const el = document.getElementById(cardId);
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 80;
-    window.scrollTo({ top, behavior: 'smooth' });
+    const top = el.getBoundingClientRect().top + window.scrollY - 68;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   });
 }
 
@@ -4702,6 +4722,11 @@ initDBStatus();
 _initDevModeToggle();
 _initScrollSpy();
 _initLazyLoaders();
+// Sidebar sub-menu: set native title tooltip from label text (works through overflow clipping)
+document.querySelectorAll('.sbar-sub-item').forEach(function(btn) {
+  var lbl = btn.querySelector('span:not(.sbar-sub-dot)');
+  if (lbl) btn.title = lbl.textContent.trim();
+});
 </script>
 </body>
 </html>
