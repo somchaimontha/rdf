@@ -3069,7 +3069,19 @@ function apOpenEdit(id) {
   const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   sv('apModalNameTH',     p.nameTH);
   sv('apModalNameEN',     p.nameEN);
-  sv('apModalUniName',    p.uniName);    // works for SELECT: sets selected option by value
+  sv('apModalUniName',    p.uniName);
+  // If the university was removed from the list, inject a temporary orphaned option so the value shows
+  if (p.uniName) {
+    const _uniSel = document.getElementById('apModalUniName');
+    if (_uniSel && _uniSel.value !== p.uniName) {
+      const _opt = document.createElement('option');
+      _opt.value = p.uniName;
+      _opt.textContent = p.uniName + ' (ไม่พบในรายการ)';
+      _opt.style.color = '#b45309';
+      _uniSel.add(_opt);
+      _uniSel.value = p.uniName;
+    }
+  }
   sv('apModalUniNameEN',  p.uniNameEN);
   sv('apModalUniMajorTH', p.nameTH);
   sv('apModalUniMajorEN', p.nameEN);
