@@ -1813,7 +1813,19 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
     if (sel && sel.value) dec.nextLevel = sel.value;
   }
 
-  const p = { StipNo: stipNo };
+  const _grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+  const _stu = _grp?.students.find(s => s.StipNo === stipNo);
+  const p = {
+    StipNo:       stipNo,
+    Title:        _stu?.Title        || '',
+    FirstName:    _stu?.FirstName    || '',
+    LastName:     _stu?.LastName     || '',
+    EngFirstName: _stu?.EngFirstName || '',
+    EngLastName:  _stu?.EngLastName  || '',
+    Institution:  inst               || _grp?.institution || '',
+    CurrentLevel: level              || _grp?.level       || '',
+    Action:       dec.action         || '',
+  };
   switch (dec.action) {
     case 'promote':   p.NewLevel = dec.nextLevel; break;
     case 'graduate':  p.NewStatus = 'Graduated'; break;
@@ -4046,7 +4058,19 @@ async function applyAllChanges() {
   const batchID = academicYear ? academicYear + '_PROMO' : '';
 
   active.forEach(([stipNo, dec]) => {
-    const p = { StipNo: stipNo };
+    const _grp = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
+    const _stu = _grp?.students.find(s => s.StipNo === stipNo);
+    const p = {
+      StipNo:       stipNo,
+      Title:        _stu?.Title        || '',
+      FirstName:    _stu?.FirstName    || '',
+      LastName:     _stu?.LastName     || '',
+      EngFirstName: _stu?.EngFirstName || '',
+      EngLastName:  _stu?.EngLastName  || '',
+      Institution:  _grp?.institution  || '',
+      CurrentLevel: _grp?.level        || '',
+      Action:       dec.action         || '',
+    };
     switch (dec.action) {
       case 'promote':   p.NewLevel = dec.nextLevel; break;
       case 'graduate':  p.NewStatus = 'Graduated'; break;
@@ -4061,9 +4085,8 @@ async function applyAllChanges() {
         if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
         if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
         if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
-        { const og = ALL_GROUPS.find(g => g.students.some(s => s.StipNo === stipNo));
-          if (og?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
-          else if (og?.institution === 'VC') p.LastEducation = og.level.includes('ปวส.')
+        { if (_grp?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
+          else if (_grp?.institution === 'VC') p.LastEducation = (_grp.level||'').includes('ปวส.')
             ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)' : 'ประกาศนียบัตรวิชาชีพ (ปวช.)'; }
         break;
       case 'uni_own':
