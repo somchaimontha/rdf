@@ -4582,22 +4582,31 @@ async function openPrintReportModal() {
       }).join('');
 
     const hasCurSnap  = localBids.has(curBatch) || dbBids.has(curBatch);
-    // If the exact batch for the current year filter doesn't exist, prefer the most
-    // recent DB batch over _session so the report uses Promotion_History data.
     const mostRecent  = allBids[0] || '';
-    batchSel.value = hasCurSnap ? curBatch : (mostRecent || '_session');
+
+    // Helper: get the academic year associated with a batch ID
+    const _batchYear = bid => {
+      if (dbBidsMeta.has(bid) && dbBidsMeta.get(bid).year) return dbBidsMeta.get(bid).year;
+      const p = bid.replace(/_PROMO$/, '');
+      return /^\d{4}$/.test(p) ? p : '';
+    };
+
+    // Initial batch selection: prefer batch matching prModalAcad, then curBatch, then most recent
+    const targetYear = document.getElementById('prModalAcad')?.value || '';
+    const matchingBatch = targetYear ? allBids.find(bid => _batchYear(bid) === targetYear) : null;
+    batchSel.value = matchingBatch || (hasCurSnap ? curBatch : (mostRecent || '_session'));
+
     const batchNote = document.getElementById('prBatchNote');
     const _toggleNote = () => { if (batchNote) batchNote.classList.toggle('hidden', batchSel.value === '_session'); };
-    // When a historical batch is selected, auto-sync prModalAcad <select> to the batch year
+
+    // batch → prModalAcad sync
     const _syncBatchYear = () => {
       const val = batchSel.value;
       if (val === '_session') return;
       const acadEl = document.getElementById('prModalAcad');
       if (!acadEl) return;
-      let yr = (dbBidsMeta.has(val) && dbBidsMeta.get(val).year) ? dbBidsMeta.get(val).year : '';
-      if (!yr) { const p = val.replace(/_PROMO$/, ''); if (/^\d{4}$/.test(p)) yr = p; }
+      const yr = _batchYear(val);
       if (!yr) return;
-      // If the year option doesn't exist in the select, add it
       if (acadEl.tagName === 'SELECT' && ![...acadEl.options].some(o => o.value === yr)) {
         const o = document.createElement('option');
         o.value = yr; o.textContent = `${yr} (พ.ศ.) / ${parseInt(yr)-543} (ค.ศ.)`;
@@ -4605,6 +4614,18 @@ async function openPrintReportModal() {
       }
       acadEl.value = yr;
     };
+
+    // prModalAcad → batch sync (reverse)
+    const acadEl = document.getElementById('prModalAcad');
+    if (acadEl) {
+      acadEl.onchange = () => {
+        const yr = acadEl.value;
+        if (!yr) return;
+        const match = allBids.find(bid => _batchYear(bid) === yr);
+        if (match) { batchSel.value = match; _toggleNote(); }
+      };
+    }
+
     _toggleNote();
     if (batchSel.value !== '_session') _syncBatchYear();
     batchSel.onchange = () => { _toggleNote(); _syncBatchYear(); };
