@@ -4977,6 +4977,10 @@ async function doPrintReport() {
     }
   }
 
+  // Historical batch: bypass level filter — batch already defines which students are in it.
+  // ActionTaken in the snapshot determines graduation/promotion correctly.
+  if (_snapGroups) opts.levels = new Set();
+
   const isEN = opts.lang === 'en';
   const _typeLblMap = {
     graduation: isEN ? 'Graduation Report'  : 'รายงานผู้สำเร็จการศึกษา',
