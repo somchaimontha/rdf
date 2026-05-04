@@ -4570,14 +4570,15 @@ async function openPrintReportModal() {
         if (inLocal) {
           try { const d = JSON.parse(localStorage.getItem('rdf_batch_' + bid) || '{}'); count = d.count || count; date = d.date || date; } catch {}
         }
-        // Human-readable label: strip _PROMO, format date
+        // Human-readable label: strip _PROMO suffix, show year + count + date
         const yearPart = bid.replace(/_PROMO$/, '').replace(/_/g, '-');
-        const srcTxt   = inDB ? ' 🗄' : ' 💾';
-        const tagTxt   = bid === curBatch ? ' ★' : '';
+        const isCurrent = bid === curBatch;
+        const srcNote  = !inDB ? ' (บันทึกในเครื่องนี้)' : '';
         const countTxt = count !== '?' ? `${count} คน` : '';
-        const dateTxt  = (date && date !== '?') ? `บันทึก ${date}` : '';
+        const dateTxt  = (date && date !== '?') ? `วันที่ ${date}` : '';
         const meta     = [countTxt, dateTxt].filter(Boolean).join(', ');
-        return `<option value="${bid}">ปีการศึกษา ${yearPart}${tagTxt}${srcTxt}${meta ? ' — '+meta : ''}</option>`;
+        const currentTag = isCurrent ? ' — ล่าสุด' : '';
+        return `<option value="${bid}">ปีการศึกษา ${yearPart}${currentTag}${srcNote}${meta ? ' — ' + meta : ''}</option>`;
       }).join('');
 
     const hasCurSnap  = localBids.has(curBatch) || dbBids.has(curBatch);
