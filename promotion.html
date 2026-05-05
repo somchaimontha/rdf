@@ -778,7 +778,8 @@ img.student-avatar {
 
 <!-- ═══ WITHDRAWAL FORM MODAL ═══ -->
 <div id="withdrawalFormModal" class="hidden fixed inset-0 flex items-center justify-center" style="z-index:200;background:rgba(0,0,0,.5)">
-  <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:700px">
+  <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:800px">
+    <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#9f1239">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
         <i data-lucide="file-text" class="w-4 h-4"></i>
@@ -788,70 +789,75 @@ img.student-avatar {
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
-    <div class="p-5 space-y-4" style="max-height:75vh;overflow-y:auto">
 
-      <!-- Student list (auto-populated from DB + pending actions) -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <span class="wf-label" style="margin-bottom:0">นักเรียนที่ลาออก / ถอนทุน</span>
-          <span id="wfStudentCount" class="text-xs text-gray-400">กำลังโหลด...</span>
+    <!-- Body -->
+    <div class="p-5 space-y-3" style="max-height:80vh;overflow-y:auto">
+
+      <!-- ── Filter row ── -->
+      <div class="flex gap-2 flex-wrap items-center">
+        <input type="text" id="wfSearch" class="wf-field text-xs" style="flex:1;min-width:130px;padding:5px 9px"
+          placeholder="ค้นหาชื่อ / StipNo..." oninput="wfFilterList()">
+        <!-- Type filter -->
+        <div class="flex gap-1 flex-shrink-0">
+          <button onclick="wfSetFilter('all')" id="wfFilterAll" class="wf-filter-btn active">ทั้งหมด</button>
+          <button onclick="wfSetFilter('resign')" id="wfFilterResign" class="wf-filter-btn">ลาออก</button>
+          <button onclick="wfSetFilter('withdraw_sch')" id="wfFilterWithdraw" class="wf-filter-btn">ถอนทุน</button>
         </div>
-        <!-- Search + filter row -->
-        <div class="flex gap-2 mb-2 flex-wrap">
-          <input type="text" id="wfSearch" class="wf-field text-xs" style="flex:1;min-width:140px;padding:5px 9px"
-            placeholder="ค้นหาชื่อ / StipNo..." oninput="wfFilterList()">
-          <div class="flex gap-1 flex-shrink-0">
-            <button onclick="wfSetFilter('all')" id="wfFilterAll" class="wf-filter-btn active">ทั้งหมด</button>
-            <button onclick="wfSetFilter('resign')" id="wfFilterResign" class="wf-filter-btn">ลาออก</button>
-            <button onclick="wfSetFilter('withdraw_sch')" id="wfFilterWithdraw" class="wf-filter-btn">ถอนทุน</button>
-          </div>
-        </div>
-        <div id="wfStudentList" class="border border-gray-200 rounded-xl overflow-hidden" style="max-height:240px;overflow-y:auto">
-          <div class="text-xs text-gray-400 p-4 text-center">กำลังโหลด...</div>
+        <!-- Institution filter -->
+        <div class="flex gap-1 flex-shrink-0">
+          <button onclick="wfSetInst('all')" id="wfInstAll" class="wf-filter-btn active" style="border-color:#1e3a8a;color:#1e3a8a">ทุกสถาบัน</button>
+          <button onclick="wfSetInst('MBS')" id="wfInstMBS" class="wf-filter-btn">MBS</button>
+          <button onclick="wfSetInst('VC')" id="wfInstVC" class="wf-filter-btn">VC</button>
+          <button onclick="wfSetInst('UNI')" id="wfInstUNI" class="wf-filter-btn">UNI</button>
         </div>
       </div>
 
-      <!-- Document details -->
+      <!-- ── Count + save-notes row ── -->
+      <div class="flex items-center justify-between">
+        <span id="wfStudentCount" class="text-xs text-gray-400">กำลังโหลด...</span>
+        <button onclick="wfSaveAllNotes()" class="btn btn-sm text-xs flex items-center gap-1" style="background:#0f766e;color:#fff;border:none;padding:4px 12px">
+          <i data-lucide="save" class="w-3 h-3"></i>
+          บันทึกหมายเหตุทั้งหมด
+        </button>
+      </div>
+
+      <!-- ── Student list ── -->
+      <div id="wfStudentList" class="border border-gray-200 rounded-xl overflow-hidden" style="max-height:280px;overflow-y:auto">
+        <div class="text-xs text-gray-400 p-4 text-center">กำลังโหลด...</div>
+      </div>
+
+      <!-- ── Document info ── -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <span class="wf-label" data-t="promoWfDocDate">วันที่เอกสาร / Document Date</span>
+          <span class="wf-label">วันที่เอกสาร / Document Date</span>
           <input type="date" id="wfDocDate" class="wf-field">
         </div>
         <div>
-          <span class="wf-label" data-t="promoWfAcadYear">ปีการศึกษา / Academic Year</span>
-          <input type="text" id="wfAcadYear" class="wf-field" placeholder="2024-2025">
+          <span class="wf-label">พิมพ์ปีการศึกษา / Print Year</span>
+          <select id="wfPrintYear" class="wf-field" style="font-size:12px">
+            <option value="">— ทุกปี (All Years) —</option>
+          </select>
         </div>
       </div>
 
-      <!-- Reason -->
+      <!-- ── Signature slots ── -->
       <div>
-        <span class="wf-label" data-t="promoWithdrawalReasonLabel">เหตุผลการลาออก / ถอนทุน</span>
-        <textarea id="wfReason" class="wf-field" rows="2"
-          placeholder="ระบุเหตุผล... / State reason..."></textarea>
-      </div>
-
-      <!-- Signature slots (loaded from settings) -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center justify-between mb-1.5">
           <span class="wf-label" style="margin-bottom:0">ผู้ลงนาม / Signatories</span>
-          <span class="text-xs text-gray-400">ใช้รายชื่อจากการตั้งค่า</span>
+          <span class="text-xs text-gray-400">จากการตั้งค่า</span>
         </div>
         <div id="wfSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
           <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
         </div>
       </div>
-
-      <div class="bg-rose-50 border border-rose-100 rounded-lg p-3 text-xs text-rose-700 flex gap-2 items-start">
-        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <span>จะแสดงตัวอย่างก่อนพิมพ์ รูปแบบ A4 แนวตั้ง พร้อมลายเซ็นท้ายเอกสาร<br>
-        A preview will appear before printing — A4 portrait, with signatures at the bottom.</span>
-      </div>
     </div>
+
+    <!-- Footer -->
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
       <button onclick="closeWithdrawalFormModal()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
-      <button onclick="doPrintWithdrawalForm()" class="btn btn-sm font-bold" style="background:#9f1239;color:#fff;border:none">
-        <i data-lucide="eye" class="w-4 h-4"></i>
-        <span data-t="promoWfPrint">ดูตัวอย่างและพิมพ์ / Preview &amp; Print</span>
+      <button onclick="doPrintWithdrawalForm()" class="btn btn-sm font-bold flex items-center gap-1.5" style="background:#9f1239;color:#fff;border:none">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span data-t="promoWfPrint">พิมพ์สรุป / Print Summary</span>
       </button>
     </div>
   </div>
@@ -5605,64 +5611,73 @@ function buildSignatureHTML(sigs, dateStr, S, isEN) {
 
 // ─────────────────────────────────────────────
 // WITHDRAWAL FORM
-// Generates a printable A4 portrait form listing
-// all students with resign or withdraw_sch status.
+// ─────────────────────────────────────────────
+// WITHDRAWAL FORM — auto-populated list, per-student notes,
+// institution filter, print grouped by academic year
 // ─────────────────────────────────────────────
 async function openWithdrawalFormModal() {
-  // Show modal immediately with loading state
   document.getElementById('withdrawalFormModal').classList.remove('hidden');
   document.getElementById('wfStudentList').innerHTML =
     `<div class="text-xs text-gray-400 p-4 text-center">🔄 กำลังโหลดข้อมูล...</div>`;
   document.getElementById('wfStudentCount').textContent = '...';
   document.getElementById('wfSearch').value = '';
+  window._wfNoteChanges = {};
   wfSetFilter('all', false);
+  wfSetInst('all', false);
 
   const seen = new Set();
   window._wfAllStudents = [];
 
-  // 1. Collect PENDING actions from current session
+  // 1. Pending actions from current session
   const WD_ACTIONS = new Set(['resign','withdraw_sch']);
   ALL_GROUPS.forEach(g => {
     g.students.forEach(s => {
       if (seen.has(s.StipNo)) return;
       const dec = ROW_DECISIONS[s.StipNo] || {};
-      if (WD_ACTIONS.has(dec.action)) {
-        window._wfAllStudents.push({
-          StipNo: s.StipNo, Title: s.Title, FirstName: s.FirstName, LastName: s.LastName,
-          act: dec.action, source: 'pending',
-          institution: g.institution, level: g.level,
-          notes: dec.notes || '',
-        });
-        seen.add(s.StipNo);
-      }
+      if (!WD_ACTIONS.has(dec.action)) return;
+      window._wfAllStudents.push({
+        StipNo: s.StipNo, Title: s.Title, FirstName: s.FirstName, LastName: s.LastName,
+        EngFirstName: s.EngFirstName||'', EngLastName: s.EngLastName||'',
+        act: dec.action, source: 'pending',
+        institution: g.institution, level: g.level, acadYear: g.acadYear || '',
+        promoNotes: dec.notes || '', withdrawalNote: '',
+      });
+      seen.add(s.StipNo);
     });
   });
 
-  // 2. Fetch DB saved Resigned / WithdrawnScholarship students
+  // 2. DB saved Resigned / WithdrawnScholarship students
   try {
     const r = await API.getWithdrawalStudents();
     if (r.status === 'success' && Array.isArray(r.data)) {
       r.data.forEach(s => {
-        if (seen.has(s.StipNo)) return; // already in pending
+        if (seen.has(s.StipNo)) return;
         window._wfAllStudents.push({
           StipNo: s.StipNo, Title: s.Title, FirstName: s.FirstName, LastName: s.LastName,
+          EngFirstName: s.EngFirstName||'', EngLastName: s.EngLastName||'',
           act: s.Status === 'Resigned' ? 'resign' : 'withdraw_sch',
           source: 'saved',
           institution: s.Institution, level: s.CurrentLevel,
-          acadYear: s.CurrentAcademicYear,
-          notes: s.ChangeNotes || '',
+          acadYear: s.CurrentAcademicYear || '',
+          promoNotes: s.PromotionNotes || '',
+          withdrawalNote: s.WithdrawalNote || '',
         });
         seen.add(s.StipNo);
       });
     }
   } catch(e) { console.error('getWithdrawalStudents failed:', e); }
 
+  // Populate print-year dropdown
+  const yearSel = document.getElementById('wfPrintYear');
+  const allYears = [...new Set(window._wfAllStudents.map(x => x.acadYear).filter(Boolean))].sort((a,b) => b-a);
+  yearSel.innerHTML = `<option value="">— ทุกปี (All Years) —</option>` +
+    allYears.map(y => `<option value="${y}">${y}</option>`).join('');
+
   wfRenderStudentList();
 
-  // Pre-fill doc date and academic year
-  document.getElementById('wfDocDate').value  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
-  document.getElementById('wfAcadYear').value = document.getElementById('academicYear').value  || '';
-  document.getElementById('wfReason').value   = '';
+  // Pre-fill doc date
+  document.getElementById('wfDocDate').value =
+    document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
 
   // Load signatories
   const sigs = (SETTINGS && Array.isArray(SETTINGS['SIGNATURE_BLOCK']) && SETTINGS['SIGNATURE_BLOCK'].length)
@@ -5690,32 +5705,82 @@ function wfSetFilter(f, render = true) {
   if (render) wfRenderStudentList();
 }
 
+function wfSetInst(inst, render = true) {
+  window._wfInst = inst;
+  ['all','MBS','VC','UNI'].forEach(k => {
+    const id = k === 'all' ? 'wfInstAll' : 'wfInst' + k;
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const isActive = k === inst;
+    btn.classList.toggle('active', isActive);
+    if (k === 'all') {
+      btn.style.borderColor = isActive ? '#1e3a8a' : '';
+      btn.style.background  = isActive ? '#1e3a8a' : '';
+      btn.style.color       = isActive ? '#fff'    : '#1e3a8a';
+    }
+  });
+  if (render) wfRenderStudentList();
+}
+
 function wfFilterList() {
   window._wfSearchTerm = (document.getElementById('wfSearch')?.value || '').toLowerCase();
   wfRenderStudentList();
 }
 
+function wfNoteChanged(stipNo, value) {
+  if (!window._wfNoteChanges) window._wfNoteChanges = {};
+  window._wfNoteChanges[stipNo] = value;
+  // Also update in-memory record so print reflects the change
+  const rec = (window._wfAllStudents || []).find(x => x.StipNo === stipNo);
+  if (rec) rec.withdrawalNote = value;
+}
+
+async function wfSaveAllNotes() {
+  const changes = window._wfNoteChanges || {};
+  const entries = Object.entries(changes);
+  if (entries.length === 0) {
+    Swal.fire({ title: 'ไม่มีการเปลี่ยนแปลง', icon: 'info', timer: 1500, showConfirmButton: false });
+    return;
+  }
+  const reqUser = (getUser()||{}).username || 'Admin';
+  showLoader(true, 'บันทึกหมายเหตุ...');
+  let ok = 0, fail = 0;
+  for (const [stipNo, note] of entries) {
+    try {
+      const r = await API.saveWithdrawalNote(stipNo, note, reqUser);
+      if (r.status === 'success') ok++; else fail++;
+    } catch { fail++; }
+  }
+  showLoader(false);
+  window._wfNoteChanges = {};
+  Swal.fire({
+    title: fail === 0 ? 'บันทึกสำเร็จ' : `บันทึก ${ok} สำเร็จ, ${fail} ล้มเหลว`,
+    icon:  fail === 0 ? 'success' : 'warning',
+    timer: 2000, showConfirmButton: false,
+  });
+}
+
 function wfRenderStudentList() {
   const all = window._wfAllStudents || [];
   const f   = window._wfFilter || 'all';
+  const inst = window._wfInst || 'all';
   const q   = (window._wfSearchTerm || '').toLowerCase();
-  const listEl = document.getElementById('wfStudentList');
+  const listEl  = document.getElementById('wfStudentList');
   const countEl = document.getElementById('wfStudentCount');
 
   let filtered = f === 'all' ? all : all.filter(x => x.act === f);
+  if (inst !== 'all') filtered = filtered.filter(x => (x.institution||'') === inst);
   if (q) filtered = filtered.filter(x =>
     ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).toLowerCase().includes(q) ||
     (x.StipNo||'').toLowerCase().includes(q));
 
-  // Count badge
-  const resignN  = all.filter(x => x.act === 'resign').length;
-  const wdN      = all.filter(x => x.act === 'withdraw_sch').length;
+  const resignN = all.filter(x => x.act === 'resign').length;
+  const wdN     = all.filter(x => x.act === 'withdraw_sch').length;
   countEl.innerHTML = all.length === 0 ? 'ไม่มีข้อมูล'
     : `<span style="color:#be123c">✕ ลาออก ${resignN}</span> · <span style="color:#9f1239">🚫 ถอนทุน ${wdN}</span> · รวม ${all.length} คน`;
 
   if (all.length === 0) {
-    listEl.innerHTML = `<div class="text-xs text-gray-400 p-5 text-center">
-      ยังไม่มีนักเรียนที่ลาออกหรือถอนทุนในระบบ</div>`;
+    listEl.innerHTML = `<div class="text-xs text-gray-400 p-5 text-center">ยังไม่มีนักเรียนที่ลาออกหรือถอนทุนในระบบ</div>`;
     return;
   }
   if (filtered.length === 0) {
@@ -5726,21 +5791,35 @@ function wfRenderStudentList() {
   listEl.innerHTML = filtered.map(x => {
     const name = ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).trim() || '(ไม่มีชื่อ)';
     const typeLabel = x.act === 'resign'
-      ? `<span style="color:#be123c;font-weight:700;font-size:10px;white-space:nowrap">✕ ลาออก</span>`
-      : `<span style="color:#9f1239;font-weight:700;font-size:10px;white-space:nowrap">🚫 ถอนทุน</span>`;
+      ? `<span style="color:#be123c;font-weight:700;font-size:10px;white-space:nowrap;background:#fee2e2;padding:1px 6px;border-radius:4px">✕ ลาออก</span>`
+      : `<span style="color:#9f1239;font-weight:700;font-size:10px;white-space:nowrap;background:#ffe4e6;padding:1px 6px;border-radius:4px">🚫 ถอนทุน</span>`;
     const badge = x.source === 'saved'
       ? `<span class="wf-badge-saved">✓ บันทึกแล้ว</span>`
       : `<span class="wf-badge-pending">⏳ รอบันทึก</span>`;
     const sub = [x.StipNo, x.institution, x.level, x.acadYear].filter(Boolean).join(' · ');
-    const note = x.notes ? `<div style="color:#9ca3af;font-size:10px;margin-top:1px" title="${x.notes.replace(/"/g,'&quot;')}">📝 ${x.notes.substring(0,60)}${x.notes.length>60?'…':''}</div>` : '';
-    return `<div class="flex items-start gap-2 px-3 py-2.5 text-xs hover:bg-rose-50 border-b border-gray-100 last:border-0">
-      <input type="checkbox" name="wfStudent" value="${x.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0 mt-0.5">
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold text-gray-800">${name}</div>
-        <div style="color:#9ca3af;margin-top:1px">${sub}</div>
-        ${note}
+    const promoNote = x.promoNotes
+      ? `<div style="color:#6b7280;font-size:10px;margin-top:3px;padding:3px 7px;background:#f3f4f6;border-radius:4px;border-left:2px solid #d1d5db">
+           <span style="color:#9ca3af">📋 หมายเหตุ (เลื่อนชั้น):</span> ${x.promoNotes}
+         </div>` : '';
+    const wfNote = (x.withdrawalNote || window._wfNoteChanges?.[x.StipNo] || '');
+    return `<div class="px-3 py-2.5 text-xs border-b border-gray-100 last:border-0 hover:bg-rose-50">
+      <div class="flex items-start gap-2">
+        <input type="checkbox" name="wfStudent" value="${x.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0 mt-0.5">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-gray-800">${name}</span>
+            ${typeLabel}${badge}
+          </div>
+          <div style="color:#9ca3af;margin-top:1px;font-size:10px">${sub}</div>
+          ${promoNote}
+          <div class="mt-1.5 flex items-center gap-1.5">
+            <input type="text" class="wf-field" style="padding:3px 7px;font-size:10px;flex:1"
+              placeholder="เพิ่มหมายเหตุใบลาออก..."
+              value="${wfNote.replace(/"/g,'&quot;')}"
+              oninput="wfNoteChanged('${x.StipNo}', this.value)">
+          </div>
+        </div>
       </div>
-      <div class="flex flex-col items-end gap-1 flex-shrink-0">${typeLabel}${badge}</div>
     </div>`;
   }).join('');
 }
@@ -5758,16 +5837,10 @@ function doPrintWithdrawalForm() {
   );
   const selSigs = (window._wfSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selSigIdxs.has(i));
 
-  // Collect selected students from _wfAllStudents (already merged pending + DB)
-  const rows = (window._wfAllStudents || [])
-    .filter(x => selStips.has(x.StipNo))
-    .map(x => ({
-      s: { StipNo: x.StipNo, Title: x.Title, FirstName: x.FirstName, LastName: x.LastName,
-           EngFirstName: x.EngFirstName||'', EngLastName: x.EngLastName||'' },
-      g: { institution: x.institution, level: x.level },
-      act: x.act,
-      dec: { notes: x.notes || '' },
-    }));
+  const filterYear = document.getElementById('wfPrintYear').value || '';
+
+  let rows = (window._wfAllStudents || []).filter(x => selStips.has(x.StipNo));
+  if (filterYear) rows = rows.filter(x => x.acadYear === filterYear);
 
   if (rows.length === 0) {
     Swal.fire(LANG==='th'?'ไม่มีข้อมูล':'No Data',
@@ -5776,17 +5849,15 @@ function doPrintWithdrawalForm() {
   }
 
   const isEN = LANG === 'en';
-  const docDate  = document.getElementById('wfDocDate').value  || new Date().toISOString().split('T')[0];
-  const acadYear = document.getElementById('wfAcadYear').value || '';
-  const reason   = document.getElementById('wfReason').value   || '';
-  const org      = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
+  const docDate = document.getElementById('wfDocDate').value || new Date().toISOString().split('T')[0];
+  const org     = isEN ? RDF.FOUNDATION_EN : RDF.FOUNDATION_TH;
 
-  const html = generateWithdrawalFormHTML({ rows, docDate, acadYear, reason, sigs: selSigs, isEN, org });
+  const html = generateWithdrawalFormHTML({ rows, docDate, filterYear, sigs: selSigs, isEN, org });
   closeWithdrawalFormModal();
   showPrintPreview(html, isEN ? 'Preview — Withdrawal Form' : 'ตัวอย่าง — ใบลาออก / ถอนทุน');
 }
 
-function generateWithdrawalFormHTML({ rows, docDate, acadYear, reason, sigs, isEN, org }) {
+function generateWithdrawalFormHTML({ rows, docDate, filterYear, sigs, isEN, org }) {
   const thDate = (d) => {
     if (!d) return '.....................';
     const [y, m, day] = d.split('-');
@@ -5795,39 +5866,69 @@ function generateWithdrawalFormHTML({ rows, docDate, acadYear, reason, sigs, isE
     return isEN ? d : `${parseInt(day)} ${thMonths[parseInt(m)]} ${parseInt(y)+543}`;
   };
 
-  const tableRows = rows.map(({ s, g, act, dec }, i) => {
-    const name  = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
-    const engN  = ((s.EngFirstName||'')+' '+(s.EngLastName||'')).trim();
-    const type  = act === 'resign'
-      ? (isEN ? 'Withdraw from Institution' : 'ลาออกจากสถาบัน')
-      : (isEN ? 'Withdraw from Scholarship' : 'ถอนทุนการศึกษา');
-    const notes = dec.notes || '—';
-    return `<tr style="background:${i%2===0?'#fff':'#fff8f8'}">
-      <td style="text-align:center;width:4%;padding:6px 8px;border:1px solid #e5e7eb;color:#9ca3af;font-size:8pt">${i+1}</td>
-      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:9pt">${name}</td>
-      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt;color:#4b5563">${engN||'—'}</td>
-      <td style="text-align:center;padding:6px 8px;border:1px solid #e5e7eb;font-family:monospace;font-size:8pt">${s.StipNo}</td>
-      <td style="text-align:center;padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt">${g.institution}</td>
-      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt">${g.level}</td>
-      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8.5pt;color:#9f1239;font-weight:700">${type}</td>
-      <td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:8pt;color:#6b7280">${notes}</td>
-    </tr>`;
-  }).join('');
+  // Group by acadYear
+  const yearGroups = {};
+  rows.forEach(x => {
+    const yr = x.acadYear || (isEN ? 'Not specified' : 'ไม่ระบุปีการศึกษา');
+    if (!yearGroups[yr]) yearGroups[yr] = [];
+    yearGroups[yr].push(x);
+  });
+  const sortedYears = Object.keys(yearGroups).sort((a, b) => b > a ? 1 : -1);
 
   const sigBlocks = sigs.map(s => `
     <div style="flex:1;min-width:160px;max-width:220px;text-align:center">
       <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px">${s.role||''}</div>
       <div style="border-top:1px solid #374151;margin:40px 12px 6px"></div>
-      <div style="font-size:9pt;font-weight:700">${s.name ? `(${s.name})` : '(&nbsp;'.repeat(20)+')'}</div>
+      <div style="font-size:9pt;font-weight:700">${s.name ? `(${s.name})` : '(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)'}</div>
       ${s.position ? `<div style="font-size:8pt;color:#6b7280">${s.position}</div>` : ''}
-      <div style="font-size:7.5pt;color:#9ca3af;margin-top:4px">${isEN?'Date':'วันที่'}  ${thDate(docDate)}</div>
+      <div style="font-size:7.5pt;color:#9ca3af;margin-top:4px">${isEN?'Date':'วันที่'} ${thDate(docDate)}</div>
     </div>`).join('');
 
-  const reasonSection = reason ? `
-    <div style="margin:18px 0;padding:10px 16px;background:#fff8f8;border:1px solid #fca5a5;border-radius:8px">
-      <span style="font-size:8.5pt;font-weight:700;color:#9f1239">${isEN?'Reason for Withdrawal:':'เหตุผลการลาออก / ถอนทุน:'}</span>
-      <p style="font-size:9pt;margin-top:5px;line-height:1.6">${reason}</p>
-    </div>` : '';
+  const yearSections = sortedYears.map(yr => {
+    const grp = yearGroups[yr];
+    let seq = 1;
+    const tableRows = grp.map(x => {
+      const name  = ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).trim();
+      const engN  = ((x.EngFirstName||'')+' '+(x.EngLastName||'')).trim();
+      const type  = x.act === 'resign'
+        ? (isEN ? 'Withdraw from Institution' : 'ลาออกจากสถาบัน')
+        : (isEN ? 'Withdraw from Scholarship' : 'ถอนทุนการศึกษา');
+      const note  = x.withdrawalNote || x.promoNotes || '—';
+      const rowIdx = seq++;
+      return `<tr style="background:${rowIdx%2===0?'#fff8f8':'#fff'}">
+        <td style="text-align:center;width:4%;padding:5px 7px;border:1px solid #e5e7eb;color:#9ca3af;font-size:7.5pt">${rowIdx}</td>
+        <td style="padding:5px 7px;border:1px solid #e5e7eb;font-size:8.5pt">${name}</td>
+        <td style="padding:5px 7px;border:1px solid #e5e7eb;font-size:8pt;color:#4b5563">${engN||'—'}</td>
+        <td style="text-align:center;padding:5px 7px;border:1px solid #e5e7eb;font-family:monospace;font-size:7.5pt">${x.StipNo}</td>
+        <td style="text-align:center;padding:5px 7px;border:1px solid #e5e7eb;font-size:8pt">${x.institution||'—'}</td>
+        <td style="padding:5px 7px;border:1px solid #e5e7eb;font-size:8pt">${x.level||'—'}</td>
+        <td style="padding:5px 7px;border:1px solid #e5e7eb;font-size:8pt;color:#9f1239;font-weight:700">${type}</td>
+        <td style="padding:5px 7px;border:1px solid #e5e7eb;font-size:7.5pt;color:#6b7280">${note}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <div style="margin-bottom:28px">
+        <div style="font-size:9.5pt;font-weight:700;color:#9f1239;padding:5px 10px;background:#fff1f2;border-left:3px solid #9f1239;margin-bottom:6px">
+          ${isEN?'Academic Year':'ปีการศึกษา'}: <b>${yr}</b>
+          <span style="float:right;font-weight:400;color:#6b7280;font-size:8.5pt">${grp.length} ${isEN?'student(s)':'คน'}</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#9f1239">
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:center">${isEN?'No.':'ลำดับ'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:left">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:left">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:center">${isEN?'StipNo':'รหัสทุน'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:center">${isEN?'Inst.':'สถาบัน'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:left">${isEN?'Level':'ระดับชั้น'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:left">${isEN?'Type':'ประเภทการออก'}</th>
+            <th style="color:#fff;padding:5px 7px;border:1px solid #9f1239;font-size:7.5pt;text-align:left">${isEN?'Notes':'หมายเหตุ'}</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  const titleYear = filterYear ? ` — ${isEN?'Academic Year':'ปีการศึกษา'} ${filterYear}` : '';
 
   return `<!DOCTYPE html>
 <html lang="${isEN?'en':'th'}">
@@ -5836,19 +5937,17 @@ function generateWithdrawalFormHTML({ rows, docDate, acadYear, reason, sigs, isE
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding:1.8cm}
-@page{size:A4 portrait;margin:1.5cm}
-table{width:100%;border-collapse:collapse}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding:1.5cm}
+@page{size:A4 portrait;margin:1.2cm}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head>
 <body>
 <!-- Header -->
-<div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:20px;padding-bottom:12px;border-bottom:2.5px solid #9f1239">
+<div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;padding-bottom:12px;border-bottom:2.5px solid #9f1239">
   <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" style="height:52px;object-fit:contain;flex-shrink:0">
   <div style="flex:1">
     <div style="font-size:11pt;font-weight:800;color:#9f1239">${org}</div>
-    <div style="font-size:12pt;font-weight:700;margin-top:3px">${isEN?'Withdrawal Form':'แบบฟอร์มใบลาออก / ถอนทุน'}</div>
-    ${acadYear ? `<div style="font-size:9pt;color:#374151;margin-top:2px">${isEN?'Academic Year':'ปีการศึกษา'}: <b>${acadYear}</b></div>` : ''}
+    <div style="font-size:12pt;font-weight:700;margin-top:3px">${isEN?'Withdrawal Form':'แบบฟอร์มใบลาออก / ถอนทุน'}${titleYear}</div>
   </div>
   <div style="text-align:right;font-size:8.5pt;color:#4b5563;line-height:1.8;flex-shrink:0">
     <div>${isEN?'Date':'วันที่'}: <b>${thDate(docDate)}</b></div>
@@ -5856,24 +5955,7 @@ table{width:100%;border-collapse:collapse}
   </div>
 </div>
 
-${reasonSection}
-
-<!-- Student table -->
-<table>
-  <thead>
-    <tr style="background:#9f1239">
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:center">${isEN?'No.':'ลำดับ'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Thai Name':'ชื่อ-นามสกุล (ไทย)'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'English Name':'ชื่อ-นามสกุล (EN)'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:center">${isEN?'StipNo':'รหัสทุน'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:center">${isEN?'Inst.':'สถาบัน'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Level':'ระดับชั้น'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Withdrawal Type':'ประเภทการออก'}</th>
-      <th style="color:#fff;padding:6px 8px;border:1px solid #9f1239;font-size:8pt;text-align:left">${isEN?'Notes':'หมายเหตุ'}</th>
-    </tr>
-  </thead>
-  <tbody>${tableRows}</tbody>
-</table>
+${yearSections}
 
 <!-- Signature -->
 ${sigs.length > 0 ? `

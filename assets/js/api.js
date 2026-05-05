@@ -118,6 +118,9 @@ const API = {
   },
   async getStudentsForPromotion()        { return apiGet({ action: 'getStudentsForPromotion' }); },
   async getWithdrawalStudents()          { return apiGet({ action: 'getWithdrawalStudents' }); },
+  async saveWithdrawalNote(stipNo, note, reqUser) {
+    return apiPost({ action: 'saveWithdrawalNote', stipNo, note, reqUser });
+  },
   async getPendingScholarshipRequests()  { return apiGet({ action: 'getPendingScholarshipRequests' }); },
   async promoteStudents(promotions, reqUser, promotionDate, sendEmailNotif) {
     return apiPost({ action: 'promoteStudents', promotions, reqUser, promotionDate,
