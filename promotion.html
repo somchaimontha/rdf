@@ -43,6 +43,10 @@
 .wf-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; display:block; margin-bottom:4px; }
 .wf-field { width:100%; border:1.5px solid #e5e7eb; border-radius:8px; padding:7px 10px; font-size:13px; outline:none; font-family:inherit; }
 .wf-field:focus { border-color:#9f1239; }
+.wf-filter-btn { padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; border:1.5px solid #e5e7eb; background:#fff; cursor:pointer; transition:all .13s; }
+.wf-filter-btn.active { background:#9f1239; color:#fff; border-color:#9f1239; }
+.wf-badge-saved { font-size:9px; padding:1px 5px; border-radius:4px; background:#dcfce7; color:#166534; border:1px solid #86efac; font-weight:700; }
+.wf-badge-pending { font-size:9px; padding:1px 5px; border-radius:4px; background:#fef9c3; color:#92400e; border:1px solid #fde68a; font-weight:700; }
 .uni-sch-badge  { display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
   border-radius:12px; font-size:10px; font-weight:700; }
 .sch-yes     { background:#f0fdf4; color:#16a34a; }
@@ -786,13 +790,25 @@ img.student-avatar {
     </div>
     <div class="p-5 space-y-4" style="max-height:75vh;overflow-y:auto">
 
-      <!-- Student list (auto-populated) -->
+      <!-- Student list (auto-populated from DB + pending actions) -->
       <div>
-        <span class="wf-label" data-t="promoWfStudents">นักเรียนที่ลาออก / ถอนทุน (อัตโนมัติ)</span>
-        <div id="wfStudentList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100" style="max-height:220px;overflow-y:auto">
-          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="wf-label" style="margin-bottom:0">นักเรียนที่ลาออก / ถอนทุน</span>
+          <span id="wfStudentCount" class="text-xs text-gray-400">กำลังโหลด...</span>
         </div>
-        <p class="text-xs text-gray-400 mt-1">แสดงเฉพาะนักเรียนที่เลือกสถานะ "ลาออกจากสถาบัน" หรือ "ถอนทุน" เท่านั้น</p>
+        <!-- Search + filter row -->
+        <div class="flex gap-2 mb-2 flex-wrap">
+          <input type="text" id="wfSearch" class="wf-field text-xs" style="flex:1;min-width:140px;padding:5px 9px"
+            placeholder="ค้นหาชื่อ / StipNo..." oninput="wfFilterList()">
+          <div class="flex gap-1 flex-shrink-0">
+            <button onclick="wfSetFilter('all')" id="wfFilterAll" class="wf-filter-btn active">ทั้งหมด</button>
+            <button onclick="wfSetFilter('resign')" id="wfFilterResign" class="wf-filter-btn">ลาออก</button>
+            <button onclick="wfSetFilter('withdraw_sch')" id="wfFilterWithdraw" class="wf-filter-btn">ถอนทุน</button>
+          </div>
+        </div>
+        <div id="wfStudentList" class="border border-gray-200 rounded-xl overflow-hidden" style="max-height:240px;overflow-y:auto">
+          <div class="text-xs text-gray-400 p-4 text-center">กำลังโหลด...</div>
+        </div>
       </div>
 
       <!-- Document details -->
@@ -5592,67 +5608,56 @@ function buildSignatureHTML(sigs, dateStr, S, isEN) {
 // Generates a printable A4 portrait form listing
 // all students with resign or withdraw_sch status.
 // ─────────────────────────────────────────────
-function openWithdrawalFormModal() {
-  // Collect students who are withdraw/resign — from BOTH pending ROW_DECISIONS AND already-saved DB status
-  const withdrawActions  = new Set(['resign','withdraw_sch']);
-  const withdrawStatuses = new Set(['Resigned','WithdrawnScholarship']);
-  const students = [];
-  const seen = new Set(); // deduplicate by StipNo
+async function openWithdrawalFormModal() {
+  // Show modal immediately with loading state
+  document.getElementById('withdrawalFormModal').classList.remove('hidden');
+  document.getElementById('wfStudentList').innerHTML =
+    `<div class="text-xs text-gray-400 p-4 text-center">🔄 กำลังโหลดข้อมูล...</div>`;
+  document.getElementById('wfStudentCount').textContent = '...';
+  document.getElementById('wfSearch').value = '';
+  wfSetFilter('all', false);
 
+  const seen = new Set();
+  window._wfAllStudents = [];
+
+  // 1. Collect PENDING actions from current session
+  const WD_ACTIONS = new Set(['resign','withdraw_sch']);
   ALL_GROUPS.forEach(g => {
     g.students.forEach(s => {
       if (seen.has(s.StipNo)) return;
       const dec = ROW_DECISIONS[s.StipNo] || {};
-      const actMatch    = withdrawActions.has(dec.action);
-      const statusMatch = withdrawStatuses.has(s.Status);
-      if (actMatch || statusMatch) {
-        // Determine display action/source label
-        let act = dec.action;
-        let source = 'pending'; // action selected but not yet saved
-        if (!actMatch && statusMatch) {
-          // Already saved to DB — derive action from status
-          act = s.Status === 'Resigned' ? 'resign' : 'withdraw_sch';
-          source = 'saved';
-        } else if (dec.alreadyPromoted) {
-          source = 'saved';
-        }
-        students.push({ s, g, act, dec, source });
+      if (WD_ACTIONS.has(dec.action)) {
+        window._wfAllStudents.push({
+          StipNo: s.StipNo, Title: s.Title, FirstName: s.FirstName, LastName: s.LastName,
+          act: dec.action, source: 'pending',
+          institution: g.institution, level: g.level,
+          notes: dec.notes || '',
+        });
         seen.add(s.StipNo);
       }
     });
   });
 
-  const listEl = document.getElementById('wfStudentList');
-  if (students.length === 0) {
-    listEl.innerHTML = `<div class="text-xs text-gray-400 p-4 text-center">
-      ยังไม่มีนักเรียนที่ตั้งสถานะ "ลาออกจากสถาบัน" หรือ "ถอนทุน"<br>
-      No students with resignation/withdrawal status yet.
-    </div>`;
-  } else {
-    listEl.innerHTML = students.map(({ s, g, act, dec, source }) => {
-      const name = ((s.Title||'')+(s.FirstName||'')+' '+(s.LastName||'')).trim();
-      const isResign = act === 'resign';
-      const typeLabel = isResign
-        ? `<span style="color:#be123c;font-weight:700">✕ ลาออกจากสถาบัน</span>`
-        : `<span style="color:#9f1239;font-weight:700">🚫 ถอนทุน</span>`;
-      const sourceBadge = source === 'saved'
-        ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:700">✓ บันทึกแล้ว</span>`
-        : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;font-weight:700">⏳ รอบันทึก</span>`;
-      const noteText = dec.notes ? `<div class="text-gray-400 truncate" style="max-width:160px" title="${(dec.notes).replace(/"/g,'&quot;')}">📝 ${dec.notes}</div>` : '';
-      return `<div class="flex items-start gap-3 px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-100">
-        <input type="checkbox" name="wfStudent" value="${s.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0 mt-0.5">
-        <div class="flex-1 min-w-0">
-          <div class="font-semibold text-gray-800">${name}</div>
-          <div class="text-gray-400">${s.StipNo} • ${g.institution} — ${g.level}</div>
-          ${noteText}
-        </div>
-        <div class="flex flex-col items-end gap-1 flex-shrink-0">
-          ${typeLabel}
-          ${sourceBadge}
-        </div>
-      </div>`;
-    }).join('');
-  }
+  // 2. Fetch DB saved Resigned / WithdrawnScholarship students
+  try {
+    const r = await API.getWithdrawalStudents();
+    if (r.status === 'success' && Array.isArray(r.data)) {
+      r.data.forEach(s => {
+        if (seen.has(s.StipNo)) return; // already in pending
+        window._wfAllStudents.push({
+          StipNo: s.StipNo, Title: s.Title, FirstName: s.FirstName, LastName: s.LastName,
+          act: s.Status === 'Resigned' ? 'resign' : 'withdraw_sch',
+          source: 'saved',
+          institution: s.Institution, level: s.CurrentLevel,
+          acadYear: s.CurrentAcademicYear,
+          notes: s.ChangeNotes || '',
+        });
+        seen.add(s.StipNo);
+      });
+    }
+  } catch(e) { console.error('getWithdrawalStudents failed:', e); }
+
+  wfRenderStudentList();
 
   // Pre-fill doc date and academic year
   document.getElementById('wfDocDate').value  = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
@@ -5673,8 +5678,71 @@ function openWithdrawalFormModal() {
         ${s.name ? `<span class="text-gray-400">${s.name}</span>` : ''}
       </label>`).join('');
 
-  document.getElementById('withdrawalFormModal').classList.remove('hidden');
   lucide.createIcons();
+}
+
+function wfSetFilter(f, render = true) {
+  window._wfFilter = f;
+  ['all','resign','withdraw_sch'].forEach(k => {
+    const id = k === 'all' ? 'wfFilterAll' : k === 'resign' ? 'wfFilterResign' : 'wfFilterWithdraw';
+    document.getElementById(id)?.classList.toggle('active', k === f);
+  });
+  if (render) wfRenderStudentList();
+}
+
+function wfFilterList() {
+  window._wfSearchTerm = (document.getElementById('wfSearch')?.value || '').toLowerCase();
+  wfRenderStudentList();
+}
+
+function wfRenderStudentList() {
+  const all = window._wfAllStudents || [];
+  const f   = window._wfFilter || 'all';
+  const q   = (window._wfSearchTerm || '').toLowerCase();
+  const listEl = document.getElementById('wfStudentList');
+  const countEl = document.getElementById('wfStudentCount');
+
+  let filtered = f === 'all' ? all : all.filter(x => x.act === f);
+  if (q) filtered = filtered.filter(x =>
+    ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).toLowerCase().includes(q) ||
+    (x.StipNo||'').toLowerCase().includes(q));
+
+  // Count badge
+  const resignN  = all.filter(x => x.act === 'resign').length;
+  const wdN      = all.filter(x => x.act === 'withdraw_sch').length;
+  countEl.innerHTML = all.length === 0 ? 'ไม่มีข้อมูล'
+    : `<span style="color:#be123c">✕ ลาออก ${resignN}</span> · <span style="color:#9f1239">🚫 ถอนทุน ${wdN}</span> · รวม ${all.length} คน`;
+
+  if (all.length === 0) {
+    listEl.innerHTML = `<div class="text-xs text-gray-400 p-5 text-center">
+      ยังไม่มีนักเรียนที่ลาออกหรือถอนทุนในระบบ</div>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div class="text-xs text-gray-400 p-4 text-center">ไม่พบนักเรียนที่ตรงกัน</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(x => {
+    const name = ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).trim() || '(ไม่มีชื่อ)';
+    const typeLabel = x.act === 'resign'
+      ? `<span style="color:#be123c;font-weight:700;font-size:10px;white-space:nowrap">✕ ลาออก</span>`
+      : `<span style="color:#9f1239;font-weight:700;font-size:10px;white-space:nowrap">🚫 ถอนทุน</span>`;
+    const badge = x.source === 'saved'
+      ? `<span class="wf-badge-saved">✓ บันทึกแล้ว</span>`
+      : `<span class="wf-badge-pending">⏳ รอบันทึก</span>`;
+    const sub = [x.StipNo, x.institution, x.level, x.acadYear].filter(Boolean).join(' · ');
+    const note = x.notes ? `<div style="color:#9ca3af;font-size:10px;margin-top:1px" title="${x.notes.replace(/"/g,'&quot;')}">📝 ${x.notes.substring(0,60)}${x.notes.length>60?'…':''}</div>` : '';
+    return `<div class="flex items-start gap-2 px-3 py-2.5 text-xs hover:bg-rose-50 border-b border-gray-100 last:border-0">
+      <input type="checkbox" name="wfStudent" value="${x.StipNo}" checked class="rounded accent-rose-700 flex-shrink-0 mt-0.5">
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-gray-800">${name}</div>
+        <div style="color:#9ca3af;margin-top:1px">${sub}</div>
+        ${note}
+      </div>
+      <div class="flex flex-col items-end gap-1 flex-shrink-0">${typeLabel}${badge}</div>
+    </div>`;
+  }).join('');
 }
 
 function closeWithdrawalFormModal() {
@@ -5690,23 +5758,16 @@ function doPrintWithdrawalForm() {
   );
   const selSigs = (window._wfSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selSigIdxs.has(i));
 
-  // Collect selected students — match by pending action OR already-saved DB status
-  const withdrawActions  = new Set(['resign','withdraw_sch']);
-  const withdrawStatuses = new Set(['Resigned','WithdrawnScholarship']);
-  const rows = [];
-  ALL_GROUPS.forEach(g => {
-    g.students.forEach(s => {
-      if (!selStips.has(s.StipNo)) return;
-      const dec = ROW_DECISIONS[s.StipNo] || {};
-      let act = dec.action;
-      if (!withdrawActions.has(act)) {
-        if (withdrawStatuses.has(s.Status)) {
-          act = s.Status === 'Resigned' ? 'resign' : 'withdraw_sch';
-        } else return;
-      }
-      rows.push({ s, g, act, dec });
-    });
-  });
+  // Collect selected students from _wfAllStudents (already merged pending + DB)
+  const rows = (window._wfAllStudents || [])
+    .filter(x => selStips.has(x.StipNo))
+    .map(x => ({
+      s: { StipNo: x.StipNo, Title: x.Title, FirstName: x.FirstName, LastName: x.LastName,
+           EngFirstName: x.EngFirstName||'', EngLastName: x.EngLastName||'' },
+      g: { institution: x.institution, level: x.level },
+      act: x.act,
+      dec: { notes: x.notes || '' },
+    }));
 
   if (rows.length === 0) {
     Swal.fire(LANG==='th'?'ไม่มีข้อมูล':'No Data',

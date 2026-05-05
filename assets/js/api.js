@@ -117,6 +117,7 @@ const API = {
     return apiPost({ action: 'mergeStudentRows', primaryRowIdx, mergeRowIdx, reqUser: (getUser()||{}).username||'Admin' });
   },
   async getStudentsForPromotion()        { return apiGet({ action: 'getStudentsForPromotion' }); },
+  async getWithdrawalStudents()          { return apiGet({ action: 'getWithdrawalStudents' }); },
   async getPendingScholarshipRequests()  { return apiGet({ action: 'getPendingScholarshipRequests' }); },
   async promoteStudents(promotions, reqUser, promotionDate, sendEmailNotif) {
     return apiPost({ action: 'promoteStudents', promotions, reqUser, promotionDate,
