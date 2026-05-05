@@ -280,14 +280,21 @@
   display: flex; justify-content: flex-end; gap: 10px;
 }
 
-/* ── Settings — sticky card headers ── */
+/* ── Settings — sticky panel section headers (level 1, below navbar) ── */
+.stn-ph {
+  position: sticky;
+  top: 60px;
+  z-index: 30;
+  background: #f8fafc;
+}
+/* ── Settings — sticky card headers (level 2, below panel header) ── */
 .settings-main .card {
   overflow: clip; /* clips to border-radius without creating scroll container → allows sticky inside */
-  scroll-margin-top: 68px;
+  scroll-margin-top: 115px;
 }
 .settings-main .card-header {
   position: sticky;
-  top: 60px;
+  top: 110px;
   z-index: 20;
   background: #fff; /* fallback for light-style headers; colored headers override via inline style */
 }
@@ -516,7 +523,7 @@
        PANEL: ADMINS
   ════════════════════════════════════════════ -->
   <div id="panelAdmins" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#eff6ff">
         <i data-lucide="users" class="w-4 h-4" style="color:#1d4ed8"></i>
       </div>
@@ -569,7 +576,7 @@
        PANEL: OVERVIEW
   ════════════════════════════════════════════ -->
   <div id="panelOverview" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#f0fdf4">
         <i data-lucide="bar-chart-2" class="w-4 h-4" style="color:#16a34a"></i>
       </div>
@@ -659,7 +666,7 @@
        PANEL: MAJORS  (Unified bilingual academic programs)
   ════════════════════════════════════════════ -->
   <div id="panelMajors" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#faf5ff">
         <i data-lucide="book-open" class="w-4 h-4" style="color:#7c3aed"></i>
       </div>
@@ -961,7 +968,7 @@
        PANEL: GENERAL SETTINGS
   ════════════════════════════════════════════ -->
   <div id="panelGeneral" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#fff7ed">
         <i data-lucide="sliders-horizontal" class="w-4 h-4" style="color:#ea580c"></i>
       </div>
@@ -1345,7 +1352,7 @@
        PANEL: AUDIT LOGS
   ════════════════════════════════════════════ -->
   <div id="panelLogs" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#f8fafc">
         <i data-lucide="scroll-text" class="w-4 h-4" style="color:#475569"></i>
       </div>
@@ -1415,7 +1422,7 @@
        PANEL: API KEYS
   ════════════════════════════════════════════ -->
   <div id="panelApikeys" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#fff3cd">
         <i data-lucide="key" class="w-4 h-4" style="color:#92400e"></i>
       </div>
@@ -1596,7 +1603,7 @@
        PANEL: SESSIONS (Active Sessions)
   ════════════════════════════════════════════ -->
   <div id="panelSessions" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#eff6ff">
         <i data-lucide="activity" class="w-4 h-4" style="color:#1d4ed8"></i>
       </div>
@@ -1642,7 +1649,7 @@
        PANEL: ROLES & PERMISSIONS
   ════════════════════════════════════════════ -->
   <div id="panelRoles" class="settings-section mb-10">
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+    <div class="stn-ph flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#fef2f2">
         <i data-lucide="shield" class="w-4 h-4" style="color:#dc2626"></i>
       </div>
@@ -2095,11 +2102,12 @@ function sbarGoSub(cardId, parentPanelId, btn) {
   closeSidebar();
 }
 
-// ── Smooth scroll to element (offset-aware for 60px sticky navbar) ──
+// ── Smooth scroll to element (offset-aware: 115px for cards, 68px for panels) ──
 function _scrollToSection(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const top = el.getBoundingClientRect().top + window.pageYOffset - 68;
+  const OFFSET = el.classList.contains('card') ? 115 : 68;
+  const top = el.getBoundingClientRect().top + window.pageYOffset - OFFSET;
   window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
@@ -4708,7 +4716,8 @@ function goSection(tabName, cardId) {
   requestAnimationFrame(() => {
     const el = document.getElementById(cardId);
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 68;
+    const OFFSET = el.classList.contains('card') ? 115 : 68;
+    const top = el.getBoundingClientRect().top + window.scrollY - OFFSET;
     window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   });
 }
