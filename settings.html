@@ -1970,7 +1970,7 @@
       </div>
 
       <!-- Row 3: Password -->
-      <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="grid grid-cols-2 gap-3 mb-1">
         <div>
           <label class="field-label" id="m_passLabel"><span data-t="stAdminPassword">รหัสผ่าน</span> <span class="text-red-500">*</span></label>
           <input type="password" id="m_password" class="field-input" data-t="stAdminPassword" data-t-attr="placeholder" placeholder="รหัสผ่าน" autocomplete="new-password">
@@ -1980,6 +1980,10 @@
           <input type="password" id="m_password2" class="field-input" data-t="stAdminConfirmPass" data-t-attr="placeholder" placeholder="ยืนยันอีกครั้ง">
         </div>
       </div>
+      <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
+        <i data-lucide="shield" class="w-3 h-3 flex-shrink-0"></i>
+        8+ ตัวอักษร · ต้องมีพิมพ์ใหญ่ (A–Z) · พิมพ์เล็ก (a–z) · ตัวเลข (0–9) &nbsp;/&nbsp; 8+ chars · uppercase · lowercase · number
+      </p>
 
       <!-- Row 4: Role + SubRole + Status -->
       <div class="grid grid-cols-3 gap-2 mb-1">
@@ -2446,6 +2450,15 @@ function closeAdminModal(e) {
   _adminPhotoFile = null;
 }
 
+function _checkPasswordPolicy(pass) {
+  if (!pass) return null;
+  if (pass.length < 8)     return LANG==='en' ? 'Password must be at least 8 characters.' : 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+  if (!/[A-Z]/.test(pass)) return LANG==='en' ? 'Must include at least one uppercase letter (A–Z).' : 'ต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว (A–Z)';
+  if (!/[a-z]/.test(pass)) return LANG==='en' ? 'Must include at least one lowercase letter (a–z).' : 'ต้องมีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว (a–z)';
+  if (!/[0-9]/.test(pass)) return LANG==='en' ? 'Must include at least one number (0–9).' : 'ต้องมีตัวเลขอย่างน้อย 1 ตัว (0–9)';
+  return null;
+}
+
 function _generateAdminID() {
   // Generate next AdminID based on existing admins (format: ADM_001)
   const nums = allAdmins
@@ -2484,6 +2497,10 @@ async function submitAdminForm() {
   if (!fname || !uname) { Swal.fire(t('warning'), t('stAdminFillNameUser'), 'warning'); return; }
   if (!isEdit && !pass) { Swal.fire(t('warning'), t('stAdminFillPass'), 'warning'); return; }
   if (pass && pass !== pass2) { Swal.fire(t('warning'), t('stAdminPassMismatch'), 'warning'); return; }
+  if (pass) {
+    const policyErr = _checkPasswordPolicy(pass);
+    if (policyErr) { Swal.fire(LANG==='en'?'Password Policy':'นโยบายรหัสผ่าน', policyErr, 'warning'); return; }
+  }
 
   // Generate AdminID for new admins
   const resolvedAdminId = isEdit ? adminId : (adminId || _generateAdminID());
