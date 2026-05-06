@@ -132,6 +132,12 @@ const API = {
   async changeAdminPassword(username, currentPassword, newPassword) {
     return apiPost({ action: 'changeAdminPassword', username, currentPassword, newPassword });
   },
+  async requestPasswordReset(identifier, baseUrl) {
+    return apiPost({ action: 'requestPasswordReset', identifier, baseUrl });
+  },
+  async confirmPasswordReset(token, newPassword) {
+    return apiPost({ action: 'confirmPasswordReset', token, newPassword });
+  },
   async getPromotionHistory(batchID) {
     return apiGet({ action: 'getPromotionHistory', batchID: batchID || '' });
   },

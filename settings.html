@@ -422,6 +422,10 @@
         <span class="sbar-sub-dot" style="color:#0369a1"></span>
         <span>ขนาดไฟล์อัปโหลด</span>
       </button>
+      <button class="sbar-sub-item" data-section="cardEmailNotif" onclick="sbarGoSub('cardEmailNotif','panelGeneral',this)">
+        <span class="sbar-sub-dot" style="color:#0d9488"></span>
+        <span>การแจ้งเตือนทางอีเมล</span>
+      </button>
       <button class="sbar-sub-item" data-section="cardNotice" onclick="sbarGoSub('cardNotice','panelGeneral',this)">
         <span class="sbar-sub-dot" style="color:#7c3aed"></span>
         <span>ข้อความแจ้งเตือนระบบ</span>
@@ -1073,6 +1077,55 @@
         <div class="flex justify-end mt-4 pt-3 border-t border-gray-100">
           <button onclick="saveUploadLimits()" class="btn btn-primary btn-sm" style="background:#0369a1;border-color:#0369a1">
             <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-t="stUploadLimitsSave">บันทึกการตั้งค่าขนาดไฟล์</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email Notifications Card -->
+    <div id="cardEmailNotif" class="card fade-in-up delay-2 mb-5">
+      <div class="card-header" style="background:#0d9488">
+        <i data-lucide="mail" class="w-4 h-4"></i>
+        <span data-t="stEmailNotifHeader">การแจ้งเตือนทางอีเมล</span>
+      </div>
+      <div class="card-body">
+        <p class="text-xs text-gray-500 mb-4" data-t="stEmailNotifDesc">
+          เปิด/ปิดการส่งอีเมลอัตโนมัติจากระบบ — ปิดจะยกเว้น Reset Password ที่ยังทำงานเสมอ
+        </p>
+        <div class="space-y-3">
+          <!-- Promotion emails -->
+          <div class="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3">
+            <div>
+              <p class="text-sm font-semibold text-gray-700" data-t="stEmailNotifPromo">แจ้งนักเรียนเมื่อเลื่อนชั้น / จบการศึกษา</p>
+              <p class="text-xs text-gray-400 mt-0.5" data-t="stEmailNotifPromoDesc">ส่งอีเมลสองภาษาไปยังนักเรียนที่มีอีเมลในระบบเมื่อมีการอัปเดตสถานะ</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
+              <input type="checkbox" id="enPromoEmails" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-teal-500
+                          after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                          after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                          peer-checked:after:translate-x-full"></div>
+            </label>
+          </div>
+          <!-- Welcome emails -->
+          <div class="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3">
+            <div>
+              <p class="text-sm font-semibold text-gray-700" data-t="stEmailNotifWelcome">ต้อนรับผู้ดูแลระบบใหม่</p>
+              <p class="text-xs text-gray-400 mt-0.5" data-t="stEmailNotifWelcomeDesc">ส่งอีเมลต้อนรับและรายละเอียดบัญชีเมื่อเพิ่ม admin ใหม่ที่มีอีเมล</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
+              <input type="checkbox" id="enWelcomeEmails" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-teal-500
+                          after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                          after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                          peer-checked:after:translate-x-full"></div>
+            </label>
+          </div>
+        </div>
+        <div class="flex justify-end mt-4 pt-3 border-t border-gray-100">
+          <button onclick="saveEmailNotifSettings()" class="btn btn-primary btn-sm" style="background:#0d9488;border-color:#0d9488">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span data-t="stEmailNotifSave">บันทึกการตั้งค่าอีเมล</span>
           </button>
         </div>
       </div>
@@ -2166,7 +2219,7 @@ function _initScrollSpy() {
     'panelAdmins',
     'panelOverview',
     'panelMajors', 'cardMajorsTable', 'cardUniList', 'cardUniProg', 'cardUniFac',
-    'panelGeneral', 'cardStipPrefix', 'cardUploadLimits', 'cardNotice',
+    'panelGeneral', 'cardStipPrefix', 'cardUploadLimits', 'cardEmailNotif', 'cardNotice',
       'cardPrintTitle', 'cardPrintLayout', 'cardSignature', 'cardAbout',
     'panelLogs',
     'panelApikeys', 'cardGemini', 'cardGoogleOAuth', 'cardGmailLinked',
@@ -4189,6 +4242,14 @@ async function loadGeneralSettings() {
           ? { enabled: saved.enabled !== false, prefix: saved.prefix || inst.def }
           : { enabled: true, prefix: inst.def };
       });
+      // Email notification toggles
+      const en = r.data['EMAIL_NOTIFICATIONS'];
+      if (en && typeof en === 'object') {
+        const cb1 = document.getElementById('enPromoEmails');
+        const cb2 = document.getElementById('enWelcomeEmails');
+        if (cb1) cb1.checked = en.promotionEmails !== false;
+        if (cb2) cb2.checked = en.welcomeEmails   !== false;
+      }
       const n = r.data['SYSTEM_NOTICE'];
       if (n && typeof n === 'object') noticeState = { active: !!n.active, text: n.text || '', type: n.type || 'info' };
       const sig = r.data['SIGNATURE_BLOCK'];
@@ -4266,6 +4327,20 @@ async function saveUploadLimits() {
       RDF.applyUploadSettings({ [RDF.UPLOAD.SETTINGS_KEY]: limits });
       _renderUploadLimitsForm(limits);
       Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stUploadLimitsSaved'), timer:2000, showConfirmButton:false });
+    } else { Swal.fire(t('error'), r.message || t('error'), 'error'); }
+  } catch(e) { Swal.fire(t('error'), t('network_error'), 'error'); }
+}
+
+async function saveEmailNotifSettings() {
+  const values = {
+    promotionEmails: document.getElementById('enPromoEmails')?.checked !== false,
+    welcomeEmails:   document.getElementById('enWelcomeEmails')?.checked !== false,
+  };
+  try {
+    const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
+    const r = await Promise.race([API.saveSetting('EMAIL_NOTIFICATIONS', values), _t]);
+    if (r.status === 'success') {
+      Swal.fire({ icon:'success', title: t('stSaveSuccess'), timer:1500, showConfirmButton:false });
     } else { Swal.fire(t('error'), r.message || t('error'), 'error'); }
   } catch(e) { Swal.fire(t('error'), t('network_error'), 'error'); }
 }

@@ -264,6 +264,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           <span data-t="loginBtn">เข้าสู่ระบบ</span>
         </button>
+
+        <!-- Forgot password — admin tab only -->
+        <div id="forgotPwdRow" style="display:none;text-align:center;margin-top:10px">
+          <button type="button" onclick="forgotPassword()"
+            style="background:none;border:none;cursor:pointer;font-size:12px;color:#6b7280;text-decoration:underline;font-family:inherit">
+            <span data-t="forgotPassword">ลืมรหัสผ่าน?</span>
+          </button>
+        </div>
       </form>
 
       <!-- Hint -->
@@ -323,6 +331,9 @@ function setLoginRole(role) {
 
   // Re-apply i18n (in case language is EN)
   setLang(LANG);
+  // Show forgot-password link only for admin tab
+  const fp = document.getElementById('forgotPwdRow');
+  if (fp) fp.style.display = role === 'admin' ? 'block' : 'none';
 }
 
 // ═══════════════════════════════════════════
@@ -428,7 +439,111 @@ async function handleGoogleCredential(response) {
   // Apply i18n & set default role
   setLang(localStorage.getItem('rdfLang') || 'th');
   setLoginRole('student');
+
+  // ── Handle ?rt= password reset token in URL ──
+  const _rt = new URLSearchParams(window.location.search).get('rt');
+  if (_rt) handleResetToken(_rt);
 })();
+
+// ═══════════════════════════════════════════
+// FORGOT PASSWORD
+// ═══════════════════════════════════════════
+async function forgotPassword() {
+  const isEN = LANG === 'en';
+  const { value: identifier } = await Swal.fire({
+    title: isEN ? 'Reset Password' : 'รีเซ็ตรหัสผ่าน',
+    html: `<p style="font-size:13px;color:#6b7280;margin-bottom:12px">${
+      isEN ? 'Enter your username or email address. A reset link will be sent if the account exists.'
+           : 'กรอก Username หรืออีเมล — ระบบจะส่งลิงก์รีเซ็ตไปยังอีเมลที่ผูกกับบัญชี'
+    }</p>
+    <input id="fpIdentifier" class="swal2-input" placeholder="${isEN ? 'username or email' : 'username หรือ email'}" style="font-size:13px">`,
+    confirmButtonText: isEN ? 'Send Reset Link' : 'ส่งลิงก์รีเซ็ต',
+    confirmButtonColor: '#1e3a8a',
+    showCancelButton: true,
+    cancelButtonText: isEN ? 'Cancel' : 'ยกเลิก',
+    focusConfirm: false,
+    preConfirm: () => {
+      const v = document.getElementById('fpIdentifier')?.value?.trim();
+      if (!v) { Swal.showValidationMessage(isEN ? 'Please enter a value' : 'กรุณากรอกข้อมูล'); return false; }
+      return v;
+    },
+  });
+  if (!identifier) return;
+
+  Swal.fire({ title: isEN ? 'Sending...' : 'กำลังส่ง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const baseUrl = window.location.href.split('?')[0];
+    await API.requestPasswordReset(identifier, baseUrl);
+  } catch(e) {}
+  // Always show success to prevent enumeration
+  Swal.fire({
+    icon: 'success',
+    title: isEN ? 'Email Sent' : 'ส่งอีเมลแล้ว',
+    text: isEN
+      ? 'If an account with that username or email exists, a reset link has been sent. Check your inbox.'
+      : 'หากพบบัญชีที่ตรงกัน ระบบส่งลิงก์รีเซ็ตไปยังอีเมลของบัญชีนั้นแล้ว กรุณาตรวจสอบ inbox',
+    confirmButtonColor: '#1e3a8a',
+  });
+}
+
+// ═══════════════════════════════════════════
+// HANDLE RESET TOKEN (?rt=...)
+// ═══════════════════════════════════════════
+async function handleResetToken(token) {
+  const isEN = LANG === 'en';
+
+  // Clear ?rt= from URL (clean up before showing form)
+  const cleanUrl = window.location.href.split('?')[0];
+  window.history.replaceState({}, '', cleanUrl);
+
+  // Show "set new password" dialog
+  const { value: formData } = await Swal.fire({
+    title: isEN ? 'Set New Password' : 'ตั้งรหัสผ่านใหม่',
+    html: `
+      <p style="font-size:12px;color:#6b7280;margin-bottom:10px">${
+        isEN ? '8+ chars · uppercase (A–Z) · lowercase (a–z) · number (0–9)'
+             : '8+ ตัวอักษร · พิมพ์ใหญ่ (A–Z) · พิมพ์เล็ก (a–z) · ตัวเลข (0–9)'
+      }</p>
+      <input id="rpPass1" type="password" class="swal2-input" placeholder="${isEN ? 'New password' : 'รหัสผ่านใหม่'}" style="font-size:13px">
+      <input id="rpPass2" type="password" class="swal2-input" placeholder="${isEN ? 'Confirm password' : 'ยืนยันรหัสผ่าน'}" style="font-size:13px">`,
+    confirmButtonText: isEN ? 'Save Password' : 'บันทึกรหัสผ่าน',
+    confirmButtonColor: '#16a34a',
+    showCancelButton: true,
+    cancelButtonText: isEN ? 'Cancel' : 'ยกเลิก',
+    allowOutsideClick: false,
+    focusConfirm: false,
+    preConfirm: () => {
+      const p1 = document.getElementById('rpPass1')?.value || '';
+      const p2 = document.getElementById('rpPass2')?.value || '';
+      if (!p1) { Swal.showValidationMessage(isEN ? 'Please enter a password' : 'กรุณากรอกรหัสผ่าน'); return false; }
+      if (p1 !== p2) { Swal.showValidationMessage(isEN ? 'Passwords do not match' : 'รหัสผ่านไม่ตรงกัน'); return false; }
+      // Client-side policy check
+      if (p1.length < 8) { Swal.showValidationMessage(isEN ? 'Min 8 characters' : 'ต้องมีอย่างน้อย 8 ตัวอักษร'); return false; }
+      if (!/[A-Z]/.test(p1)) { Swal.showValidationMessage(isEN ? 'Add an uppercase letter' : 'ต้องมีตัวพิมพ์ใหญ่ (A–Z)'); return false; }
+      if (!/[a-z]/.test(p1)) { Swal.showValidationMessage(isEN ? 'Add a lowercase letter' : 'ต้องมีตัวพิมพ์เล็ก (a–z)'); return false; }
+      if (!/[0-9]/.test(p1)) { Swal.showValidationMessage(isEN ? 'Add a number' : 'ต้องมีตัวเลข (0–9)'); return false; }
+      return p1;
+    },
+  });
+  if (!formData) return;
+
+  Swal.fire({ title: isEN ? 'Saving...' : 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const r = await API.confirmPasswordReset(token, formData);
+    if (r.status === 'success') {
+      Swal.fire({
+        icon: 'success',
+        title: isEN ? 'Password Updated' : 'เปลี่ยนรหัสผ่านแล้ว',
+        text: isEN ? 'Your password has been updated. Please log in.' : 'รหัสผ่านถูกเปลี่ยนแล้ว กรุณาเข้าสู่ระบบ',
+        confirmButtonColor: '#1e3a8a',
+      }).then(() => { setLoginRole('admin'); });
+    } else {
+      Swal.fire({ icon: 'error', title: isEN ? 'Error' : 'ข้อผิดพลาด', text: r.message || (isEN ? 'Failed to reset password.' : 'ไม่สามารถรีเซ็ตรหัสผ่านได้'), confirmButtonColor: '#1e3a8a' });
+    }
+  } catch(e) {
+    Swal.fire({ icon: 'error', title: isEN ? 'Network Error' : 'เครือข่ายขัดข้อง', text: isEN ? 'Please try again.' : 'กรุณาลองใหม่', confirmButtonColor: '#1e3a8a' });
+  }
+}
 </script>
 </body>
 </html>
