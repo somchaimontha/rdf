@@ -4027,14 +4027,19 @@ async function applyAllChanges() {
 
   const promoDate = document.getElementById('promotionDate').value;
   const uniActCount = active.filter(([, d]) => d.action === 'uni').length;
-  const emailRowHtml = uniActCount > 0 ? `
-    <div style="margin-top:12px;padding:10px 12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;text-align:left">
+  // Count students in this batch that have an email address on file
+  const _allStus = ALL_GROUPS.flatMap(g => g.students);
+  const emailStudentCount = active.filter(([stipNo]) => {
+    const stu = _allStus.find(s => s.StipNo === stipNo);
+    return stu && (stu.email || stu.Email || '').trim();
+  }).length;
+  const emailRowHtml = emailStudentCount > 0 ? `
+    <div style="margin-top:12px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;text-align:left">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151">
         <input type="checkbox" id="chkSendEmailNotif" checked
-          style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0">
-        <span>📧 <b>${LANG==='th'?'แจ้งเตือนทางอีเมล':'Email notification'}</b>
-          ${LANG==='th'?'ถึง Manager/SuperAdmin':'to Manager/SuperAdmin'}
-          <span style="color:#7c3aed;font-size:11px">(${uniActCount} ${LANG==='th'?'คำขอทุนมหาวิทยาลัย':'university requests'})</span>
+          style="width:15px;height:15px;accent-color:#16a34a;flex-shrink:0">
+        <span>📧 <b>${LANG==='th'?'แจ้งนักเรียนทางอีเมล':'Email students'}</b>
+          <span style="color:#16a34a;font-size:11px">(${emailStudentCount} ${LANG==='th'?'คนที่มีอีเมล':'with email'}${uniActCount > 0 ? ' · ' + uniActCount + (LANG==='th'?' คำขอทุน ม.'  :' uni requests → SuperAdmin') : ''})</span>
         </span>
       </label>
     </div>` : '';
@@ -4056,7 +4061,7 @@ async function applyAllChanges() {
   });
   if (!isConfirmed) { _releaseAllLock(); return; }
 
-  const sendEmailNotif = uniActCount > 0 &&
+  const sendEmailNotif = emailStudentCount > 0 &&
     (document.getElementById('chkSendEmailNotif')?.checked ?? true);
 
   // ── DOM → ROW_DECISIONS sync ─────────────────────────────────
