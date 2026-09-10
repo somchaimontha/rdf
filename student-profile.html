@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ประวัตินักเรียน — RDF</title>
+<title data-t="uiStudentProfileRDF">ประวัตินักเรียน — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -167,7 +167,7 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText"><span data-t="stLoading">กำลังโหลด...</span></p></div>
 
 <!-- Navbar -->
 <nav class="rdf-nav no-print">
@@ -305,7 +305,7 @@
     <div id="promoHistoryCard" class="card mb-4 hidden">
       <div class="card-header" style="background:#1e40af">
         <i data-lucide="history" class="w-4 h-4"></i>
-        <span>ประวัติการเลื่อนชั้น / สำเร็จการศึกษา</span>
+        <span><span data-t="uiPromotionGraduationHistory">ประวัติการเลื่อนชั้น / สำเร็จการศึกษา</span></span>
       </div>
       <div class="card-body p-0" id="promoHistoryBody"></div>
     </div>
@@ -367,7 +367,7 @@
         <div class="doc-hero-name-en" id="pNameEn"></div>
         <div class="doc-hero-badges" id="pBadges"></div>
       </div>
-      <img class="doc-photo" id="pPhoto" src="" alt="รูปถ่าย">
+      <img class="doc-photo" id="pPhoto" src="" alt="รูปถ่าย" data-t-alt="hintPhoto">
     </div>
 
     <!-- Sections 1+2 side by side -->
@@ -450,9 +450,9 @@
     <span class="mx-2 hide-xs">•</span>
     <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
   </div>
-  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง">
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง" data-t-title="hintClickToCheckAgain">
     <span class="db-dot"></span>
-    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+    <span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span>
   </div>
 </footer>
 
@@ -477,6 +477,13 @@ if (!stipNo) {
   loadProfile();
 }
 
+let profileRenderArgs = null;
+let promoHistoryRows = null;
+document.addEventListener('rdf:languagechange', () => {
+  if (profileRenderArgs) renderProfile(...profileRenderArgs);
+  if (promoHistoryRows) renderPromoHistory(promoHistoryRows, LANG);
+});
+
 async function loadProfile() {
   showLoader(true, t('loading'));
   try {
@@ -495,7 +502,8 @@ async function loadProfile() {
       printTitle  = settingsResult.data['PRINT_TITLE']     || null;
       printLayout = settingsResult.data['PRINT_LAYOUT']    || null;
     }
-    renderProfile(result.data, sigBlock, printTitle, printLayout);
+    profileRenderArgs = [result.data, sigBlock, printTitle, printLayout];
+    renderProfile(...profileRenderArgs);
     loadPromoHistory(stipNo);
     if (autoPrint) setTimeout(printProfile, 600);
   } catch(e) {
@@ -533,7 +541,8 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
     ${d.CurrentLevel ? `<span class="badge" style="background:rgba(255,255,255,0.2);color:#fff">${d.CurrentLevel}</span>` : ''}`;
 
   // Document title
-  document.title = `${d.FirstName||''} ${d.LastName||''} — RDF`;
+  document.querySelector('title').removeAttribute('data-t');
+  document.title = `${lang === 'en' && engName ? engName : [d.FirstName, d.LastName].filter(Boolean).join(' ')} — RDF`;
 
   // Academic
   const beYear = d.ScholarshipYear ? parseInt(d.ScholarshipYear)+543 : '—';
@@ -906,7 +915,10 @@ function renderEduPath(d, lang) {
 async function loadPromoHistory(sno) {
   try {
     const res = await API.getStudentPromoHistory(sno);
-    if (res.status === 'success') renderPromoHistory(res.rows, LANG);
+    if (res.status === 'success') {
+      promoHistoryRows = res.rows;
+      renderPromoHistory(promoHistoryRows, LANG);
+    }
   } catch(e) { /* non-fatal */ }
 }
 

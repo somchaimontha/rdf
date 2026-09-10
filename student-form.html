@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เพิ่ม/แก้ไขนักเรียน — RDF</title>
+<title data-t="uiAddEditStudentRDF">เพิ่ม/แก้ไขนักเรียน — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <!-- ac-list styles moved to rdf.css -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText"><span data-t="stLoading">กำลังโหลด...</span></p></div>
 
 <!-- Navbar -->
 <nav class="rdf-nav no-print">
@@ -62,20 +62,20 @@
     <div id="bulkImportSection" class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
       <div>
         <p class="text-xs font-bold text-blue-800" data-t="bulkInsert">นำเข้าข้อมูลจำนวนมาก</p>
-        <p class="text-xs text-blue-500">Excel template พร้อมข้อมูลตัวอย่าง</p>
+        <p class="text-xs text-blue-500"><span data-t="uiExcelTemplateWithSampleData">Excel template พร้อมข้อมูลตัวอย่าง</span></p>
       </div>
       <div class="flex flex-col gap-1">
         <div class="flex gap-1">
-          <button onclick="downloadTemplate()" class="btn btn-secondary btn-sm text-blue-700 border-blue-200 flex-1" title="แบบฟอร์มครบทุก field">
+          <button onclick="downloadTemplate()" class="btn btn-secondary btn-sm text-blue-700 border-blue-200 flex-1" title="แบบฟอร์มครบทุก field" data-t-title="hintTemplateWithAllFields">
             <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-t="templateDL">แบบฟอร์มเต็ม</span>
           </button>
-          <button onclick="downloadMiniTemplate()" class="btn btn-secondary btn-sm text-indigo-700 border-indigo-200 flex-1" title="แบบฟอร์มจำเป็น">
+          <button onclick="downloadMiniTemplate()" class="btn btn-secondary btn-sm text-indigo-700 border-indigo-200 flex-1" title="แบบฟอร์มจำเป็น" data-t-title="hintRequiredFieldsTemplate">
             <i data-lucide="file-down" class="w-3.5 h-3.5"></i> <span data-t="miniImport">แบบย่อ</span>
           </button>
         </div>
         <p class="text-xs text-amber-600 flex items-center gap-1">
           <i data-lucide="key" class="w-3 h-3 flex-shrink-0"></i>
-          <span><b>BirthYear</b> (ปีเกิด ค.ศ.) = รหัสผ่านนักเรียน — จำเป็นต้องกรอก</span>
+          <span><b>BirthYear</b> <span data-t="uiBirthYearCEIsTheStudent">(ปีเกิด ค.ศ.) = รหัสผ่านนักเรียน — จำเป็นต้องกรอก</span></span>
         </p>
         <div class="flex gap-1">
           <label class="btn btn-primary btn-sm cursor-pointer text-center flex-1">
@@ -83,7 +83,7 @@
             <input type="file" accept=".csv" class="hidden" onchange="importCSV(event)">
           </label>
           <button onclick="cleanBlankRowsUI()" title="ลบ row ว่างที่ไม่มีข้อมูลออกจากฐานข้อมูล"
-            class="btn btn-sm border-red-300 text-red-500 hover:bg-red-50 transition" style="font-size:11px;padding:4px 8px">
+            class="btn btn-sm border-red-300 text-red-500 hover:bg-red-50 transition" style="font-size:11px;padding:4px 8px" data-t-title="hintRemoveEmptyRowsFromTheDatabase">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           </button>
         </div>
@@ -106,22 +106,22 @@
         <div>
           <label class="field-label"><span data-t="scholarshipStatus">สถานะทุนการศึกษา</span> <span class="text-red-500">*</span></label>
           <select id="f_status" class="field-select font-semibold" style="color:#1e3a8a" required onchange="onStatusChange(this.value)">
-            <option value="Active">กำลังศึกษา (Active)</option>
-            <option value="Graduated">สำเร็จการศึกษา (Graduated)</option>
-            <option value="Suspended">พักการเรียน (Suspended)</option>
-            <option value="Incomplete">ไม่สำเร็จการศึกษา (Incomplete)</option>
-            <option value="Resigned">ลาออกจากทุน (Resigned)</option>
-            <option value="WithdrawnScholarship">ถอนทุนการศึกษา (WithdrawnScholarship)</option>
-            <option value="University">ต่อมหาวิทยาลัย ทุนตนเอง (University)</option>
-            <option value="Other">อื่นๆ (Other)</option>
+            <option value="Active" data-t="uiActiveLabel">กำลังศึกษา (Active)</option>
+            <option value="Graduated" data-t="uiGraduated">สำเร็จการศึกษา (Graduated)</option>
+            <option value="Suspended" data-t="uiSuspended">พักการเรียน (Suspended)</option>
+            <option value="Incomplete" data-t="uiIncomplete">ไม่สำเร็จการศึกษา (Incomplete)</option>
+            <option value="Resigned" data-t="uiResignedFromScholarship">ลาออกจากทุน (Resigned)</option>
+            <option value="WithdrawnScholarship" data-t="uiScholarshipWithdrawn">ถอนทุนการศึกษา (WithdrawnScholarship)</option>
+            <option value="University" data-t="uiUniversitySelfFunded">ต่อมหาวิทยาลัย ทุนตนเอง (University)</option>
+            <option value="Other" data-t="uiOther">อื่นๆ (Other)</option>
           </select>
         </div>
         <div>
           <label class="field-label"><span data-t="stipNoLabel">รหัสทุน (Stip No.)</span></label>
           <div class="flex gap-1">
-            <input type="text" id="f_stipNo" class="field-input readonly flex-1" placeholder="สร้างอัตโนมัติ" readonly>
+            <input type="text" id="f_stipNo" class="field-input readonly flex-1" placeholder="สร้างอัตโนมัติ" readonly data-t-placeholder="hintAutoGenerated">
             <button type="button" onclick="generateStipNo()" title="สร้างรหัสทุน"
-                    class="btn btn-secondary flex-shrink-0" style="padding:8px 10px">
+                    class="btn btn-secondary flex-shrink-0" style="padding:8px 10px" data-t-title="hintGenerateScholarshipId">
               <i data-lucide="refresh-cw" class="w-4 h-4"></i>
             </button>
           </div>
@@ -136,7 +136,7 @@
             </button>
           </label>
           <input type="text" id="f_idcard" maxlength="14" class="field-input"
-                 placeholder="1234567890123 หรือ G..." oninput="validateIDCard(this)" required>
+                 placeholder="1234567890123 หรือ G..." oninput="validateIDCard(this)" required data-t-placeholder="hint1234567890123OrG">
           <p id="idcardErr" class="text-red-500 text-xs mt-1 hidden" data-t="invalidId">เลขบัตรไม่ถูกต้อง</p>
         </div>
         <div>
@@ -151,7 +151,7 @@
               <option value=""><span data-t="birthMonth">เดือน</span></option>
             </select>
             <input type="number" id="f_birthYear" min="1980" max="2015"
-                   placeholder="ค.ศ." class="field-input" style="width:84px" required oninput="calcAge()">
+                   placeholder="ค.ศ." class="field-input" style="width:84px" required oninput="calcAge()" data-t-placeholder="hintCE">
           </div>
           <div class="flex items-center gap-3 mt-1">
             <p class="text-xs text-gray-400" data-t="birthDateHint">ใช้ปีเกิด (ค.ศ.) เป็นรหัสผ่าน</p>
@@ -174,9 +174,9 @@
         style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.35)"
         onmouseover="this.style.background='rgba(255,255,255,0.32)'"
         onmouseout="this.style.background='rgba(255,255,255,0.2)'"
-        title="อัปโหลดเอกสาร/รูปภาพ ให้ AI อ่านและกรอกข้อมูลอัตโนมัติ">
+        title="อัปโหลดเอกสาร/รูปภาพ ให้ AI อ่านและกรอกข้อมูลอัตโนมัติ" data-t-title="hintUploadDocumentsOrImagesForAiAutofill">
         <i data-lucide="scan-line" class="w-3.5 h-3.5"></i>
-        <span>AI สแกนเอกสาร</span>
+        <span><span data-t="uiAIDocumentScan">AI สแกนเอกสาร</span></span>
       </button>
     </div>
     <div class="form-section-body">
@@ -184,38 +184,38 @@
         <div>
           <label class="field-label"><span data-t="institutionLabel">สถานที่ศึกษา</span> <span class="text-red-500">*</span></label>
           <select id="f_institution" onchange="onInstitutionChange()" class="field-select" required>
-            <option value="">-- เลือกสถานศึกษา --</option>
+            <option value="" data-t="uiSelectInstitution">-- เลือกสถานศึกษา --</option>
             <option value="MBS">1. Maesariang Boripat Suksa School (MBS)</option>
             <option value="VC">2. Vocational College (VC)</option>
-            <option value="UNI">3. University (มหาวิทยาลัย)</option>
-            <option value="OTHER">4. อื่นๆ (Other)</option>
+            <option value="UNI" data-t="ui3University">3. University (มหาวิทยาลัย)</option>
+            <option value="OTHER" data-t="ui4Other">4. อื่นๆ (Other)</option>
           </select>
         </div>
         <div id="otherInstWrap" class="hidden">
           <label class="field-label"><span data-t="otherInst">ระบุชื่อสถานศึกษา</span> <span class="text-red-500">*</span></label>
-          <input type="text" id="f_otherInst" class="field-input" placeholder="ชื่อสถานศึกษา">
+          <input type="text" id="f_otherInst" class="field-input" placeholder="ชื่อสถานศึกษา" data-t-placeholder="reportSchoolLabel">
         </div>
         <div>
           <label class="field-label"><span data-t="currentLevel">ระดับชั้นที่กำลังศึกษา</span> <span class="text-red-500">*</span></label>
           <select id="f_level" class="field-select" required disabled>
-            <option value="">-- เลือกสถานศึกษาก่อน --</option>
+            <option value="" data-t="uiSelectAnInstitutionFirst">-- เลือกสถานศึกษาก่อน --</option>
           </select>
         </div>
         <div>
           <label class="field-label"><span data-t="studentId">รหัสนักเรียน/นักศึกษา</span></label>
-          <input type="text" id="f_studentId" class="field-input" placeholder="รหัสประจำตัวนักเรียน">
+          <input type="text" id="f_studentId" class="field-input" placeholder="รหัสประจำตัวนักเรียน" data-t-placeholder="hintStudentId">
         </div>
         <div>
           <label class="field-label"><span data-t="scholarshipYearLabel">ปีการศึกษาที่ได้รับทุน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
           <input type="number" id="f_scholarshipYear" min="2000" max="2100" placeholder="เช่น 2023" class="field-input" required
-                 oninput="onScholarYearInput(this)">
+                 oninput="onScholarYearInput(this)" data-t-placeholder="hintEG2023">
           <p id="hintScholarYear" class="text-xs text-blue-500 mt-1 hidden"></p>
         </div>
         <div class="flex gap-2">
           <div class="flex-1">
             <label class="field-label"><span data-t="entryYear">ปีที่เข้าเรียน (ค.ศ.)</span> <span class="text-red-500">*</span></label>
             <input type="number" id="f_entryYear" placeholder="เช่น 2023" class="field-input" required
-                   oninput="onEntryYearInput(this)">
+                   oninput="onEntryYearInput(this)" data-t-placeholder="hintEG2023">
             <p id="hintEntryYear" class="text-xs text-blue-500 mt-1 hidden"></p>
           </div>
           <div style="width:110px">
@@ -236,7 +236,7 @@
             <input type="number" id="f_currentAcademicYear" class="field-input"
               placeholder="เช่น 2568" min="2500" max="2700"
               oninput="updateCurrentAcadYearHint(this.value)"
-              style="max-width:130px">
+              style="max-width:130px" data-t-placeholder="hintEG2568BE">
             <span id="hintCurrentAcadYear" class="text-xs text-blue-500 font-semibold"></span>
           </div>
           <p class="text-xs text-gray-400 mt-0.5" data-t="currentAcademicYearHint">อัปเดตอัตโนมัติเมื่อเลื่อนชั้นในระบบโปรโมชัน</p>
@@ -244,32 +244,32 @@
         <div id="majorWrap">
           <label class="field-label"><span data-t="major">แผนการเรียน / สาขาวิชา</span></label>
           <input type="text" id="f_major" list="majorList" class="field-input"
-                 placeholder="เลือกหรือพิมพ์สาขาวิชา">
+                 placeholder="เลือกหรือพิมพ์สาขาวิชา" data-t-placeholder="hintSelectOrTypeAProgram">
           <datalist id="majorList"></datalist>
           <p id="majorAdminNote" class="text-xs text-gray-400 mt-1 hidden">
-            <i>ผู้ดูแลระบบสามารถเพิ่มสาขาวิชาได้ในหน้าตั้งค่า</i>
+            <i><span data-t="uiAdministratorsCanAddProgramsInSettings">ผู้ดูแลระบบสามารถเพิ่มสาขาวิชาได้ในหน้าตั้งค่า</span></i>
           </p>
         </div>
         <div id="deptWrap" class="hidden">
           <label class="field-label"><span data-t="department">แผนกวิชา</span></label>
           <input type="text" id="f_department" list="deptList" class="field-input"
-                 placeholder="เลือกหรือพิมพ์แผนกวิชา">
+                 placeholder="เลือกหรือพิมพ์แผนกวิชา" data-t-placeholder="hintSelectOrTypeADepartment">
           <datalist id="deptList"></datalist>
         </div>
         <div>
           <label class="field-label"><span data-t="oldSchool">สถานศึกษาเดิม (ก่อนรับทุน)</span></label>
-          <input type="text" id="f_oldSchool" class="field-input" placeholder="ชื่อโรงเรียนเดิม">
+          <input type="text" id="f_oldSchool" class="field-input" placeholder="ชื่อโรงเรียนเดิม" data-t-placeholder="hintPreviousSchoolName">
         </div>
         <div>
-          <label class="field-label">วุฒิการศึกษาล่าสุดก่อนรับทุน (ใช้กำหนดเส้นทางการศึกษา)</label>
+          <label class="field-label"><span data-t="uiHighestQualificationBeforeScholarshipUsedForThe">วุฒิการศึกษาล่าสุดก่อนรับทุน (ใช้กำหนดเส้นทางการศึกษา)</span></label>
           <select id="f_lastEducation" class="field-select">
-            <option value="">-- ยังไม่ได้เลือก --</option>
-            <option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น — จบ ม.3</option>
-            <option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย — จบ ม.6</option>
-            <option value="ประกาศนียบัตรวิชาชีพ (ปวช.)">ประกาศนียบัตรวิชาชีพ — จบ ปวช.</option>
-            <option value="ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)">ประกาศนียบัตรวิชาชีพชั้นสูง — จบ ปวส.</option>
+            <option value="" data-t="uiNotSelected">-- ยังไม่ได้เลือก --</option>
+            <option value="มัธยมศึกษาตอนต้น" data-t="uiLowerSecondaryGrade9">มัธยมศึกษาตอนต้น — จบ ม.3</option>
+            <option value="มัธยมศึกษาตอนปลาย" data-t="uiUpperSecondaryGrade12">มัธยมศึกษาตอนปลาย — จบ ม.6</option>
+            <option value="ประกาศนียบัตรวิชาชีพ (ปวช.)" data-t="uiVocationalCertificate">ประกาศนียบัตรวิชาชีพ — จบ ปวช.</option>
+            <option value="ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)" data-t="uiHigherVocationalCertificate">ประกาศนียบัตรวิชาชีพชั้นสูง — จบ ปวส.</option>
           </select>
-          <p class="text-xs text-blue-500 mt-1">เส้นทางการศึกษาในโปรไฟล์จะแสดงตามวุฒินี้</p>
+          <p class="text-xs text-blue-500 mt-1"><span data-t="uiTheProfileEducationPathIsBasedOn">เส้นทางการศึกษาในโปรไฟล์จะแสดงตามวุฒินี้</span></p>
         </div>
       </div>
 
@@ -301,29 +301,29 @@
         <!-- Thai fields row -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
-            <input type="text" id="f_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย">
+            <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span> <span class="text-purple-400 text-xs"><span data-t="uiThai">(ไทย)</span></span></label>
+            <input type="text" id="f_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย" data-t-placeholder="promoUniName">
             <datalist id="uniList"></datalist>
           </div>
           <div>
             <label class="field-label"><span data-t="courseDuration">ระยะเวลาหลักสูตร (ปี)</span></label>
             <select id="f_uniDuration" class="field-select">
-              <option value="">-- เลือก --</option>
-              <option value="1">1 ปี</option><option value="2">2 ปี</option>
-              <option value="3">3 ปี</option><option value="4">4 ปี</option><option value="5">5 ปี</option>
+              <option value="" data-t="uiSelect">-- เลือก --</option>
+              <option value="1" data-t="ui1Year">1 ปี</option><option value="2" data-t="ui2Years">2 ปี</option>
+              <option value="3" data-t="ui3Years">3 ปี</option><option value="4" data-t="ui4Years">4 ปี</option><option value="5" data-t="ui5Years">5 ปี</option>
             </select>
           </div>
           <div>
             <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้งมหาวิทยาลัย</span></label>
-            <input type="text" id="f_uniProvince" class="field-input" placeholder="จังหวัด">
+            <input type="text" id="f_uniProvince" class="field-input" placeholder="จังหวัด" data-t-placeholder="promoProvince">
           </div>
           <div>
             <label class="field-label"><span data-t="faculty">คณะ</span></label>
-            <input type="text" id="f_uniFaculty" class="field-input" placeholder="ชื่อคณะ">
+            <input type="text" id="f_uniFaculty" class="field-input" placeholder="ชื่อคณะ" data-t-placeholder="hintFacultyName">
           </div>
           <div>
-            <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
-            <input type="text" id="f_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร">
+            <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs"><span data-t="uiThai">(ไทย)</span></span></label>
+            <input type="text" id="f_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร" data-t-placeholder="hintProgramCourse">
           </div>
         </div>
         <!-- English fields row (admin/teacher editable only) -->
@@ -389,7 +389,7 @@
         <div class="flex-shrink-0 text-center">
           <img id="imgPreview" src="https://via.placeholder.com/120x120?text=รูปภาพ"
                class="w-28 h-28 rounded-xl object-cover border-2 border-gray-300 shadow-sm">
-          <p class="text-xs text-gray-400 mt-1">รูปนักเรียน</p>
+          <p class="text-xs text-gray-400 mt-1"><span data-t="uiStudentPhoto">รูปนักเรียน</span></p>
         </div>
         <div class="flex-grow space-y-2">
           <div>
@@ -418,11 +418,11 @@
         <div>
           <label class="field-label"><span data-t="titleLabel">คำนำหน้า</span> <span class="text-red-500">*</span></label>
           <select id="f_title" class="field-select" required onchange="autoFillFromThaiTitle()">
-            <option value="นาย">นาย</option>
-            <option value="นางสาว">นางสาว</option>
-            <option value="นาง">นาง</option>
-            <option value="เด็กชาย">เด็กชาย</option>
-            <option value="เด็กหญิง">เด็กหญิง</option>
+            <option value="นาย" data-t="uiMr">นาย</option>
+            <option value="นางสาว" data-t="uiMiss">นางสาว</option>
+            <option value="นาง" data-t="uiMrs">นาง</option>
+            <option value="เด็กชาย" data-t="uiMaster">เด็กชาย</option>
+            <option value="เด็กหญิง" data-t="uiMissChild">เด็กหญิง</option>
           </select>
         </div>
         <div>
@@ -472,8 +472,8 @@
         <div>
           <label class="field-label"><span data-t="gender">เพศ</span> <span class="text-red-500">*</span></label>
           <select id="f_gender" class="field-select" required onchange="autoFillFromGender()">
-            <option value="Male">ชาย (Male)</option>
-            <option value="Female">หญิง (Female)</option>
+            <option value="Male" data-t="uiMale">ชาย (Male)</option>
+            <option value="Female" data-t="uiFemale">หญิง (Female)</option>
           </select>
         </div>
         <div>
@@ -482,7 +482,7 @@
             <!-- options rendered by _renderNatReligOptions() -->
           </select>
           <input type="text" id="f_nationality_other" class="field-input mt-1 hidden"
-                 maxlength="50" placeholder="ระบุสัญชาติ...">
+                 maxlength="50" placeholder="ระบุสัญชาติ..." data-t-placeholder="hintSpecifyNationality">
         </div>
         <div>
           <label class="field-label" data-t="religion">ศาสนา</label>
@@ -493,30 +493,30 @@
       </div>
       <div class="mb-4">
         <label class="field-label" data-t="talent">ความสามารถพิเศษ</label>
-        <input type="text" id="f_talent" class="field-input" placeholder="กีฬา, ดนตรี, ศิลปะ...">
+        <input type="text" id="f_talent" class="field-input" placeholder="กีฬา, ดนตรี, ศิลปะ..." data-t-placeholder="hintSportsMusicArt">
       </div>
 
       <!-- Health -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-red-50 rounded-xl p-4 border border-red-100">
         <div>
           <label class="field-label" data-t="weight">น้ำหนัก (กก.)</label>
-          <input type="number" id="f_weight" class="field-input" placeholder="กก.">
+          <input type="number" id="f_weight" class="field-input" placeholder="กก." data-t-placeholder="hintKg">
         </div>
         <div>
           <label class="field-label" data-t="height">ส่วนสูง (ซม.)</label>
-          <input type="number" id="f_height" class="field-input" placeholder="ซม.">
+          <input type="number" id="f_height" class="field-input" placeholder="ซม." data-t-placeholder="hintCm">
         </div>
         <div>
           <label class="field-label" data-t="bloodType">หมู่เลือด</label>
           <select id="f_blood" class="field-select">
-            <option value="">ไม่ทราบ</option>
+            <option value="" data-t="unknown">ไม่ทราบ</option>
             <option value="A">A</option><option value="B">B</option>
             <option value="AB">AB</option><option value="O">O</option>
           </select>
         </div>
         <div>
           <label class="field-label" data-t="disease">โรคประจำตัว</label>
-          <input type="text" id="f_disease" class="field-input" placeholder="ถ้าไม่มีเว้นว่างไว้">
+          <input type="text" id="f_disease" class="field-input" placeholder="ถ้าไม่มีเว้นว่างไว้" data-t-placeholder="hintLeaveBlankIfNotApplicable">
         </div>
       </div>
     </div>
@@ -558,7 +558,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-teal-50 rounded-xl p-4 border border-teal-100">
         <div class="md:col-span-2">
           <label class="field-label text-xs" data-t="village">ชื่อหมู่บ้าน</label>
-          <input type="text" id="f_village" class="field-input" placeholder="ชื่อหมู่บ้าน / ชุมชน">
+          <input type="text" id="f_village" class="field-input" placeholder="ชื่อหมู่บ้าน / ชุมชน" data-t-placeholder="hintVillageCommunityName">
         </div>
         <div>
           <label class="field-label text-xs" data-t="houseNo">บ้านเลขที่</label>
@@ -566,7 +566,7 @@
         </div>
         <div>
           <label class="field-label text-xs" data-t="moo">หมู่ที่</label>
-          <input type="text" id="f_moo" class="field-input" placeholder="หมู่ 5">
+          <input type="text" id="f_moo" class="field-input" placeholder="หมู่ 5" data-t-placeholder="hintVillageNo5">
         </div>
         <div class="ac-wrap">
           <label class="field-label text-xs" data-t="tambon">ตำบล/แขวง</label>
@@ -610,18 +610,18 @@
         <div class="flex-1">
           <label class="field-label" data-t="parentStatus">สถานภาพบิดา-มารดา</label>
           <select id="f_parentStatus" onchange="toggleParentOther()" class="field-select">
-            <option value="อยู่ด้วยกัน">อยู่ด้วยกัน (Living together)</option>
-            <option value="หย่าร้าง">หย่าร้าง (Divorced)</option>
-            <option value="แยกกันอยู่">แยกกันอยู่ (Separated)</option>
-            <option value="บิดาเสียชีวิต">บิดาเสียชีวิต</option>
-            <option value="มารดาเสียชีวิต">มารดาเสียชีวิต</option>
-            <option value="เสียชีวิตทั้งคู่">เสียชีวิตทั้งคู่</option>
-            <option value="Other">อื่นๆ (Other)</option>
+            <option value="อยู่ด้วยกัน" data-t="uiLivingTogether">อยู่ด้วยกัน (Living together)</option>
+            <option value="หย่าร้าง" data-t="uiDivorced">หย่าร้าง (Divorced)</option>
+            <option value="แยกกันอยู่" data-t="uiSeparated">แยกกันอยู่ (Separated)</option>
+            <option value="บิดาเสียชีวิต" data-t="uiFatherDeceased">บิดาเสียชีวิต</option>
+            <option value="มารดาเสียชีวิต" data-t="uiMotherDeceased">มารดาเสียชีวิต</option>
+            <option value="เสียชีวิตทั้งคู่" data-t="uiBothParentsDeceased">เสียชีวิตทั้งคู่</option>
+            <option value="Other" data-t="uiOther">อื่นๆ (Other)</option>
           </select>
         </div>
         <div id="parentOtherWrap" class="hidden flex-1">
           <label class="field-label" data-t="specifyStatus">ระบุสถานภาพ</label>
-          <input type="text" id="f_parentStatusOther" class="field-input" placeholder="ระบุ...">
+          <input type="text" id="f_parentStatusOther" class="field-input" placeholder="ระบุ..." data-t-placeholder="hintSpecify">
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -631,14 +631,14 @@
             <i data-lucide="user" class="w-4 h-4"></i> <span data-t="father">บิดา (พ่อ)</span>
           </p>
           <input type="text" id="f_fatherID" class="field-input mb-2 text-xs"
-                 placeholder="เลขบัตรประชาชน (ถ้ามี)" maxlength="13">
+                 placeholder="เลขบัตรประชาชน (ถ้ามี)" maxlength="13" data-t-placeholder="parentIdCard">
           <div class="flex gap-2 mb-2">
             <select id="f_fatherTitle" class="field-select text-xs" style="width:90px">
-              <option value="นาย">นาย</option><option value="Mr.">Mr.</option>
+              <option value="นาย" data-t="uiMr">นาย</option><option value="Mr.">Mr.</option>
             </select>
-            <input type="text" id="f_fatherFname" class="field-input text-xs flex-1" placeholder="ชื่อ">
+            <input type="text" id="f_fatherFname" class="field-input text-xs flex-1" placeholder="ชื่อ" data-t-placeholder="stAdminFname">
           </div>
-          <input type="text" id="f_fatherLname" class="field-input text-xs" placeholder="นามสกุล">
+          <input type="text" id="f_fatherLname" class="field-input text-xs" placeholder="นามสกุล" data-t-placeholder="stAdminLname">
         </div>
         <!-- Mother -->
         <div class="rounded-xl border border-pink-100 bg-pink-50 p-4">
@@ -646,15 +646,15 @@
             <i data-lucide="user" class="w-4 h-4"></i> <span data-t="mother">มารดา / ผู้ปกครอง</span>
           </p>
           <input type="text" id="f_motherID" class="field-input mb-2 text-xs"
-                 placeholder="เลขบัตรประชาชน (ถ้ามี)" maxlength="13">
+                 placeholder="เลขบัตรประชาชน (ถ้ามี)" maxlength="13" data-t-placeholder="parentIdCard">
           <div class="flex gap-2 mb-2">
             <select id="f_motherTitle" class="field-select text-xs" style="width:90px">
-              <option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
+              <option value="นาง" data-t="uiMrs">นาง</option><option value="นางสาว" data-t="uiMiss">นางสาว</option>
               <option value="Mrs.">Mrs.</option><option value="Miss">Miss</option>
             </select>
-            <input type="text" id="f_motherFname" class="field-input text-xs flex-1" placeholder="ชื่อ">
+            <input type="text" id="f_motherFname" class="field-input text-xs flex-1" placeholder="ชื่อ" data-t-placeholder="stAdminFname">
           </div>
-          <input type="text" id="f_motherLname" class="field-input text-xs" placeholder="นามสกุล">
+          <input type="text" id="f_motherLname" class="field-input text-xs" placeholder="นามสกุล" data-t-placeholder="stAdminLname">
         </div>
       </div>
     </div>
@@ -694,7 +694,7 @@
                    placeholder="พิมพ์หรือเลือกธนาคาร"
                    autocomplete="off">
           </div>
-          <p class="text-xs text-gray-400 mt-1">ธนาคารกรุงไทยเป็นค่าเริ่มต้น (สามารถเปลี่ยนได้)</p>
+          <p class="text-xs text-gray-400 mt-1"><span data-t="uiKrungThaiBankIsTheDefaultCan">ธนาคารกรุงไทยเป็นค่าเริ่มต้น (สามารถเปลี่ยนได้)</span></p>
         </div>
         <div>
           <label class="field-label" data-t="bankAccountNo">เลขบัญชีธนาคาร</label>
@@ -775,7 +775,7 @@
             </tr>
           </thead>
           <tbody id="gradeFormBody">
-            <tr id="gradeEmptyRow"><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;font-size:12px" data-t="arNoGrades">ยังไม่มีผลการเรียนที่บันทึกไว้</td></tr>
+            <tr id="gradeEmptyRow"><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;font-size:12px" data-t="arNoGrades">${t('arNoGrades')}</td></tr>
           </tbody>
         </table>
       </div>
@@ -814,7 +814,7 @@
   <div class="form-section mb-5">
     <div class="form-section-header" style="background:#7c3aed">
       <i data-lucide="paperclip" class="w-4 h-4"></i>
-      <span>9. เอกสารแนบ (PDF / รูปภาพ)</span>
+      <span><span data-t="ui9AttachmentsPDFImages">9. เอกสารแนบ (PDF / รูปภาพ)</span></span>
     </div>
     <div class="form-section-body">
       <!-- datalist for labels -->
@@ -837,10 +837,10 @@
            ondragleave="this.classList.remove('border-purple-500','bg-purple-100')"
            ondrop="docHandleDrop(event)">
         <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-300 mx-auto mb-2"></i>
-        <p class="text-sm text-purple-700 font-semibold mb-1">ลากวางไฟล์ที่นี่ หรือกดเลือกไฟล์</p>
-        <p class="text-xs text-gray-400 mb-3">รองรับ PDF, JPG, PNG, WEBP — สูงสุด 5 MB ต่อไฟล์</p>
+        <p class="text-sm text-purple-700 font-semibold mb-1"><span data-t="uiDropFilesHereOrClickToSelect">ลากวางไฟล์ที่นี่ หรือกดเลือกไฟล์</span></p>
+        <p class="text-xs text-gray-400 mb-3"><span data-t="uiPDFJPGPNGWEBPUpTo5">รองรับ PDF, JPG, PNG, WEBP — สูงสุด 5 MB ต่อไฟล์</span></p>
         <label class="btn btn-sm cursor-pointer inline-flex items-center gap-2" style="background:#7c3aed;color:white;border-color:#7c3aed">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เลือกไฟล์
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-t="uiSelectFile">เลือกไฟล์</span>
           <input type="file" id="f_docFiles" accept="image/*,.pdf" multiple class="hidden" onchange="docAddFiles(event)">
         </label>
       </div>
@@ -849,7 +849,7 @@
       <div id="docPendingWrap" class="hidden mb-4">
         <p class="text-xs font-bold text-amber-700 mb-2 flex items-center gap-1.5">
           <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-          รอการอัปโหลด — จะอัปโหลดอัตโนมัติหลังกด "บันทึกข้อมูล"
+          <span data-t="uiPendingUploadFilesWillUploadAutomaticallyAfter">รอการอัปโหลด — จะอัปโหลดอัตโนมัติหลังกด "บันทึกข้อมูล"</span>
         </p>
         <div id="docPendingList" class="space-y-2"></div>
       </div>
@@ -859,12 +859,12 @@
         <div class="flex items-center gap-2 mb-2">
           <p class="text-xs font-bold text-green-700 flex items-center gap-1.5">
             <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
-            เอกสารที่บันทึกแล้ว
+            <span data-t="uiSavedDocuments">เอกสารที่บันทึกแล้ว</span>
           </p>
-          <span id="docExistingLoading" class="text-xs text-gray-400">(กำลังโหลด...)</span>
+          <span id="docExistingLoading" class="text-xs text-gray-400"><span data-t="uiLoading">(กำลังโหลด...)</span></span>
         </div>
         <div id="docExistingList" class="space-y-2"></div>
-        <p id="docExistingEmpty" class="hidden text-xs text-gray-400 italic">ยังไม่มีเอกสารแนบ</p>
+        <p id="docExistingEmpty" class="hidden text-xs text-gray-400 italic"><span data-t="uiNoAttachmentsYet">ยังไม่มีเอกสารแนบ</span></p>
       </div>
     </div>
   </div>
@@ -877,7 +877,7 @@
     </div>
     <div class="form-section-body">
       <label class="field-label" data-t="additionalNotes">หมายเหตุ / บันทึกเพิ่มเติม</label>
-      <textarea id="f_remarks" rows="3" class="field-input" placeholder="หมายเหตุ..."></textarea>
+      <textarea id="f_remarks" rows="3" class="field-input" placeholder="หมายเหตุ..." data-t-placeholder="hintNotes"></textarea>
     </div>
   </div>
 
@@ -899,9 +899,9 @@
     <span class="mx-2 hide-xs">•</span>
     <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
   </div>
-  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง">
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง" data-t-title="hintClickToCheckAgain">
     <span class="db-dot"></span>
-    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+    <span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span>
   </div>
 </footer>
 
@@ -927,14 +927,14 @@
         <textarea id="utReason" rows="3" maxlength="500"
           class="w-full border-2 rounded-xl p-3 text-sm outline-none resize-none font-inherit"
           style="border-color:#c4b5fd;font-family:inherit"
-          placeholder="กรุณาระบุเหตุผล เช่น ย้ายสถาบัน, เปลี่ยนสาขาวิชา, ฯลฯ (จำเป็น)"></textarea>
+          placeholder="กรุณาระบุเหตุผล เช่น ย้ายสถาบัน, เปลี่ยนสาขาวิชา, ฯลฯ (จำเป็น)" data-t-placeholder="hintPleaseSpecifyAReasonEGInstitution"></textarea>
       </div>
       <!-- New university fields -->
       <p class="text-xs font-bold text-purple-700 mb-3 uppercase tracking-wide" data-t="changeUniNewInfo">ข้อมูลมหาวิทยาลัยใหม่</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
-          <input type="text" id="ut_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย">
+          <label class="field-label"><span data-t="uniName">ชื่อมหาวิทยาลัย</span> <span class="text-purple-400 text-xs"><span data-t="uiThai">(ไทย)</span></span></label>
+          <input type="text" id="ut_uniName" list="uniList" class="field-input" placeholder="ชื่อมหาวิทยาลัย" data-t-placeholder="promoUniName">
         </div>
         <div>
           <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniNameEN">University Name</span> (EN)</label>
@@ -942,15 +942,15 @@
         </div>
         <div>
           <label class="field-label"><span data-t="faculty">คณะ</span></label>
-          <input type="text" id="ut_uniFaculty" class="field-input" placeholder="ชื่อคณะ">
+          <input type="text" id="ut_uniFaculty" class="field-input" placeholder="ชื่อคณะ" data-t-placeholder="hintFacultyName">
         </div>
         <div>
           <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="faculty">Faculty</span> (EN)</label>
           <input type="text" id="ut_uniFacultyEN" class="field-input" placeholder="Faculty (English)" style="border-color:#c4b5fd">
         </div>
         <div>
-          <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs">(ไทย)</span></label>
-          <input type="text" id="ut_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร">
+          <label class="field-label"><span data-t="uniMajor">สาขาวิชา</span> <span class="text-purple-400 text-xs"><span data-t="uiThai">(ไทย)</span></span></label>
+          <input type="text" id="ut_uniMajor" class="field-input" placeholder="สาขาวิชา / หลักสูตร" data-t-placeholder="hintProgramCourse">
         </div>
         <div>
           <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniMajorEN">Major / Program</span> (EN)</label>
@@ -958,7 +958,7 @@
         </div>
         <div>
           <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้ง</span></label>
-          <input type="text" id="ut_uniProvince" class="field-input" placeholder="จังหวัด">
+          <input type="text" id="ut_uniProvince" class="field-input" placeholder="จังหวัด" data-t-placeholder="promoProvince">
         </div>
         <div>
           <label class="field-label"><span class="text-purple-500 font-bold text-xs mr-1">🇬🇧</span><span data-t="uniProvince">Province</span> (EN)</label>
@@ -967,9 +967,9 @@
         <div>
           <label class="field-label"><span data-t="courseDuration">ระยะเวลาหลักสูตร (ปี)</span></label>
           <select id="ut_uniDuration" class="field-select">
-            <option value="">-- เลือก --</option>
-            <option value="1">1 ปี</option><option value="2">2 ปี</option>
-            <option value="3">3 ปี</option><option value="4">4 ปี</option><option value="5">5 ปี</option>
+            <option value="" data-t="uiSelect">-- เลือก --</option>
+            <option value="1" data-t="ui1Year">1 ปี</option><option value="2" data-t="ui2Years">2 ปี</option>
+            <option value="3" data-t="ui3Years">3 ปี</option><option value="4" data-t="ui4Years">4 ปี</option><option value="5" data-t="ui5Years">5 ปี</option>
           </select>
         </div>
       </div>
@@ -1009,19 +1009,19 @@
           <div class="border-2 border-yellow-400 rounded-lg opacity-80" style="width:85%;aspect-ratio:1.586;box-shadow:0 0 0 9999px rgba(0,0,0,0.4)"></div>
         </div>
         <p class="absolute bottom-2 left-0 right-0 text-center text-xs text-yellow-300 font-semibold">
-          วางบัตรให้อยู่ในกรอบสีเหลือง
+          <span data-t="uiPlaceTheCardInsideTheYellowFrame">วางบัตรให้อยู่ในกรอบสีเหลือง</span>
         </p>
       </div>
       <p id="ocrStatus" class="text-xs text-gray-500 text-center mb-3 min-h-4"></p>
       <div class="flex gap-2 mb-3">
         <button id="ocrCaptureBtn" onclick="ocrCapture()" class="btn btn-primary flex-1">
-          <i data-lucide="camera" class="w-4 h-4"></i> ถ่ายและอ่านข้อมูล
+          <i data-lucide="camera" class="w-4 h-4"></i> <span data-t="uiCaptureAndRead">ถ่ายและอ่านข้อมูล</span>
         </button>
-        <label class="btn btn-secondary cursor-pointer" title="อัปโหลดรูปบัตรประชาชน">
+        <label class="btn btn-secondary cursor-pointer" title="อัปโหลดรูปบัตรประชาชน" data-t-title="hintUploadIdCardImage">
           <i data-lucide="image" class="w-4 h-4"></i>
           <input type="file" accept="image/*" class="hidden" onchange="ocrFromImage(event)">
         </label>
-        <button onclick="closeOCR()" class="btn btn-secondary" title="ปิด">
+        <button onclick="closeOCR()" class="btn btn-secondary" title="ปิด" data-t-title="stOff">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
@@ -1038,7 +1038,7 @@
     <div class="flex justify-between items-center p-4 flex-shrink-0" style="background:linear-gradient(135deg,#1d4ed8,#6d28d9);color:#fff">
       <h3 class="font-bold flex items-center gap-2">
         <i data-lucide="scan-line" class="w-5 h-5"></i>
-        AI สแกนเอกสาร — กรอกข้อมูลอัตโนมัติ
+        <span data-t="uiAIDocumentScanAutofill">AI สแกนเอกสาร — กรอกข้อมูลอัตโนมัติ</span>
       </h3>
       <button onclick="closeDocScanModal()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
     </div>
@@ -1050,10 +1050,10 @@
            ondragleave="this.classList.remove('border-blue-500','bg-blue-100')"
            ondrop="docScanHandleDrop(event)">
         <i data-lucide="file-search" class="w-10 h-10 text-blue-300 mx-auto mb-2"></i>
-        <p class="text-sm font-semibold text-blue-800 mb-1">อัปโหลดเอกสารเพื่อให้ AI อ่านและกรอกข้อมูล</p>
-        <p class="text-xs text-gray-400 mb-3">รองรับ PDF, JPG, PNG, WEBP — ใบสมัครทุน, ใบรับรอง, Transcript, ทะเบียนบ้าน ฯลฯ</p>
+        <p class="text-sm font-semibold text-blue-800 mb-1"><span data-t="uiUploadDocumentsForAIToReadAnd">อัปโหลดเอกสารเพื่อให้ AI อ่านและกรอกข้อมูล</span></p>
+        <p class="text-xs text-gray-400 mb-3"><span data-t="uiPDFJPGPNGWEBPScholarshipApplicationsCertificates">รองรับ PDF, JPG, PNG, WEBP — ใบสมัครทุน, ใบรับรอง, Transcript, ทะเบียนบ้าน ฯลฯ</span></p>
         <label class="btn btn-primary btn-sm cursor-pointer inline-flex items-center gap-2">
-          <i data-lucide="upload" class="w-3.5 h-3.5"></i> เลือกไฟล์เอกสาร
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span data-t="uiSelectDocument">เลือกไฟล์เอกสาร</span>
           <input type="file" id="docScanFileInput" accept="image/*,.pdf" class="hidden" onchange="docScanProcess(event)">
         </label>
       </div>
@@ -1079,16 +1079,16 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          <span id="docScanStatusText">กำลังส่งให้ AI วิเคราะห์...</span>
+          <span id="docScanStatusText"><span data-t="uiSendingToAIForAnalysis">กำลังส่งให้ AI วิเคราะห์...</span></span>
         </div>
       </div>
       <!-- Result -->
       <div id="docScanResult" class="hidden"></div>
     </div>
     <div class="px-4 pb-4 flex justify-end gap-2 flex-shrink-0">
-      <button onclick="closeDocScanModal()" class="btn btn-secondary btn-sm">ปิด</button>
+      <button onclick="closeDocScanModal()" class="btn btn-secondary btn-sm"><span data-t="stOff">ปิด</span></button>
       <button id="docScanApplyBtn" onclick="docScanApply()" class="hidden btn btn-primary btn-sm">
-        <i data-lucide="check" class="w-3.5 h-3.5"></i> นำข้อมูลเข้าฟอร์ม
+        <i data-lucide="check" class="w-3.5 h-3.5"></i> <span data-t="uiApplyToForm">นำข้อมูลเข้าฟอร์ม</span>
       </button>
     </div>
   </div>
@@ -1101,7 +1101,7 @@
     <div class="rounded-t-2xl text-white p-4 flex justify-between items-start flex-shrink-0" style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8)">
       <div>
         <h3 class="font-bold text-lg flex items-center gap-2">
-          <i data-lucide="table" class="w-5 h-5"></i> ตรวจสอบข้อมูลก่อนนำเข้า
+          <i data-lucide="table" class="w-5 h-5"></i> <span data-t="uiReviewDataBeforeImport">ตรวจสอบข้อมูลก่อนนำเข้า</span>
         </h3>
         <p id="csvSummaryLine" class="text-blue-200 text-xs mt-0.5"></p>
       </div>
@@ -1112,20 +1112,20 @@
     <!-- Controls -->
     <div class="px-4 py-2 border-b flex flex-wrap items-center gap-2 flex-shrink-0">
       <label class="flex items-center gap-1.5 text-sm font-medium cursor-pointer mr-1">
-        <input type="checkbox" id="csvSelectAll" onchange="csvToggleAll(this.checked)" class="rounded"> เลือกทั้งหมด
+        <input type="checkbox" id="csvSelectAll" onchange="csvToggleAll(this.checked)" class="rounded"> <span data-t="exportSelectAll">เลือกทั้งหมด</span>
       </label>
       <div class="flex gap-1 flex-wrap">
-        <button onclick="csvSetFilter('all')"  id="csvFAll"  class="csv-filter-btn active">ทั้งหมด</button>
-        <button onclick="csvSetFilter('new')"    id="csvFNew"    class="csv-filter-btn">ใหม่</button>
-        <button onclick="csvSetFilter('update')" id="csvFUpdate" class="csv-filter-btn" style="border-color:#1d4ed8;color:#1d4ed8">🔄 อัปเดต</button>
-        <button onclick="csvSetFilter('warn')"   id="csvFWarn"   class="csv-filter-btn">⚠ อาจซ้ำ</button>
-        <button onclick="csvSetFilter('dup')"    id="csvFDup"    class="csv-filter-btn">✕ บัตรซ้ำ</button>
-        <button onclick="csvSetFilter('invalid')" id="csvFInvalid" class="csv-filter-btn hidden" style="border-color:#d97706;color:#d97706">⚠ ข้อมูลไม่ครบ <span id="csvInvalidCnt" class="font-bold"></span></button>
-        <button onclick="csvSetFilter('fail')" id="csvFFail" class="csv-filter-btn hidden" style="border-color:#ef4444;color:#ef4444">❌ ล้มเหลว <span id="csvFailCnt" class="font-bold"></span></button>
-        <button onclick="csvSetFilter('cancelled')" id="csvFCancelled" class="csv-filter-btn hidden" style="border-color:#9ca3af;color:#6b7280">⛔ ยกเลิก <span id="csvCancelledCnt" class="font-bold"></span></button>
+        <button onclick="csvSetFilter('all')"  id="csvFAll"  class="csv-filter-btn active"><span data-t="stTotal">ทั้งหมด</span></button>
+        <button onclick="csvSetFilter('new')"    id="csvFNew"    class="csv-filter-btn"><span data-t="uiNew">ใหม่</span></button>
+        <button onclick="csvSetFilter('update')" id="csvFUpdate" class="csv-filter-btn" style="border-color:#1d4ed8;color:#1d4ed8"><span data-t="uiUpdate">🔄 อัปเดต</span></button>
+        <button onclick="csvSetFilter('warn')"   id="csvFWarn"   class="csv-filter-btn"><span data-t="uiPossibleDuplicate">⚠ อาจซ้ำ</span></button>
+        <button onclick="csvSetFilter('dup')"    id="csvFDup"    class="csv-filter-btn"><span data-t="uiDuplicateIDCard">✕ บัตรซ้ำ</span></button>
+        <button onclick="csvSetFilter('invalid')" id="csvFInvalid" class="csv-filter-btn hidden" style="border-color:#d97706;color:#d97706"><span data-t="uiIncompleteData">⚠ ข้อมูลไม่ครบ</span> <span id="csvInvalidCnt" class="font-bold"></span></button>
+        <button onclick="csvSetFilter('fail')" id="csvFFail" class="csv-filter-btn hidden" style="border-color:#ef4444;color:#ef4444"><span data-t="uiFailed">❌ ล้มเหลว</span> <span id="csvFailCnt" class="font-bold"></span></button>
+        <button onclick="csvSetFilter('cancelled')" id="csvFCancelled" class="csv-filter-btn hidden" style="border-color:#9ca3af;color:#6b7280"><span data-t="uiCancelled">⛔ ยกเลิก</span> <span id="csvCancelledCnt" class="font-bold"></span></button>
       </div>
       <input type="text" id="csvSearch" placeholder="ค้นหา ชื่อ / บัตร ปชช. / StipNo..." oninput="csvRenderTable()"
-        class="ml-auto border rounded-lg px-3 py-1.5 text-xs w-52 focus:outline-none focus:ring-2 focus:ring-blue-300">
+        class="ml-auto border rounded-lg px-3 py-1.5 text-xs w-52 focus:outline-none focus:ring-2 focus:ring-blue-300" data-t-placeholder="hintSearchNameIdCardStipno">
     </div>
     <!-- Table -->
     <div class="overflow-auto flex-1">
@@ -1133,22 +1133,22 @@
         <thead class="sticky top-0 bg-white z-10 shadow-sm">
           <tr class="border-b">
             <th class="p-2 w-8"></th>
-            <th id="csvThNo" class="p-2 text-left text-gray-500 font-semibold w-8">ลำดับ</th>
-            <th id="csvThStipNo" class="p-2 text-left text-gray-500 font-semibold whitespace-nowrap">หมายเลขทุน</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">สถานะ</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">ชื่อ-นามสกุล</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">ปีเกิด ค.ศ. 🔑</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">เลขบัตร ปชช.</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">สถาบัน</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">ปีทุน (พ.ศ.)</th>
-            <th class="p-2 text-left text-gray-500 font-semibold">สถานะทุน</th>
+            <th id="csvThNo" class="p-2 text-left text-gray-500 font-semibold w-8"><span data-t="exportNo">ลำดับ</span></th>
+            <th id="csvThStipNo" class="p-2 text-left text-gray-500 font-semibold whitespace-nowrap"><span data-t="uiScholarshipNumber">หมายเลขทุน</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="stAdminStatus">สถานะ</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="stSigNameLabel">ชื่อ-นามสกุล</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiBirthYearCELabel">ปีเกิด ค.ศ. 🔑</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiNationalIDNumber">เลขบัตร ปชช.</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="rptChartInstShort">สถาบัน</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiScholarshipYearBE">ปีทุน (พ.ศ.)</span></th>
+            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiScholarshipStatus">สถานะทุน</span></th>
           </tr>
         </thead>
         <tbody id="csvTbody"></tbody>
       </table>
       <div id="csvEmpty" class="hidden text-center py-12 text-gray-400">
         <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30"></i>
-        <p>ไม่พบข้อมูลตามเงื่อนไข</p>
+        <p><span data-t="uiNoMatchingDataFound">ไม่พบข้อมูลตามเงื่อนไข</span></p>
       </div>
     </div>
     <!-- Invalid rows banner (shown when validation issues found) -->
@@ -1156,46 +1156,46 @@
       <div class="flex items-center gap-3 flex-wrap">
         <span class="text-amber-800 text-xs font-semibold flex items-center gap-1.5">
           <i data-lucide="alert-triangle" class="w-3.5 h-3.5 flex-shrink-0"></i>
-          พบ <b id="csvInvalidBannerCnt" class="text-red-600 mx-0.5">0</b> รายการที่ข้อมูลไม่ครบ — กรุณาแก้ไขก่อนนำเข้า
+          <span data-t="uiFound">พบ</span> <b id="csvInvalidBannerCnt" class="text-red-600 mx-0.5">0</b> <span data-t="uiIncompleteRecordsPleaseCorrectBeforeImporting">รายการที่ข้อมูลไม่ครบ — กรุณาแก้ไขก่อนนำเข้า</span>
         </span>
         <button onclick="csvSetFilter('invalid'); _csvOpenFirstInvalid();"
           class="text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded px-3 py-1 transition flex items-center gap-1">
-          <i data-lucide="edit-3" class="w-3 h-3"></i> แก้ไขรายการปัญหา
+          <i data-lucide="edit-3" class="w-3 h-3"></i> <span data-t="uiEditProblemRecords">แก้ไขรายการปัญหา</span>
         </button>
         <button onclick="csvSetFilter('invalid')"
-          class="text-xs text-amber-700 underline hover:text-amber-900">ดูเฉพาะรายการปัญหา</button>
+          class="text-xs text-amber-700 underline hover:text-amber-900"><span data-t="uiShowProblemsOnly">ดูเฉพาะรายการปัญหา</span></button>
       </div>
     </div>
     <!-- Footer -->
     <div class="px-4 py-3 border-t bg-gray-50 rounded-b-2xl flex-shrink-0">
       <div id="csvProgressWrap" class="hidden mb-2">
         <div class="flex justify-between items-center text-xs text-gray-500 mb-1">
-          <span id="csvProgressLabel">กำลังนำเข้า...</span>
+          <span id="csvProgressLabel"><span data-t="uiImporting">กำลังนำเข้า...</span></span>
           <div class="flex items-center gap-2">
             <span id="csvProgressPct">0%</span>
             <button id="csvAbortBtn" onclick="csvAbortImport()"
               class="text-xs font-semibold text-red-500 border border-red-300 rounded px-2 py-0.5 hover:bg-red-50 transition flex items-center gap-1">
-              <i data-lucide="square" class="w-3 h-3"></i> หยุด
+              <i data-lucide="square" class="w-3 h-3"></i> <span data-t="uiStop">หยุด</span>
             </button>
           </div>
         </div>
         <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div id="csvProgressBar" class="h-full bg-blue-600 rounded-full transition-all duration-200" style="width:0"></div>
         </div>
-        <p id="csvAbortNotice" class="hidden text-xs text-amber-600 mt-1 font-semibold">⏸ หยุดชั่วคราว — รอให้รายการปัจจุบันเสร็จแล้วจะแสดงตัวเลือก...</p>
+        <p id="csvAbortNotice" class="hidden text-xs text-amber-600 mt-1 font-semibold"><span data-t="uiPausingWaitingForTheCurrentItemTo">⏸ หยุดชั่วคราว — รอให้รายการปัจจุบันเสร็จแล้วจะแสดงตัวเลือก...</span></p>
       </div>
       <div class="flex justify-between items-center gap-2">
         <p class="text-xs text-gray-500">
-          เลือกแล้ว <span id="csvSelectedCnt" class="font-bold text-blue-700">0</span> แถว
-          <span id="csvDupWarn" class="hidden text-orange-500 ml-2">⚠ มีรายการอาจซ้ำ — ตรวจสอบก่อนนำเข้า</span>
+          <span data-t="uiSelected">เลือกแล้ว</span> <span id="csvSelectedCnt" class="font-bold text-blue-700">0</span> <span data-t="uiRows">แถว</span>
+          <span id="csvDupWarn" class="hidden text-orange-500 ml-2"><span data-t="uiPossibleDuplicatesReviewBeforeImporting">⚠ มีรายการอาจซ้ำ — ตรวจสอบก่อนนำเข้า</span></span>
         </p>
         <div class="flex gap-2">
-          <button onclick="closeCSVModal()" id="csvCancelBtn" class="btn btn-secondary btn-sm">ยกเลิก</button>
+          <button onclick="closeCSVModal()" id="csvCancelBtn" class="btn btn-secondary btn-sm"><span data-t="stCancel">ยกเลิก</span></button>
           <button onclick="csvRetryFailed()" id="csvRetryBtn" class="btn btn-sm hidden" style="background:#dc2626;color:white;border-color:#dc2626">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> ลองใหม่รายการล้มเหลว
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-t="uiRetryFailedItems">ลองใหม่รายการล้มเหลว</span>
           </button>
           <button onclick="csvImportSelected()" id="csvImportBtn" class="btn btn-primary btn-sm">
-            <i data-lucide="upload" class="w-3.5 h-3.5"></i> นำเข้าที่เลือก
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span data-t="uiImportSelected">นำเข้าที่เลือก</span>
           </button>
         </div>
       </div>
@@ -1211,7 +1211,7 @@
       <div class="flex items-start justify-between">
         <div>
           <h3 class="font-bold text-lg text-white flex items-center gap-2">
-            <i data-lucide="check-circle" class="w-5 h-5"></i> นำเข้าเสร็จสิ้น
+            <i data-lucide="check-circle" class="w-5 h-5"></i> <span data-t="uiImportComplete">นำเข้าเสร็จสิ้น</span>
           </h3>
           <div id="crm_summary" class="text-blue-200 text-sm mt-1"></div>
         </div>
@@ -1220,7 +1220,7 @@
       <!-- Progress bar for retry -->
       <div id="crm_progressWrap" class="hidden mt-2">
         <div class="flex justify-between text-xs text-blue-200 mb-1">
-          <span id="crm_progressLabel">กำลังนำเข้า...</span>
+          <span id="crm_progressLabel"><span data-t="uiImporting">กำลังนำเข้า...</span></span>
           <span id="crm_progressPct">0%</span>
         </div>
         <div class="h-1.5 bg-blue-900 rounded-full overflow-hidden">
@@ -1232,11 +1232,11 @@
     <div id="crm_list" class="flex-1 overflow-y-auto divide-y"></div>
     <!-- Footer -->
     <div class="px-4 py-3 border-t bg-gray-50 rounded-none flex items-center justify-between gap-2 flex-shrink-0">
-      <p class="text-xs text-gray-400" id="crm_footerNote">กด ✏ เพื่อแก้ไขและนำเข้าใหม่แต่ละรายการ</p>
+      <p class="text-xs text-gray-400" id="crm_footerNote"><span data-t="uiClickToEditAndReimportEachItem">กด ✏ เพื่อแก้ไขและนำเข้าใหม่แต่ละรายการ</span></p>
       <div class="flex gap-2">
-        <button onclick="_crmClose()" class="btn btn-secondary btn-sm">ปิด</button>
+        <button onclick="_crmClose()" class="btn btn-secondary btn-sm"><span data-t="stOff">ปิด</span></button>
         <button id="crm_retryBtn" onclick="_crmRetryAll()" class="btn btn-primary btn-sm hidden">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> ลองใหม่ทั้งหมด
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-t="uiRetryAll">ลองใหม่ทั้งหมด</span>
         </button>
       </div>
     </div>
@@ -1293,14 +1293,25 @@ function onNationalityChange(val) {
   if (el) el.classList.toggle('hidden', val !== '__other__');
 }
 
-// Hook language toggle to re-render select option labels
-(function() {
-  const _orig = window.toggleLang;
-  window.toggleLang = function() {
-    if (typeof _orig === 'function') _orig();
-    _renderNatReligOptions();
-  };
-})();
+document.addEventListener('rdf:languagechange', () => {
+  _renderNatReligOptions();
+  // Relabel existing options without running institution-change side effects.
+  document.querySelectorAll('#f_level option').forEach(option => {
+    option.textContent = levelLabel(option.value);
+  });
+  renderGradeFormTable();
+});
+
+function levelLabel(value) {
+  if (!value) return LANG === 'en' ? '-- Select level --' : '-- เลือกระดับชั้น --';
+  if (LANG !== 'en') return value;
+  const grade = value.match(/\(Grade (\d+)\)/);
+  if (grade) return 'Grade ' + grade[1];
+  const year = value.match(/(\d+)$/);
+  if (year) return (value.startsWith('ปวช.') ? 'Vocational Certificate — Year ' :
+    value.startsWith('ปวส.') ? 'Higher Vocational Certificate — Year ' : 'Year ') + year[1];
+  return value === 'อื่นๆ' ? 'Other' : value;
+}
 
 // Initial render (runs after DOM + LANG are ready)
 _renderNatReligOptions();
@@ -1475,6 +1486,9 @@ let _formGrades   = [];   // full array from system settings
 let _formStipNo   = '';   // current student's StipNo
 let _gradesDirty  = false;
 
+function semesterLabel(value) {
+  return LANG === 'en' ? (String(value).toLowerCase() === 'summer' ? 'Summer' : 'Semester ' + value) : semLabelTH(value);
+}
 function semLabelTH(v) {
   if (v === '1')      return 'ภาคเรียนที่ 1';
   if (v === '2')      return 'ภาคเรียนที่ 2';
@@ -1565,17 +1579,17 @@ function renderGradeFormTable() {
     });
 
   if (!myGrades.length) {
-    tbody.innerHTML = `<tr id="gradeEmptyRow"><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;font-size:12px">ยังไม่มีผลการเรียนที่บันทึกไว้</td></tr>`;
+    tbody.innerHTML = `<tr id="gradeEmptyRow"><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;font-size:12px" data-t="arNoGrades">${t('arNoGrades')}</td></tr>`;
     return;
   }
 
   tbody.innerHTML = myGrades.map((g, i) => {
     const gpaV  = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
     const gpaC  = gpaColorStyle(g.gpa);
-    const upd   = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '—';
+    const upd   = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString(getLocale()) : '—';
     return `<tr style="border-bottom:1px solid #f1f5f9">
       <td style="padding:8px 10px;font-weight:700;font-size:12px">${g.acadYear || '—'}</td>
-      <td style="padding:8px 10px;font-size:12px">${semLabelTH(g.semester)}</td>
+      <td style="padding:8px 10px;font-size:12px">${semesterLabel(g.semester)}</td>
       <td style="padding:8px 10px;text-align:center">
         <span style="font-weight:900;font-size:14px;color:${gpaC}">${gpaV}</span>
       </td>
@@ -1584,7 +1598,7 @@ function renderGradeFormTable() {
       <td style="padding:8px 10px;text-align:center">
         <button type="button" onclick="removeGradeRow('${g.stipNo}',${g.acadYear},'${g.semester}')"
                 style="color:#dc2626;background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px"
-                title="ลบรายการนี้">
+                title="${t('delete')}">
           <i data-lucide="trash-2" style="width:13px;height:13px;display:inline-block;vertical-align:middle"></i>
         </button>
       </td>
@@ -1605,20 +1619,20 @@ function addGradeRow() {
 
   // Validation
   if (!year || year < 2560 || year > 2600) {
-    Swal.fire('คำเตือน', 'กรุณากรอกปีการศึกษา (พ.ศ.) ให้ถูกต้อง เช่น 2568', 'warning');
+    Swal.fire(t('warning'), t('gradeYearInvalid'), 'warning');
     yearEl.focus(); return;
   }
   if (!sem) {
-    Swal.fire('คำเตือน', 'กรุณาเลือกภาคเรียน', 'warning');
+    Swal.fire(t('warning'), t('gradeSemesterRequired'), 'warning');
     semEl.focus(); return;
   }
   if (!raw) {
-    Swal.fire('คำเตือน', 'กรุณากรอก GPA (0.00 – 4.00)', 'warning');
+    Swal.fire(t('warning'), t('gradeGpaRequired'), 'warning');
     gpaEl.focus(); return;
   }
   const gpa = Math.round(Math.min(4, Math.max(0, parseFloat(raw))) * 100) / 100;
   if (isNaN(gpa)) {
-    Swal.fire('คำเตือน', 'GPA ต้องเป็นตัวเลข 0.00 – 4.00 เท่านั้น', 'warning');
+    Swal.fire(t('warning'), t('gradeGpaInvalid'), 'warning');
     gpaEl.focus(); return;
   }
 
@@ -1649,16 +1663,16 @@ function addGradeRow() {
   noteEl.value  = '';
 
   renderGradeFormTable();
-  const action = existed ? 'อัปเดตแล้ว' : 'เพิ่มแล้ว';
-  Swal.fire({ icon:'success', title:`${action} ผลการเรียน`, text:`ปีการศึกษา ${year} ${semLabelTH(sem)} — GPA ${gpa.toFixed(2)}`, timer:1800, showConfirmButton:false });
+  const action = existed ? t('gradeUpdated') : t('gradeAdded');
+  Swal.fire({ icon:'success', title:action, text:`${t('academicYear')} ${year} ${semesterLabel(sem)} — GPA ${gpa.toFixed(2)}`, timer:1800, showConfirmButton:false });
 }
 
 function removeGradeRow(stipNo, acadYear, semester) {
   Swal.fire({
-    title:'ยืนยันการลบ?', icon:'warning',
-    html:`ลบผลการเรียนปีการศึกษา <b>${acadYear}</b> ${semLabelTH(semester)} — GPA นี้?`,
+    title:t('deleteConfirm'), icon:'warning',
+    text:`${t('deleteConfirm')} ${t('academicYear')} ${acadYear} ${semesterLabel(semester)} — GPA`,
     showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
-    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก',
+    confirmButtonText:t('delete'), cancelButtonText:t('cancel'),
   }).then(cf => {
     if (!cf.isConfirmed) return;
     _formGrades = _formGrades.filter(g =>
@@ -1671,28 +1685,28 @@ function removeGradeRow(stipNo, acadYear, semester) {
 
 async function saveGradesFromForm() {
   if (!_gradesDirty) {
-    Swal.fire({ icon:'info', title:'ไม่มีการเปลี่ยนแปลง', timer:1200, showConfirmButton:false });
+    Swal.fire({ icon:'info', title:t('noChanges'), timer:1200, showConfirmButton:false });
     return;
   }
-  showLoader(true, 'กำลังบันทึกผลการเรียน...');
+  showLoader(true, t('gradeSaving'));
   try {
     const r = await API.saveSetting('STUDENT_GRADES', _formGrades);
     showLoader(false);
     if (r.status !== 'success') throw new Error(r.message || 'บันทึกไม่สำเร็จ');
     _gradesDirty = false;
-    Swal.fire({ icon:'success', title:'บันทึกผลการเรียนสำเร็จ',
-      text:`ข้อมูลอัปเดตในฐานข้อมูลกลางแล้ว ใช้ร่วมกับ academic-results.html`,
+    Swal.fire({ icon:'success', title:t('gradeSaved'),
+      text:t('gradeSavedDetail'),
       timer:2500, showConfirmButton:false });
   } catch(e) {
     showLoader(false);
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), e.message, 'error');
   }
 }
 
 // ── Load existing data if editing ──
 if (editStipNo) {
   document.getElementById('pageTitle').innerHTML =
-    `<i data-lucide="edit" class="w-5 h-5" style="color:#1e3a8a"></i> ${t('editStudentTitle')} ${editStipNo}`;
+    `<i data-lucide="edit" class="w-5 h-5" style="color:#1e3a8a"></i> <span data-t="editStudentTitle">${t('editStudentTitle')}</span> ${editStipNo}`;
   loadStudentForEdit(editStipNo);
   document.getElementById('f_editMode').value = 'edit';
 }
@@ -1873,7 +1887,7 @@ function onInstitutionChange() {
   const majorWrap = document.getElementById('majorWrap');
   const majorNote = document.getElementById('majorAdminNote');
 
-  lvl.innerHTML = `<option value="">-- เลือกระดับชั้น --</option>`;
+  lvl.innerHTML = `<option value="">${levelLabel('')}</option>`;
   lvl.disabled = !inst;
   dept.classList.add('hidden');
   uni.classList.add('hidden');
@@ -1891,7 +1905,7 @@ function onInstitutionChange() {
     OTHER:['ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','ปีที่ 6','อื่นๆ']
   };
   (levels[inst]||[]).forEach(l => {
-    const o = document.createElement('option'); o.value = l; o.textContent = l; lvl.appendChild(o);
+    const o = document.createElement('option'); o.value = l; o.textContent = levelLabel(l); lvl.appendChild(o);
   });
   if (inst) lvl.disabled = false;
 
@@ -2380,7 +2394,7 @@ function docRenderExisting() {
 }
 async function docDeleteExisting(fileId, idx) {
   const cf = await Swal.fire({ title:'ลบเอกสาร?', text:'ไฟล์จะถูกย้ายไปถังขยะใน Google Drive', icon:'warning',
-    showCancelButton:true, confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#dc2626' });
+    showCancelButton:true, confirmButtonText:t('delete'), cancelButtonText:t('cancel'), confirmButtonColor:'#dc2626' });
   if (!cf.isConfirmed) return;
   showLoader(true, 'กำลังลบ...');
   const res = await API.deleteFile(fileId);
@@ -2784,7 +2798,7 @@ async function ocrAIFill() {
     }
   } catch(e) {
     if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI แปลอัจฉริยะ'; }
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), e.message, 'error');
   }
 }
 function parseIDCard(text) {
@@ -3119,7 +3133,7 @@ async function cleanBlankRowsUI() {
   try {
     const res = await API.countBlankRows();
     showLoader(false);
-    if (res.status !== 'success') { Swal.fire('ข้อผิดพลาด', res.message, 'error'); return; }
+    if (res.status !== 'success') { Swal.fire(t('error'), res.message, 'error'); return; }
     if (res.count === 0) {
       Swal.fire({ title:'ไม่พบข้อมูลเสีย', text:'ไม่มี row ที่ไม่มี StipNo และไม่มีข้อมูลระบุตัวตน', icon:'success', timer:2500, showConfirmButton:false });
       return;
@@ -3140,11 +3154,11 @@ async function cleanBlankRowsUI() {
     if (del.status === 'success') {
       Swal.fire({ title:'ล้างข้อมูลเสร็จสิ้น', html:`ลบ <b>${del.deleted}</b> แถวออกแล้ว`, icon:'success', timer:2500, showConfirmButton:false });
     } else {
-      Swal.fire('ข้อผิดพลาด', del.message, 'error');
+      Swal.fire(t('error'), del.message, 'error');
     }
   } catch(e) {
     showLoader(false);
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), e.message, 'error');
   }
 }
 

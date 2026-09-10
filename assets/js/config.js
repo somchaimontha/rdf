@@ -6,7 +6,7 @@ const RDF = {
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
   VERSION: "2.0.0",
   DEFAULT_LANG: "th",
-  INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"อื่นๆ" },
+  INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"Other" },
   INSTITUTION_LABELS_TH: { MBS:'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"', VC:'วิทยาลัยการอาชีพแม่สะเรียง', UNI:'มหาวิทยาลัย', OTHER:'อื่นๆ' },
   INSTITUTION_DATA: {
     MBS: {

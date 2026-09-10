@@ -1,0 +1,5 @@
+# Upload only the Apps Script backend, never the browser application.
+**/**
+!Code.gs
+!databasesetup.gs
+!appsscript.json

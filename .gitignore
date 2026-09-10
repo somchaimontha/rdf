@@ -5,3 +5,5 @@ appsscript.json
 databasesetup.gs
 config.js
 docs/
+.clasp.json
+.clasprc.json

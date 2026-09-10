@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>รายชื่อนักเรียนทุน — RDF</title>
+<title data-t="uiScholarshipStudentsRDF">รายชื่อนักเรียนทุน — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText"><span data-t="stLoading">กำลังโหลด...</span></p></div>
 
 <!-- Navbar -->
 <nav class="rdf-nav">
@@ -69,9 +69,9 @@
       </button>
       <button id="dupCheckBtn" onclick="openDupModal()" class="btn btn-sm hidden"
         style="background:#f59e0b;color:#fff;border-color:#f59e0b"
-        title="ตรวจสอบและผสานข้อมูลที่ซ้ำซ้อน">
+        title="ตรวจสอบและผสานข้อมูลที่ซ้ำซ้อน" data-t-title="hintCheckAndMergeDuplicateRecords">
         <i data-lucide="git-merge" class="w-4 h-4"></i>
-        <span>ตรวจสอบซ้ำ</span>
+        <span><span data-t="uiRecheck">ตรวจสอบซ้ำ</span></span>
       </button>
       <button onclick="openStudentReportModal()" class="btn btn-sm"
         style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
@@ -124,7 +124,7 @@
               <option value="MBS">Maesariang Boripat Suksa School</option>
               <option value="VC">Vocational College</option>
               <option value="UNI">University</option>
-              <option value="OTHER">อื่นๆ</option>
+              <option value="OTHER" data-t="other">อื่นๆ</option>
             </select>
           </div>
           <!-- Level -->
@@ -153,7 +153,7 @@
         </div>
         <!-- Active filters display -->
         <div id="activeFiltersWrap" class="hidden flex flex-wrap gap-2">
-          <span class="text-xs text-gray-500 font-semibold self-center">ตัวกรองที่ใช้:</span>
+          <span class="text-xs text-gray-500 font-semibold self-center"><span data-t="uiActiveFiltersLabel">ตัวกรองที่ใช้:</span></span>
           <div id="activeFilterTags" class="flex flex-wrap gap-2"></div>
         </div>
       </div>
@@ -162,16 +162,16 @@
 
   <!-- Results count -->
   <div class="flex items-center justify-between mb-3 px-1">
-    <p id="recordInfo" class="text-xs text-gray-500">กำลังโหลด...</p>
+    <p id="recordInfo" class="text-xs text-gray-500"><span data-t="stLoading">กำลังโหลด...</span></p>
     <div class="flex items-center gap-2">
       <span class="text-xs text-gray-500" data-t="showing">แสดง</span>
       <select id="perPageSel" onchange="applyFilters()" class="border border-gray-200 text-xs rounded-lg px-2 py-1 bg-white">
         <option value="20">20</option>
         <option value="50">50</option>
         <option value="100">100</option>
-        <option value="0">ทั้งหมด</option>
+        <option value="0" data-t="stTotal">ทั้งหมด</option>
       </select>
-      <span class="text-xs text-gray-500">รายการ/หน้า</span>
+      <span class="text-xs text-gray-500"><span data-t="uiRecordsPage">รายการ/หน้า</span></span>
     </div>
   </div>
 
@@ -186,8 +186,8 @@
           <th class="hide-mobile" data-t="scholarshipYear">ปีการศึกษาที่ได้รับทุน</th>
           <th class="hide-mobile" data-t="currentAcademicYear">ปีการศึกษาปัจจุบัน</th>
           <th data-t="phone">โทรศัพท์</th>
-          <th>สถานะ</th>
-          <th class="hide-mobile text-center">ปีเกิด ค.ศ.</th>
+          <th><span data-t="stAdminStatus">สถานะ</span></th>
+          <th class="hide-mobile text-center"><span data-t="uiBirthYearCE">ปีเกิด ค.ศ.</span></th>
           <th class="text-center hide-mobile" style="color:#7c3aed" data-t="arGradeHeader">ผลการเรียน</th>
           <th class="text-center" data-t="actions">จัดการ</th>
         </tr>
@@ -211,9 +211,9 @@
     <span class="mx-2 hide-xs">•</span>
     <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
   </div>
-  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง">
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง" data-t-title="hintClickToCheckAgain">
     <span class="db-dot"></span>
-    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+    <span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span>
   </div>
 </footer>
 
@@ -224,7 +224,7 @@
     <div class="flex items-center justify-between px-5 py-3.5 rounded-t-2xl flex-shrink-0" style="background:#7c3aed">
       <h3 class="font-bold text-white flex items-center gap-2 text-sm">
         <i data-lucide="book-open" class="w-4 h-4"></i>
-        <span id="gradeModalStudentName">ผลการเรียน</span>
+        <span id="gradeModalStudentName"><span data-t="sfGroupGrades">ผลการเรียน</span></span>
       </h3>
       <button onclick="closeGradeModal()" class="text-white opacity-70 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -243,7 +243,7 @@
     <div class="flex items-center justify-between px-6 py-4 rounded-t-2xl flex-shrink-0" style="background:#1e3a8a">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
         <i data-lucide="file-text" class="w-4 h-4"></i>
-        สร้างรายงานนักเรียน / Student Report
+        <span data-t="uiCreateStudentReport">สร้างรายงานนักเรียน / Student Report</span>
       </h3>
       <button onclick="closeStudentReportModal()" class="text-white opacity-60 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -256,20 +256,20 @@
         style="padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;
                border:none;border-bottom:2.5px solid #2563eb;color:#1d4ed8;
                display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s">
-        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> ตั้งค่ารายงาน
+        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> <span data-t="uiReportSettings">ตั้งค่ารายงาน</span>
       </button>
       <button id="rptTab2Btn" onclick="switchRptTab(2)"
         style="padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;
                border:none;border-bottom:2.5px solid transparent;color:#6b7280;
                display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s">
-        <i data-lucide="table-2" class="w-3.5 h-3.5"></i> เลือกฟิลด์
+        <i data-lucide="table-2" class="w-3.5 h-3.5"></i> <span data-t="uiSelectFields">เลือกฟิลด์</span>
         <span id="rptFieldCount" style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:2px">0</span>
       </button>
       <button id="rptTab3Btn" onclick="switchRptTab(3)"
         style="padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;
                border:none;border-bottom:2.5px solid transparent;color:#6b7280;
                display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s">
-        <i data-lucide="eye" class="w-3.5 h-3.5"></i> ตัวอย่างข้อมูล
+        <i data-lucide="eye" class="w-3.5 h-3.5"></i> <span data-t="uiDataPreview">ตัวอย่างข้อมูล</span>
       </button>
     </div>
 
@@ -281,29 +281,29 @@
 
         <!-- Report Type -->
         <div>
-          <span class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">ประเภทรายงาน / Report Type</span>
+          <span class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"><span data-t="uiReportType">ประเภทรายงาน / Report Type</span></span>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
               <input type="radio" name="rptType" value="all" checked class="accent-blue-600">
-              <span>รายชื่อนักเรียนทั้งหมด</span></label>
+              <span><span data-t="rptTypeAll">รายชื่อนักเรียนทั้งหมด</span></span></label>
             <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
               <input type="radio" name="rptType" value="active" class="accent-blue-600">
-              <span>เฉพาะที่กำลังศึกษา</span></label>
+              <span><span data-t="uiActiveStudentsOnly">เฉพาะที่กำลังศึกษา</span></span></label>
             <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
               <input type="radio" name="rptType" value="graduated" class="accent-blue-600">
-              <span>ผู้สำเร็จการศึกษา</span></label>
+              <span><span data-t="uiGraduates">ผู้สำเร็จการศึกษา</span></span></label>
             <label class="flex items-center gap-2 text-sm cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition">
               <input type="radio" name="rptType" value="university" class="accent-blue-600">
-              <span>นักเรียนต่อมหาวิทยาลัย</span></label>
+              <span><span data-t="rptTypeUni">นักเรียนต่อมหาวิทยาลัย</span></span></label>
           </div>
         </div>
 
         <!-- Institution + Language -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">กรองสถานศึกษา / Institution</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="uiInstitutionFilter">กรองสถานศึกษา / Institution</span></label>
             <select id="rptInst" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
-              <option value="">ทุกสถานศึกษา / All Institutions</option>
+              <option value="" data-t="uiAllInstitutionsLabel">ทุกสถานศึกษา / All Institutions</option>
               <option value="MBS">MBS — Maesariang Boripat Suksa School</option>
               <option value="VC">VC — Maesariang Industrial and Community Education College</option>
               <option value="UNI">University</option>
@@ -311,7 +311,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ภาษารายงาน / Language</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="uiReportLanguage">ภาษารายงาน / Language</span></label>
             <div class="flex gap-3 mt-2.5">
               <label class="flex items-center gap-1.5 text-sm cursor-pointer">
                 <input type="radio" name="rptLang" value="th" checked class="accent-blue-600"> ไทย</label>
@@ -324,62 +324,62 @@
         <!-- Year + Level + Date -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ปีการศึกษา / Academic Year</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="rptPrAcad">ปีการศึกษา / Academic Year</span></label>
             <select id="rptYear" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
-              <option value="">ทุกปีการศึกษา / All Years</option>
+              <option value="" data-t="uiAllAcademicYears">ทุกปีการศึกษา / All Years</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ระดับชั้น / Level</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="uiLevel">ระดับชั้น / Level</span></label>
             <select id="rptLevel" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
-              <option value="">ทุกระดับชั้น / All Levels</option>
+              <option value="" data-t="uiAllLevels">ทุกระดับชั้น / All Levels</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">วันที่รายงาน / Report Date</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="rptPrDate">วันที่รายงาน / Report Date</span></label>
             <input type="date" id="rptDate" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
           </div>
         </div>
 
         <!-- School + Subject -->
         <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">ชื่อสถานศึกษา (หัวเอกสาร)</label>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="uiSchoolNameReportHeader">ชื่อสถานศึกษา (หัวเอกสาร)</span></label>
           <input type="text" id="rptSchool" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-                 placeholder="เว้นว่างเพื่อใช้ชื่ออัตโนมัติ / Leave blank for auto">
+                 placeholder="เว้นว่างเพื่อใช้ชื่ออัตโนมัติ / Leave blank for auto" data-t-placeholder="hintLeaveBlankForAnAutomaticName">
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">เรื่อง / หัวข้อรายงาน</label>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5"><span data-t="rptSubject">เรื่อง / หัวข้อรายงาน</span></label>
           <input type="text" id="rptSubject" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-                 placeholder="จะสร้างอัตโนมัติหากว่างไว้ / Auto-generated if blank">
+                 placeholder="จะสร้างอัตโนมัติหากว่างไว้ / Auto-generated if blank" data-t-placeholder="hintAutoGeneratedIfBlank">
         </div>
 
         <!-- Options -->
         <div class="flex gap-4 flex-wrap">
           <label class="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" id="rptGroupInst" checked class="rounded accent-blue-600">
-            จัดกลุ่มตามสถานศึกษา / Group by Institution</label>
+            <span data-t="uiGroupByInstitution">จัดกลุ่มตามสถานศึกษา / Group by Institution</span></label>
           <label class="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" id="rptShowYear" checked class="rounded accent-blue-600">
-            แสดงปีการศึกษา / Show Academic Year</label>
+            <span data-t="uiShowAcademicYear">แสดงปีการศึกษา / Show Academic Year</span></label>
         </div>
 
         <!-- Signatories -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">ผู้ลงนาม / Signatories</span>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wide"><span data-t="uiSignatories">ผู้ลงนาม / Signatories</span></span>
             <a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')"
                class="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              <i data-lucide="settings" class="w-3 h-3"></i> ตั้งค่าผู้ลงนาม
+              <i data-lucide="settings" class="w-3 h-3"></i> <span data-t="arPrSigSettings">ตั้งค่าผู้ลงนาม</span>
             </a>
           </div>
           <div id="rptSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-            <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+            <div class="text-xs text-gray-400 p-3 text-center"><span data-t="stLoading">กำลังโหลด...</span></div>
           </div>
         </div>
 
         <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
           <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-          <span>รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวตั้ง พร้อมส่วนหัวทุกหน้า ลายเซ็นหน้าสุดท้าย<br>
+          <span><span data-t="uiTheReportOpensInANewWindow">รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวตั้ง พร้อมส่วนหัวทุกหน้า ลายเซ็นหน้าสุดท้าย</span><br>
           Report opens in a new window — A4 portrait, header repeats, signature on last page.</span>
         </div>
       </div>
@@ -391,21 +391,21 @@
         <div class="mb-5 p-4 rounded-xl" style="background:#fffbeb;border:1px solid #fcd34d">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5" style="color:#92400e">
-              <i data-lucide="bookmark" class="w-3.5 h-3.5"></i> แม่แบบรายงาน / Report Templates
+              <i data-lucide="bookmark" class="w-3.5 h-3.5"></i> <span data-t="uiReportTemplates">แม่แบบรายงาน / Report Templates</span>
             </span>
           </div>
           <div class="flex gap-2 flex-wrap items-center">
             <select id="rptTplSelect" class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none flex-1 min-w-0" style="border-color:#fcd34d">
-              <option value="">— เลือกแม่แบบ / Select Template —</option>
-              <option value="__quick">สรุปย่อ (Quick Summary)</option>
-              <option value="__standard">มาตรฐาน (Standard)</option>
-              <option value="__full">รายละเอียดครบถ้วน (Full Detail)</option>
+              <option value="" data-t="uiSelectTemplate">— เลือกแม่แบบ / Select Template —</option>
+              <option value="__quick" data-t="uiQuickSummary">สรุปย่อ (Quick Summary)</option>
+              <option value="__standard" data-t="uiStandard">มาตรฐาน (Standard)</option>
+              <option value="__full" data-t="uiFullDetail">รายละเอียดครบถ้วน (Full Detail)</option>
             </select>
             <button onclick="_loadRptTemplate()" class="btn btn-sm text-xs" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">
-              <i data-lucide="download" class="w-3 h-3"></i> โหลด
+              <i data-lucide="download" class="w-3 h-3"></i> <span data-t="uiLoad">โหลด</span>
             </button>
             <button onclick="_saveRptTemplatePrompt()" class="btn btn-sm text-xs" style="background:#fff;color:#92400e;border:1px solid #fcd34d">
-              <i data-lucide="save" class="w-3 h-3"></i> บันทึก
+              <i data-lucide="save" class="w-3 h-3"></i> <span data-t="stRolesStudentSave">บันทึก</span>
             </button>
           </div>
           <!-- Saved user templates -->
@@ -414,13 +414,13 @@
 
         <!-- Global Controls -->
         <div class="flex items-center justify-between mb-4">
-          <span class="text-sm font-bold text-gray-700">เลือกฟิลด์ที่ต้องการในรายงาน</span>
+          <span class="text-sm font-bold text-gray-700"><span data-t="uiSelectFieldsToIncludeInTheReport">เลือกฟิลด์ที่ต้องการในรายงาน</span></span>
           <div class="flex gap-2">
             <button onclick="_rptSelectAllFields(true)" class="btn btn-sm text-xs" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">
-              เลือกทั้งหมด
+              <span data-t="exportSelectAll">เลือกทั้งหมด</span>
             </button>
             <button onclick="_rptSelectAllFields(false)" class="btn btn-sm btn-secondary text-xs">
-              ยกเลิกทั้งหมด
+              <span data-t="exportDeselectAll">ยกเลิกทั้งหมด</span>
             </button>
           </div>
         </div>
@@ -434,14 +434,14 @@
         <div class="flex items-center justify-between mb-3">
           <div class="text-sm font-bold text-gray-700 flex items-center gap-1.5">
             <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
-            ตัวอย่างข้อมูล (10 รายการแรก)
+            <span data-t="uiDataPreviewFirst10Records">ตัวอย่างข้อมูล (10 รายการแรก)</span>
           </div>
           <button onclick="_renderPreview()" class="btn btn-sm btn-secondary text-xs">
-            <i data-lucide="refresh-cw" class="w-3 h-3"></i> รีเฟรช
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> <span data-t="stRefresh">รีเฟรช</span>
           </button>
         </div>
         <div id="rptPreviewWrap" class="overflow-auto rounded-xl border border-gray-200" style="max-height:460px">
-          <div class="text-center text-gray-400 py-10 text-sm">คลิก "รีเฟรช" เพื่อแสดงตัวอย่าง</div>
+          <div class="text-center text-gray-400 py-10 text-sm"><span data-t="uiClickRefreshToDisplayAPreview">คลิก "รีเฟรช" เพื่อแสดงตัวอย่าง</span></div>
         </div>
         <p id="rptPreviewInfo" class="text-xs text-gray-400 mt-2"></p>
       </div>
@@ -450,13 +450,13 @@
 
     <!-- Footer -->
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50 rounded-b-2xl flex-shrink-0">
-      <button onclick="closeStudentReportModal()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
+      <button onclick="closeStudentReportModal()" class="btn btn-secondary btn-sm"><span data-t="uiCancel">ยกเลิก / Cancel</span></button>
       <div class="flex gap-2">
         <button onclick="doStudentExcelExport()" class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0">
           <i data-lucide="table-2" class="w-4 h-4"></i> Excel
         </button>
         <button onclick="doStudentReport()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
-          <i data-lucide="printer" class="w-4 h-4"></i> สร้างและพิมพ์รายงาน
+          <i data-lucide="printer" class="w-4 h-4"></i> <span data-t="arPrGenerate">สร้างและพิมพ์รายงาน</span>
         </button>
       </div>
     </div>
@@ -473,9 +473,9 @@
       <div>
         <h3 class="font-bold text-base flex items-center gap-2">
           <i data-lucide="git-merge" class="w-5 h-5"></i>
-          ตรวจสอบข้อมูลซ้ำซ้อน
+          <span data-t="uiCheckDuplicateData">ตรวจสอบข้อมูลซ้ำซ้อน</span>
         </h3>
-        <p id="dupModalSubtitle" class="text-xs opacity-80 mt-0.5">กำลังวิเคราะห์...</p>
+        <p id="dupModalSubtitle" class="text-xs opacity-80 mt-0.5"><span data-t="uiAnalyzing">กำลังวิเคราะห์...</span></p>
       </div>
       <button onclick="closeDupModal()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
     </div>
@@ -495,19 +495,19 @@
               <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            <span id="dss1Text">โหลดข้อมูล...</span>
+            <span id="dss1Text"><span data-t="uiLoadingData">โหลดข้อมูล...</span></span>
           </div>
           <div id="dss2" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                style="background:#f3f4f6;color:#9ca3af">
-            <span>ตรวจ IDCard</span>
+            <span><span data-t="uiCheckIDCards">ตรวจ IDCard</span></span>
           </div>
           <div id="dss3" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                style="background:#f3f4f6;color:#9ca3af">
-            <span>ตรวจชื่อไทย</span>
+            <span><span data-t="uiCheckThaiNames">ตรวจชื่อไทย</span></span>
           </div>
           <div id="dss4" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                style="background:#f3f4f6;color:#9ca3af">
-            <span>ตรวจชื่ออังกฤษ</span>
+            <span><span data-t="uiCheckEnglishNames">ตรวจชื่ออังกฤษ</span></span>
           </div>
         </div>
         <!-- Progress bar -->
@@ -517,21 +517,21 @@
         </div>
         <!-- Counters row -->
         <div class="flex justify-between text-xs text-gray-400 mb-4 px-1">
-          <span>ตรวจสอบ <b id="dupScanCount" class="text-amber-700">0</b> รายการ จาก <b id="dupScanTotal" class="text-gray-600">—</b></span>
-          <span>เวลาที่ใช้ <b id="dupScanElapsed" class="text-gray-500">0</b> วินาที</span>
+          <span><span data-t="uiCheck">ตรวจสอบ</span> <b id="dupScanCount" class="text-amber-700">0</b> <span data-t="uiRecordsOf">รายการ จาก</span> <b id="dupScanTotal" class="text-gray-600">—</b></span>
+          <span><span data-t="uiElapsedTime">เวลาที่ใช้</span> <b id="dupScanElapsed" class="text-gray-500">0</b> <span data-t="uiSeconds">วินาที</span></span>
         </div>
         <!-- Current action label -->
-        <p id="dupScanLabel" class="text-center text-sm font-semibold text-amber-700 mb-1">กำลังโหลดข้อมูลจากฐานข้อมูล...</p>
-        <p class="text-center text-xs text-gray-400">GAS อาจใช้เวลา 5–15 วินาที ขึ้นอยู่กับจำนวนข้อมูล</p>
+        <p id="dupScanLabel" class="text-center text-sm font-semibold text-amber-700 mb-1"><span data-t="uiLoadingDataFromTheDatabase">กำลังโหลดข้อมูลจากฐานข้อมูล...</span></p>
+        <p class="text-center text-xs text-gray-400"><span data-t="uiLoadingMayTake515SecondsDepending">GAS อาจใช้เวลา 5–15 วินาที ขึ้นอยู่กับจำนวนข้อมูล</span></p>
       </div>
       <!-- No duplicates -->
       <div id="dupNone" class="hidden text-center py-8">
         <i data-lucide="check-circle-2" class="w-14 h-14 text-green-400 mx-auto mb-3"></i>
-        <p class="font-bold text-green-700 text-base mb-1">ไม่พบข้อมูลซ้ำซ้อน</p>
-        <p class="text-sm text-gray-400 mb-4">ข้อมูลในฐานข้อมูลสะอาด ไม่มีรายการที่ซ้ำกัน</p>
+        <p class="font-bold text-green-700 text-base mb-1"><span data-t="uiNoDuplicateDataFound">ไม่พบข้อมูลซ้ำซ้อน</span></p>
+        <p class="text-sm text-gray-400 mb-4"><span data-t="uiNoDuplicateRecordsFoundInTheDatabase">ข้อมูลในฐานข้อมูลสะอาด ไม่มีรายการที่ซ้ำกัน</span></p>
         <div class="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 font-semibold">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
-          ตรวจสอบแล้ว <span id="statScannedNone" class="font-bold mx-0.5">—</span> นักเรียน · ผ่านทุกรายการ ✓
+          <span data-t="uiReviewed">ตรวจสอบแล้ว</span> <span id="statScannedNone" class="font-bold mx-0.5">—</span> <span data-t="uiStudentsAllChecksPassed">นักเรียน · ผ่านทุกรายการ ✓</span>
         </div>
       </div>
       <!-- Group view -->
@@ -540,14 +540,14 @@
         <div id="dupStatBar" class="hidden flex-wrap gap-2 mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs" style="display:none">
           <span class="flex items-center gap-1 font-semibold text-gray-600">
             <i data-lucide="users" class="w-3.5 h-3.5 text-amber-600"></i>
-            ตรวจสอบแล้ว <b id="statScanned" class="text-amber-800 mx-0.5">—</b> นักเรียน
+            <span data-t="uiReviewed">ตรวจสอบแล้ว</span> <b id="statScanned" class="text-amber-800 mx-0.5">—</b> <span data-t="pmGroupStudents">นักเรียน</span>
           </span>
           <span class="text-gray-300">|</span>
-          <span class="font-semibold text-red-600">🪪 IDCard ซ้ำ: <b id="statIDCard">0</b></span>
-          <span class="font-semibold text-amber-600">🇹🇭 ชื่อไทยซ้ำ: <b id="statThai">0</b></span>
-          <span class="font-semibold text-blue-600">🔤 ชื่ออังกฤษซ้ำ: <b id="statEng">0</b></span>
+          <span class="font-semibold text-red-600"><span data-t="uiDuplicateIDCards">🪪 IDCard ซ้ำ:</span> <b id="statIDCard">0</b></span>
+          <span class="font-semibold text-amber-600"><span data-t="uiDuplicateThaiNames">🇹🇭 ชื่อไทยซ้ำ:</span> <b id="statThai">0</b></span>
+          <span class="font-semibold text-blue-600"><span data-t="uiDuplicateEnglishNames">🔤 ชื่ออังกฤษซ้ำ:</span> <b id="statEng">0</b></span>
           <span class="text-gray-300">|</span>
-          <span class="font-bold text-amber-800">รวม <b id="statTotal">0</b> กลุ่ม</span>
+          <span class="font-bold text-amber-800"><span data-t="stLogTotal">รวม</span> <b id="statTotal">0</b> <span data-t="uiGroups">กลุ่ม</span></span>
         </div>
         <!-- Group counter nav -->
         <div class="flex items-center justify-between mb-4">
@@ -575,22 +575,22 @@
         <!-- Action row -->
         <div class="flex justify-between items-center pt-3 border-t">
           <button onclick="dupSkip()" class="btn btn-secondary btn-sm text-gray-500">
-            <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i> ข้ามกลุ่มนี้
+            <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i> <span data-t="uiSkipThisGroup">ข้ามกลุ่มนี้</span>
           </button>
           <button onclick="dupMerge()" id="dupMergeBtn"
             class="btn btn-sm font-bold"
             style="background:#b45309;color:#fff;border-color:#b45309">
-            <i data-lucide="git-merge" class="w-3.5 h-3.5"></i> ผสานข้อมูล
+            <i data-lucide="git-merge" class="w-3.5 h-3.5"></i> <span data-t="uiMergeData">ผสานข้อมูล</span>
           </button>
         </div>
       </div>
       <!-- Done (all processed) -->
       <div id="dupDone" class="hidden text-center py-10">
         <i data-lucide="check-circle-2" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
-        <p class="font-bold text-blue-700 text-base" id="dupDoneMsg">ตรวจสอบครบทุกกลุ่มแล้ว</p>
+        <p class="font-bold text-blue-700 text-base" id="dupDoneMsg"><span data-t="uiAllGroupsReviewed">ตรวจสอบครบทุกกลุ่มแล้ว</span></p>
         <p class="text-sm text-gray-400 mt-1" id="dupDoneDetail"></p>
         <button onclick="closeDupModal(); loadStudents();" class="btn btn-primary btn-sm mt-4">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> รีเฟรชรายชื่อ
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-t="uiRefreshList">รีเฟรชรายชื่อ</span>
         </button>
       </div>
     </div>
@@ -627,10 +627,11 @@ let _rptSettings = {}; // cached system settings for signature block
 let _allGrades   = []; // STUDENT_GRADES from system settings (shared across modules)
 
 // ── Language toggle (bilingual support) ──────────────────────
-function toggleLang() {
-  setLang(LANG === 'th' ? 'en' : 'th');
+function toggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
+
+document.addEventListener('rdf:languagechange', () => {
   renderTable(); // re-render table with new language labels
-}
+});
 
 // ── Sort key: extract trailing number from StipNo (MBS_350 → 350) ──
 function extractStipNum(stipNo) {
@@ -738,7 +739,7 @@ function populateFilterOptions() {
   // Academic years (convert to BE for display)
   const yearSel = document.getElementById('filterYear');
   const years = getAcademicYears(allStudents);
-  yearSel.innerHTML = `<option value="">${t('allYears')}</option>`;
+  yearSel.innerHTML = `<option value="" data-t="allYears">${t('allYears')}</option>`;
   years.forEach(y => {
     const be = parseInt(y) + 543;
     const opt = document.createElement('option');
@@ -750,7 +751,7 @@ function populateFilterOptions() {
   const levels = new Set();
   allStudents.forEach(s => { if (s.level) levels.add(s.level); });
   const levelSel = document.getElementById('filterLevel');
-  levelSel.innerHTML = `<option value="">${t('allLevels')}</option>`;
+  levelSel.innerHTML = `<option value="" data-t="allLevels">${t('allLevels')}</option>`;
   [...levels].sort().forEach(l => {
     const opt = document.createElement('option');
     opt.value = l; opt.textContent = l;
@@ -831,7 +832,7 @@ function renderTable() {
     tr.innerHTML = `
       <td>
         <span class="font-bold text-xs" style="color:${instColor}">${s.stipNo||'—'}</span>
-        ${continued ? `<span class="badge badge-gold ml-1" style="font-size:10px">${t('continuedScholarship')}</span>` : ''}
+        ${continued ? `<span class="badge badge-gold ml-1" style="font-size:10px" data-t="continuedScholarship">${t('continuedScholarship')}</span>` : ''}
       </td>
       <td>
         <div class="flex items-center gap-3">
@@ -1042,14 +1043,14 @@ function openGradeModal(stipNo) {
   if (!grades.length) {
     rowsHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af;font-size:12px">
       ${t('arNoGrades')}<br>
-      <a href="academic-results.html" style="color:#7c3aed;font-size:11px;font-weight:600">${t('arGoToGradePage')}</a>
+      <a href="academic-results.html" style="color:#7c3aed;font-size:11px;font-weight:600" data-t="arGoToGradePage">${t('arGoToGradePage')}</a>
     </td></tr>`;
   } else {
     rowsHTML = grades.map((g, i) => {
       const gpaV = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
       const gpaBadge = g.gpa != null
         ? `<span class="badge ${gpaClass(g.gpa)}" style="font-weight:800;font-size:12px">${gpaV}</span>` : '—';
-      const upd = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString('th-TH') : '—';
+      const upd = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString(getLocale()) : '—';
       return `<tr style="border-bottom:1px solid #f1f5f9">
         <td style="text-align:center;font-size:11px;color:#9ca3af;padding:8px 10px">${i+1}</td>
         <td style="font-weight:700;font-size:12px;padding:8px 10px">${g.acadYear || '—'}</td>
@@ -1077,15 +1078,15 @@ function openGradeModal(stipNo) {
       ${grades.length ? `
       <div style="text-align:center;background:#faf5ff;border:1px solid #ddd6fe;border-radius:10px;padding:6px 14px">
         <div style="font-size:18px;font-weight:900;color:#7c3aed">${avg}</div>
-        <div style="font-size:10px;color:#6b7280">${t('arKpiAvg')}</div>
+        <div style="font-size:10px;color:#6b7280" data-t="arKpiAvg">${t('arKpiAvg')}</div>
       </div>
       <div style="text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:6px 14px">
         <div style="font-size:18px;font-weight:900;color:#16a34a">${high}</div>
-        <div style="font-size:10px;color:#6b7280">${t('arKpiHighest')}</div>
+        <div style="font-size:10px;color:#6b7280" data-t="arKpiHighest">${t('arKpiHighest')}</div>
       </div>
       <div style="text-align:center;background:#f8faff;border:1px solid #e5e7eb;border-radius:10px;padding:6px 14px">
         <div style="font-size:18px;font-weight:900;color:#374151">${grades.length}</div>
-        <div style="font-size:10px;color:#6b7280">${t('arSemCount')}</div>
+        <div style="font-size:10px;color:#6b7280" data-t="arSemCount">${t('arSemCount')}</div>
       </div>` : ''}
     </div>
     <div style="overflow-x:auto">
@@ -1093,9 +1094,9 @@ function openGradeModal(stipNo) {
         <thead>
           <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
             <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;width:32px">#</th>
-            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('arColAcadYear')}</th>
-            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('arColSemester')}</th>
-            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('gradeColGPA')}</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="arColAcadYear">${t('arColAcadYear')}</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="arColSemester">${t('arColSemester')}</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="gradeColGPA">${t('gradeColGPA')}</th>
             <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${t('gradeColNotes')} / ${t('arColRecordedBy')}</th>
           </tr>
         </thead>
@@ -1103,7 +1104,7 @@ function openGradeModal(stipNo) {
       </table>
     </div>
     <div style="padding:10px 18px;background:#f8faff;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6b7280">
-      <span>${t('arGradeSharedDB')}</span>
+      <span data-t="arGradeSharedDB">${t('arGradeSharedDB')}</span>
       <a href="academic-results.html" style="color:#7c3aed;font-weight:700;display:flex;align-items:center;gap:4px;text-decoration:none">
         <i data-lucide="external-link" style="width:12px;height:12px"></i>
         ${t('arManageGrades')}
@@ -1175,7 +1176,7 @@ async function confirmMoveToUni(stipNo, uniName) {
 async function confirmDelete(stipNo) {
   const result = await Swal.fire({
     title: t('deleteConfirm'),
-    html: `${LANG==='th'?'ลบข้อมูลนักเรียน':'Delete student'} <b>${stipNo}</b>?<br><small class="text-red-500">${t('deleteWarn')}</small>`,
+    html: `${LANG==='th'?'ลบข้อมูลนักเรียน':'Delete student'} <b>${stipNo}</b>?<br><small class="text-red-500" data-t="deleteWarn">${t('deleteWarn')}</small>`,
     icon: 'warning', showCancelButton: true,
     confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
     confirmButtonText: t('confirmDelete'), cancelButtonText: t('cancel')

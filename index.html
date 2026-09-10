@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เข้าสู่ระบบ — มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์</title>
+<title data-t="uiLoginDrRobertDyckerhoffFoundation">เข้าสู่ระบบ — มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
@@ -171,7 +171,7 @@
 <!-- Loader -->
 <div id="loader" class="hidden">
   <div class="loader-spinner"></div>
-  <p id="loaderText">กำลังเชื่อมต่อระบบ...</p>
+  <p id="loaderText"><span data-t="connecting">กำลังเชื่อมต่อระบบ...</span></p>
 </div>
 
 <!-- Login Background -->
@@ -350,8 +350,9 @@ function _loadGIS() {
   s.onerror = () => {
     document.getElementById('googleBtnWrap').style.display = 'none';
     document.getElementById('googleNotCfg').style.display = 'flex';
-    document.getElementById('googleNotCfg').querySelector('span').textContent =
-      'โหลด Google Sign-In ไม่ได้ — ตรวจสอบการเชื่อมต่อ';
+    const message = document.getElementById('googleNotCfg').querySelector('span');
+    message.setAttribute('data-t', 'googleLoadFailed');
+    message.textContent = t('googleLoadFailed');
   };
   document.head.appendChild(s);
 }
@@ -368,11 +369,11 @@ function _initGIS() {
 
 function triggerGoogleLogin() {
   if (!_gClientId) {
-    Swal.fire('แจ้งเตือน', 'ยังไม่ได้ตั้งค่า Google Client ID\nกรุณาติดต่อผู้ดูแลระบบ', 'warning');
+    Swal.fire(t('warning'), t('googleNotConfigured'), 'warning');
     return;
   }
   if (typeof google === 'undefined' || !google.accounts) {
-    Swal.fire('ข้อผิดพลาด', 'โหลด Google Sign-In ไม่สำเร็จ กรุณารีเฟรชหน้า', 'error');
+    Swal.fire(t('error'), t('googleLoadFailed'), 'error');
     return;
   }
   // Use prompt (One Tap) — falls back gracefully
@@ -391,12 +392,12 @@ function triggerGoogleLogin() {
 
 async function handleGoogleCredential(response) {
   // response.credential = JWT id_token
-  showLoader(true, 'กำลังตรวจสอบบัญชี Google...');
+  showLoader(true, t('googleChecking'));
   try {
     await handleGoogleLogin(response.credential);
   } catch(e) {
     showLoader(false);
-    Swal.fire('ผิดพลาด', 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ', 'error');
+    Swal.fire(t('error'), t('googleLoginFailed'), 'error');
   }
 }
 
@@ -437,7 +438,7 @@ async function handleGoogleCredential(response) {
   }
 
   // Apply i18n & set default role
-  setLang(localStorage.getItem('rdfLang') || 'th');
+  setLang(readSavedLang());
   setLoginRole('student');
 
   // ── Handle ?rt= password reset token in URL ──

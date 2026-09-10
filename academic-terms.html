@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>จัดการปฏิทินการศึกษา — RDF</title>
+<title data-t="uiAcademicCalendarRDF">จัดการปฏิทินการศึกษา — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
@@ -12,7 +12,7 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText"><span data-t="stLoading">กำลังโหลด...</span></p></div>
 
 <!-- ── Notification Toast Container ── -->
 <div id="toastContainer"
@@ -35,7 +35,7 @@
       <button id="notifBell" onclick="toggleNotifPanel()" title="การแจ้งเตือน"
               style="position:relative;background:rgba(255,255,255,.15);border:none;border-radius:50%;
                      width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-                     cursor:pointer;color:#fff;margin-right:4px;transition:background .15s">
+                     cursor:pointer;color:#fff;margin-right:4px;transition:background .15s" data-t-title="notifTitle">
         <i data-lucide="bell" class="w-4 h-4"></i>
         <span id="notifBadge" class="hidden"
               style="position:absolute;top:3px;right:3px;background:#ef4444;color:#fff;border-radius:999px;
@@ -83,7 +83,7 @@
   <!-- Collapsible body -->
   <div id="notifPanelBody" style="display:flex;flex-direction:column;overflow:hidden;flex:1">
     <div id="notifList" style="overflow-y:auto;max-height:340px;padding:8px 0">
-      <div class="text-center text-gray-400 text-sm py-8">กำลังโหลด...</div>
+      <div class="text-center text-gray-400 text-sm py-8"><span data-t="stLoading">กำลังโหลด...</span></div>
     </div>
     <div style="border-top:1px solid #e5e7eb;padding:10px 14px;background:#f9fafb;flex-shrink:0">
       <button onclick="openNotifCompose()" class="btn btn-sm w-full"
@@ -162,10 +162,10 @@
         <option value="OTHER">Other</option>
       </select>
       <select id="termFilterStatus" onchange="renderTermList()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none">
-        <option value="">ทุกสถานะ / All Status</option>
-        <option value="active">กำลังดำเนินการ / Active</option>
-        <option value="upcoming">กำลังจะมาถึง / Upcoming</option>
-        <option value="completed">สิ้นสุดแล้ว / Completed</option>
+        <option value="" data-t="uiAllStatuses">ทุกสถานะ / All Status</option>
+        <option value="active" data-t="uiActive">กำลังดำเนินการ / Active</option>
+        <option value="upcoming" data-t="uiUpcoming">กำลังจะมาถึง / Upcoming</option>
+        <option value="completed" data-t="uiCompleted">สิ้นสุดแล้ว / Completed</option>
       </select>
     </div>
 
@@ -204,23 +204,23 @@
             </select>
           </div>
           <div>
-            <label class="field-label">ปีการศึกษาอ้างอิง</label>
+            <label class="field-label"><span data-t="uiReferenceAcademicYear">ปีการศึกษาอ้างอิง</span></label>
             <select id="batchTermRef" class="field-select text-sm">
-              <option value="">— เลือกปีการศึกษา —</option>
+              <option value="" data-t="uiSelectAcademicYear">— เลือกปีการศึกษา —</option>
             </select>
           </div>
           <div>
-            <label class="field-label">วันที่มีผล</label>
+            <label class="field-label"><span data-t="promoEffDate">วันที่มีผล</span></label>
             <input type="date" id="batchDate" class="field-input">
           </div>
           <div id="batchPreview" class="hidden">
-            <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">ตัวอย่างนักเรียนที่จะเลื่อนชั้น</div>
+            <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"><span data-t="uiStudentsToBePromotedPreview">ตัวอย่างนักเรียนที่จะเลื่อนชั้น</span></div>
             <div id="batchPreviewContent" class="rounded-xl border border-gray-200 overflow-hidden max-h-48 overflow-y-auto"></div>
             <p id="batchPreviewCount" class="text-xs text-gray-400 mt-1.5"></p>
           </div>
           <div class="flex gap-2">
             <button onclick="loadBatchPreview()" class="btn btn-secondary btn-sm flex-1">
-              <i data-lucide="eye" class="w-3.5 h-3.5"></i> ดูตัวอย่าง
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i> <span data-t="uiPreview">ดูตัวอย่าง</span>
             </button>
             <button onclick="goBatchPromotion()" class="btn btn-sm flex-1 font-bold" style="background:#16a34a;color:#fff;border:none">
               <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
@@ -239,21 +239,21 @@
         <div class="card-body space-y-4">
           <p class="text-xs text-gray-500" data-t="batchGradDesc">กำหนดเงื่อนไขและกลุ่มนักเรียนที่สำเร็จการศึกษาตามปีการศึกษา</p>
           <div>
-            <label class="field-label">ประเภทการดำเนินการ</label>
+            <label class="field-label"><span data-t="uiOperationType">ประเภทการดำเนินการ</span></label>
             <select id="batchGradAction" class="field-select text-sm">
-              <option value="graduate">บันทึกสำเร็จการศึกษา (Graduated)</option>
-              <option value="university">เลื่อนขึ้นมหาวิทยาลัย (Promoted to University)</option>
-              <option value="suspended">พักการเรียน (Suspended)</option>
+              <option value="graduate" data-t="uiRecordGraduation">บันทึกสำเร็จการศึกษา (Graduated)</option>
+              <option value="university" data-t="uiPromoteToUniversity">เลื่อนขึ้นมหาวิทยาลัย (Promoted to University)</option>
+              <option value="suspended" data-t="uiSuspended">พักการเรียน (Suspended)</option>
             </select>
           </div>
           <div>
-            <label class="field-label">ระดับชั้น / Level ที่จะดำเนินการ</label>
-            <input type="text" id="batchGradLevel" class="field-input" placeholder="เช่น ม.6, ปวช.3, ปวส.2">
+            <label class="field-label"><span data-t="uiTargetLevel">ระดับชั้น / Level ที่จะดำเนินการ</span></label>
+            <input type="text" id="batchGradLevel" class="field-input" placeholder="เช่น ม.6, ปวช.3, ปวส.2" data-t-placeholder="hintEGGrade12VocationalYear3">
           </div>
           <div>
-            <label class="field-label">สถานศึกษา</label>
+            <label class="field-label"><span data-t="stMajColInst">สถานศึกษา</span></label>
             <select id="batchGradInst" class="field-select text-sm">
-              <option value="">ทุกสถานศึกษา</option>
+              <option value="" data-t="arAllInst">ทุกสถานศึกษา</option>
               <option value="MBS">MBS</option>
               <option value="VC">VC</option>
               <option value="UNI">University</option>
@@ -261,7 +261,7 @@
           </div>
           <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex gap-2 items-start">
             <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-            การดำเนินการกลุ่มจะเชื่อมต่อไปยังหน้าเลื่อนชั้น — สามารถตรวจสอบก่อนยืนยัน
+            <span data-t="uiBatchOperationsOpenThePromotionPageWhere">การดำเนินการกลุ่มจะเชื่อมต่อไปยังหน้าเลื่อนชั้น — สามารถตรวจสอบก่อนยืนยัน</span>
           </div>
           <button onclick="goBatchGraduation()" class="btn btn-sm w-full font-bold" style="background:#7c3aed;color:#fff;border:none">
             <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
@@ -278,7 +278,7 @@
         </div>
         <div class="card-body">
           <div id="scheduleGrid" class="overflow-x-auto">
-            <div class="text-center text-gray-400 py-8 text-sm">กำลังโหลด...</div>
+            <div class="text-center text-gray-400 py-8 text-sm"><span data-t="stLoading">กำลังโหลด...</span></div>
           </div>
         </div>
       </div>
@@ -297,45 +297,45 @@
         </div>
         <div class="card-body space-y-3" id="notifComposePanel">
           <div>
-            <label class="field-label">ประเภทการแจ้งเตือน / Type</label>
+            <label class="field-label"><span data-t="uiNotificationType">ประเภทการแจ้งเตือน / Type</span></label>
             <select id="notifType" class="field-select text-sm">
-              <option value="term_start">เปิดภาคเรียน / Term Start</option>
-              <option value="term_end">ปิดภาคเรียน / Term End</option>
-              <option value="promotion">เลื่อนชั้น / Promotion</option>
-              <option value="graduation">สำเร็จการศึกษา / Graduation</option>
-              <option value="general">ทั่วไป / General</option>
+              <option value="term_start" data-t="uiTermStart">เปิดภาคเรียน / Term Start</option>
+              <option value="term_end" data-t="uiTermEnd">ปิดภาคเรียน / Term End</option>
+              <option value="promotion" data-t="uiPromotion">เลื่อนชั้น / Promotion</option>
+              <option value="graduation" data-t="uiGraduation">สำเร็จการศึกษา / Graduation</option>
+              <option value="general" data-t="uiGeneral">ทั่วไป / General</option>
             </select>
           </div>
           <div>
-            <label class="field-label">ผู้รับ / Recipients</label>
+            <label class="field-label"><span data-t="uiRecipients">ผู้รับ / Recipients</span></label>
             <select id="notifAudience" class="field-select text-sm">
-              <option value="all">ทุกคน / Everyone</option>
-              <option value="admin">ผู้ดูแลระบบ / Admins only</option>
-              <option value="MBS">นักเรียน MBS</option>
-              <option value="VC">นักศึกษา VC</option>
-              <option value="UNI">นักศึกษามหาวิทยาลัย</option>
+              <option value="all" data-t="uiEveryone">ทุกคน / Everyone</option>
+              <option value="admin" data-t="uiAdministratorsOnly">ผู้ดูแลระบบ / Admins only</option>
+              <option value="MBS" data-t="mbsStudents">นักเรียน MBS</option>
+              <option value="VC" data-t="vcStudents">นักศึกษา VC</option>
+              <option value="UNI" data-t="uniStudents">นักศึกษามหาวิทยาลัย</option>
             </select>
           </div>
           <div>
-            <label class="field-label">หัวข้อ / Title</label>
-            <input type="text" id="notifMsgTitle" class="field-input text-sm" placeholder="หัวข้อการแจ้งเตือน...">
+            <label class="field-label"><span data-t="uiTitle">หัวข้อ / Title</span></label>
+            <input type="text" id="notifMsgTitle" class="field-input text-sm" placeholder="หัวข้อการแจ้งเตือน..." data-t-placeholder="hintNotificationTitle">
           </div>
           <div>
-            <label class="field-label">ข้อความ (ภาษาไทย)</label>
-            <textarea id="notifBodyTH" rows="3" class="field-input text-sm" placeholder="ข้อความแจ้งเตือนภาษาไทย..."></textarea>
+            <label class="field-label"><span data-t="uiMessageThai">ข้อความ (ภาษาไทย)</span></label>
+            <textarea id="notifBodyTH" rows="3" class="field-input text-sm" placeholder="ข้อความแจ้งเตือนภาษาไทย..." data-t-placeholder="hintNotificationMessageInThai"></textarea>
           </div>
           <div>
             <label class="field-label">Message (English)</label>
             <textarea id="notifBodyEN" rows="3" class="field-input text-sm" placeholder="Notification message in English..."></textarea>
           </div>
           <div>
-            <label class="field-label">ลิงก์ที่เกี่ยวข้อง (เว้นว่างได้)</label>
+            <label class="field-label"><span data-t="uiRelatedLinkOptional">ลิงก์ที่เกี่ยวข้อง (เว้นว่างได้)</span></label>
             <select id="notifLink" class="field-select text-sm">
-              <option value="">— ไม่มี —</option>
-              <option value="promotion.html">หน้าเลื่อนชั้น</option>
-              <option value="students.html">รายชื่อนักเรียน</option>
-              <option value="academic-terms.html">ปฏิทินการศึกษา</option>
-              <option value="settings.html">ตั้งค่าระบบ</option>
+              <option value="" data-t="uiNone">— ไม่มี —</option>
+              <option value="promotion.html" data-t="uiPromotionPage">หน้าเลื่อนชั้น</option>
+              <option value="students.html" data-t="uiStudentList">รายชื่อนักเรียน</option>
+              <option value="academic-terms.html" data-t="menuTerms">ปฏิทินการศึกษา</option>
+              <option value="settings.html" data-t="stRoleStudentP5">ตั้งค่าระบบ</option>
             </select>
           </div>
           <button onclick="sendNotification()" class="btn btn-primary btn-sm w-full font-bold">
@@ -356,7 +356,7 @@
         </div>
         <div class="card-body p-0">
           <div id="notifHistoryList" style="max-height:540px;overflow-y:auto;divide-y:divide-gray-100">
-            <div class="text-center text-gray-400 py-8 text-sm">กำลังโหลด...</div>
+            <div class="text-center text-gray-400 py-8 text-sm"><span data-t="stLoading">กำลังโหลด...</span></div>
           </div>
         </div>
       </div>
@@ -371,9 +371,9 @@
     <span class="mx-2 hide-xs">•</span>
     <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
   </div>
-  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบ">
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบ" data-t-title="hintClickToCheckConnection">
     <span class="db-dot"></span>
-    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+    <span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span>
   </div>
 </footer>
 
@@ -387,7 +387,7 @@
     <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:#1e3a8a">
       <h3 class="font-bold text-white text-base flex items-center gap-2">
         <i data-lucide="calendar-plus" class="w-4 h-4"></i>
-        <span id="termFormTitle">เพิ่มปีการศึกษา / Add Academic Term</span>
+        <span id="termFormTitle"><span data-t="uiAddAcademicYear">เพิ่มปีการศึกษา / Add Academic Term</span></span>
       </h3>
       <button onclick="closeTermForm()" class="text-white opacity-70 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -398,8 +398,8 @@
 
       <!-- Bilingual label -->
       <div>
-        <label class="field-label">ชื่อปีการศึกษา (ไทย) <span class="text-red-500">*</span></label>
-        <input type="text" id="tfLabelTH" class="field-input" placeholder="เช่น ภาคเรียนที่ 1/2568">
+        <label class="field-label"><span data-t="uiAcademicYearNameThai">ชื่อปีการศึกษา (ไทย)</span> <span class="text-red-500">*</span></label>
+        <input type="text" id="tfLabelTH" class="field-input" placeholder="เช่น ภาคเรียนที่ 1/2568" data-t-placeholder="hintEGSemester12568BE">
       </div>
       <div>
         <label class="field-label">Academic Term Name (English) <span class="text-red-500">*</span></label>
@@ -409,9 +409,9 @@
       <!-- Institution + Semester row -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="field-label">สถานศึกษา / Institution</label>
+          <label class="field-label"><span data-t="stMajModalInst">สถานศึกษา / Institution</span></label>
           <select id="tfInst" class="field-select text-sm">
-            <option value="">ทุกสถานศึกษา / All</option>
+            <option value="" data-t="uiAllInstitutions">ทุกสถานศึกษา / All</option>
             <option value="MBS">MBS</option>
             <option value="VC">VC</option>
             <option value="UNI">University</option>
@@ -419,66 +419,66 @@
           </select>
         </div>
         <div>
-          <label class="field-label">ภาคเรียน / Semester</label>
+          <label class="field-label"><span data-t="gradesSemester">ภาคเรียน / Semester</span></label>
           <select id="tfSemester" class="field-select text-sm">
-            <option value="1">ภาคเรียนที่ 1</option>
-            <option value="2">ภาคเรียนที่ 2</option>
-            <option value="summer">ภาคฤดูร้อน / Summer</option>
+            <option value="1" data-t="arSem1">ภาคเรียนที่ 1</option>
+            <option value="2" data-t="arSem2">ภาคเรียนที่ 2</option>
+            <option value="summer" data-t="uiSummer">ภาคฤดูร้อน / Summer</option>
           </select>
         </div>
       </div>
 
       <!-- Academic Year -->
       <div>
-        <label class="field-label">ปีการศึกษา (พ.ศ.) <span class="text-red-500">*</span></label>
+        <label class="field-label"><span data-t="arAcadYearLabel">ปีการศึกษา (พ.ศ.)</span> <span class="text-red-500">*</span></label>
         <input type="number" id="tfAcadYear" class="field-input" placeholder="2568" min="2560" max="2580">
       </div>
 
       <!-- Date range -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="field-label">วันเปิดภาคเรียน <span class="text-red-500">*</span></label>
+          <label class="field-label"><span data-t="uiTermStartDate">วันเปิดภาคเรียน</span> <span class="text-red-500">*</span></label>
           <input type="date" id="tfStart" class="field-input">
         </div>
         <div>
-          <label class="field-label">วันปิดภาคเรียน <span class="text-red-500">*</span></label>
+          <label class="field-label"><span data-t="uiTermEndDate">วันปิดภาคเรียน</span> <span class="text-red-500">*</span></label>
           <input type="date" id="tfEnd" class="field-input">
         </div>
       </div>
 
       <!-- Important dates (optional) -->
       <div>
-        <label class="field-label">วันสอบ / Exam Date (ถ้ามี)</label>
+        <label class="field-label"><span data-t="uiExamDateOptional">วันสอบ / Exam Date (ถ้ามี)</span></label>
         <input type="date" id="tfExam" class="field-input">
       </div>
       <div>
-        <label class="field-label">วันประกาศผล / Results Date (ถ้ามี)</label>
+        <label class="field-label"><span data-t="uiResultsDateOptional">วันประกาศผล / Results Date (ถ้ามี)</span></label>
         <input type="date" id="tfResults" class="field-input">
       </div>
 
       <!-- Notes -->
       <div>
-        <label class="field-label">หมายเหตุ / Notes</label>
-        <textarea id="tfNotes" rows="2" class="field-input text-sm" placeholder="ข้อมูลเพิ่มเติม..."></textarea>
+        <label class="field-label"><span data-t="uiNotes">หมายเหตุ / Notes</span></label>
+        <textarea id="tfNotes" rows="2" class="field-input text-sm" placeholder="ข้อมูลเพิ่มเติม..." data-t-placeholder="hintAdditionalInformation"></textarea>
       </div>
 
       <!-- Per-institution open/close periods -->
       <div class="bg-sky-50 border border-sky-100 rounded-xl p-4">
         <div class="text-xs font-bold text-sky-700 flex items-center gap-1.5 mb-1">
           <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
-          วันเปิด-ปิด แยกตามสถานศึกษา / Per-Institution Periods (ไม่บังคับ)
+          <span data-t="uiPerInstitutionTermDatesOptional">วันเปิด-ปิด แยกตามสถานศึกษา / Per-Institution Periods (ไม่บังคับ)</span>
         </div>
-        <p class="text-xs text-sky-600 opacity-80 mb-3">หากกำหนด วันเหล่านี้จะแสดงในตารางปฏิทินแทนวันเปิด-ปิดหลัก</p>
+        <p class="text-xs text-sky-600 opacity-80 mb-3"><span data-t="uiWhenSpecifiedTheseDatesReplaceTheMain">หากกำหนด วันเหล่านี้จะแสดงในตารางปฏิทินแทนวันเปิด-ปิดหลัก</span></p>
         <div class="space-y-2">
           <!-- MBS -->
           <div class="grid items-center gap-2" style="grid-template-columns:52px 1fr 1fr">
             <span class="text-xs font-bold" style="color:#1d4ed8">MBS</span>
             <div>
-              <label class="text-xs text-gray-400 mb-0.5 block">เปิด</label>
+              <label class="text-xs text-gray-400 mb-0.5 block"><span data-t="stOn">เปิด</span></label>
               <input type="date" id="tfIP_MBS_open" class="field-input text-xs py-1">
             </div>
             <div>
-              <label class="text-xs text-gray-400 mb-0.5 block">ปิด</label>
+              <label class="text-xs text-gray-400 mb-0.5 block"><span data-t="stOff">ปิด</span></label>
               <input type="date" id="tfIP_MBS_close" class="field-input text-xs py-1">
             </div>
           </div>
@@ -486,11 +486,11 @@
           <div class="grid items-center gap-2" style="grid-template-columns:52px 1fr 1fr">
             <span class="text-xs font-bold" style="color:#ea580c">VC</span>
             <div>
-              <label class="text-xs text-gray-400 mb-0.5 block">เปิด</label>
+              <label class="text-xs text-gray-400 mb-0.5 block"><span data-t="stOn">เปิด</span></label>
               <input type="date" id="tfIP_VC_open" class="field-input text-xs py-1">
             </div>
             <div>
-              <label class="text-xs text-gray-400 mb-0.5 block">ปิด</label>
+              <label class="text-xs text-gray-400 mb-0.5 block"><span data-t="stOff">ปิด</span></label>
               <input type="date" id="tfIP_VC_close" class="field-input text-xs py-1">
             </div>
           </div>
@@ -498,11 +498,11 @@
           <div class="grid items-center gap-2" style="grid-template-columns:52px 1fr 1fr">
             <span class="text-xs font-bold" style="color:#7c3aed">UNI</span>
             <div>
-              <label class="text-xs text-gray-400 mb-0.5 block">เปิด</label>
+              <label class="text-xs text-gray-400 mb-0.5 block"><span data-t="stOn">เปิด</span></label>
               <input type="date" id="tfIP_UNI_open" class="field-input text-xs py-1">
             </div>
             <div>
-              <label class="text-xs text-gray-400 mb-0.5 block">ปิด</label>
+              <label class="text-xs text-gray-400 mb-0.5 block"><span data-t="stOff">ปิด</span></label>
               <input type="date" id="tfIP_UNI_close" class="field-input text-xs py-1">
             </div>
           </div>
@@ -512,24 +512,24 @@
       <!-- Auto-notifications -->
       <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2">
         <div class="text-xs font-bold text-blue-700 flex items-center gap-1.5 mb-2">
-          <i data-lucide="bell" class="w-3.5 h-3.5"></i> แจ้งเตือนอัตโนมัติ
+          <i data-lucide="bell" class="w-3.5 h-3.5"></i> <span data-t="uiAutomaticNotifications">แจ้งเตือนอัตโนมัติ</span>
         </div>
         <label class="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" id="tfNotifStart" checked class="rounded accent-blue-600">
-          แจ้งเตือนก่อนเปิดภาคเรียน 7 วัน
+          <span data-t="uiNotify7DaysBeforeTermStart">แจ้งเตือนก่อนเปิดภาคเรียน 7 วัน</span>
         </label>
         <label class="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" id="tfNotifEnd" checked class="rounded accent-blue-600">
-          แจ้งเตือนก่อนปิดภาคเรียน 7 วัน
+          <span data-t="uiNotify7DaysBeforeTermEnd">แจ้งเตือนก่อนปิดภาคเรียน 7 วัน</span>
         </label>
         <label class="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" id="tfNotifExam" class="rounded accent-blue-600">
-          แจ้งเตือนก่อนวันสอบ 3 วัน
+          <span data-t="uiNotify3DaysBeforeExams">แจ้งเตือนก่อนวันสอบ 3 วัน</span>
         </label>
       </div>
     </div>
     <div class="flex justify-between gap-3 px-5 py-4 border-t bg-gray-50 flex-shrink-0">
-      <button onclick="closeTermForm()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
+      <button onclick="closeTermForm()" class="btn btn-secondary btn-sm"><span data-t="uiCancel">ยกเลิก / Cancel</span></button>
       <button onclick="saveTerm()" class="btn btn-primary btn-sm font-bold">
         <i data-lucide="save" class="w-4 h-4"></i>
         <span data-t="save">บันทึก</span>
@@ -547,16 +547,16 @@
     <div class="flex items-center justify-between px-6 py-4" style="background:#1e3a8a">
       <h3 class="font-bold text-white text-base flex items-center gap-2">
         <i data-lucide="send" class="w-4 h-4"></i>
-        สร้างการแจ้งเตือน / New Notification
+        <span data-t="uiNewNotification">สร้างการแจ้งเตือน / New Notification</span>
       </h3>
       <button onclick="closeNotifCompose()" class="text-white opacity-70 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
     <div class="p-5 space-y-3">
-      <p class="text-xs text-gray-400">ใช้แบบฟอร์มในแท็บ "การแจ้งเตือน" เพื่อสร้างและส่งการแจ้งเตือนแบบกลุ่ม</p>
+      <p class="text-xs text-gray-400"><span data-t="uiUseTheNotificationsTabToCreateAnd">ใช้แบบฟอร์มในแท็บ "การแจ้งเตือน" เพื่อสร้างและส่งการแจ้งเตือนแบบกลุ่ม</span></p>
       <button onclick="closeNotifCompose(); switchTab(3);" class="btn btn-primary btn-sm w-full">
-        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i> ไปที่แท็บการแจ้งเตือน
+        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i> <span data-t="uiGoToNotifications">ไปที่แท็บการแจ้งเตือน</span>
       </button>
     </div>
   </div>
@@ -792,7 +792,7 @@ function renderScheduleGrid() {
   const insts = ['MBS','VC','UNI'];
   const el = document.getElementById('scheduleGrid');
   if (!TERMS.length) {
-    el.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">${t('noData')}</div>`; return;
+    el.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm" data-t="noData">${t('noData')}</div>`; return;
   }
 
   el.innerHTML = `
@@ -1180,7 +1180,7 @@ function renderNotifHistory() {
   const el   = document.getElementById('notifHistoryList');
   if (!el) return;
   if (!NOTIFS.length) {
-    el.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">${t('noData')}</div>`; return;
+    el.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm" data-t="noData">${t('noData')}</div>`; return;
   }
   const sorted = [...NOTIFS].sort((a,b) => new Date(b.sentAt)-new Date(a.sentAt));
   const TYPE_ICON = { term_start:'play-circle', term_end:'stop-circle', promotion:'trending-up', graduation:'award', exam:'pencil-ruler', general:'bell' };
@@ -1190,7 +1190,7 @@ function renderNotifHistory() {
     const color = TYPE_COLOR[n.type] || '#1d4ed8';
     const title = isEN ? (n.titleEN||n.titleTH) : n.titleTH;
     const body  = isEN ? (n.bodyEN||n.bodyTH)   : n.bodyTH;
-    const date  = new Date(n.sentAt).toLocaleDateString(isEN?'en-GB':'th-TH', { dateStyle:'medium', timeStyle:'short' });
+    const date  = new Date(n.sentAt).toLocaleString(isEN?'en-GB':'th-TH', { dateStyle:'medium', timeStyle:'short' });
     return `
       <div style="display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid #f3f4f6">
         <div style="width:32px;height:32px;border-radius:50%;background:${color}15;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
@@ -1362,14 +1362,15 @@ function switchTab(n) {
 }
 
 // ── Language Toggle ────────────────────────────────────────────
-function toggleLang() {
-  setLang(LANG === 'th' ? 'en' : 'th');
+function toggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
+
+document.addEventListener('rdf:languagechange', () => {
   renderActiveTermBar();
   renderTermList();
   renderScheduleGrid();
   renderNotifHistory();
   renderNotifPanel();
-}
+});
 
 // ── Init ───────────────────────────────────────────────────────
 document.getElementById('batchDate').value = new Date().toISOString().split('T')[0];

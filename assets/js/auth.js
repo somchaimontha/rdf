@@ -79,7 +79,9 @@ async function _initNotifBell(user) {
 
   const btn = document.createElement('button');
   btn.id = 'notifBellBtn';
-  btn.title = 'คำขออนุมัติทุนมหาวิทยาลัย (RDF)';
+  btn.setAttribute('data-t-title', 'scholarshipApprovalRequests');
+  btn.setAttribute('data-t-aria-label', 'scholarshipApprovalRequests');
+  btn.title = t('scholarshipApprovalRequests');
   btn.onclick = () => { window.location.href = 'promotion.html'; };
   btn.innerHTML = `<i data-lucide="bell" style="width:20px;height:20px;display:block"></i>
     <span id="notifBadge" style="display:none"></span>`;
@@ -165,13 +167,13 @@ async function handleLogin() {
     }
   } catch (e) {
     showLoader(false);
-    const msg = e.name === 'AbortError' ? 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่' : (t('network_error') || e.message);
+    const msg = e.name === 'AbortError' ? t('connectionTimeout') : (t('network_error') || e.message);
     Swal.fire(t('error'), msg, 'error');
   }
 }
 
 async function handleGoogleLogin(idToken) {
-  showLoader(true, 'กำลังตรวจสอบบัญชี Google...');
+  showLoader(true, t('googleChecking'));
   try {
     const result = await API.loginWithGoogle(idToken);
     showLoader(false);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เลื่อนชั้น / จบการศึกษา — RDF</title>
+<title data-t="uiPromotionGraduationRDF">เลื่อนชั้น / จบการศึกษา — RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
@@ -435,7 +435,7 @@ img.student-avatar {
                 <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoCurrentLevel">ชั้นปัจจุบัน</th>
                 <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoNextLevel">ชั้นถัดไป (Default)</th>
                 <th style="padding:8px 12px;text-align:left;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px" data-t="promoCompletion">การดำเนินการ</th>
-                <th style="padding:8px 12px;text-align:center;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap" title="อนุญาตให้เลือกต่อ ม. ได้ในชั้นนี้ (ไม่จบการศึกษา)">🏛 ต่อ ม.</th>
+                <th style="padding:8px 12px;text-align:center;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap" title="อนุญาตให้เลือกต่อ ม. ได้ในชั้นนี้ (ไม่จบการศึกษา)" data-t-title="hintAllowUniversityProgressionAtThisLevelWithout"><span data-t="uiUniversity">🏛 ต่อ ม.</span></th>
               </tr>
             </thead>
             <tbody id="promotionRulesBody">
@@ -471,7 +471,7 @@ img.student-avatar {
             <option value="OTHER">Other</option>
           </select>
           <select id="promoYearFilter" class="field-select" onchange="filterGroups()" style="width:135px">
-            <option value="">ทุกปีการศึกษา</option>
+            <option value="" data-t="allYears">ทุกปีการศึกษา</option>
           </select>
           <select id="promoActionFilter" class="field-select" onchange="filterGroups()" style="width:150px">
             <!-- populated by renderActionFilterOptions() -->
@@ -510,7 +510,7 @@ img.student-avatar {
     <span class="action-badge act-promote"><i data-lucide="arrow-up" style="width:10px;height:10px"></i> <span data-t="promoActPromote">เลื่อนชั้น</span></span>
     <span class="action-badge act-graduate"><i data-lucide="graduation-cap" style="width:10px;height:10px"></i> <span data-t="promoActGraduate">จบการศึกษา</span></span>
     <span class="action-badge act-uni"><i data-lucide="building-2" style="width:10px;height:10px"></i> <span data-t="promoActUni">จบ + ต่อ ม. (ขอรับทุน RDF. ต่อ)</span></span>
-    <span class="action-badge act-graduate" style="border-style:dashed"><i data-lucide="award" style="width:10px;height:10px"></i> <span>จบ ปวช. + ต่อ ปวส.</span></span>
+    <span class="action-badge act-graduate" style="border-style:dashed"><i data-lucide="award" style="width:10px;height:10px"></i> <span><span data-t="uiVocationalCertificateGraduationHigherVocationalStudy">จบ ปวช. + ต่อ ปวส.</span></span></span>
     <span class="action-badge act-hold"><i data-lucide="pause-circle" style="width:10px;height:10px"></i> <span data-t="promoActHold">ซ้ำชั้น</span></span>
     <span class="action-badge act-suspend"><i data-lucide="clock" style="width:10px;height:10px"></i> <span data-t="promoActSuspend">พักการเรียน</span></span>
     <span class="action-badge act-resign"><i data-lucide="x-circle" style="width:10px;height:10px"></i> <span data-t="promoActResign">ลาออกจากสถาบัน</span></span>
@@ -593,7 +593,7 @@ img.student-avatar {
               <input type="radio" name="exportFmt" value="pdf"> PDF
             </label>
           </div>
-          <p class="text-xs text-gray-400 mt-1">Excel = ดาวน์โหลด • PDF = ดูตัวอย่างและพิมพ์</p>
+          <p class="text-xs text-gray-400 mt-1"><span data-t="uiExcelDownloadPDFPreviewAndPrint">Excel = ดาวน์โหลด • PDF = ดูตัวอย่างและพิมพ์</span></p>
         </div>
         <div>
           <label class="text-xs font-bold text-gray-600 uppercase tracking-wide block mb-2" data-t="exportLang">ภาษารายงาน</label>
@@ -611,11 +611,11 @@ img.student-avatar {
       <div class="flex gap-4 flex-wrap">
         <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
           <input type="checkbox" id="expOnlyChanged" class="rounded" checked>
-          <span id="expOnlyChangedLabel">เฉพาะที่มีการเปลี่ยนแปลง</span>
+          <span id="expOnlyChangedLabel"><span data-t="uiChangedRowsOnly">เฉพาะที่มีการเปลี่ยนแปลง</span></span>
         </label>
         <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
           <input type="checkbox" id="expIncludeSkip" class="rounded">
-          <span id="expIncludeSkipLabel">รวมรายการ "ไม่เปลี่ยน"</span>
+          <span id="expIncludeSkipLabel"><span data-t="uiIncludeNoChangeRows">รวมรายการ "ไม่เปลี่ยน"</span></span>
         </label>
       </div>
     </div>
@@ -635,7 +635,7 @@ img.student-avatar {
     <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#1e3a8a">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
         <i data-lucide="printer" class="w-4 h-4"></i>
-        <span id="prModalTitle">พิมพ์รายงานทางการ</span>
+        <span id="prModalTitle"><span data-t="arPrintReport">พิมพ์รายงานทางการ</span></span>
       </h3>
       <button onclick="closePrintReportModal()" class="text-white opacity-70 hover:opacity-100">
         <i data-lucide="x" class="w-5 h-5"></i>
@@ -645,21 +645,21 @@ img.student-avatar {
 
       <!-- Report Type -->
       <div class="pr-section">
-        <span class="pr-label" id="prLblType">ประเภทรายงาน / Report Type</span>
+        <span class="pr-label" id="prLblType"><span data-t="uiReportType">ประเภทรายงาน / Report Type</span></span>
         <div class="pr-radio-row flex-wrap gap-y-1">
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" id="prTypeGraduation" name="prType" value="graduation" checked class="accent-blue-600 rounded" onchange="_prAutoSelectGradLevels()">
-            รายงานผู้สำเร็จการศึกษา <span class="text-gray-400 text-xs">/ Graduation Report</span></label>
+            <span data-t="reportGradTitle">รายงานผู้สำเร็จการศึกษา</span> <span class="text-gray-400 text-xs">/ Graduation Report</span></label>
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" name="prType" value="promotion" class="accent-blue-600 rounded">
-            รายงานสรุปการเลื่อนชั้น <span class="text-gray-400 text-xs">/ Promotion Summary</span></label>
+            <span data-t="reportPromoTitle">รายงานสรุปการเลื่อนชั้น</span> <span class="text-gray-400 text-xs">/ Promotion Summary</span></label>
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" name="prType" value="withdrawal" class="accent-blue-600 rounded">
-            รายงานนักเรียนลาออก/ถอนทุน <span class="text-gray-400 text-xs">/ Withdrawal Report</span></label>
+            <span data-t="uiResignationScholarshipWithdrawalReport">รายงานนักเรียนลาออก/ถอนทุน</span> <span class="text-gray-400 text-xs">/ Withdrawal Report</span></label>
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" name="prType" value="nomination" class="accent-blue-600 rounded">
-            ลำดับชื่อเสนอรับทุน <span class="text-gray-400 text-xs">/ Nomination List</span>
-            <span style="margin-left:4px;font-size:10px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:4px;padding:1px 5px">🏛 เฉพาะขอรับทุน RDF</span>
+            <span data-t="uiScholarshipNominationOrder">ลำดับชื่อเสนอรับทุน</span> <span class="text-gray-400 text-xs">/ Nomination List</span>
+            <span style="margin-left:4px;font-size:10px;font-weight:700;background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:4px;padding:1px 5px"><span data-t="uiRDFScholarshipApplicantsOnly">🏛 เฉพาะขอรับทุน RDF</span></span>
           </label>
         </div>
       </div>
@@ -667,12 +667,12 @@ img.student-avatar {
       <!-- Level multi-select + Language -->
       <div class="pr-section">
         <div class="flex items-center justify-between mb-1.5">
-          <span class="pr-label" style="margin-bottom:0" id="prLevelLabel">กรองระดับชั้น / Filter Levels</span>
+          <span class="pr-label" style="margin-bottom:0" id="prLevelLabel"><span data-t="uiFilterLevels">กรองระดับชั้น / Filter Levels</span></span>
           <div class="flex gap-3">
             <button type="button" onclick="_prSelectAllLevels(true)"
-              class="text-xs text-blue-600 hover:underline font-medium">เลือกทั้งหมด / All</button>
+              class="text-xs text-blue-600 hover:underline font-medium"><span data-t="uiSelectAll">เลือกทั้งหมด / All</span></button>
             <button type="button" onclick="_prSelectAllLevels(false)"
-              class="text-xs text-gray-400 hover:text-red-500 hover:underline">ล้าง / Clear</button>
+              class="text-xs text-gray-400 hover:text-red-500 hover:underline"><span data-t="uiClear">ล้าง / Clear</span></button>
           </div>
         </div>
         <!-- Quick preset chips -->
@@ -681,7 +681,7 @@ img.student-avatar {
         <div id="prLevelCheckboxes" class="border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100 bg-white text-sm"></div>
       </div>
       <div class="pr-section">
-        <span class="pr-label">ภาษารายงาน / Report Language</span>
+        <span class="pr-label"><span data-t="rptPrLang">ภาษารายงาน / Report Language</span></span>
         <div class="pr-radio-row" style="margin-top:8px">
           <label><input type="radio" name="prLang" value="th" checked class="accent-blue-600"> ไทย</label>
           <label><input type="radio" name="prLang" value="en" class="accent-blue-600"> English</label>
@@ -691,86 +691,86 @@ img.student-avatar {
       <!-- Academic Year + Date -->
       <div class="grid grid-cols-2 gap-3 pr-section">
         <div>
-          <span class="pr-label">ปีการศึกษา / Academic Year <span class="text-gray-400 font-normal">(แสดงในหัวรายงาน)</span></span>
+          <span class="pr-label"><span data-t="rptPrAcad">ปีการศึกษา / Academic Year</span> <span class="text-gray-400 font-normal"><span data-t="uiShownInTheReportHeader">(แสดงในหัวรายงาน)</span></span></span>
           <select id="prModalAcad" class="pr-field">
-            <option value="">— เลือกปีการศึกษา —</option>
+            <option value="" data-t="uiSelectAcademicYear">— เลือกปีการศึกษา —</option>
           </select>
         </div>
         <div>
-          <span class="pr-label">วันที่รายงาน / Report Date</span>
+          <span class="pr-label"><span data-t="rptPrDate">วันที่รายงาน / Report Date</span></span>
           <input type="date" id="prModalDate" class="pr-field">
         </div>
       </div>
 
       <!-- Batch Selector -->
       <div class="pr-section">
-        <span class="pr-label">ข้อมูลสำหรับรายงาน / Report Data Source</span>
+        <span class="pr-label"><span data-t="uiReportDataSource">ข้อมูลสำหรับรายงาน / Report Data Source</span></span>
         <select id="prBatchSel" class="pr-field">
-          <option value="_session">ตามหน้าจอปัจจุบัน</option>
+          <option value="_session" data-t="uiCurrentView">ตามหน้าจอปัจจุบัน</option>
         </select>
-        <p class="text-xs text-gray-400 mt-1">เลือก "ตามหน้าจอปัจจุบัน" เพื่อรายงานจากข้อมูลที่เห็นอยู่ หรือเลือกชุดที่บันทึกไว้เพื่อพิมพ์รายงานย้อนหลังได้อย่างถูกต้อง</p>
-        <p id="prBatchNote" class="text-xs text-blue-600 mt-1 hidden">⚠ รายงานนี้ใช้ข้อมูลที่ถ่ายภาพไว้ตอนบันทึก ผลลัพธ์จะตรงกับสถานะขณะนั้น</p>
+        <p class="text-xs text-gray-400 mt-1"><span data-t="uiChooseCurrentViewToReportOnVisible">เลือก "ตามหน้าจอปัจจุบัน" เพื่อรายงานจากข้อมูลที่เห็นอยู่ หรือเลือกชุดที่บันทึกไว้เพื่อพิมพ์รายงานย้อนหลังได้อย่างถูกต้อง</span></p>
+        <p id="prBatchNote" class="text-xs text-blue-600 mt-1 hidden"><span data-t="uiThisReportUsesASavedSnapshotAnd">⚠ รายงานนี้ใช้ข้อมูลที่ถ่ายภาพไว้ตอนบันทึก ผลลัพธ์จะตรงกับสถานะขณะนั้น</span></p>
       </div>
 
       <!-- Sort Options -->
       <div class="pr-section">
-        <span class="pr-label">การเรียงลำดับ / Sort Options</span>
+        <span class="pr-label"><span data-t="uiSortOptions">การเรียงลำดับ / Sort Options</span></span>
         <div class="pr-radio-row flex-wrap gap-x-5 gap-y-2">
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" id="prSortLevel" checked class="rounded accent-blue-600">
-            <span>เรียงตามชั้นปี / By Level</span>
+            <span><span data-t="uiByLevel">เรียงตามชั้นปี / By Level</span></span>
           </label>
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" id="prSortPriority" class="rounded accent-blue-600">
-            <span>เรียงตามลำดับขอทุน / By Scholarship Priority</span>
+            <span><span data-t="uiByScholarshipPriority">เรียงตามลำดับขอทุน / By Scholarship Priority</span></span>
           </label>
           <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" id="prSortName" class="rounded accent-blue-600">
-            <span>เรียงตามชื่อ / By Name (A-Z)</span>
+            <span><span data-t="uiByNameAZ">เรียงตามชื่อ / By Name (A-Z)</span></span>
           </label>
         </div>
       </div>
 
       <!-- School Name -->
       <div class="pr-section">
-        <span class="pr-label">ชื่อสถานศึกษา / School Name</span>
-        <input type="text" id="prModalSchool" class="pr-field" placeholder="เช่น The Dyckerhoff Foundation Maesaring Vocational College">
+        <span class="pr-label"><span data-t="uiSchoolName">ชื่อสถานศึกษา / School Name</span></span>
+        <input type="text" id="prModalSchool" class="pr-field" placeholder="เช่น The Dyckerhoff Foundation Maesaring Vocational College" data-t-placeholder="hintEGTheDyckerhoffFoundationMaesaringVocational">
       </div>
 
       <!-- Subject -->
       <div class="pr-section">
-        <span class="pr-label">เรื่อง (หัวข้อเอกสาร) / Document Subject</span>
-        <input type="text" id="prModalSubject" class="pr-field" placeholder="จะสร้างให้อัตโนมัติหากว่างไว้ / Auto-generated if blank">
+        <span class="pr-label"><span data-t="uiDocumentSubject">เรื่อง (หัวข้อเอกสาร) / Document Subject</span></span>
+        <input type="text" id="prModalSubject" class="pr-field" placeholder="จะสร้างให้อัตโนมัติหากว่างไว้ / Auto-generated if blank" data-t-placeholder="hintAutoGeneratedIfBlankLabelLabel">
       </div>
 
       <!-- Signature Slots from Settings -->
       <div class="pr-section">
         <div class="flex items-center justify-between mb-2">
-          <span class="pr-label" style="margin-bottom:0">ผู้ลงนามในเอกสาร / Signatories</span>
+          <span class="pr-label" style="margin-bottom:0"><span data-t="rptPrSigs">ผู้ลงนามในเอกสาร / Signatories</span></span>
           <a href="settings.html" target="_blank"
              onclick="localStorage.setItem('settingsTab','print')"
              class="text-xs text-blue-600 hover:underline flex items-center gap-1">
             <i data-lucide="settings" class="w-3 h-3"></i>
-            ตั้งค่าผู้ลงนาม
+            <span data-t="arPrSigSettings">ตั้งค่าผู้ลงนาม</span>
           </a>
         </div>
         <div id="prModalSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลดรายชื่อผู้ลงนาม...</div>
+          <div class="text-xs text-gray-400 p-3 text-center"><span data-t="uiLoadingSignatories">กำลังโหลดรายชื่อผู้ลงนาม...</span></div>
         </div>
-        <p class="text-xs text-gray-400 mt-1.5">ติ๊กเลือกผู้ลงนามที่ต้องการแสดงในรายงาน • กำหนดค่าเริ่มต้นที่ การตั้งค่า → ผู้ลงนามในเอกสาร</p>
+        <p class="text-xs text-gray-400 mt-1.5"><span data-t="uiSelectSignatoriesToIncludeInTheReport">ติ๊กเลือกผู้ลงนามที่ต้องการแสดงในรายงาน • กำหนดค่าเริ่มต้นที่ การตั้งค่า → ผู้ลงนามในเอกสาร</span></p>
       </div>
 
       <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
         <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <span>จะแสดงตัวอย่างรายงานก่อนพิมพ์ รูปแบบ A4 แนวนอน พร้อมส่วนหัวซ้ำทุกหน้า ลายเซ็นแสดงหน้าสุดท้าย<br>
+        <span><span data-t="uiPreviewBeforePrintingInA4LandscapeWith">จะแสดงตัวอย่างรายงานก่อนพิมพ์ รูปแบบ A4 แนวนอน พร้อมส่วนหัวซ้ำทุกหน้า ลายเซ็นแสดงหน้าสุดท้าย</span><br>
         A preview will appear before printing — A4 landscape, header repeats per page, signature on last page.</span>
       </div>
     </div>
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
-      <button onclick="closePrintReportModal()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
+      <button onclick="closePrintReportModal()" class="btn btn-secondary btn-sm"><span data-t="uiCancel">ยกเลิก / Cancel</span></button>
       <button onclick="doPrintReport()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
         <i data-lucide="eye" class="w-4 h-4"></i>
-        ดูตัวอย่างและพิมพ์ / Preview &amp; Print
+        <span data-t="uiPreviewAndPrint">ดูตัวอย่างและพิมพ์ / Preview</span> &amp; Print
       </button>
     </div>
   </div>
@@ -796,16 +796,16 @@ img.student-avatar {
       <!-- ── Filter row ── -->
       <div class="flex gap-2 flex-wrap items-center">
         <input type="text" id="wfSearch" class="wf-field text-xs" style="flex:1;min-width:130px;padding:5px 9px"
-          placeholder="ค้นหาชื่อ / StipNo..." oninput="wfFilterList()">
+          placeholder="ค้นหาชื่อ / StipNo..." oninput="wfFilterList()" data-t-placeholder="hintSearchNameStipno">
         <!-- Type filter -->
         <div class="flex gap-1 flex-shrink-0">
-          <button onclick="wfSetFilter('all')" id="wfFilterAll" class="wf-filter-btn active">ทั้งหมด</button>
-          <button onclick="wfSetFilter('resign')" id="wfFilterResign" class="wf-filter-btn">ลาออก</button>
-          <button onclick="wfSetFilter('withdraw_sch')" id="wfFilterWithdraw" class="wf-filter-btn">ถอนทุน</button>
+          <button onclick="wfSetFilter('all')" id="wfFilterAll" class="wf-filter-btn active"><span data-t="stTotal">ทั้งหมด</span></button>
+          <button onclick="wfSetFilter('resign')" id="wfFilterResign" class="wf-filter-btn"><span data-t="uiResigned">ลาออก</span></button>
+          <button onclick="wfSetFilter('withdraw_sch')" id="wfFilterWithdraw" class="wf-filter-btn"><span data-t="rptStatusWithdrawn">ถอนทุน</span></button>
         </div>
         <!-- Institution filter -->
         <div class="flex gap-1 flex-shrink-0">
-          <button onclick="wfSetInst('all')" id="wfInstAll" class="wf-filter-btn active" style="border-color:#1e3a8a;color:#1e3a8a">ทุกสถาบัน</button>
+          <button onclick="wfSetInst('all')" id="wfInstAll" class="wf-filter-btn active" style="border-color:#1e3a8a;color:#1e3a8a"><span data-t="uiAllInstitutionsLabelLabel">ทุกสถาบัน</span></button>
           <button onclick="wfSetInst('MBS')" id="wfInstMBS" class="wf-filter-btn">MBS</button>
           <button onclick="wfSetInst('VC')" id="wfInstVC" class="wf-filter-btn">VC</button>
           <button onclick="wfSetInst('UNI')" id="wfInstUNI" class="wf-filter-btn">UNI</button>
@@ -814,28 +814,28 @@ img.student-avatar {
 
       <!-- ── Count + save-notes row ── -->
       <div class="flex items-center justify-between">
-        <span id="wfStudentCount" class="text-xs text-gray-400">กำลังโหลด...</span>
+        <span id="wfStudentCount" class="text-xs text-gray-400"><span data-t="stLoading">กำลังโหลด...</span></span>
         <button onclick="wfSaveAllNotes()" class="btn btn-sm text-xs flex items-center gap-1" style="background:#0f766e;color:#fff;border:none;padding:4px 12px">
           <i data-lucide="save" class="w-3 h-3"></i>
-          บันทึกหมายเหตุทั้งหมด
+          <span data-t="uiSaveAllNotes">บันทึกหมายเหตุทั้งหมด</span>
         </button>
       </div>
 
       <!-- ── Student list ── -->
       <div id="wfStudentList" class="border border-gray-200 rounded-xl overflow-hidden" style="max-height:280px;overflow-y:auto">
-        <div class="text-xs text-gray-400 p-4 text-center">กำลังโหลด...</div>
+        <div class="text-xs text-gray-400 p-4 text-center"><span data-t="stLoading">กำลังโหลด...</span></div>
       </div>
 
       <!-- ── Document info ── -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <span class="wf-label">วันที่เอกสาร / Document Date</span>
+          <span class="wf-label"><span data-t="uiDocumentDate">วันที่เอกสาร / Document Date</span></span>
           <input type="date" id="wfDocDate" class="wf-field">
         </div>
         <div>
-          <span class="wf-label">พิมพ์ปีการศึกษา / Print Year</span>
+          <span class="wf-label"><span data-t="uiPrintAcademicYear">พิมพ์ปีการศึกษา / Print Year</span></span>
           <select id="wfPrintYear" class="wf-field" style="font-size:12px">
-            <option value="">— ทุกปี (All Years) —</option>
+            <option value="" data-t="uiAllYears">— ทุกปี (All Years) —</option>
           </select>
         </div>
       </div>
@@ -843,18 +843,18 @@ img.student-avatar {
       <!-- ── Signature slots ── -->
       <div>
         <div class="flex items-center justify-between mb-1.5">
-          <span class="wf-label" style="margin-bottom:0">ผู้ลงนาม / Signatories</span>
-          <span class="text-xs text-gray-400">จากการตั้งค่า</span>
+          <span class="wf-label" style="margin-bottom:0"><span data-t="uiSignatories">ผู้ลงนาม / Signatories</span></span>
+          <span class="text-xs text-gray-400"><span data-t="uiFromSettings">จากการตั้งค่า</span></span>
         </div>
         <div id="wfSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-          <div class="text-xs text-gray-400 p-3 text-center">กำลังโหลด...</div>
+          <div class="text-xs text-gray-400 p-3 text-center"><span data-t="stLoading">กำลังโหลด...</span></div>
         </div>
       </div>
     </div>
 
     <!-- Footer -->
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
-      <button onclick="closeWithdrawalFormModal()" class="btn btn-secondary btn-sm">ยกเลิก / Cancel</button>
+      <button onclick="closeWithdrawalFormModal()" class="btn btn-secondary btn-sm"><span data-t="uiCancel">ยกเลิก / Cancel</span></button>
       <button onclick="doPrintWithdrawalForm()" class="btn btn-sm font-bold flex items-center gap-1.5" style="background:#9f1239;color:#fff;border:none">
         <i data-lucide="printer" class="w-4 h-4"></i>
         <span data-t="promoWfPrint">พิมพ์สรุป / Print Summary</span>
@@ -870,7 +870,7 @@ img.student-avatar {
     <div class="flex items-center justify-between px-5 py-3 flex-shrink-0" style="background:#1e3a8a;border-radius:1rem 1rem 0 0">
       <div class="flex items-center gap-3">
         <i data-lucide="eye" class="w-5 h-5 text-white"></i>
-        <span id="previewModalTitle" class="font-bold text-white text-sm">ตัวอย่างก่อนพิมพ์ / Print Preview</span>
+        <span id="previewModalTitle" class="font-bold text-white text-sm"><span data-t="uiPrintPreview">ตัวอย่างก่อนพิมพ์ / Print Preview</span></span>
       </div>
       <button onclick="closePrintPreview()" class="text-white opacity-70 hover:opacity-100 text-2xl leading-none">&times;</button>
     </div>
@@ -882,13 +882,13 @@ img.student-avatar {
     <div class="flex justify-between items-center px-5 py-3 border-t bg-gray-50 flex-shrink-0 gap-3" style="border-radius:0 0 1rem 1rem">
       <button onclick="closePrintPreview()" class="btn btn-secondary btn-sm">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
-        <span id="pvBtnBack">กลับ / Back</span>
+        <span id="pvBtnBack"><span data-t="uiBack">กลับ / Back</span></span>
       </button>
       <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-400" id="pvPageHint">กด Ctrl+P หรือกดปุ่มด้านล่างเพื่อพิมพ์ / Press Ctrl+P or the button below to print</span>
+        <span class="text-xs text-gray-400" id="pvPageHint"><span data-t="uiPressCtrlPOrTheButtonBelow">กด Ctrl+P หรือกดปุ่มด้านล่างเพื่อพิมพ์ / Press Ctrl+P or the button below to print</span></span>
         <button onclick="printFromPreview()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
           <i data-lucide="printer" class="w-4 h-4"></i>
-          <span id="pvBtnPrint">สั่งพิมพ์ / Print</span>
+          <span id="pvBtnPrint"><span data-t="uiPrint">สั่งพิมพ์ / Print</span></span>
         </button>
       </div>
     </div>
@@ -1255,14 +1255,15 @@ async function savePromotionSettings() {
 // ─────────────────────────────────────────────
 // BILINGUAL
 // ─────────────────────────────────────────────
-function promoToggleLang() {
-  setLang(LANG === 'th' ? 'en' : 'th');
+function promoToggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
+
+document.addEventListener('rdf:languagechange', () => {
   renderActionFilterOptions(); // update bilingual action filter options
   if (ALL_GROUPS.length > 0) renderGroups();
   updateStats();
   updateExportLabels();
   renderApprovalPanel();
-}
+});
 
 function updateExportLabels() {
   const onlyChg = document.getElementById('expOnlyChangedLabel');
@@ -1535,7 +1536,7 @@ function renderGroups() {
           <span style="font-size:11px;padding:2px 10px;border-radius:6px;background:${color}12;color:${color};border:1px solid ${color}30;font-weight:700">
             ${curYear ? `${curYear} / ${parseInt(curYear)-543}` : '—'}
           </span>
-          ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px">${t('promoFinalLevel')}</span>` : ''}
+          ${isGradLevel ? `<span class="action-badge act-graduate" style="font-size:10px" data-t="promoFinalLevel">${t('promoFinalLevel')}</span>` : ''}
           ${isSchCont && !isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#f3e8ff;color:#7c3aed;border:1px solid #c4b5fd">🏛 ${t('promoSchCont')}</span>` : ''}
           ${isGradLevel ? `<span class="action-badge" style="font-size:10px;background:#ede9fe;color:#6d28d9;border:1px solid #a78bfa">🏛 ${t('promoUniEligible')}</span>` : ''}
           <span class="promo-done-badge action-badge" id="doneBadge_${CSS.escape(gKey)}"
@@ -1573,7 +1574,7 @@ function renderGroups() {
       </div>
       <div id="body_${CSS.escape(gKey)}">
         ${filtered.length === 0
-          ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
+          ? `<p class="text-center text-gray-400 text-xs py-4" data-t="promoNoStudents">${t('promoNoStudents')}</p>`
           : renderGroupTable(inst, level, curYear, filtered, nextDefault, isGradLevel)}
       </div>
     </div>`;
@@ -1582,8 +1583,8 @@ function renderGroups() {
   if (shown === 0) {
     html = `<div class="text-center text-gray-400 py-16">
       <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
-      <p class="font-semibold">${t('noData')}</p>
-      <p class="text-xs mt-1">${t('noDataHint')}</p>
+      <p class="font-semibold" data-t="noData">${t('noData')}</p>
+      <p class="text-xs mt-1" data-t="noDataHint">${t('noDataHint')}</p>
     </div>`;
   }
 
@@ -1605,15 +1606,15 @@ function renderGroupTable(inst, level, curYear, students, nextDefault, isGradLev
           <input type="checkbox" title="Select all" onchange="selectAllInGroup('${inst}','${level}','${curYear}',this.checked)" class="rounded">
         </th>
         <th style="width:40px"></th>
-        <th style="min-width:110px">${t('promoColName')}</th>
-        <th style="width:80px" class="promo-hide-sm">${t('promoColStipNo')}</th>
-        <th style="width:72px" class="promo-hide-sm">${t('promoColStatus')}</th>
-        <th style="width:150px" class="no-print">${t('promoColAction')}</th>
-        <th style="width:130px">${t('promoColNext')}</th>
-        <th style="width:90px" class="promo-hide-sm">${t('promoColNextYear')}</th>
-        ${showUniSchCol ? `<th style="width:90px" class="promo-hide-sm">${t('promoColUniSch')}</th>` : ''}
+        <th style="min-width:110px" data-t="promoColName">${t('promoColName')}</th>
+        <th style="width:80px" class="promo-hide-sm" data-t="promoColStipNo">${t('promoColStipNo')}</th>
+        <th style="width:72px" class="promo-hide-sm" data-t="promoColStatus">${t('promoColStatus')}</th>
+        <th style="width:150px" class="no-print" data-t="promoColAction">${t('promoColAction')}</th>
+        <th style="width:130px" data-t="promoColNext">${t('promoColNext')}</th>
+        <th style="width:90px" class="promo-hide-sm" data-t="promoColNextYear">${t('promoColNextYear')}</th>
+        ${showUniSchCol ? `<th style="width:90px" class="promo-hide-sm" data-t="promoColUniSch">${t('promoColUniSch')}</th>` : ''}
         ${showPriorityCol ? `<th style="width:52px;text-align:center" title="${LANG==='th'?'ลำดับชื่อเสนอรับทุน':'Scholarship Priority'}">${LANG==='th'?'ลำดับ':'Order'}</th>` : ''}
-        <th style="width:120px">${t('promoColNotes')}</th>
+        <th style="width:120px" data-t="promoColNotes">${t('promoColNotes')}</th>
       </tr></thead>
       <tbody id="ptbody_${CSS.escape(gKey)}">${rows}</tbody>
     </table>
@@ -2262,8 +2263,8 @@ function renderApprovalPanel() {
       <div style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:12px 16px;margin-bottom:16px" class="no-print">
         <div class="flex items-center gap-2 text-purple-700 font-semibold text-sm">
           <i data-lucide="shield-check" class="w-4 h-4"></i>
-          <span>${t('schApprovalPanel')}</span>
-          <span style="font-size:11px;font-weight:400;color:#7c3aed">${t('schNoRequests')}</span>
+          <span data-t="schApprovalPanel">${t('schApprovalPanel')}</span>
+          <span style="font-size:11px;font-weight:400;color:#7c3aed" data-t="schNoRequests">${t('schNoRequests')}</span>
         </div>
       </div>`;
     lucide.createIcons(); return;
@@ -2358,7 +2359,7 @@ function renderApprovalPanel() {
     <div style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:12px;overflow:hidden;margin-bottom:16px" class="no-print">
       <div style="padding:10px 16px;background:#ede9fe;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <i data-lucide="shield-alert" class="w-4 h-4" style="color:#7c3aed"></i>
-        <span style="font-weight:700;color:#5b21b6;font-size:13px">${t('schApprovalPanel')}</span>
+        <span style="font-weight:700;color:#5b21b6;font-size:13px" data-t="schApprovalPanel">${t('schApprovalPanel')}</span>
         <span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:999px">${totalCount} ${LANG==='th'?'รายการ':'items'}</span>
         <button onclick="loadApprovalPanel()" style="margin-left:auto;padding:2px 10px;font-size:11px;border-radius:6px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;cursor:pointer;font-weight:600">
           <i data-lucide="refresh-cw" style="width:11px;height:11px;display:inline"></i> ${LANG==='th'?'รีเฟรช':'Refresh'}
@@ -2371,7 +2372,7 @@ function renderApprovalPanel() {
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'นักเรียน':'Student'}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'ชั้น/สถาบันเดิม':'Prev. Level'}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'มหาวิทยาลัยที่ต้องการเข้า':'Target University'}</th>
-              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${t('promoColNotes')}</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase" data-t="promoColNotes">${t('promoColNotes')}</th>
               <th style="padding:6px 10px;text-align:left;font-size:10px;color:#5b21b6;text-transform:uppercase">${LANG==='th'?'การดำเนินการ':'Action'}</th>
             </tr>
           </thead>
@@ -2710,7 +2711,7 @@ function _rerenderGroupBody(inst, level, curYear) {
       })
     : dgStudents;
   bodyEl.innerHTML = filtered.length === 0
-    ? `<p class="text-center text-gray-400 text-xs py-4">${t('promoNoStudents')}</p>`
+    ? `<p class="text-center text-gray-400 text-xs py-4" data-t="promoNoStudents">${t('promoNoStudents')}</p>`
     : renderGroupTable(inst, level, curYear, filtered, nextDefault, isGradLevel);
   lucide.createIcons();
 }
@@ -2836,13 +2837,13 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
       ${(majorBadge || deptBadge) ? `<div class="flex flex-wrap gap-1">${majorBadge}${deptBadge}</div>` : `<span style="font-size:9px;color:#9ca3af">↓ กรอกสาขาด้านล่าง</span>`}
     </div>`;
   }
-  if (act === 'graduate')  return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-green-600 font-semibold">${t('promoStatusGraduated')}</span>${alumniGraduate}</div>`;
-  if (act === 'uni')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-600 font-semibold">${t('promoUniRDF')}</span>${activeTrackTag}${approvalBadge}</div>`;
-  if (act === 'uni_own')   return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-400 font-semibold">${t('promoUniOwn')}</span></div>`;
-  if (act === 'hold')      return `<span class="text-xs text-orange-500 font-semibold">${t('promoStayLevel')}</span>`;
-  if (act === 'suspend')   return `<span class="text-xs text-yellow-600 font-semibold">${t('promoStatusSuspended')}</span>`;
-  if (act === 'resign')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-red-500 font-semibold">${t('promoStatusResigned')}</span>${alumniResign}${wdBtn}</div>`;
-  if (act === 'withdraw_sch') return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs font-semibold" style="color:#9f1239">${t('promoStatusWithdrawnSch')}</span>${alumniWithdraw}${wdBtn}</div>`;
+  if (act === 'graduate')  return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-green-600 font-semibold" data-t="promoStatusGraduated">${t('promoStatusGraduated')}</span>${alumniGraduate}</div>`;
+  if (act === 'uni')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-600 font-semibold" data-t="promoUniRDF">${t('promoUniRDF')}</span>${activeTrackTag}${approvalBadge}</div>`;
+  if (act === 'uni_own')   return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-purple-400 font-semibold" data-t="promoUniOwn">${t('promoUniOwn')}</span></div>`;
+  if (act === 'hold')      return `<span class="text-xs text-orange-500 font-semibold" data-t="promoStayLevel">${t('promoStayLevel')}</span>`;
+  if (act === 'suspend')   return `<span class="text-xs text-yellow-600 font-semibold" data-t="promoStatusSuspended">${t('promoStatusSuspended')}</span>`;
+  if (act === 'resign')       return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs text-red-500 font-semibold" data-t="promoStatusResigned">${t('promoStatusResigned')}</span>${alumniResign}${wdBtn}</div>`;
+  if (act === 'withdraw_sch') return `<div class="flex flex-wrap gap-1 items-center"><span class="text-xs font-semibold" style="color:#9f1239" data-t="promoStatusWithdrawnSch">${t('promoStatusWithdrawnSch')}</span>${alumniWithdraw}${wdBtn}</div>`;
   return `<span class="text-xs text-gray-400">—</span>`;
 }
 
@@ -3265,7 +3266,7 @@ function renderUniDetailRow(stipNo, dec) {
           <ul id="uniProvAcUl_${stipNo}" class="ac-list hidden" style="min-width:220px;z-index:500"></ul>
         </div>
         <select class="promo-action-select text-xs" onchange="setDec('${stipNo}','uniDuration',this.value)" style="width:90px">
-          <option value="">${t('promoDuration')}</option>
+          <option value="" data-t="promoDuration">${t('promoDuration')}</option>
           ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${dec.uniDuration==n?'selected':''}>${n} ${LANG==='th'?'ปี':'yr'}</option>`).join('')}
         </select>
       </div>
@@ -6121,7 +6122,7 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
   const btn = document.getElementById('langBtn');
   if (btn) btn.textContent = (localStorage.getItem('rdfLang')||'th') === 'th' ? 'EN' : 'TH';
 
-  setLang(localStorage.getItem('rdfLang') || 'th');
+  setLang(readSavedLang());
   renderActionFilterOptions(); // populate bilingual action filter on load
   loadPage();
 })();
@@ -6192,30 +6193,30 @@ document.addEventListener('keydown', e => {
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">📝</span>
         <div>
-          <div id="notesPopupTitle" style="font-size:13px;font-weight:700;color:#1e293b">หมายเหตุ</div>
+          <div id="notesPopupTitle" style="font-size:13px;font-weight:700;color:#1e293b"><span data-t="exportNotes">หมายเหตุ</span></div>
           <div id="notesPopupSub"   style="font-size:10px;color:#9ca3af"></div>
         </div>
       </div>
-      <button onclick="closeNotesPopup()" style="padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;font-size:13px;line-height:1" title="ปิด">✕</button>
+      <button onclick="closeNotesPopup()" style="padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;font-size:13px;line-height:1" title="ปิด" data-t-title="stOff">✕</button>
     </div>
     <!-- Required note indicator -->
     <div id="notesPopupRequiredBanner" style="display:none;padding:6px 18px;background:#fef2f2;border-bottom:1px solid #fca5a5">
-      <span style="font-size:11px;color:#dc2626;font-weight:600">⚠ หมายเหตุนี้จำเป็นต้องกรอก (required)</span>
+      <span style="font-size:11px;color:#dc2626;font-weight:600"><span data-t="uiThisNoteIsRequired">⚠ หมายเหตุนี้จำเป็นต้องกรอก (required)</span></span>
     </div>
     <!-- Textarea -->
     <textarea id="notesPopupTextarea"
       placeholder="พิมพ์หมายเหตุที่นี่..."
       oninput="_onNotesPopupInput()"
-      onfocus="this.select()"></textarea>
+      onfocus="this.select()" data-t-placeholder="hintTypeNotesHere"></textarea>
     <!-- Char counter + footer -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid #f1f5f9;gap:8px">
       <span id="notesPopupCharCount" style="font-size:11px;color:#9ca3af"></span>
       <div style="display:flex;gap:8px">
         <button onclick="closeNotesPopup()" style="padding:6px 16px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer">
-          ยกเลิก
+          <span data-t="stCancel">ยกเลิก</span>
         </button>
         <button onclick="saveNotesPopup()" style="padding:6px 20px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
-          ✓ บันทึก
+          <span data-t="uiSave">✓ บันทึก</span>
         </button>
       </div>
     </div>

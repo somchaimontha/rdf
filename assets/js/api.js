@@ -33,7 +33,7 @@ async function apiGet(params, timeoutMs) {
     res = await fetch(url, { signal: ctrl.signal });
   } catch(e) {
     clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา กรุณาลองใหม่');
+    if (e.name === 'AbortError') throw new Error(t('connectionTimeout'));
     throw e;
   }
   clearTimeout(timer);
@@ -65,7 +65,7 @@ async function apiPost(body, timeoutMs) {
     });
   } catch(e) {
     clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา กรุณาลองใหม่');
+    if (e.name === 'AbortError') throw new Error(t('connectionTimeout'));
     throw e;
   }
   clearTimeout(timer);
@@ -201,7 +201,7 @@ function showLoader(show, text) {
 }
 
 /* ── Status badge HTML ── */
-function statusBadge(status, lang) {
+function statusBadge(status, lang = LANG) {
   const labels = lang === 'en' ? RDF.STATUS_LABELS_EN : RDF.STATUS_LABELS_TH;
   const color  = RDF.STATUS_COLORS[status] || 'badge-gray';
   return `<span class="badge ${color}">${labels[status] || status}</span>`;
@@ -226,6 +226,13 @@ function getAcademicYears(students) {
 
 /* ── DB Connection Status ── */
 let _dbCheckTimer = null;
+let _dbStatusState = { key: 'stChecking', ms: null };
+function renderDBStatus() {
+  const text = document.getElementById('dbStatusText');
+  if (text) text.textContent = t(_dbStatusState.key) +
+    (_dbStatusState.ms === null ? '' : ` (${_dbStatusState.ms} ms)`);
+}
+document.addEventListener('rdf:languagechange', renderDBStatus);
 
 async function checkDBConnection() {
   const el  = document.getElementById('dbStatus');
@@ -233,7 +240,8 @@ async function checkDBConnection() {
   if (!el || !txt) return;
 
   el.className = 'db-status checking';
-  txt.textContent = (typeof LANG !== 'undefined' && LANG === 'en') ? 'Checking...' : 'กำลังตรวจสอบ...';
+  _dbStatusState = { key: 'stChecking', ms: null };
+  renderDBStatus();
 
   const t0 = Date.now();
   try {
@@ -245,14 +253,15 @@ async function checkDBConnection() {
     const ms    = Date.now() - t0;
     if (data.status === 'ok') {
       el.className = 'db-status online';
-      const label  = (typeof LANG !== 'undefined' && LANG === 'en') ? 'Connected' : 'เชื่อมต่อแล้ว';
-      txt.textContent = `${label} (${ms} ms)`;
+      _dbStatusState = { key: 'connectionOnline', ms };
+      renderDBStatus();
     } else {
       throw new Error('bad response');
     }
   } catch(e) {
     el.className = 'db-status offline';
-    txt.textContent = (typeof LANG !== 'undefined' && LANG === 'en') ? 'Cannot connect' : 'ไม่สามารถเชื่อมต่อได้';
+    _dbStatusState = { key: 'connectionOffline', ms: null };
+    renderDBStatus();
   }
 }
 

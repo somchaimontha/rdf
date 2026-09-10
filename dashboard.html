@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>หน้าหลัก — ระบบทุนการศึกษา RDF</title>
+<title data-t="uiDashboardRDFScholarshipSystem">หน้าหลัก — ระบบทุนการศึกษา RDF</title>
 <link rel="stylesheet" href="assets/css/rdf.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText">กำลังโหลด...</p></div>
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText"><span data-t="stLoading">กำลังโหลด...</span></p></div>
 
 <!-- Navbar -->
 <nav class="rdf-nav">
@@ -38,7 +38,7 @@
           <div id="navUserRole" class="nav-user-role">—</div>
         </div>
       </div>
-      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1" title="ออกจากระบบ">
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1" title="ออกจากระบบ" data-t-title="logout">
         <i data-lucide="log-out" class="w-5 h-5"></i>
       </button>
     </div>
@@ -166,20 +166,20 @@
       <div class="card-header flex items-center justify-between" style="background:#d97706">
         <div class="flex items-center gap-2">
           <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-          <span>โปรไฟล์ไม่สมบูรณ์</span>
+          <span><span data-t="uiIncompleteProfiles">โปรไฟล์ไม่สมบูรณ์</span></span>
         </div>
         <span id="incompleteCount" class="font-bold text-lg">—</span>
       </div>
       <div class="card-body py-3">
-        <p class="text-xs text-gray-500 mb-2">นักเรียนที่ข้อมูลยังไม่ครบ (ต่ำกว่า 80%) — แยกตามกลุ่ม</p>
+        <p class="text-xs text-gray-500 mb-2"><span data-t="uiStudentsWithIncompleteInformationBelow80By">นักเรียนที่ข้อมูลยังไม่ครบ (ต่ำกว่า 80%) — แยกตามกลุ่ม</span></p>
         <!-- Institution breakdown bars -->
         <div id="incompleteByInst" class="mb-3 divide-y divide-gray-100 rounded-lg border border-gray-100 overflow-hidden bg-gray-50 px-3 py-2"></div>
         <!-- Section summary badges -->
-        <p class="text-xs text-gray-400 mb-1.5">ส่วนที่ขาดมากที่สุด:</p>
+        <p class="text-xs text-gray-400 mb-1.5"><span data-t="uiMostFrequentlyMissingSections">ส่วนที่ขาดมากที่สุด:</span></p>
         <div id="incompleteSummary" class="flex flex-wrap gap-2 mb-3"></div>
         <div class="flex flex-wrap gap-2">
           <a href="students.html?incomplete=1" class="btn btn-warning btn-sm">
-            <i data-lucide="users" class="w-3.5 h-3.5"></i> ดูรายชื่อทั้งหมด
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> <span data-t="uiViewAllStudents">ดูรายชื่อทั้งหมด</span>
           </a>
           <a href="students.html?inst=MBS&incomplete=1" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">MBS</a>
           <a href="students.html?inst=VC&incomplete=1" class="btn btn-sm" style="background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa">VC</a>
@@ -194,7 +194,7 @@
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
         <i data-lucide="bar-chart-2" class="w-4 h-4" style="color:#1e3a8a"></i>
-        <h3 class="text-sm font-bold text-gray-700">ภาพรวมระบบ</h3>
+        <h3 class="text-sm font-bold text-gray-700"><span data-t="stTabOverview">ภาพรวมระบบ</span></h3>
       </div>
     </div>
     <!-- Mini stat row -->
@@ -203,25 +203,25 @@
         <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#eff6ff">
           <i data-lucide="users" class="w-5 h-5" style="color:#1d4ed8"></i>
         </div>
-        <div><div class="text-xl font-bold text-gray-800" id="ovTotal">—</div><div class="text-xs text-gray-400">ทั้งหมด</div></div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovTotal">—</div><div class="text-xs text-gray-400"><span data-t="stTotal">ทั้งหมด</span></div></div>
       </div>
       <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
         <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#f0fdf4">
           <i data-lucide="check-circle" class="w-5 h-5" style="color:#16a34a"></i>
         </div>
-        <div><div class="text-xl font-bold text-gray-800" id="ovActive">—</div><div class="text-xs text-gray-400">กำลังศึกษา</div></div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovActive">—</div><div class="text-xs text-gray-400"><span data-t="stOvActive">กำลังศึกษา</span></div></div>
       </div>
       <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
         <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#faf5ff">
           <i data-lucide="award" class="w-5 h-5" style="color:#7c3aed"></i>
         </div>
-        <div><div class="text-xl font-bold text-gray-800" id="ovGrad">—</div><div class="text-xs text-gray-400">สำเร็จการศึกษา</div></div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovGrad">—</div><div class="text-xs text-gray-400"><span data-t="stOvGrad">สำเร็จการศึกษา</span></div></div>
       </div>
       <div class="rounded-xl border bg-white p-3 flex items-center gap-3">
         <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:#fff7ed">
           <i data-lucide="shield" class="w-5 h-5" style="color:#ea580c"></i>
         </div>
-        <div><div class="text-xl font-bold text-gray-800" id="ovAdmins">—</div><div class="text-xs text-gray-400">ผู้ดูแลระบบ</div></div>
+        <div><div class="text-xl font-bold text-gray-800" id="ovAdmins">—</div><div class="text-xs text-gray-400"><span data-t="stOvAdmins">ผู้ดูแลระบบ</span></div></div>
       </div>
     </div>
     <!-- Charts row -->
@@ -229,7 +229,7 @@
       <div class="card md:col-span-2">
         <div class="card-header" style="background:#1e3a8a;font-size:11px;padding:8px 14px">
           <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-          จำนวนนักเรียนแยกตามปีการศึกษา (พ.ศ.)
+          <span data-t="stOvChartYear">จำนวนนักเรียนแยกตามปีการศึกษา (พ.ศ.)</span>
           <span class="ml-auto text-blue-200 font-normal" id="dashLineNote"></span>
         </div>
         <div class="p-3" style="height:220px;position:relative">
@@ -239,7 +239,7 @@
       <div class="card">
         <div class="card-header" style="background:#7c3aed;font-size:11px;padding:8px 14px">
           <i data-lucide="pie-chart" class="w-3.5 h-3.5"></i>
-          สัดส่วนตามสถาบัน
+          <span data-t="uiDistributionByInstitution">สัดส่วนตามสถาบัน</span>
         </div>
         <div class="p-3" style="height:220px;position:relative">
           <canvas id="dashChartDonut"></canvas>
@@ -248,7 +248,7 @@
       <div class="card md:col-span-3">
         <div class="card-header" style="background:#16a34a;font-size:11px;padding:8px 14px">
           <i data-lucide="bar-chart" class="w-3.5 h-3.5"></i>
-          จำนวนนักเรียนแยกตามสถานะ
+          <span data-t="stOvChartStatus">จำนวนนักเรียนแยกตามสถานะ</span>
         </div>
         <div class="p-3" style="height:180px;position:relative">
           <canvas id="dashChartStatus"></canvas>
@@ -262,7 +262,7 @@
     <div class="card" style="border-left:4px solid #1d4ed8">
       <div class="card-header" style="background:#1d4ed8">
         <i data-lucide="info" class="w-4 h-4"></i>
-        <span>คู่มือการใช้งานระบบสำหรับนักเรียนทุน</span>
+        <span><span data-t="uiUserGuideForScholarshipStudents">คู่มือการใช้งานระบบสำหรับนักเรียนทุน</span></span>
       </div>
       <div class="card-body">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -271,8 +271,8 @@
               <i data-lucide="user-check" class="w-5 h-5" style="color:#1d4ed8"></i>
             </div>
             <div>
-              <p class="font-bold text-gray-700 mb-1">โปรไฟล์ส่วนตัว</p>
-              <p class="text-gray-500 text-xs">กรอกข้อมูลให้ครบถ้วนเพื่อให้มูลนิธิสามารถติดต่อและดูแลนักเรียนทุนได้อย่างมีประสิทธิภาพ ระบบจะแสดงเปอร์เซ็นต์ความสมบูรณ์ของโปรไฟล์</p>
+              <p class="font-bold text-gray-700 mb-1"><span data-t="uiPersonalProfile">โปรไฟล์ส่วนตัว</span></p>
+              <p class="text-gray-500 text-xs"><span data-t="uiCompleteYourInformationSoTheFoundationCan">กรอกข้อมูลให้ครบถ้วนเพื่อให้มูลนิธิสามารถติดต่อและดูแลนักเรียนทุนได้อย่างมีประสิทธิภาพ ระบบจะแสดงเปอร์เซ็นต์ความสมบูรณ์ของโปรไฟล์</span></p>
             </div>
           </div>
           <div class="flex gap-3">
@@ -280,8 +280,8 @@
               <i data-lucide="shield" class="w-5 h-5" style="color:#16a34a"></i>
             </div>
             <div>
-              <p class="font-bold text-gray-700 mb-1">ความปลอดภัยของข้อมูล</p>
-              <p class="text-gray-500 text-xs">ข้อมูลของนักเรียนทุกอย่างถูกเก็บอย่างปลอดภัย เข้าถึงได้เฉพาะเจ้าหน้าที่มูลนิธิที่ได้รับอนุญาตเท่านั้น</p>
+              <p class="font-bold text-gray-700 mb-1"><span data-t="uiDataSecurity">ความปลอดภัยของข้อมูล</span></p>
+              <p class="text-gray-500 text-xs"><span data-t="uiStudentDataIsStoredSecurelyAndCan">ข้อมูลของนักเรียนทุกอย่างถูกเก็บอย่างปลอดภัย เข้าถึงได้เฉพาะเจ้าหน้าที่มูลนิธิที่ได้รับอนุญาตเท่านั้น</span></p>
             </div>
           </div>
           <div class="flex gap-3">
@@ -289,8 +289,8 @@
               <i data-lucide="bell" class="w-5 h-5" style="color:#d97706"></i>
             </div>
             <div>
-              <p class="font-bold text-gray-700 mb-1">การแจ้งเตือนข้อมูลไม่ครบ</p>
-              <p class="text-gray-500 text-xs">ระบบจะแจ้งเตือนหากข้อมูลยังไม่ครบถ้วน นักเรียนสามารถกดข้ามและกลับมากรอกในภายหลังได้ทุกเมื่อ</p>
+              <p class="font-bold text-gray-700 mb-1"><span data-t="uiIncompleteInformationAlerts">การแจ้งเตือนข้อมูลไม่ครบ</span></p>
+              <p class="text-gray-500 text-xs"><span data-t="uiTheSystemAlertsYouWhenInformationIs">ระบบจะแจ้งเตือนหากข้อมูลยังไม่ครบถ้วน นักเรียนสามารถกดข้ามและกลับมากรอกในภายหลังได้ทุกเมื่อ</span></p>
             </div>
           </div>
           <div class="flex gap-3">
@@ -298,8 +298,8 @@
               <i data-lucide="help-circle" class="w-5 h-5" style="color:#7c3aed"></i>
             </div>
             <div>
-              <p class="font-bold text-gray-700 mb-1">ต้องการความช่วยเหลือ?</p>
-              <p class="text-gray-500 text-xs">หากพบปัญหาการใช้งานหรือต้องการแก้ไขข้อมูล กรุณาติดต่อเจ้าหน้าที่มูลนิธิโดยตรง</p>
+              <p class="font-bold text-gray-700 mb-1"><span data-t="uiNeedHelp">ต้องการความช่วยเหลือ?</span></p>
+              <p class="text-gray-500 text-xs"><span data-t="uiIfYouHaveProblemsUsingTheSystem">หากพบปัญหาการใช้งานหรือต้องการแก้ไขข้อมูล กรุณาติดต่อเจ้าหน้าที่มูลนิธิโดยตรง</span></p>
             </div>
           </div>
         </div>
@@ -314,9 +314,9 @@
     <span class="mx-2 hide-xs">•</span>
     <span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span>
   </div>
-  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง">
+  <div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" title="คลิกเพื่อตรวจสอบอีกครั้ง" data-t-title="hintClickToCheckAgain">
     <span class="db-dot"></span>
-    <span id="dbStatusText">กำลังตรวจสอบ...</span>
+    <span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span>
   </div>
 </footer>
 
@@ -330,6 +330,12 @@
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
 initDBStatus();
+let dashboardStats = null;
+let dashboardNotifications = null;
+document.addEventListener('rdf:languagechange', () => {
+  if (dashboardStats) renderDashboardStats(dashboardStats);
+  if (dashboardNotifications) renderDashboardNotifications(...dashboardNotifications);
+});
 const user = requireAuth();
 if (user) {
   renderNavUser(user);
@@ -352,6 +358,12 @@ async function loadNotifications() {
     const suspended = allStu.filter(s => s.status === 'Suspended');
     const suspendedCount = suspended.length;
 
+    dashboardNotifications = [pendingCount, suspendedCount];
+    renderDashboardNotifications(...dashboardNotifications);
+  } catch(e) {}
+}
+
+function renderDashboardNotifications(pendingCount, suspendedCount) {
     const total = pendingCount + suspendedCount;
     if (total === 0) return;
 
@@ -402,7 +414,7 @@ async function loadNotifications() {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-sm font-bold text-gray-800">${a.title}</span>
-            ${a.urgent ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d">⚡ รีวิวด่วน</span>` : ''}
+            ${a.urgent ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d">⚡ ${LANG === 'en' ? 'Review urgently' : 'รีวิวด่วน'}</span>` : ''}
           </div>
           <p class="text-xs text-gray-500 mt-0.5">${a.desc}</p>
         </div>
@@ -414,7 +426,6 @@ async function loadNotifications() {
 
     alertBox.classList.remove('hidden');
     lucide.createIcons();
-  } catch(e) {}
 }
 
 async function loadSystemNotice() {
@@ -457,6 +468,22 @@ async function loadStats() {
   try {
     const result = await API.getStudents();
     if (result.status === 'success') {
+      dashboardStats = result;
+      renderDashboardStats(result);
+      if (user && user.role !== 'Student') {
+        // Fetch admin count in background (non-blocking)
+        API.getAdmins().then(ar => {
+          if (ar && ar.status === 'success')
+            document.getElementById('ovAdmins').textContent = (ar.data || []).filter(a => a.Status === 'Active').length;
+        }).catch(() => {});
+
+      }
+
+    }
+  } catch(e) {}
+}
+
+function renderDashboardStats(result) {
       const s = result.stats || {};
       document.getElementById('statMBS').textContent   = s.MBS   || 0;
       document.getElementById('statVC').textContent    = s.VC    || 0;
@@ -469,9 +496,9 @@ async function loadStats() {
 
         // ── Institution groups for incomplete detection ──
         const _INST = [
-          { key:'MBS', label:'MBS (แม่สะเรียงบริพัตร)', color:'#1d4ed8' },
-          { key:'VC',  label:'VC (วิทยาลัยเทคนิค)',     color:'#ea580c' },
-          { key:'UNI', label:'UNI (มหาวิทยาลัย)',        color:'#7c3aed' }
+          { key:'MBS', label: LANG === 'en' ? 'MBS' : 'MBS (แม่สะเรียงบริพัตร)', color:'#1d4ed8' },
+          { key:'VC',  label: LANG === 'en' ? 'VC' : 'VC (วิทยาลัยเทคนิค)',     color:'#ea580c' },
+          { key:'UNI', label: LANG === 'en' ? 'UNI (University)' : 'UNI (มหาวิทยาลัย)',        color:'#7c3aed' }
         ];
         const _instGroups = {};
         _INST.forEach(ic => { _instGroups[ic.key] = { incomplete:0, total:0 }; });
@@ -498,7 +525,7 @@ async function loadStats() {
 
         if (_incomplete.length > 0) {
           document.getElementById('incompleteCard').classList.remove('hidden');
-          document.getElementById('incompleteCount').textContent = _incomplete.length + ' คน';
+          document.getElementById('incompleteCount').textContent = _incomplete.length + (LANG === 'en' ? ' students' : ' คน');
 
           // ── Per-institution breakdown bars ──
           document.getElementById('incompleteByInst').innerHTML = _INST.map(ic => {
@@ -511,14 +538,14 @@ async function loadStats() {
                 <div class="h-2 rounded-full transition-all duration-500" style="width:${pct}%;background:${ic.color}"></div>
               </div>
               <div class="text-xs text-gray-500 whitespace-nowrap w-20 text-right">
-                ${g.incomplete}/${g.total} คน
+                ${g.incomplete}/${g.total} ${LANG === 'en' ? 'students' : 'คน'}
               </div>
             </div>`;
-          }).filter(Boolean).join('') || '<p class="text-xs text-gray-400 py-1">ไม่พบข้อมูลแยกกลุ่ม</p>';
+          }).filter(Boolean).join('') || `<p class="text-xs text-gray-400 py-1" data-t="noData">${t('noData')}</p>`;
 
           // ── Section summary (most missing) ──
           const _secCounts = {};
-          RDF.PROFILE_SECTIONS.forEach(sec => { _secCounts[sec.label_th] = 0; });
+          RDF.PROFILE_SECTIONS.forEach(sec => { _secCounts[LANG === 'en' ? sec.label_en : sec.label_th] = 0; });
           _incomplete.forEach(stu => {
             const _obj = {
               IDCard: stu.idCard, Title: stu.title,
@@ -529,11 +556,11 @@ async function loadStats() {
             };
             calcProfileCompletion(_obj).sections
               .filter(sec => sec.missing.length > 0)
-              .forEach(sec => { _secCounts[sec.label_th] = (_secCounts[sec.label_th] || 0) + 1; });
+              .forEach(sec => { _secCounts[LANG === 'en' ? sec.label_en : sec.label_th] = (_secCounts[LANG === 'en' ? sec.label_en : sec.label_th] || 0) + 1; });
           });
           document.getElementById('incompleteSummary').innerHTML = Object.entries(_secCounts)
             .filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).slice(0, 5)
-            .map(([k, c]) => `<span class="badge badge-orange">${k}: ${c} คน</span>`).join('');
+            .map(([k, c]) => `<span class="badge badge-orange">${k}: ${c} ${LANG === 'en' ? 'students' : 'คน'}</span>`).join('');
         }
 
         // ── Overview stat cards ──
@@ -541,12 +568,6 @@ async function loadStats() {
         document.getElementById('ovTotal').textContent  = _stats.Total  || _students.length || 0;
         document.getElementById('ovActive').textContent = _students.filter(s => s.status === 'Active').length;
         document.getElementById('ovGrad').textContent   = _stats.Alumni || 0;
-        // Fetch admin count in background (non-blocking)
-        API.getAdmins().then(ar => {
-          if (ar && ar.status === 'success')
-            document.getElementById('ovAdmins').textContent = (ar.data || []).filter(a => a.Status === 'Active').length;
-        }).catch(() => {});
-
         // ── Overview charts ──
         buildDashboardCharts(_students);
         document.getElementById('dashOverview').classList.remove('hidden');
@@ -555,8 +576,6 @@ async function loadStats() {
         document.getElementById('studentGuide').classList.remove('hidden');
         lucide.createIcons();
       }
-    }
-  } catch(e) {}
 }
 
 let _dashChartLine, _dashChartDonut, _dashChartStatus;
@@ -619,7 +638,7 @@ function buildDashboardCharts(students) {
   _dashChartDonut = new Chart(document.getElementById('dashChartDonut'), {
     type: 'doughnut',
     data: {
-      labels: Object.keys(instCnt),
+      labels: Object.keys(instCnt).map(k => k === 'อื่นๆ' && LANG === 'en' ? 'Other' : k),
       datasets:[{ data: Object.values(instCnt),
         backgroundColor:['#1d4ed8','#ea580c','#7c3aed','#94a3b8'],
         borderWidth:2, borderColor:'#fff', hoverOffset:5 }]
@@ -650,7 +669,7 @@ function buildDashboardCharts(students) {
   _dashChartStatus = new Chart(document.getElementById('dashChartStatus'), {
     type: 'bar',
     data: {
-      labels: statusKeys.map(k => STATUS_TH[k] || k),
+      labels: statusKeys.map(k => (LANG === 'en' ? RDF.STATUS_LABELS_EN[k] : STATUS_TH[k]) || k),
       datasets:[{ data: statusKeys.map(k => statusMap[k]),
         backgroundColor: statusKeys.map(k => (STATUS_COLOR[k]||'#94a3b8') + 'cc'),
         borderColor:     statusKeys.map(k => STATUS_COLOR[k]||'#94a3b8'),
