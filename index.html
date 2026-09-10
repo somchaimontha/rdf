@@ -296,7 +296,7 @@
   </div>
 </div>
 
-<script src="assets/js/config.js"></script>
+<script src="assets/js/config.js?v=2.0.1"></script>
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
@@ -339,15 +339,32 @@ function setLoginRole(role) {
 // ═══════════════════════════════════════════
 // GOOGLE SIGN-IN
 // ═══════════════════════════════════════════
-let _gClientId = '';
+let _gClientId = String(RDF.GOOGLE_CLIENT_ID || '').trim();
+let _gisScriptRequested = false;
+
+function _renderGoogleLoginState(configResolved) {
+  const button = document.getElementById('googleBtnWrap');
+  const notice = document.getElementById('googleNotCfg');
+  if (_gClientId) {
+    button.style.display = 'block';
+    notice.style.display = 'none';
+    _loadGIS();
+  } else {
+    button.style.display = 'none';
+    notice.style.display = configResolved ? 'flex' : 'none';
+  }
+}
 
 function _loadGIS() {
   if (typeof google !== 'undefined' && google.accounts) { _initGIS(); return; }
+  if (_gisScriptRequested) return;
+  _gisScriptRequested = true;
   const s = document.createElement('script');
   s.src = 'https://accounts.google.com/gsi/client';
   s.async = true; s.defer = true;
   s.onload = _initGIS;
   s.onerror = () => {
+    _gisScriptRequested = false;
     document.getElementById('googleBtnWrap').style.display = 'none';
     document.getElementById('googleNotCfg').style.display = 'flex';
     const message = document.getElementById('googleNotCfg').querySelector('span');
@@ -405,6 +422,9 @@ async function handleGoogleCredential(response) {
 // LOAD SETTINGS (Client ID + Contact URL)
 // ═══════════════════════════════════════════
 (async function init() {
+  // The public bootstrap Client ID makes Google login available immediately,
+  // even while Apps Script is starting from a cold state.
+  _renderGoogleLoginState(false);
   try {
     const r = await API.getSystemSettings();
     const data = r.data || {};
@@ -421,20 +441,15 @@ async function handleGoogleCredential(response) {
     }
 
     // Google Client ID
-    _gClientId = data.GOOGLE_CLIENT_ID || '';
-    if (_gClientId) {
-      document.getElementById('googleBtnWrap').style.display = 'block';
-      document.getElementById('googleNotCfg').style.display = 'none';
-      _loadGIS();
-    } else {
-      // No Client ID configured — hide Google button, show notice
-      document.getElementById('googleBtnWrap').style.display = 'none';
-      document.getElementById('googleNotCfg').style.display = 'flex';
+    // A setting explicitly returned by the backend remains authoritative.
+    // Older/partial responses that omit the key keep the bootstrap value.
+    if (Object.prototype.hasOwnProperty.call(data, 'GOOGLE_CLIENT_ID')) {
+      _gClientId = String(data.GOOGLE_CLIENT_ID || '').trim();
     }
+    _renderGoogleLoginState(true);
   } catch(e) {
-    // On network error: hide Google section gracefully
-    document.getElementById('googleBtnWrap').style.display = 'none';
-    document.getElementById('googleNotCfg').style.display = 'none';
+    // Keep the bootstrap login available when Apps Script is slow/unavailable.
+    _renderGoogleLoginState(false);
   }
 
   // Apply i18n & set default role

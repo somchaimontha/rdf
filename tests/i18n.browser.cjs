@@ -15,6 +15,7 @@ if (location.pathname.endsWith('/index.html')) localStorage.removeItem('rdfUser'
 else localStorage.setItem('rdfUser', JSON.stringify({name:'Test Admin',username:'test',role:'SuperAdmin',sessionToken:'fixture',loginTime:Date.now()}));
 window.tailwind = {};
 window.lucide = {createIcons(){}};
+window.google = {accounts:{id:{initialize(){},prompt(){}},oauth2:{initTokenClient(){return {requestAccessToken(){}};}}}};
 window.Chart = class { static register(){}; constructor(el, cfg){this.data=cfg.data;this.options=cfg.options;} destroy(){} stop(){} update(){} toBase64Image(){return '';} };
 window.Chart.defaults = {font:{},plugins:{legend:{labels:{}}}};
 window.Swal = {fire:async(...args)=>({isConfirmed:false}),mixin(){return this;},showLoading(){},close(){}};
@@ -105,6 +106,10 @@ const server = http.createServer((req,res)=>{
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
    if(file==='index.html') {
+     const googleLogin=await evaluate(`({configured:typeof _gClientId==='string'&&_gClientId===RDF.GOOGLE_CLIENT_ID&&_gClientId.length>0,button:getComputedStyle(document.getElementById('googleBtnWrap')).display,warning:getComputedStyle(document.getElementById('googleNotCfg')).display})`);
+     assert.equal(googleLogin.configured,true,'Google Client ID bootstrap');
+     assert.notEqual(googleLogin.button,'none','Google login remains available while settings load');
+     assert.equal(googleLogin.warning,'none','configured Google login must not show missing-ID warning');
      const dynamic=await evaluate(`(async()=>{
        const holder=document.createElement('div');
        holder.innerHTML='<button><i id="test-icon"></i><span data-t="save">initial</span></button><input value="Keep ไทย" data-t-placeholder="searchPlaceholder" data-t-title="save">';

@@ -1,10 +1,13 @@
 /* ── RDF Config ── */
 const RDF = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyJwHM-vyqSddDfqSu1puLc86E42O6Pxjg4PHRfhuCSvc4fcmuNp1YS85OvYMWdAlc2/exec",
+  // OAuth Client IDs are public identifiers. Keep this bootstrap value so
+  // Google Sign-In does not depend on a slow SystemSettings request.
+  GOOGLE_CLIENT_ID: "692943413718-823rsampc4jafpf897m89iv7v13nrf10.apps.googleusercontent.com",
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.0.0",
+  VERSION: "2.0.1",
   DEFAULT_LANG: "th",
   INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"Other" },
   INSTITUTION_LABELS_TH: { MBS:'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"', VC:'วิทยาลัยการอาชีพแม่สะเรียง', UNI:'มหาวิทยาลัย', OTHER:'อื่นๆ' },
