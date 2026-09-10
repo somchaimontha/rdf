@@ -90,7 +90,13 @@ async function _initNotifBell(user) {
   navRight.insertBefore(btn, userWrap);
   if (typeof lucide !== 'undefined') lucide.createIcons({ elements: [btn] });
 
-  await _refreshNotifBell();
+  // Notification counts are useful but should not compete with the first
+  // dashboard/stat request. Start them after the initial page has painted.
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(_refreshNotifBell, { timeout: 4000 });
+  } else {
+    setTimeout(_refreshNotifBell, 1500);
+  }
   setInterval(_refreshNotifBell, 5 * 60 * 1000); // re-check every 5 min
 }
 

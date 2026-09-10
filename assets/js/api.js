@@ -29,7 +29,7 @@ const _apiGetInFlight = new Map();
 const _apiGetCache = new Map();
 const _API_GET_CACHE_MS = 20000;
 const _API_CACHEABLE_GET_ACTIONS = new Set([
-  'getStudents', 'getAdmins', 'getSystemSettings', 'getPendingScholarshipRequests',
+  'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPendingScholarshipRequests',
   'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents'
 ]);
 let _apiGetCacheGeneration = 0;
@@ -141,6 +141,7 @@ async function apiPost(body, timeoutMs) {
 }
 
 const API = {
+  async getDashboardStats()     { return apiGet({ action: 'getDashboardStats' }); },
   async getStudents()          { return apiGet({ action: 'getStudents' }); },
   async getStudent(stipNo)     { return apiGet({ action: 'getStudent', stipNo }); },
   async generateStipNo(inst)   { return apiGet({ action: 'generateStipNo', institution: inst }); },

@@ -23,9 +23,11 @@ window.XLSX = {utils:{}};
 window.fetch = async (url, options) => {
  const action = options?.body ? JSON.parse(options.body).action : new URL(url, location.href).searchParams.get('action');
  __calls.push(action);
+ if (action==='getStudents' && location.pathname.endsWith('/dashboard.html')) await new Promise(resolve=>setTimeout(resolve,3000));
  const student = {stipNo:'MBS_001',fname:'ทดสอบ',lname:'นักเรียน',engFname:'Test',engLname:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active',scholarshipYear:2025,entryYear:2025,phone:'0800000000',idCard:'1234567890123'};
  let data = {status:'success',data:[],rows:[],students:[],pending:[],sessions:{},stats:{Total:1,MBS:1}};
  if (action==='ping') data.status='ok';
+ if (action==='getDashboardStats') data.stats={MBS:28,VC:15,UNI:3,Alumni:128,Total:174};
  if (action==='getStudents') data.data=[student];
  if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student'}]}];
  if (action==='getSystemSettings') data.data={STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}]};
@@ -106,9 +108,11 @@ const server = http.createServer((req,res)=>{
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
    if(file==='dashboard.html') {
-     const startupCalls=await evaluate(`({students:__calls.filter(a=>a==='getStudents').length,pending:__calls.filter(a=>a==='getPendingScholarshipRequests').length})`);
+     const startupCalls=await evaluate(`({quick:__calls.filter(a=>a==='getDashboardStats').length,students:__calls.filter(a=>a==='getStudents').length,pending:__calls.filter(a=>a==='getPendingScholarshipRequests').length,counts:['statMBS','statVC','statUNI','statAlumni'].map(id=>document.getElementById(id).textContent)})`);
+     assert.equal(startupCalls.quick,1,'dashboard must request quick stats once');
      assert.equal(startupCalls.students,1,'dashboard must share the student request');
      assert.equal(startupCalls.pending,1,'dashboard must share the pending-request call');
+     assert.deepEqual(startupCalls.counts,['28','15','3','128'],'quick stats must render before full student data');
    }
    if(file==='index.html') {
      const googleLogin=await evaluate(`({configured:typeof _gClientId==='string'&&_gClientId===RDF.GOOGLE_CLIENT_ID&&_gClientId.length>0,button:getComputedStyle(document.getElementById('googleBtnWrap')).display,warning:getComputedStyle(document.getElementById('googleNotCfg')).display})`);

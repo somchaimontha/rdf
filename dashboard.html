@@ -320,11 +320,11 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.0.2"></script>
+<script src="assets/js/config.js?v=2.0.3"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script src="assets/js/i18n.js"></script>
-<script src="assets/js/api.js?v=2.0.2"></script>
-<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=2.0.3"></script>
+<script src="assets/js/auth.js?v=2.0.3"></script>
 <script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
@@ -341,9 +341,56 @@ if (user) {
   renderNavUser(user);
   document.getElementById('welcomeName').textContent = user.name;
   RBAC.applyDashboardUI(user);
-  loadStats();
   loadSystemNotice();
-  if (['SuperAdmin','Manager'].includes(user.role)) loadNotifications();
+  loadDashboardProgressively();
+}
+
+const DASHBOARD_STATS_STORAGE_KEY = 'rdfDashboardStats';
+
+function renderTopStats(stats) {
+  if (!stats) return;
+  document.getElementById('statMBS').textContent = Number(stats.MBS) || 0;
+  document.getElementById('statVC').textContent = Number(stats.VC) || 0;
+  document.getElementById('statUNI').textContent = Number(stats.UNI) || 0;
+  document.getElementById('statAlumni').textContent = Number(stats.Alumni) || 0;
+}
+
+function readSavedDashboardStats() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DASHBOARD_STATS_STORAGE_KEY));
+    if (!saved || !saved.stats || Date.now() - saved.savedAt > 24 * 60 * 60 * 1000) return null;
+    return saved.stats;
+  } catch(e) { return null; }
+}
+
+async function loadQuickStats() {
+  const saved = readSavedDashboardStats();
+  if (saved) renderTopStats(saved);
+  try {
+    const result = await API.getDashboardStats();
+    if (result && result.status === 'success' && result.stats) {
+      renderTopStats(result.stats);
+      try {
+        localStorage.setItem(DASHBOARD_STATS_STORAGE_KEY, JSON.stringify({
+          stats: result.stats,
+          savedAt: Date.now()
+        }));
+      } catch(e) {}
+    }
+  } catch(e) {}
+}
+
+async function loadDashboardProgressively() {
+  await loadQuickStats();
+  const loadDetails = () => {
+    loadStats();
+    if (['SuperAdmin','Manager'].includes(user.role)) loadNotifications();
+  };
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(loadDetails, { timeout: 1200 });
+  } else {
+    setTimeout(loadDetails, 0);
+  }
 }
 
 async function loadNotifications() {
@@ -485,10 +532,7 @@ async function loadStats() {
 
 function renderDashboardStats(result) {
       const s = result.stats || {};
-      document.getElementById('statMBS').textContent   = s.MBS   || 0;
-      document.getElementById('statVC').textContent    = s.VC    || 0;
-      document.getElementById('statUNI').textContent   = s.UNI   || 0;
-      document.getElementById('statAlumni').textContent= s.Alumni|| 0;
+      renderTopStats(s);
 
       const _user = getUser();
       if (_user && _user.role !== 'Student') {
