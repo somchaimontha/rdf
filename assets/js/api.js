@@ -22,7 +22,30 @@ function _getToken() {
   try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
 }
 
-async function apiGet(params, timeoutMs) {
+// Share identical read requests made during the same page load. Dashboard
+// widgets often need the same student/settings data, so one response can feed
+// all of them instead of starting duplicate Apps Script executions.
+const _apiGetInFlight = new Map();
+const _apiGetCache = new Map();
+const _API_GET_CACHE_MS = 20000;
+const _API_CACHEABLE_GET_ACTIONS = new Set([
+  'getStudents', 'getAdmins', 'getSystemSettings', 'getPendingScholarshipRequests',
+  'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents'
+]);
+let _apiGetCacheGeneration = 0;
+
+function _apiGetCacheKey(params, token) {
+  const entries = Object.entries(token ? { ...params, token } : { ...params })
+    .sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify(entries);
+}
+
+function _invalidateApiGetCache() {
+  _apiGetCacheGeneration++;
+  _apiGetCache.clear();
+}
+
+async function _apiGetNetwork(params, timeoutMs) {
   const token = _getToken();
   const p = token ? { ...params, token } : { ...params };
   const url = RDF.GAS_URL + '?' + new URLSearchParams(p).toString();
@@ -52,6 +75,31 @@ async function apiGet(params, timeoutMs) {
     }
   }
   return data;
+}
+
+async function apiGet(params, timeoutMs) {
+  if (!_API_CACHEABLE_GET_ACTIONS.has(params.action)) {
+    return _apiGetNetwork(params, timeoutMs);
+  }
+
+  const token = _getToken();
+  const key = _apiGetCacheKey(params, token);
+  const cached = _apiGetCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+  if (cached) _apiGetCache.delete(key);
+  if (_apiGetInFlight.has(key)) return _apiGetInFlight.get(key);
+
+  const generation = _apiGetCacheGeneration;
+  const request = _apiGetNetwork(params, timeoutMs)
+    .then(data => {
+      if (data && data.status !== 'error' && generation === _apiGetCacheGeneration) {
+        _apiGetCache.set(key, { data, expiresAt: Date.now() + _API_GET_CACHE_MS });
+      }
+      return data;
+    })
+    .finally(() => _apiGetInFlight.delete(key));
+  _apiGetInFlight.set(key, request);
+  return request;
 }
 
 async function apiPost(body, timeoutMs) {
@@ -86,6 +134,9 @@ async function apiPost(body, timeoutMs) {
       window.location.href = 'index.html?expired=1';
     }
   }
+  if (data.status === 'success' && body.action !== 'clientLog') {
+    _invalidateApiGetCache();
+  }
   return data;
 }
 
@@ -93,7 +144,11 @@ const API = {
   async getStudents()          { return apiGet({ action: 'getStudents' }); },
   async getStudent(stipNo)     { return apiGet({ action: 'getStudent', stipNo }); },
   async generateStipNo(inst)   { return apiGet({ action: 'generateStipNo', institution: inst }); },
-  async deleteStudent(stipNo)  { return apiGet({ action: 'deleteStudent', stipNo }); },
+  async deleteStudent(stipNo)  {
+    const result = await apiGet({ action: 'deleteStudent', stipNo });
+    if (result && result.status === 'success') _invalidateApiGetCache();
+    return result;
+  },
   async getUniNames()          { return apiGet({ action: 'getUniNames' }); },
   async saveStudent(data)      { return apiPost({ action: 'saveStudent',   student: data }); },
   async updateStudent(data)    { return apiPost({ action: 'updateStudent', student: data }); },

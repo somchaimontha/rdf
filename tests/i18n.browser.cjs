@@ -105,6 +105,11 @@ const server = http.createServer((req,res)=>{
    assert.equal(result.calls,before.calls,file+' must not refetch on switch');
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
+   if(file==='dashboard.html') {
+     const startupCalls=await evaluate(`({students:__calls.filter(a=>a==='getStudents').length,pending:__calls.filter(a=>a==='getPendingScholarshipRequests').length})`);
+     assert.equal(startupCalls.students,1,'dashboard must share the student request');
+     assert.equal(startupCalls.pending,1,'dashboard must share the pending-request call');
+   }
    if(file==='index.html') {
      const googleLogin=await evaluate(`({configured:typeof _gClientId==='string'&&_gClientId===RDF.GOOGLE_CLIENT_ID&&_gClientId.length>0,button:getComputedStyle(document.getElementById('googleBtnWrap')).display,warning:getComputedStyle(document.getElementById('googleNotCfg')).display})`);
      assert.equal(googleLogin.configured,true,'Google Client ID bootstrap');
