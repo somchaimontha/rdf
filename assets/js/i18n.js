@@ -23,6 +23,8 @@ const T = {
     gradeSaving: "กำลังบันทึกผลการเรียน...",
     gradeSaved: "บันทึกผลการเรียนสำเร็จ",
     gradeSavedDetail: "ข้อมูลผลการเรียนอัปเดตแล้ว",
+    changePhoto: "เปลี่ยนรูปภาพ",
+    fileUnit: "ไฟล์",
     noChanges: "ไม่มีการเปลี่ยนแปลง",
     noSignatories: "ยังไม่มีผู้ลงนาม — กำหนดที่ การตั้งค่า → ผู้ลงนามในเอกสาร",
     unnamedSignatory: "ยังไม่ระบุชื่อ",
@@ -1187,6 +1189,8 @@ const T = {
     gradeSaving: "Saving academic results...",
     gradeSaved: "Academic results saved",
     gradeSavedDetail: "Academic results have been updated.",
+    changePhoto: "Change Photo",
+    fileUnit: "file(s)",
     noChanges: "No changes",
     noSignatories: "No signatories — configure them in Settings → Signatories",
     unnamedSignatory: "Name not specified",
@@ -2328,6 +2332,106 @@ function t(key) {
   const dictionary = T[normalizeLang(LANG)];
   return Object.prototype.hasOwnProperty.call(dictionary, key) ? dictionary[key] :
     (Object.prototype.hasOwnProperty.call(T.th, key) ? T.th[key] : key);
+}
+
+// Translate strings created by JavaScript without storing a second copy in page code.
+function bi(th, en, lang = LANG) {
+  return normalizeLang(lang) === 'en' ? en : th;
+}
+
+// Student levels are stored in Thai as canonical database values. Convert them only
+// when presenting the value so filters and API payloads keep their original codes.
+function formatLevel(raw, lang = LANG) {
+  if (!raw) return '—';
+  const value = String(raw).trim();
+  const english = normalizeLang(lang) === 'en';
+  const parenthesized = value.match(/\(([^)]+)\)/);
+  if (english && parenthesized) return parenthesized[1];
+
+  const secondary = value.match(/มัธยมศึกษาปีที่\s*(\d+)/);
+  if (secondary) return english ? `Grade ${secondary[1]}` : `ม.${secondary[1]}`;
+
+  const vocational = value.match(/^(ปวช\.|ปวส\.)\s*(?:ชั้น)?ปีที่?\s*(\d+)|^(ปวช\.|ปวส\.)\s*(\d+)/);
+  if (vocational) {
+    const code = vocational[1] || vocational[3];
+    const year = vocational[2] || vocational[4];
+    if (!english) return `${code} ${year}`;
+    return `${code === 'ปวช.' ? 'Vocational Certificate' : 'Higher Vocational Certificate'} — Year ${year}`;
+  }
+
+  const university = value.match(/(?:ปริญญาตรี\s*)?(?:ชั้น)?ปีที่\s*(\d+)/);
+  if (university && (/ปริญญาตรี|ชั้นปี/.test(value))) {
+    return english ? `Bachelor's Degree — Year ${university[1]}` : `ป.ตรี ปี ${university[1]}`;
+  }
+  const otherYear = value.match(/^ปีที่\s*(\d+)/);
+  if (otherYear) return english ? `Year ${otherYear[1]}` : value;
+  return value;
+}
+
+function formatAcademicYear(year, lang = LANG) {
+  const parsed = parseInt(year, 10);
+  if (!Number.isFinite(parsed)) return '—';
+  const be = parsed >= 2400 ? parsed : parsed + 543;
+  const ce = parsed >= 2400 ? parsed - 543 : parsed;
+  return normalizeLang(lang) === 'en'
+    ? `${be} B.E. / ${ce} C.E.`
+    : `ปีการศึกษา ${be}`;
+}
+
+function formatSignatoryRole(role, lang = LANG) {
+  if (!role) return '';
+  if (normalizeLang(lang) !== 'en') return role;
+  return ({
+    'ผู้บันทึกข้อมูล': 'Data Recorder',
+    'ผู้ตรวจสอบข้อมูล': 'Data Reviewer',
+    'ผู้อนุมัติ': 'Approver',
+  })[role] || role;
+}
+
+// Apps Script still returns a mixture of Thai, English, and bilingual messages.
+// Keep the raw server message for logging while presenting a useful message in the
+// selected language. Bilingual "Thai / English" messages use their English half.
+function localizeApiMessage(message, fallbackKey = 'error', lang = LANG) {
+  const targetLang = normalizeLang(lang);
+  const fallback = Object.prototype.hasOwnProperty.call(T[targetLang], fallbackKey)
+    ? T[targetLang][fallbackKey]
+    : fallbackKey;
+  if (!message) return fallback;
+  const value = String(message).replace(/^Error:\s*/i, '').trim();
+  if (targetLang !== 'en') return value;
+
+  const bilingual = value.match(/\/\s*([A-Za-z][\s\S]*)$/);
+  if (bilingual) return bilingual[1].trim();
+
+  const translations = [
+    [/กรุณากรอกข้อมูลให้ครบ/, 'Please complete all required fields.'],
+    [/บัญชีถูกล็อคชั่วคราว/, 'This account is temporarily locked for 15 minutes after too many failed sign-in attempts.'],
+    [/ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง/, 'Incorrect username or password.'],
+    [/เลขประจำตัวหรือปีเกิดไม่ถูกต้อง/, 'Incorrect ID number or birth year.'],
+    [/ไม่พบบัญชีผู้ดูแลระบบที่ผูกกับ Gmail/, 'No administrator account is linked to this Gmail address.'],
+    [/บันทึกไม่สำเร็จ.*ฟิลด์ต่อไปนี้ไม่ถูกบันทึกในฐานข้อมูล/, 'Save failed because some fields could not be stored in the database.'],
+    [/SuperAdmin สามารถมีได้เพียง 1 บัญชี/, 'Only one SuperAdmin account is allowed, and it must use the authorized email address.'],
+    [/รหัสผ่านจำเป็นสำหรับผู้ดูแลระบบใหม่/, 'A password is required for a new administrator.'],
+    [/คุณไม่มีสิทธิ์เปลี่ยนรหัสผ่านของบัญชีอื่น/, 'You do not have permission to change another account password.'],
+    [/รหัสผ่านปัจจุบันไม่ถูกต้อง/, 'The current password is incorrect.'],
+    [/เปลี่ยนรหัสผ่านสำเร็จ/, 'Password changed successfully.'],
+    [/ไม่พบบัญชีผู้ใช้/, 'Account not found.'],
+    [/API Key ไม่ถูกต้อง/, 'The API key is invalid.'],
+    [/ยังไม่ได้ตั้งค่า Gemini API Key/, 'Gemini API Key is not configured. Open Settings → API Keys to add one.'],
+    [/ไม่มีข้อมูลไฟล์/, 'No file data was received.'],
+    [/รองรับเฉพาะ JPG, PNG, WEBP, PDF เท่านั้น/, 'Only JPG, PNG, WEBP, and PDF files are supported.'],
+    [/ไฟล์ใหญ่เกินไป/, 'The file is too large.'],
+    [/ประเภทไฟล์ไม่รองรับ/, 'This file type is not supported.'],
+    [/รูปภาพใหญ่เกินขีดจำกัด/, 'The image exceeds the upload size limit.'],
+    [/ไม่สามารถผสานข้อมูลกับตัวเองได้|ไม่สามารถผสานแถวกับตัวเองได้/, 'A record cannot be merged with itself.'],
+    [/ไม่พบข้อมูลหลัก/, 'The primary record was not found.'],
+    [/ไม่พบข้อมูลที่จะผสาน/, 'The record to merge was not found.'],
+    [/ผสาน.*สำเร็จ/, 'Records merged successfully.'],
+    [/เกิดข้อผิดพลาดในการเชื่อมต่อ/, 'A connection error occurred.'],
+  ];
+  const match = translations.find(([pattern]) => pattern.test(value));
+  if (match) return match[1];
+  return /[ก-๙]/.test(value) ? fallback : value;
 }
 
 function getLocale() { return LANG === 'en' ? 'en-GB' : 'th-TH'; }

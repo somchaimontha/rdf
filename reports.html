@@ -1281,7 +1281,7 @@ function openRptPrintModal() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:#0d9488">${i+1}</span>
-              <span class="font-semibold text-gray-700 text-sm">${s.role || (t('signatory')+' '+(i+1))}</span>
+              <span class="font-semibold text-gray-700 text-sm">${formatSignatoryRole(s.role) || (t('signatory')+' '+(i+1))}</span>
               ${s.name ? `<span class="text-gray-500 text-xs">${s.name}</span>` : '<span class="text-gray-300 text-xs italic" data-t="unnamedSignatory">ยังไม่ระบุชื่อ</span>'}
             </div>
             ${s.position ? `<div class="text-gray-400 text-xs ml-7">${s.position}</div>` : ''}
@@ -1519,7 +1519,7 @@ function generateRptPrintHTML(opts) {
       <div class="sig-wrap">
         ${selSigs.map(s => `
         <div class="sig-blk">
-          <div class="sig-role">${s.role||''}</div>
+          <div class="sig-role">${formatSignatoryRole(s.role, isEN?'en':'th')}</div>
           <div class="sig-line"></div>
           <div class="sig-name">${s.name||'.................................................'}</div>
           ${s.position ? `<div class="sig-pos">${s.position}</div>` : ''}

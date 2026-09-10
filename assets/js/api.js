@@ -38,7 +38,11 @@ async function apiGet(params, timeoutMs) {
   }
   clearTimeout(timer);
   const data = await res.json();
-  if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
+  if (data && typeof data.message === 'string') {
+    data.rawMessage = data.message;
+    data.message = localizeApiMessage(data.message, data.status === 'success' ? 'success' : 'error');
+  }
+  if (data.status === 'error' && data.rawMessage === 'Unauthorized. Please login again.') {
     // Session expired — force re-login (only if NOT already on the login page)
     const path = window.location.pathname;
     const onLogin = path.endsWith('index.html') || path.endsWith('/') || path === '';
@@ -70,7 +74,11 @@ async function apiPost(body, timeoutMs) {
   }
   clearTimeout(timer);
   const data = await res.json();
-  if (data.status === 'error' && data.message === 'Unauthorized. Please login again.') {
+  if (data && typeof data.message === 'string') {
+    data.rawMessage = data.message;
+    data.message = localizeApiMessage(data.message, data.status === 'success' ? 'success' : 'error');
+  }
+  if (data.status === 'error' && data.rawMessage === 'Unauthorized. Please login again.') {
     const path = window.location.pathname;
     const onLogin = path.endsWith('index.html') || path.endsWith('/') || path === '';
     if (!onLogin) {

@@ -2385,11 +2385,11 @@ function renderAdmins() {
         </div>
         <div class="flex gap-1">
           <button onclick='openAdminModal(${JSON.stringify(a).replace(/'/g,"&#39;")})'
-                  class="btn btn-secondary btn-icon" style="padding:5px" title="แก้ไข">
+                  class="btn btn-secondary btn-icon" style="padding:5px" title="${t('edit')}">
             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
           </button>
           ${canDelete ? `<button onclick="confirmDeleteAdmin('${a.Username}')"
-                  class="btn btn-danger btn-icon" style="padding:5px" title="ลบ">
+                  class="btn btn-danger btn-icon" style="padding:5px" title="${t('delete')}">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           </button>` : ''}
         </div>
@@ -2418,7 +2418,7 @@ function _adminPreviewPhoto(e) {
   const file = e.target.files[0];
   if (!file) return;
   if (!RDF.UPLOAD.PHOTO_TYPES.includes(file.type)) {
-    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'ประเภทไฟล์ไม่รองรับ (JPG, PNG, WEBP)', timer:3000, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title:bi('ประเภทไฟล์ไม่รองรับ (JPG, PNG, WEBP)','Unsupported file type (JPG, PNG, WEBP)'), timer:3000, showConfirmButton:false });
     e.target.value = ''; return;
   }
   _adminPhotoFile = file;
@@ -2430,7 +2430,7 @@ function _adminPreviewPhoto(e) {
     // Show size hint if large
     if (file.size > RDF.UPLOAD.PHOTO_MAX_BYTES) {
       const sizeMB = (file.size/1024/1024).toFixed(1);
-      Swal.fire({ toast:true, position:'top-end', icon:'info', title:`รูป ${sizeMB} MB — จะบีบอัดอัตโนมัติก่อนอัปโหลด`, timer:2500, showConfirmButton:false });
+      Swal.fire({ toast:true, position:'top-end', icon:'info', title:bi(`รูป ${sizeMB} MB — จะบีบอัดอัตโนมัติก่อนอัปโหลด`, `Image ${sizeMB} MB — it will be compressed before upload`), timer:2500, showConfirmButton:false });
     }
   };
   reader.readAsDataURL(file);
@@ -2569,13 +2569,13 @@ async function submitAdminForm() {
     // ── Compress + upload profile photo first if a new file was selected ──
     let picUrl = document.getElementById('m_picUrl').value.trim();
     if (_adminPhotoFile) {
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บีบอัดรูป...`;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${bi('บีบอัดรูป...','Compressing image...')}`;
       const _compressed = await compressImage(_adminPhotoFile);
       if (_compressed.error) {
         btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> ${t('stSave')}`;
         Swal.fire(t('error'), _compressed.error, 'error'); return;
       }
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> อัปโหลดรูป${_compressed.wasCompressed ? ` (${_compressed.sizeKB} KB)` : ''}...`;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${bi('อัปโหลดรูป','Uploading image')}${_compressed.wasCompressed ? ` (${_compressed.sizeKB} KB)` : ''}...`;
       try {
         const safeName = (uname || 'admin') + '_photo_' + Date.now() + '.jpg';
         const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
@@ -3020,11 +3020,11 @@ function apRender() {
       <td style="padding:10px 12px;vertical-align:top">${thCell}</td>
       <td style="padding:10px 12px;vertical-align:top">${enCell}</td>
       <td style="padding:10px 12px;text-align:right;white-space:nowrap;vertical-align:top">
-        <button onclick="apOpenEdit('${p.id}')" title="แก้ไข"
+        <button onclick="apOpenEdit('${p.id}')" title="${t('edit')}"
                 style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;border-radius:8px;padding:4px 10px;cursor:pointer;margin-right:4px;font-size:12px">
           <i data-lucide="pencil" class="w-3.5 h-3.5" style="display:inline-block;vertical-align:middle"></i>
         </button>
-        <button onclick="apDelete('${p.id}')" title="ลบ"
+        <button onclick="apDelete('${p.id}')" title="${t('delete')}"
                 style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">
           <i data-lucide="trash-2" class="w-3.5 h-3.5" style="display:inline-block;vertical-align:middle"></i>
         </button>
@@ -3096,7 +3096,7 @@ function _apPopulateUniNameSel() {
   const opts = uniListState.map(u =>
     `<option value="${_esc(u.nameTH)}" data-en="${_esc(u.nameEN)}">${_esc(u.nameTH)}</option>`
   ).join('');
-  sel.innerHTML = `<option value="">เลือกมหาวิทยาลัย...</option>` + opts;
+  sel.innerHTML = `<option value="">${bi('เลือกมหาวิทยาลัย...','Select university...')}</option>` + opts;
   if (cur) sel.value = cur;
 }
 
@@ -3183,7 +3183,7 @@ function apOpenEdit(id) {
     if (_uniSel && _uniSel.value !== p.uniName) {
       const _opt = document.createElement('option');
       _opt.value = p.uniName;
-      _opt.textContent = p.uniName + ' (ไม่พบในรายการ)';
+      _opt.textContent = p.uniName + bi(' (ไม่พบในรายการ)', ' (not in list)');
       _opt.style.color = '#b45309';
       _uniSel.add(_opt);
       _uniSel.value = p.uniName;
@@ -3224,8 +3224,8 @@ function apSaveEntry() {
 
   // Validation
   if (inst === 'UNI') {
-    if (!uniName && !uniNameEN) { Swal.fire('⚠️', 'กรุณากรอกชื่อมหาวิทยาลัย', 'warning'); return; }
-    if (!nameTH  && !nameEN)   { Swal.fire('⚠️', 'กรุณากรอกสาขาวิชา', 'warning'); return; }
+    if (!uniName && !uniNameEN) { Swal.fire('⚠️', bi('กรุณากรอกชื่อมหาวิทยาลัย','Enter a university name.'), 'warning'); return; }
+    if (!nameTH  && !nameEN)   { Swal.fire('⚠️', bi('กรุณากรอกสาขาวิชา','Enter a program name.'), 'warning'); return; }
   } else {
     if (!nameTH && !nameEN) { Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return; }
   }
@@ -3289,7 +3289,7 @@ function apHandleCSVFile(event) {
     try {
       const text = e.target.result.replace(/^﻿/, ''); // strip BOM
       const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) { Swal.fire('⚠️', 'ไฟล์ CSV ว่างเปล่าหรือไม่มีข้อมูล', 'warning'); return; }
+      if (lines.length < 2) { Swal.fire('⚠️', bi('ไฟล์ CSV ว่างเปล่าหรือไม่มีข้อมูล','The CSV file is empty or contains no data.'), 'warning'); return; }
 
       // Parse header row
       const headers = _csvSplitLine(lines[0]).map(h => h.trim().toLowerCase());
@@ -3327,10 +3327,10 @@ function apHandleCSVFile(event) {
         else               { _apState.push(entry); added++; }
       });
       apRender();
-      Swal.fire({ icon:'success', title:'นำเข้า CSV สำเร็จ',
-        html:`เพิ่มใหม่ <b>${added}</b> รายการ · อัปเดต <b>${updated}</b> รายการ · ข้าม <b>${skipped}</b> รายการ<br><small style="color:#6b7280">กด "บันทึกทั้งหมด" เพื่อบันทึกลงระบบ</small>`,
-        timer: 5000, showConfirmButton: true, confirmButtonText: 'ตกลง' });
-    } catch(err) { Swal.fire('⚠️', 'ไม่สามารถอ่านไฟล์ CSV: ' + err.message, 'error'); }
+      Swal.fire({ icon:'success', title:bi('นำเข้า CSV สำเร็จ','CSV Imported'),
+        html:bi(`เพิ่มใหม่ <b>${added}</b> รายการ · อัปเดต <b>${updated}</b> รายการ · ข้าม <b>${skipped}</b> รายการ<br><small style="color:#6b7280">กด "บันทึกทั้งหมด" เพื่อบันทึกลงระบบ</small>`, `Added <b>${added}</b> · Updated <b>${updated}</b> · Skipped <b>${skipped}</b><br><small style="color:#6b7280">Select "Save All" to store the changes.</small>`),
+        timer: 5000, showConfirmButton: true, confirmButtonText: bi('ตกลง','OK') });
+    } catch(err) { Swal.fire('⚠️', bi('ไม่สามารถอ่านไฟล์ CSV: ','Unable to read CSV: ') + err.message, 'error'); }
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -3425,10 +3425,10 @@ function renderUniListRows() {
                 padding:6px 8px;background:${i%2===0?'#f8fafc':'#fff'};border-radius:8px;
                 border:1px solid #e5e7eb">
       <input type="text" value="${_esc(u.nameTH)}" oninput="uniListState[${i}].nameTH=this.value"
-             class="field-input text-sm" style="margin:0" placeholder="ชื่อไทย">
+             class="field-input text-sm" style="margin:0" placeholder="${bi('ชื่อไทย','Thai name')}">
       <input type="text" value="${_esc(u.nameEN)}" oninput="uniListState[${i}].nameEN=this.value"
              class="field-input text-sm" style="margin:0" placeholder="English name">
-      <button onclick="removeUniEntry(${i})" title="ลบ"
+      <button onclick="removeUniEntry(${i})" title="${t('delete')}"
               style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
                      padding:5px 8px;cursor:pointer;flex-shrink:0">
         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -3503,7 +3503,7 @@ function _uniProgPopulateUniSel(selId) {
   const opts = uniListState.map(u =>
     `<option value="${_esc(u.nameTH)}" data-en="${_esc(u.nameEN)}">${_esc(u.nameTH)}</option>`
   ).join('');
-  sel.innerHTML = `<option value="">เลือกมหาวิทยาลัย...</option>` + opts;
+  sel.innerHTML = `<option value="">${bi('เลือกมหาวิทยาลัย...','Select university...')}</option>` + opts;
   if (cur) sel.value = cur;
 }
 
@@ -3527,9 +3527,9 @@ function renderUniProgRows() {
   const cnt = document.getElementById('uniProgCount');
   if (!el) return;
   const uniProgs = _apState.filter(p => p.institution === 'UNI');
-  if (cnt) cnt.textContent = `${uniProgs.length} รายการ`;
+  if (cnt) cnt.textContent = `${uniProgs.length} ${t('records')}`;
   if (!uniProgs.length) {
-    el.innerHTML = `<div class="text-center text-gray-400 py-6 text-sm">ยังไม่มีสาขาวิชา</div>`;
+    el.innerHTML = `<div class="text-center text-gray-400 py-6 text-sm">${bi('ยังไม่มีสาขาวิชา','No programs yet')}</div>`;
     return;
   }
   el.innerHTML = uniProgs.map(p => `
@@ -3537,7 +3537,7 @@ function renderUniProgRows() {
                 padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
       <span class="text-sm font-medium text-gray-800">${_esc(p.nameTH||'')}</span>
       <span class="text-sm text-gray-600">${_esc(p.nameEN||'')}</span>
-      <button onclick="deleteUniProg('${p.id}')" title="ลบ"
+      <button onclick="deleteUniProg('${p.id}')" title="${t('delete')}"
               style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
                      padding:4px 7px;cursor:pointer">
         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -3549,11 +3549,11 @@ function renderUniProgRows() {
 function addUniProg() {
   const nameTH = document.getElementById('uniProgNameTH')?.value.trim() || '';
   const nameEN = document.getElementById('uniProgNameEN')?.value.trim() || '';
-  if (!nameTH && !nameEN) { Swal.fire(t('warning'), 'กรุณากรอกชื่อสาขาวิชา', 'warning'); return; }
+  if (!nameTH && !nameEN) { Swal.fire(t('warning'), bi('กรุณากรอกชื่อสาขาวิชา','Enter a program name.'), 'warning'); return; }
   const dup = _apState.find(p => p.institution === 'UNI' &&
     ((nameTH && (p.nameTH||'').toLowerCase() === nameTH.toLowerCase()) ||
      (nameEN && (p.nameEN||'').toLowerCase() === nameEN.toLowerCase())));
-  if (dup) { Swal.fire(t('warning'), `สาขาวิชาซ้ำ: "${dup.nameTH||dup.nameEN}"`, 'warning'); return; }
+  if (dup) { Swal.fire(t('warning'), `${bi('สาขาวิชาซ้ำ','Duplicate program')}: "${dup.nameTH||dup.nameEN}"`, 'warning'); return; }
   _apState.push({ id: _genApId(), institution: 'UNI', category: 'program', nameTH, nameEN });
   document.getElementById('uniProgNameTH').value = '';
   document.getElementById('uniProgNameEN').value = '';
@@ -3575,9 +3575,9 @@ function renderUniFacRows() {
   const el  = document.getElementById('uniFacRows');
   const cnt = document.getElementById('uniFacCount');
   if (!el) return;
-  if (cnt) cnt.textContent = `${uniFacultyState.length} รายการ`;
+  if (cnt) cnt.textContent = `${uniFacultyState.length} ${t('records')}`;
   if (!uniFacultyState.length) {
-    el.innerHTML = `<div class="text-center text-gray-400 py-6 text-sm">ยังไม่มีคณะ</div>`;
+    el.innerHTML = `<div class="text-center text-gray-400 py-6 text-sm">${bi('ยังไม่มีคณะ','No faculties yet')}</div>`;
     _refreshFacultyDL();
     return;
   }
@@ -3586,7 +3586,7 @@ function renderUniFacRows() {
                 padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
       <span class="text-sm font-medium text-gray-800">${_esc(f.faculty||'')}</span>
       <span class="text-sm text-gray-600">${_esc(f.facultyEN||'')}</span>
-      <button onclick="deleteUniFac('${f.id}')" title="ลบ"
+      <button onclick="deleteUniFac('${f.id}')" title="${t('delete')}"
               style="background:#fff5f5;border:1px solid #fecaca;color:#dc2626;border-radius:8px;
                      padding:4px 7px;cursor:pointer">
         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -3599,10 +3599,10 @@ function renderUniFacRows() {
 function addUniFac() {
   const faculty   = document.getElementById('uniFacNameTH')?.value.trim() || '';
   const facultyEN = document.getElementById('uniFacNameEN')?.value.trim() || '';
-  if (!faculty) { Swal.fire(t('warning'), 'กรุณากรอกชื่อคณะ (ไทย)', 'warning'); return; }
+  if (!faculty) { Swal.fire(t('warning'), bi('กรุณากรอกชื่อคณะ (ไทย)','Enter the faculty name in Thai.'), 'warning'); return; }
   // Duplicate check
   const dup = uniFacultyState.find(f => (f.faculty||'').toLowerCase() === faculty.toLowerCase());
-  if (dup) { Swal.fire(t('warning'), `คณะซ้ำ: "${dup.faculty}"`, 'warning'); return; }
+  if (dup) { Swal.fire(t('warning'), `${bi('คณะซ้ำ','Duplicate faculty')}: "${dup.faculty}"`, 'warning'); return; }
   uniFacultyState.push({ id: _genApId(), uniName: '', uniNameEN: '', faculty, facultyEN });
   document.getElementById('uniFacNameTH').value = '';
   document.getElementById('uniFacNameEN').value = '';
@@ -3624,7 +3624,7 @@ async function saveUniFaculties() {
     showLoader(false);
     if (r.status === 'success') {
       renderUniFacRows();
-      Swal.fire({ icon:'success', title: 'บันทึกรายชื่อคณะสำเร็จ', timer:1800, showConfirmButton:false });
+      Swal.fire({ icon:'success', title: bi('บันทึกรายชื่อคณะสำเร็จ','Faculty list saved'), timer:1800, showConfirmButton:false });
     } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }
   } catch(e) { showLoader(false); Swal.fire(t('error'), e.message||t('network_error'), 'error'); }
 }
@@ -4096,8 +4096,8 @@ function buildPermMatrix() {
         const cls   = on ? 'pmc-on'  : 'pmc-off';
         const emoji = on ? '✅' : '❌';
         const tip   = on
-          ? `${role}: มีสิทธิ์ — คลิกเพื่อยกเลิก`
-          : `${role}: ไม่มีสิทธิ์ — คลิกเพื่อเปิด`;
+          ? bi(`${role}: มีสิทธิ์ — คลิกเพื่อยกเลิก`, `${role}: allowed — click to revoke`)
+          : bi(`${role}: ไม่มีสิทธิ์ — คลิกเพื่อเปิด`, `${role}: denied — click to allow`);
         return `<td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9">
           <button class="pmc-toggle ${cls}" data-role="${role}" data-perm="${p.key}"
                   onclick="togglePermCell('${role}','${p.key}',this)"
@@ -4293,7 +4293,13 @@ async function loadGeneralSettings() {
   generalLoaded = true;
   renderStipRows();
   renderNoticeForm();
-  renderSigEditor();
+  document.querySelectorAll('#sigBlockEditor input').forEach((input, index) => {
+    input.placeholder = [
+      bi('เช่น ผู้บันทึกข้อมูล','e.g. Data recorder'),
+      bi('เว้นว่างให้พิมพ์ขีดเส้น','Leave blank for a signature line'),
+      bi('เช่น ผู้อำนวยการฝ่าย...','e.g. Department Director'),
+    ][index % 3];
+  });
   renderPrintTitleForm();
   renderPrintLayoutForm();
 }
@@ -4328,13 +4334,13 @@ async function saveUploadLimits() {
   };
   // Validate
   if (limits.photoMaxMB <= 0 || limits.photoHardMB <= 0 || limits.docMaxMB <= 0) {
-    Swal.fire(t('warning'), 'กรุณากรอกค่าที่ถูกต้อง (มากกว่า 0)', 'warning'); return;
+    Swal.fire(t('warning'), bi('กรุณากรอกค่าที่ถูกต้อง (มากกว่า 0)','Enter a valid value greater than 0.'), 'warning'); return;
   }
   if (limits.photoHardMB < limits.photoMaxMB) {
-    Swal.fire(t('warning'), 'ขนาดสัมบูรณ์ต้องมากกว่าหรือเท่ากับขนาดเป้าหมาย', 'warning'); return;
+    Swal.fire(t('warning'), bi('ขนาดสัมบูรณ์ต้องมากกว่าหรือเท่ากับขนาดเป้าหมาย','The absolute size must be greater than or equal to the target size.'), 'warning'); return;
   }
   if (limits.photoQuality < 0.1 || limits.photoQuality > 1) {
-    Swal.fire(t('warning'), 'คุณภาพ JPEG ต้องอยู่ระหว่าง 0.1 – 1.0', 'warning'); return;
+    Swal.fire(t('warning'), bi('คุณภาพ JPEG ต้องอยู่ระหว่าง 0.1 – 1.0','JPEG quality must be between 0.1 and 1.0.'), 'warning'); return;
   }
   try {
     const _t = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
@@ -4369,7 +4375,7 @@ function toggleDevMode(enabled) {
   }
   const label = document.getElementById('devModeLabel');
   const badge = document.getElementById('devModeBadge');
-  if (label) label.textContent = enabled ? 'เปิดอยู่ — รีโหลดหน้าเพื่อใช้งาน' : 'ปิดอยู่';
+  if (label) label.textContent = enabled ? bi('เปิดอยู่ — รีโหลดหน้าเพื่อใช้งาน','Enabled — reload to apply') : bi('ปิดอยู่','Off');
   if (badge) badge.classList.toggle('hidden', !enabled);
 }
 
@@ -4379,7 +4385,7 @@ function _initDevModeToggle() {
   const badge  = document.getElementById('devModeBadge');
   const isOn   = localStorage.getItem('rdfDevMode') === '1';
   if (toggle) toggle.checked = isOn;
-  if (label)  label.textContent = isOn ? 'เปิดอยู่' : 'ปิดอยู่';
+  if (label)  label.textContent = isOn ? bi('เปิดอยู่','On') : bi('ปิดอยู่','Off');
   if (badge)  badge.classList.toggle('hidden', !isOn);
 }
 
@@ -4772,21 +4778,21 @@ function renderSigEditor() {
       <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
         <div>
           <label class="text-xs font-semibold text-gray-500 block mb-1" data-t="stSigRoleLabel">${t('stSigRoleLabel')}</label>
-          <input type="text" class="field-input text-sm" placeholder="เช่น ผู้บันทึกข้อมูล"
+          <input type="text" class="field-input text-sm" placeholder="${bi('เช่น ผู้บันทึกข้อมูล','e.g. Data recorder')}"
             value="${slot.role || ''}" oninput="sigBlockState[${i}].role=this.value">
         </div>
         <div>
           <label class="text-xs font-semibold text-gray-500 block mb-1" data-t="stSigNameLabel">${t('stSigNameLabel')}</label>
-          <input type="text" class="field-input text-sm" placeholder="เว้นว่างให้พิมพ์ขีดเส้น"
+          <input type="text" class="field-input text-sm" placeholder="${bi('เว้นว่างให้พิมพ์ขีดเส้น','Leave blank for a signature line')}"
             value="${slot.name || ''}" oninput="sigBlockState[${i}].name=this.value">
         </div>
         <div>
           <label class="text-xs font-semibold text-gray-500 block mb-1" data-t="stSigPosLabel">${t('stSigPosLabel')}</label>
-          <input type="text" class="field-input text-sm" placeholder="เช่น ผู้อำนวยการฝ่าย..."
+          <input type="text" class="field-input text-sm" placeholder="${bi('เช่น ผู้อำนวยการฝ่าย...','e.g. Department Director')}"
             value="${slot.position || ''}" oninput="sigBlockState[${i}].position=this.value">
         </div>
       </div>
-      <button onclick="removeSigSlot(${i})" class="text-gray-300 hover:text-red-400 transition flex-shrink-0 mt-1" title="ลบช่องนี้">
+      <button onclick="removeSigSlot(${i})" class="text-gray-300 hover:text-red-400 transition flex-shrink-0 mt-1" title="${bi('ลบช่องนี้','Remove this slot')}">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>`).join('');
@@ -4856,6 +4862,7 @@ document.addEventListener('rdf:languagechange', () => {
   _renderGmailLinkedList();
   if (overviewStudents) buildCharts(overviewStudents);
   if (sessionSnapshot) renderActiveSessions(sessionSnapshot);
+  _initDevModeToggle();
   // Student permissions are edited in the DOM until Save; capture them before relabeling.
   const fieldInputs = document.querySelectorAll('#studentFieldsGrid input[type="checkbox"]');
   if (fieldInputs.length) {
@@ -4869,6 +4876,9 @@ document.addEventListener('rdf:languagechange', () => {
   if (progCount) progCount.textContent = `${_apState.filter(p => p.institution === 'UNI').length} ${t('stMajUniItems')}`;
   const facCount = document.getElementById('uniFacCount');
   if (facCount) facCount.textContent = `${uniFacultyState.length} ${t('stMajUniItems')}`;
+  renderUniProgRows();
+  renderUniFacRows();
+  renderSigEditor();
 
   lucide.createIcons();
 });

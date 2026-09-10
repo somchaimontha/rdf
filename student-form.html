@@ -1300,17 +1300,20 @@ document.addEventListener('rdf:languagechange', () => {
     option.textContent = levelLabel(option.value);
   });
   renderGradeFormTable();
+  if (typeof _csvRows !== 'undefined' && _csvRows.length) {
+    _csvRows.forEach(row => {
+      row._issues = _validateRow(row);
+      row._dup = _csvCheckDup(row);
+    });
+    _csvRenderModal();
+    if (!document.getElementById('csvResultModal')?.classList.contains('hidden')) _crmRender();
+  }
 });
 
 function levelLabel(value) {
   if (!value) return LANG === 'en' ? '-- Select level --' : '-- เลือกระดับชั้น --';
-  if (LANG !== 'en') return value;
-  const grade = value.match(/\(Grade (\d+)\)/);
-  if (grade) return 'Grade ' + grade[1];
-  const year = value.match(/(\d+)$/);
-  if (year) return (value.startsWith('ปวช.') ? 'Vocational Certificate — Year ' :
-    value.startsWith('ปวส.') ? 'Higher Vocational Certificate — Year ' : 'Year ') + year[1];
-  return value === 'อื่นๆ' ? 'Other' : value;
+  if (value === 'อื่นๆ') return bi('อื่นๆ','Other');
+  return formatLevel(value);
 }
 
 // Initial render (runs after DOM + LANG are ready)
@@ -1692,14 +1695,14 @@ async function saveGradesFromForm() {
   try {
     const r = await API.saveSetting('STUDENT_GRADES', _formGrades);
     showLoader(false);
-    if (r.status !== 'success') throw new Error(r.message || 'บันทึกไม่สำเร็จ');
+    if (r.status !== 'success') throw new Error(r.message || bi('บันทึกไม่สำเร็จ','Unable to save grades.'));
     _gradesDirty = false;
     Swal.fire({ icon:'success', title:t('gradeSaved'),
       text:t('gradeSavedDetail'),
       timer:2500, showConfirmButton:false });
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error'), e.message, 'error');
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
   }
 }
 
@@ -1715,7 +1718,7 @@ async function loadStudentForEdit(stipNo) {
   showLoader(true, t('loading'));
   try {
     const _loadTimeout = new Promise((_, rej) =>
-      setTimeout(() => rej(new Error('หมดเวลา (30s) — GAS ไม่ตอบสนอง กรุณารีเฟรชหน้า')), 30000)
+      setTimeout(() => rej(new Error(t('connectionTimeout'))), 30000)
     );
     const result = await Promise.race([API.getStudent(stipNo), _loadTimeout]);
     showLoader(false);
@@ -1848,7 +1851,10 @@ function fillForm(d) {
     _prevImg.onerror = () => { _prevImg.onerror = null; _prevImg.src = d.ProfilePicURL; };
     // Change upload label to "เปลี่ยนรูปภาพ" when photo already exists
     const _uploadLabel = document.querySelector('label[data-t="uploadPhoto"]');
-    if (_uploadLabel) _uploadLabel.textContent = 'เปลี่ยนรูปภาพ';
+    if (_uploadLabel) {
+      _uploadLabel.setAttribute('data-t', 'changePhoto');
+      _uploadLabel.textContent = t('changePhoto');
+    }
   }
   // Load existing documents from Drive (edit mode)
   if (d.StipNo) loadExistingDocs(d.StipNo);
@@ -2342,11 +2348,11 @@ function docRenderPending() {
         <p class="text-xs font-medium text-gray-700 truncate">${item.file.name}</p>
         <p class="text-xs text-gray-400">${_docFmtSize(item.file.size)}</p>
       </div>
-      <input type="text" list="docLabelList" placeholder="ชื่อเอกสาร (ไม่บังคับ)"
+      <input type="text" list="docLabelList" placeholder="${bi('ชื่อเอกสาร (ไม่บังคับ)','Document name (optional)')}"
         value="${item.label.replace(/"/g,'&quot;')}"
         onchange="docSetLabel(${idx}, this.value)"
         class="border rounded px-2 py-1 text-xs w-44 focus:outline-none focus:ring-2 focus:ring-purple-300">
-      <button type="button" onclick="docRemovePending(${idx})" title="ลบออก"
+      <button type="button" onclick="docRemovePending(${idx})" title="${bi('ลบออก','Remove')}"
         class="text-red-400 hover:text-red-600 transition flex-shrink-0">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
@@ -2359,16 +2365,16 @@ async function loadExistingDocs(stipNo) {
   const loading = document.getElementById('docExistingLoading');
   const empty   = document.getElementById('docExistingEmpty');
   wrap.classList.remove('hidden');
-  if (loading) loading.textContent = '(กำลังโหลด...)';
+  if (loading) loading.textContent = `(${t('loading')})`;
   if (empty) empty.classList.add('hidden');
   try {
     const res = await API.getStudentDocs(stipNo);
     _existingDocs = (res.status === 'success') ? (res.data || []) : [];
     docRenderExisting();
-    if (loading) loading.textContent = _existingDocs.length > 0 ? `(${_existingDocs.length} ไฟล์)` : '';
+    if (loading) loading.textContent = _existingDocs.length > 0 ? `(${_existingDocs.length} ${t('fileUnit')})` : '';
     if (empty) empty.classList.toggle('hidden', _existingDocs.length > 0);
   } catch(e) {
-    if (loading) loading.textContent = '(โหลดไม่สำเร็จ)';
+    if (loading) loading.textContent = `(${bi('โหลดไม่สำเร็จ','Load failed')})`;
   }
 }
 function docRenderExisting() {
@@ -2383,9 +2389,9 @@ function docRenderExisting() {
       </div>
       <a href="${doc.url}" target="_blank"
         class="text-xs px-2 py-1 rounded border border-blue-200 text-blue-600 hover:bg-blue-50 transition flex-shrink-0">
-        <i data-lucide="external-link" class="w-3 h-3 inline"></i> เปิด
+        <i data-lucide="external-link" class="w-3 h-3 inline"></i> ${bi('เปิด','Open')}
       </a>
-      <button type="button" onclick="docDeleteExisting('${doc.fileId}', ${idx})" title="ลบออกจาก Drive"
+      <button type="button" onclick="docDeleteExisting('${doc.fileId}', ${idx})" title="${bi('ลบออกจาก Drive','Delete from Drive')}"
         class="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 transition flex-shrink-0">
         <i data-lucide="trash-2" class="w-3 h-3 inline"></i>
       </button>
@@ -2393,10 +2399,10 @@ function docRenderExisting() {
   lucide.createIcons();
 }
 async function docDeleteExisting(fileId, idx) {
-  const cf = await Swal.fire({ title:'ลบเอกสาร?', text:'ไฟล์จะถูกย้ายไปถังขยะใน Google Drive', icon:'warning',
+  const cf = await Swal.fire({ title:bi('ลบเอกสาร?','Delete document?'), text:bi('ไฟล์จะถูกย้ายไปถังขยะใน Google Drive','The file will be moved to the Google Drive trash.'), icon:'warning',
     showCancelButton:true, confirmButtonText:t('delete'), cancelButtonText:t('cancel'), confirmButtonColor:'#dc2626' });
   if (!cf.isConfirmed) return;
-  showLoader(true, 'กำลังลบ...');
+  showLoader(true, t('deleting'));
   const res = await API.deleteFile(fileId);
   showLoader(false);
   if (res.status === 'success') {
@@ -2405,9 +2411,9 @@ async function docDeleteExisting(fileId, idx) {
     const empty = document.getElementById('docExistingEmpty');
     if (empty) empty.classList.toggle('hidden', _existingDocs.length > 0);
     const loadingEl = document.getElementById('docExistingLoading');
-    if (loadingEl) loadingEl.textContent = _existingDocs.length > 0 ? `(${_existingDocs.length} ไฟล์)` : '';
+    if (loadingEl) loadingEl.textContent = _existingDocs.length > 0 ? `(${_existingDocs.length} ${t('fileUnit')})` : '';
   } else {
-    Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+    Swal.fire(t('error'), res.message, 'error');
   }
 }
 
@@ -2431,10 +2437,10 @@ async function uploadPendingDocs(stipNo, institution) {
   if (!_docFiles.length) return;
   const total = _docFiles.length;
   let ok = 0, fail = 0;
-  showLoader(true, `กำลังอัปโหลดเอกสาร 0/${total}...`);
+  showLoader(true, bi(`กำลังอัปโหลดเอกสาร 0/${total}...`, `Uploading documents 0/${total}...`));
   for (let i = 0; i < _docFiles.length; i++) {
     const {file, label} = _docFiles[i];
-    showLoader(true, `กำลังอัปโหลด ${i+1}/${total}: ${file.name}`);
+    showLoader(true, bi(`กำลังอัปโหลด ${i+1}/${total}: ${file.name}`, `Uploading ${i+1}/${total}: ${file.name}`));
     try {
       const base64 = await _fileToBase64(file);
       const safeName = label
@@ -2471,11 +2477,11 @@ async function uploadPendingDocs(stipNo, institution) {
     const loadingEl = document.getElementById('docExistingLoading');
     if (wrap) wrap.classList.remove('hidden');
     if (empty) empty.classList.add('hidden');
-    if (loadingEl) loadingEl.textContent = `(${_existingDocs.length} ไฟล์)`;
+    if (loadingEl) loadingEl.textContent = `(${_existingDocs.length} ${t('fileUnit')})`;
     docRenderExisting();
   }
   if (fail > 0) {
-    Swal.fire({ title: `อัปโหลด ${ok}/${total} สำเร็จ`, text: `${fail} ไฟล์ไม่สำเร็จ`, icon:'warning', timer:4000, showConfirmButton:false });
+    Swal.fire({ title: bi(`อัปโหลด ${ok}/${total} สำเร็จ`, `Uploaded ${ok}/${total}`), text: bi(`${fail} ไฟล์ไม่สำเร็จ`, `${fail} file(s) failed`), icon:'warning', timer:4000, showConfirmButton:false });
   }
 }
 
@@ -2483,7 +2489,7 @@ function previewImg(e) {
   const f = e.target.files[0]; if (!f) return;
   // Validate type immediately
   if (!RDF.UPLOAD.PHOTO_TYPES.includes(f.type)) {
-    Swal.fire({ toast:true, position:'top-end', icon:'error', title:'ประเภทไฟล์ไม่รองรับ (JPG, PNG, WEBP เท่านั้น)', timer:3000, showConfirmButton:false });
+    Swal.fire({ toast:true, position:'top-end', icon:'error', title:bi('ประเภทไฟล์ไม่รองรับ (JPG, PNG, WEBP เท่านั้น)','Unsupported file type (JPG, PNG, and WEBP only)'), timer:3000, showConfirmButton:false });
     e.target.value = ''; return;
   }
   _photoFile = f;
@@ -2496,7 +2502,7 @@ function previewImg(e) {
     const _lbl = document.querySelector('label[data-t="uploadPhoto"]');
     if (f.size > RDF.UPLOAD.PHOTO_MAX_BYTES && _lbl) {
       _lbl.setAttribute('data-orig-text', _lbl.innerHTML);
-      _lbl.innerHTML += ` <span class="text-amber-500 text-xs ml-1">(${sizeMB} MB — จะบีบอัดอัตโนมัติ)</span>`;
+      _lbl.innerHTML += ` <span class="text-amber-500 text-xs ml-1">(${sizeMB} MB — ${bi('จะบีบอัดอัตโนมัติ','will be compressed automatically')})</span>`;
     }
   };
   r.readAsDataURL(f);
@@ -2591,37 +2597,37 @@ async function saveStudent() {
     if (_isStudent && _completionCheck.pct < 100) {
       const _missingSecs = _completionCheck.sections.filter(s => s.missing.length > 0);
       const _missingHtml = _missingSecs.map(s =>
-        `<div class="flex items-center gap-2 py-1"><span style="width:8px;height:8px;border-radius:50%;background:${s.pct>0?'#f59e0b':'#ef4444'};display:inline-block;flex-shrink:0"></span><span class="text-sm"><b>${s.label_th}</b>: ${s.missing.join(', ')}</span></div>`
+        `<div class="flex items-center gap-2 py-1"><span style="width:8px;height:8px;border-radius:50%;background:${s.pct>0?'#f59e0b':'#ef4444'};display:inline-block;flex-shrink:0"></span><span class="text-sm"><b>${LANG==='en'?s.label_en:s.label_th}</b>: ${s.missing.join(', ')}</span></div>`
       ).join('');
       const _skipResult = await Swal.fire({
-        title: `โปรไฟล์สมบูรณ์ ${_completionCheck.pct}%`,
-        html: `<div class="text-left"><p class="text-sm text-gray-500 mb-3">ข้อมูลที่ยังขาด:</p>${_missingHtml}</div>`,
+        title: bi(`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}%`, `Profile ${_completionCheck.pct}% complete`),
+        html: `<div class="text-left"><p class="text-sm text-gray-500 mb-3">${bi('ข้อมูลที่ยังขาด:','Missing information:')}</p>${_missingHtml}</div>`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'บันทึกต่อ (ข้าม)',
-        cancelButtonText: 'กลับไปกรอก',
+        confirmButtonText: bi('บันทึกต่อ (ข้าม)','Save anyway'),
+        cancelButtonText: bi('กลับไปกรอก','Continue editing'),
         confirmButtonColor: '#f59e0b',
       });
       if (!_skipResult.isConfirmed) return;
     } else if (!_isStudent && _completionCheck.pct < 80) {
       // Admin: non-blocking toast (no await — continue immediately)
-      Swal.fire({ toast:true, position:'top-end', icon:'warning', title:`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}% — ข้อมูลยังไม่ครบ`, timer:3000, showConfirmButton:false });
+      Swal.fire({ toast:true, position:'top-end', icon:'warning', title:bi(`โปรไฟล์สมบูรณ์ ${_completionCheck.pct}% — ข้อมูลยังไม่ครบ`, `Profile ${_completionCheck.pct}% complete — some information is missing`), timer:3000, showConfirmButton:false });
     }
 
     // ── Warn if optional-but-important fields are empty ──
     const _emptyWarnings = [];
-    if (!data.Weight)    _emptyWarnings.push('น้ำหนัก (Weight)');
-    if (!data.Height)    _emptyWarnings.push('ส่วนสูง (Height)');
-    if (!_photoFile && !data.ProfilePicURL) _emptyWarnings.push('รูปโปรไฟล์ (Profile Photo)');
+    if (!data.Weight)    _emptyWarnings.push(bi('น้ำหนัก','Weight'));
+    if (!data.Height)    _emptyWarnings.push(bi('ส่วนสูง','Height'));
+    if (!_photoFile && !data.ProfilePicURL) _emptyWarnings.push(bi('รูปโปรไฟล์','Profile Photo'));
     if (_emptyWarnings.length > 0) {
       const _warnHtml = _emptyWarnings.map(w =>
         `<div class="flex items-center gap-2 py-0.5"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;display:inline-block"></span><span class="text-sm">${w}</span></div>`
       ).join('');
       const _warnRes = await Swal.fire({
-        title: 'ข้อมูลยังไม่ครบ',
-        html: `<div class="text-left mb-2 text-sm text-gray-500">ฟิลด์ต่อไปนี้ยังว่างอยู่:</div><div class="text-left">${_warnHtml}</div>`,
+        title: bi('ข้อมูลยังไม่ครบ','Incomplete Information'),
+        html: `<div class="text-left mb-2 text-sm text-gray-500">${bi('ฟิลด์ต่อไปนี้ยังว่างอยู่:','The following fields are empty:')}</div><div class="text-left">${_warnHtml}</div>`,
         icon: 'warning', showCancelButton: true,
-        confirmButtonText: 'บันทึกต่อ (ข้าม)', cancelButtonText: 'กลับไปกรอก',
+        confirmButtonText: bi('บันทึกต่อ (ข้าม)','Save anyway'), cancelButtonText: bi('กลับไปกรอก','Continue editing'),
         confirmButtonColor: '#f59e0b',
       });
       if (!_warnRes.isConfirmed) return;
@@ -2633,7 +2639,7 @@ async function saveStudent() {
     // ── Compress + upload profile photo to Drive first ──
     let _photoErrMsg = '';
     if (_photoFile) {
-      showLoader(true, 'กำลังบีบอัดรูปโปรไฟล์...');
+      showLoader(true, bi('กำลังบีบอัดรูปโปรไฟล์...','Compressing profile photo...'));
       const _compressed = await compressImage(_photoFile);
       if (_compressed.error) {
         showLoader(false);
@@ -2641,20 +2647,20 @@ async function saveStudent() {
         return;
       }
       if (_compressed.wasCompressed) {
-        showLoader(true, `บีบอัดแล้ว ${_compressed.originalSizeKB} KB → ${_compressed.sizeKB} KB • กำลังอัปโหลด...`);
+        showLoader(true, bi(`บีบอัดแล้ว ${_compressed.originalSizeKB} KB → ${_compressed.sizeKB} KB • กำลังอัปโหลด...`, `Compressed ${_compressed.originalSizeKB} KB → ${_compressed.sizeKB} KB • Uploading...`));
       } else {
-        showLoader(true, 'กำลังอัปโหลดรูปโปรไฟล์...');
+        showLoader(true, bi('กำลังอัปโหลดรูปโปรไฟล์...','Uploading profile photo...'));
       }
       try {
         const _safeName = (data.StipNo || 'new') + '_photo_' + Date.now() + '.jpg';
-        const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา photo upload (30s)')), 30000));
+        const _pt = new Promise((_, rej) => setTimeout(() => rej(new Error(t('connectionTimeout'))), 30000));
         const _pr = await Promise.race([API.uploadPhoto(_compressed.base64, 'image/jpeg', _safeName, data.Institution || 'Other'), _pt]);
         if (_pr.status === 'success') {
           data.ProfilePicURL = _pr.url;
           document.getElementById('f_profilePicUrl').value = _pr.url;
           _photoFile = null;
         } else {
-          _photoErrMsg = _pr.message || 'ไม่ทราบสาเหตุ';
+          _photoErrMsg = _pr.message || bi('ไม่ทราบสาเหตุ','Unknown error');
         }
       } catch(pe) {
         _photoErrMsg = pe.message;
@@ -2664,7 +2670,7 @@ async function saveStudent() {
 
     // ── Save student data ──
     const _saveTimeout = new Promise((_, rej) =>
-      setTimeout(() => rej(new Error('หมดเวลา (60s) — GAS ไม่ตอบสนอง กรุณาลองใหม่')), 60000)
+      setTimeout(() => rej(new Error(t('connectionTimeout'))), 60000)
     );
     const result = await Promise.race([
       isEdit ? API.updateStudent(data) : API.saveStudent(data),
@@ -2679,7 +2685,7 @@ async function saveStudent() {
       }
       // Build success message — include photo error if any
       const _photoWarn = _photoErrMsg
-        ? `<div class="mt-2 p-2 rounded text-xs text-left" style="background:#fef3c7;color:#92400e">⚠️ รูปโปรไฟล์อัปโหลดไม่สำเร็จ: ${_photoErrMsg}<br><span class="text-xs opacity-75">กรุณาเปิดหน้าแก้ไขแล้วอัปโหลดรูปใหม่</span></div>`
+        ? `<div class="mt-2 p-2 rounded text-xs text-left" style="background:#fef3c7;color:#92400e">⚠️ ${bi('รูปโปรไฟล์อัปโหลดไม่สำเร็จ','Profile photo upload failed')}: ${_photoErrMsg}<br><span class="text-xs opacity-75">${bi('กรุณาเปิดหน้าแก้ไขแล้วอัปโหลดรูปใหม่','Open the edit page and upload the photo again.')}</span></div>`
         : '';
       await Swal.fire({
         title: t('success'),
@@ -2688,12 +2694,12 @@ async function saveStudent() {
       });
       window.location.href = `student-profile.html?stipNo=${encodeURIComponent(finalStipNo)}`;
     } else {
-      const _errDetail = result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ';
+      const _errDetail = result.message || bi('เกิดข้อผิดพลาดไม่ทราบสาเหตุ','An unknown error occurred.');
       RDF.logError('student-form.html', 'saveStudent()', _errDetail);
-      const _photoWarn = _photoErrMsg ? `<br><span class="text-xs text-yellow-600">⚠️ รูปโปรไฟล์: ${_photoErrMsg}</span>` : '';
+      const _photoWarn = _photoErrMsg ? `<br><span class="text-xs text-yellow-600">⚠️ ${bi('รูปโปรไฟล์','Profile photo')}: ${_photoErrMsg}</span>` : '';
       Swal.fire({
         title: t('error'),
-        html: `<div class="text-left text-sm"><b>สาเหตุ:</b> ${_errDetail}${_photoWarn}</div>`,
+        html: `<div class="text-left text-sm"><b>${bi('สาเหตุ','Reason')}:</b> ${_errDetail}${_photoWarn}</div>`,
         icon: 'error'
       });
     }
@@ -2702,7 +2708,7 @@ async function saveStudent() {
     RDF.logError('student-form.html', 'saveStudent()', e.message);
     Swal.fire({
       title: t('error'),
-      html: `<div class="text-left text-sm"><b>ข้อผิดพลาด:</b> ${e.message}<br><span class="text-gray-400 text-xs">หากเกิดซ้ำ — รอ GAS ตื่น (cold start) แล้วลองใหม่</span></div>`,
+      html: `<div class="text-left text-sm"><b>${t('error')}:</b> ${localizeApiMessage(e.message)}<br><span class="text-gray-400 text-xs">${bi('หากเกิดซ้ำ กรุณารอสักครู่แล้วลองใหม่','If this happens again, wait a moment and try again.')}</span></div>`,
       icon: 'error'
     });
   }
@@ -2732,16 +2738,16 @@ async function _startOCRCamera() {
   try {
     ocrStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
     vid.srcObject = ocrStream;
-    document.getElementById('ocrStatus').textContent = 'กล้องพร้อมใช้งาน — วางบัตรให้ตรงกรอบ';
+    document.getElementById('ocrStatus').textContent = bi('กล้องพร้อมใช้งาน — วางบัตรให้ตรงกรอบ','Camera ready — align the card inside the frame.');
   } catch(e) {
-    document.getElementById('ocrStatus').textContent = 'ไม่สามารถเปิดกล้องได้ กรุณาใช้ปุ่มอัปโหลดรูปแทน';
+    document.getElementById('ocrStatus').textContent = bi('ไม่สามารถเปิดกล้องได้ กรุณาใช้ปุ่มอัปโหลดรูปแทน','Unable to open the camera. Upload an image instead.');
   }
 }
 // Camera capture
 function ocrCapture() {
   const video = document.getElementById('ocrVideo');
   const canvas = document.getElementById('ocrCanvas');
-  if (!video.srcObject) { document.getElementById('ocrStatus').textContent = 'กล้องยังไม่พร้อม'; return; }
+  if (!video.srcObject) { document.getElementById('ocrStatus').textContent = bi('กล้องยังไม่พร้อม','Camera is not ready.'); return; }
   canvas.width = video.videoWidth; canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
   _runOCR(canvas);
@@ -2768,37 +2774,37 @@ function ocrFromImage(event) {
 function _runOCR(canvas) {
   const status = document.getElementById('ocrStatus');
   document.getElementById('ocrCaptureBtn').disabled = true;
-  status.textContent = '⏳ กำลังประมวลผล OCR...';
+  status.textContent = bi('⏳ กำลังประมวลผล OCR...','⏳ Processing OCR...');
   Tesseract.recognize(canvas, 'tha+eng', {
-    logger: m => { if (m.status === 'recognizing text') status.textContent = 'กำลังอ่าน: ' + Math.round(m.progress*100) + '%'; }
+    logger: m => { if (m.status === 'recognizing text') status.textContent = `${bi('กำลังอ่าน','Reading')}: ${Math.round(m.progress*100)}%`; }
   }).then(({ data: { text } }) => {
     document.getElementById('ocrCaptureBtn').disabled = false;
     _lastOCRText = text;
     const parsed = parseIDCard(text);
-    status.textContent = '✅ อ่านสำเร็จ — ตรวจสอบข้อมูลด้านล่าง';
+    status.textContent = bi('✅ อ่านสำเร็จ — ตรวจสอบข้อมูลด้านล่าง','✅ Read successfully — review the information below.');
     renderOCRResult(parsed);
     lucide.createIcons();
   }).catch(err => {
     document.getElementById('ocrCaptureBtn').disabled = false;
-    status.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+    status.textContent = `${t('error')}: ${localizeApiMessage(err.message)}`;
   });
 }
 // AI-enhanced parse via GAS → Claude API
 async function ocrAIFill() {
   if (!_lastOCRText) return;
   const btn = document.getElementById('ocrAIBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '🤖 กำลังประมวลผล AI...'; }
+  if (btn) { btn.disabled = true; btn.textContent = bi('🤖 กำลังประมวลผล AI...','🤖 Processing with AI...'); }
   try {
     const res = await API.parseOCRText(_lastOCRText);
-    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI แปลอัจฉริยะ'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = bi('🤖 AI แปลอัจฉริยะ','🤖 Smart AI Parse'); }
     if (res.status === 'success' && res.data) {
       applyOCR(res.data);
     } else {
-      Swal.fire('AI Parse', res.message || 'ไม่สามารถใช้ AI ได้ — กรุณาตั้งค่า CLAUDE_API_KEY ใน Apps Script Properties', 'info');
+      Swal.fire('AI Parse', res.message || bi('ไม่สามารถใช้ AI ได้ กรุณาตั้งค่า API key','AI is unavailable. Configure the API key first.'), 'info');
     }
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI แปลอัจฉริยะ'; }
-    Swal.fire(t('error'), e.message, 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = bi('🤖 AI แปลอัจฉริยะ','🤖 Smart AI Parse'); }
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
   }
 }
 function parseIDCard(text) {
@@ -2834,10 +2840,10 @@ function renderOCRResult(d) {
   if (!Object.keys(d).length) {
     const p = document.createElement('p');
     p.className = 'text-red-500 text-xs';
-    p.textContent = 'ไม่พบข้อมูล — ลองถ่ายรูปใหม่หรืออัปโหลดรูปภาพที่ชัดกว่านี้ หรือกด AI แปลอัจฉริยะ';
+    p.textContent = bi('ไม่พบข้อมูล — ลองถ่ายรูปใหม่หรืออัปโหลดรูปภาพที่ชัดกว่านี้ หรือกด AI แปลอัจฉริยะ','No data found. Retake the photo, upload a clearer image, or use Smart AI Parse.');
     const btn = document.createElement('button');
     btn.id = 'ocrAIBtn'; btn.className = 'btn btn-secondary btn-sm mt-2';
-    btn.textContent = '🤖 AI แปลอัจฉริยะ'; btn.onclick = ocrAIFill;
+    btn.textContent = bi('🤖 AI แปลอัจฉริยะ','🤖 Smart AI Parse'); btn.onclick = ocrAIFill;
     container.appendChild(p); container.appendChild(btn); return;
   }
 
@@ -2845,11 +2851,11 @@ function renderOCRResult(d) {
   wrap.className = 'space-y-1 text-sm mb-2';
 
   const fields = [
-    { label: 'เลขบัตร', val: d.idCard,    cls: 'text-blue-700 font-bold' },
-    { label: 'คำนำหน้า', val: d.title },
-    { label: 'ชื่อ',     val: d.firstName },
-    { label: 'นามสกุล', val: d.lastName },
-    { label: 'ปีเกิด (ค.ศ.)', val: d.birthYear },
+    { label: bi('เลขบัตร','ID Card'), val: d.idCard,    cls: 'text-blue-700 font-bold' },
+    { label: bi('คำนำหน้า','Title'), val: d.title },
+    { label: bi('ชื่อ','First Name'), val: d.firstName },
+    { label: bi('นามสกุล','Last Name'), val: d.lastName },
+    { label: bi('ปีเกิด (ค.ศ.)','Birth Year (C.E.)'), val: d.birthYear },
   ];
   fields.forEach(({ label, val, cls }) => {
     if (!val) return;
@@ -2868,13 +2874,13 @@ function renderOCRResult(d) {
 
   const applyBtn = document.createElement('button');
   applyBtn.className = 'btn btn-primary btn-sm';
-  applyBtn.textContent = '✓ ใช้ข้อมูลนี้';
+  applyBtn.textContent = bi('✓ ใช้ข้อมูลนี้','✓ Use this data');
   // Store data safely via closure — no inline JSON in HTML attributes
   applyBtn.onclick = () => applyOCR(d);
 
   const aiBtn = document.createElement('button');
   aiBtn.id = 'ocrAIBtn'; aiBtn.className = 'btn btn-secondary btn-sm';
-  aiBtn.textContent = '🤖 AI แปลอัจฉริยะ'; aiBtn.onclick = ocrAIFill;
+  aiBtn.textContent = bi('🤖 AI แปลอัจฉริยะ','🤖 Smart AI Parse'); aiBtn.onclick = ocrAIFill;
 
   btnWrap.appendChild(applyBtn); btnWrap.appendChild(aiBtn);
   container.appendChild(btnWrap);
@@ -2887,7 +2893,7 @@ function applyOCR(d) {
   sv('f_idcard', d.idCard); sv('f_title', d.title);
   sv('f_fname', d.firstName); sv('f_lname', d.lastName); sv('f_birthYear', d.birthYear);
   closeOCR();
-  Swal.fire({ title:'นำเข้าข้อมูลสำเร็จ', text:'กรุณาตรวจสอบและแก้ไขข้อมูลก่อนบันทึก',
+  Swal.fire({ title:bi('นำเข้าข้อมูลสำเร็จ','Data Imported'), text:bi('กรุณาตรวจสอบและแก้ไขข้อมูลก่อนบันทึก','Review and correct the information before saving.'),
     icon:'success', confirmButtonColor:'#1e3a8a', timer:3000, showConfirmButton:false });
 }
 
@@ -2933,7 +2939,7 @@ function docScanHandleDrop(event) {
   if (!file) return;
   const allowed = ['application/pdf','image/jpeg','image/png','image/webp','image/gif'];
   if (!allowed.includes(file.type)) {
-    Swal.fire('ไฟล์ไม่รองรับ', 'รองรับเฉพาะ PDF, JPG, PNG, WEBP เท่านั้น', 'warning');
+    Swal.fire(bi('ไฟล์ไม่รองรับ','Unsupported File'), bi('รองรับเฉพาะ PDF, JPG, PNG, WEBP เท่านั้น','Only PDF, JPG, PNG, and WEBP files are supported.'), 'warning');
     return;
   }
   _docScanRunFile(file);
@@ -2964,29 +2970,29 @@ async function _docScanRunFile(file) {
   // Show processing indicator
   const statusEl = document.getElementById('docScanStatus');
   statusEl.classList.remove('hidden');
-  document.getElementById('docScanStatusText').textContent = 'กำลังอ่านไฟล์...';
+  document.getElementById('docScanStatusText').textContent = bi('กำลังอ่านไฟล์...','Reading file...');
   document.getElementById('docScanResult').classList.add('hidden');
   document.getElementById('docScanApplyBtn').classList.add('hidden');
   _docScanData = null;
   // Check size limit (20 MB)
   if (file.size > 20 * 1024 * 1024) {
     statusEl.classList.add('hidden');
-    Swal.fire('ไฟล์ใหญ่เกินไป', 'สูงสุด 20 MB ต่อไฟล์', 'warning');
+    Swal.fire(bi('ไฟล์ใหญ่เกินไป','File Too Large'), bi('สูงสุด 20 MB ต่อไฟล์','Maximum size is 20 MB per file.'), 'warning');
     return;
   }
   try {
     const statusTxt = document.getElementById('docScanStatusText');
-    statusTxt.textContent = 'กำลังอ่านไฟล์...';
+    statusTxt.textContent = bi('กำลังอ่านไฟล์...','Reading file...');
     const base64 = await _fileToBase64(file);
     // Start elapsed-time counter so user knows it's still working
     let _elapsed = 0;
     const _counter = setInterval(() => {
       _elapsed++;
-      statusTxt.textContent = `กำลังส่งให้ AI วิเคราะห์... (${_elapsed}s)`;
+      statusTxt.textContent = bi(`กำลังส่งให้ AI วิเคราะห์... (${_elapsed}s)`, `Sending to AI for analysis... (${_elapsed}s)`);
     }, 1000);
-    statusTxt.textContent = 'กำลังส่งให้ AI วิเคราะห์... (0s)';
+    statusTxt.textContent = bi('กำลังส่งให้ AI วิเคราะห์... (0s)','Sending to AI for analysis... (0s)');
     const _aiTimeout = new Promise((_, rej) =>
-      setTimeout(() => rej(new Error('หมดเวลา (90s) — GAS หรือ Gemini ไม่ตอบสนอง กรุณาลองใหม่')), 90000)
+      setTimeout(() => rej(new Error(t('connectionTimeout'))), 90000)
     );
     try {
       const res = await Promise.race([API.parseDocumentAI(base64, file.type), _aiTimeout]);
@@ -2996,22 +3002,22 @@ async function _docScanRunFile(file) {
         _docScanData = res.data;
         _renderDocScanResult(res.data);
       } else {
-        _showDocScanError('AI ไม่พบข้อมูล — ' + (res.message || 'ลองใช้ไฟล์รูปภาพที่ชัดเจนกว่านี้'));
+        _showDocScanError(bi('AI ไม่พบข้อมูล — ','AI found no data — ') + (res.message || bi('ลองใช้ไฟล์รูปภาพที่ชัดเจนกว่านี้','try a clearer image.')));
       }
     } catch(e) {
       clearInterval(_counter);
       statusEl.classList.add('hidden');
-      _showDocScanError('เกิดข้อผิดพลาด: ' + e.message);
+      _showDocScanError(`${t('error')}: ${localizeApiMessage(e.message)}`);
     }
   } catch(e) {
     document.getElementById('docScanStatus').classList.add('hidden');
-    _showDocScanError('เกิดข้อผิดพลาด: ' + e.message);
+    _showDocScanError(`${t('error')}: ${localizeApiMessage(e.message)}`);
   }
 }
 
 function _renderDocScanResult(d) {
   // Field labels mapping
-  const LABELS = {
+  const LABELS_TH = {
     title:'คำนำหน้า', firstName:'ชื่อ (ไทย)', lastName:'นามสกุล (ไทย)',
     engFirstName:'ชื่อ (อังกฤษ)', engLastName:'นามสกุล (อังกฤษ)',
     idCard:'เลขบัตรประชาชน', birthYear:'ปีเกิด (ค.ศ.)',
@@ -3022,6 +3028,16 @@ function _renderDocScanResult(d) {
     phone:'เบอร์โทรศัพท์', village:'ที่อยู่', province:'จังหวัด',
     nationality:'สัญชาติ', religion:'ศาสนา'
   };
+  const LABELS_EN = {
+    title:'Title', firstName:'First Name (Thai)', lastName:'Last Name (Thai)',
+    engFirstName:'First Name (English)', engLastName:'Last Name (English)',
+    idCard:'ID Card', birthYear:'Birth Year (C.E.)', studentId:'Student ID',
+    schoolName:'Institution Name', institution:'Institution (MBS/VC/UNI)', currentLevel:'Current Level',
+    major:'Major / Program', faculty:'Faculty', uniName:'University', entryYear:'Entry Year (C.E.)',
+    scholarshipYear:'Scholarship Year (C.E.)', phone:'Phone', village:'Address', province:'Province',
+    nationality:'Nationality', religion:'Religion'
+  };
+  const LABELS = LANG === 'en' ? LABELS_EN : LABELS_TH;
   // Color-code by section
   const SEC1 = ['title','firstName','lastName','engFirstName','engLastName','idCard','birthYear'];
   const SEC2 = ['studentId','schoolName','institution','currentLevel','major','faculty','uniName','entryYear','scholarshipYear'];
@@ -3042,11 +3058,11 @@ function _renderDocScanResult(d) {
     <div class="bg-green-50 border border-green-200 rounded-xl p-3 mb-3">
       <p class="text-xs font-bold text-green-700 mb-2 flex items-center gap-1.5">
         <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-        AI อ่านสำเร็จ — พบ ${Object.keys(d).length} รายการ
+        ${bi(`AI อ่านสำเร็จ — พบ ${Object.keys(d).length} รายการ`, `AI read successfully — ${Object.keys(d).length} field(s) found`)}
       </p>
       <table class="w-full">${rows}</table>
     </div>
-    <p class="text-xs text-gray-400">● สีเข้ม = ข้อมูลส่วนตัว &nbsp;● สีน้ำเงิน = ข้อมูลการศึกษา &nbsp;กรุณาตรวจสอบก่อนนำเข้า</p>`;
+    <p class="text-xs text-gray-400">${bi('● สีเข้ม = ข้อมูลส่วนตัว &nbsp;● สีน้ำเงิน = ข้อมูลการศึกษา &nbsp;กรุณาตรวจสอบก่อนนำเข้า','● Dark = personal data &nbsp;● Blue = academic data &nbsp;Review before importing.')}</p>`;
   const resultEl = document.getElementById('docScanResult');
   resultEl.innerHTML = html;
   resultEl.classList.remove('hidden');
@@ -3121,38 +3137,36 @@ function docScanApply() {
   closeDocScanModal();
   Swal.fire({
     toast: true, position: 'top-end', icon: 'success',
-    title: `นำข้อมูลเข้าฟอร์มแล้ว ${Object.keys(d).length} รายการ`,
-    text: 'กรุณาตรวจสอบและแก้ไขข้อมูลก่อนบันทึก',
+    title: bi(`นำข้อมูลเข้าฟอร์มแล้ว ${Object.keys(d).length} รายการ`, `Added ${Object.keys(d).length} field(s) to the form`),
+    text: bi('กรุณาตรวจสอบและแก้ไขข้อมูลก่อนบันทึก','Review and correct the information before saving.'),
     timer: 4000, showConfirmButton: false
   });
 }
 
 // ── Cleanup blank StipNo rows ──────────────────────────
 async function cleanBlankRowsUI() {
-  showLoader(true, 'กำลังตรวจสอบข้อมูล...');
+  showLoader(true, bi('กำลังตรวจสอบข้อมูล...','Checking data...'));
   try {
     const res = await API.countBlankRows();
     showLoader(false);
     if (res.status !== 'success') { Swal.fire(t('error'), res.message, 'error'); return; }
     if (res.count === 0) {
-      Swal.fire({ title:'ไม่พบข้อมูลเสีย', text:'ไม่มี row ที่ไม่มี StipNo และไม่มีข้อมูลระบุตัวตน', icon:'success', timer:2500, showConfirmButton:false });
+      Swal.fire({ title:bi('ไม่พบข้อมูลเสีย','No Invalid Rows Found'), text:bi('ไม่มีแถวที่ขาดทั้ง StipNo และข้อมูลระบุตัวตน','No rows are missing both StipNo and identity data.'), icon:'success', timer:2500, showConfirmButton:false });
       return;
     }
     const cf = await Swal.fire({
-      title:`พบ ${res.count} row ข้อมูลเสีย`,
-      html:`<p class="text-sm">พบ <b class="text-red-600">${res.count}</b> แถวที่ <b>ไม่มี StipNo</b> และ <b>ไม่มีชื่อ/เลขบัตร</b><br>
-            (เกิดจาก import ที่ล้มเหลวในรอบก่อน)</p>
-            <p class="text-xs text-gray-500 mt-2">ต้องการลบแถวเหล่านี้ออกหรือไม่?</p>`,
+      title:bi(`พบข้อมูลเสีย ${res.count} แถว`, `${res.count} invalid row(s) found`),
+      html:bi(`<p class="text-sm">พบ <b class="text-red-600">${res.count}</b> แถวที่ <b>ไม่มี StipNo</b> และ <b>ไม่มีชื่อ/เลขบัตร</b><br>(เกิดจากการนำเข้าที่ล้มเหลวในรอบก่อน)</p><p class="text-xs text-gray-500 mt-2">ต้องการลบแถวเหล่านี้ออกหรือไม่?</p>`, `<p class="text-sm"><b class="text-red-600">${res.count}</b> row(s) have <b>no StipNo</b> and <b>no name or ID</b>, usually from a previous failed import.</p><p class="text-xs text-gray-500 mt-2">Delete these rows?</p>`),
       icon:'warning', showCancelButton:true,
-      confirmButtonText:`🗑 ลบ ${res.count} แถวที่เสีย`, cancelButtonText:'ยกเลิก',
+      confirmButtonText:bi(`🗑 ลบ ${res.count} แถวที่เสีย`, `🗑 Delete ${res.count} invalid row(s)`), cancelButtonText:t('cancel'),
       confirmButtonColor:'#dc2626'
     });
     if (!cf.isConfirmed) return;
-    showLoader(true, `กำลังลบ ${res.count} แถวที่เสีย...`);
+    showLoader(true, bi(`กำลังลบ ${res.count} แถวที่เสีย...`, `Deleting ${res.count} invalid row(s)...`));
     const del = await API.cleanBlankRows();
     showLoader(false);
     if (del.status === 'success') {
-      Swal.fire({ title:'ล้างข้อมูลเสร็จสิ้น', html:`ลบ <b>${del.deleted}</b> แถวออกแล้ว`, icon:'success', timer:2500, showConfirmButton:false });
+      Swal.fire({ title:bi('ล้างข้อมูลเสร็จสิ้น','Cleanup Complete'), html:bi(`ลบ <b>${del.deleted}</b> แถวออกแล้ว`, `Deleted <b>${del.deleted}</b> row(s).`), icon:'success', timer:2500, showConfirmButton:false });
     } else {
       Swal.fire(t('error'), del.message, 'error');
     }
@@ -3169,7 +3183,7 @@ async function importCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
   event.target.value = '';
-  showLoader(true, 'กำลังโหลดรายชื่อนักเรียนเพื่อตรวจสอบซ้ำ...');
+  showLoader(true, bi('กำลังโหลดรายชื่อนักเรียนเพื่อตรวจสอบซ้ำ...','Loading students for duplicate checking...'));
   try {
     const res = await API.getStudents();
     _csvExisting = (res.status === 'success') ? res.data : [];
@@ -3177,7 +3191,7 @@ async function importCSV(event) {
   const text = await file.text();
   const rows = _parseCSV(text);
   showLoader(false);
-  if (!rows.length) { Swal.fire('ไม่พบข้อมูล', 'ไม่พบข้อมูลในไฟล์ หรือรูปแบบ CSV ไม่ถูกต้อง', 'warning'); return; }
+  if (!rows.length) { Swal.fire(t('noData'), bi('ไม่พบข้อมูลในไฟล์ หรือรูปแบบ CSV ไม่ถูกต้อง','The file contains no data or has an invalid CSV format.'), 'warning'); return; }
   _csvRows = rows.map((r, i) => ({ ...r, _idx:i, _selected:true, _dup:_csvCheckDup(r), _issues:_validateRow(r) }));
   _csvFilter = 'all';
   _csvRenderModal();
@@ -3281,7 +3295,7 @@ function _csvCheckDup(row) {
     const m = _csvExisting.find(s => s.stipNo && s.stipNo.toString() === sn);
     if (m) return {
       type: 'update',
-      msg: `StipNo "${sn}" มีอยู่แล้วในระบบ — จะอัปเดตข้อมูลของ ${[m.title,m.fname||m.engFname,m.lname||m.engLname].filter(Boolean).join(' ')||'(ไม่ทราบชื่อ)'}`,
+      msg: bi(`StipNo "${sn}" มีอยู่แล้วในระบบ — จะอัปเดตข้อมูลของ ${[m.title,m.fname||m.engFname,m.lname||m.engLname].filter(Boolean).join(' ')||'(ไม่ทราบชื่อ)'}`, `StipNo "${sn}" already exists — the record for ${[m.title,m.fname||m.engFname,m.lname||m.engLname].filter(Boolean).join(' ')||'(unknown name)'} will be updated.`),
       fields: ['StipNo'],
       match: m,
       canUpdate: true
@@ -3293,7 +3307,7 @@ function _csvCheckDup(row) {
     const m = _csvExisting.find(s => s.idCard === row.IDCard);
     if (m) return {
       type: 'dup',
-      msg: `เลขบัตรซ้ำกับ ${m.fname||''} ${m.lname||''} (${m.stipNo})`,
+      msg: bi(`เลขบัตรซ้ำกับ ${m.fname||''} ${m.lname||''} (${m.stipNo})`, `ID card duplicates ${m.fname||''} ${m.lname||''} (${m.stipNo})`),
       fields: ['IDCard'],
       match: m
     };
@@ -3304,7 +3318,7 @@ function _csvCheckDup(row) {
     const m = _csvExisting.find(s => s.fname === row.FirstName && s.lname === row.LastName);
     if (m) return {
       type: 'warn',
-      msg: `ชื่อ-นามสกุล (ไทย) ตรงกับ ${m.stipNo} ปีทุน ${m.scholarshipYear||'—'}`,
+      msg: bi(`ชื่อ-นามสกุล (ไทย) ตรงกับ ${m.stipNo} ปีทุน ${m.scholarshipYear||'—'}`, `Thai name matches ${m.stipNo}, scholarship year ${m.scholarshipYear||'—'}`),
       fields: ['FirstName','LastName'],
       match: m
     };
@@ -3321,7 +3335,7 @@ function _csvCheckDup(row) {
     );
     if (m) return {
       type: 'warn',
-      msg: `ชื่อ-นามสกุล (Eng) ตรงกับ ${m.stipNo||'(ไม่มีรหัส)'} ปีทุน ${m.scholarshipYear||'—'}`,
+      msg: bi(`ชื่อ-นามสกุล (อังกฤษ) ตรงกับ ${m.stipNo||'(ไม่มีรหัส)'} ปีทุน ${m.scholarshipYear||'—'}`, `English name matches ${m.stipNo||'(no ID)'}, scholarship year ${m.scholarshipYear||'—'}`),
       fields: ['EngFirstName','EngLastName'],
       match: m,
       canUpdate: !!m.stipNo
@@ -3334,7 +3348,7 @@ function _csvCheckDup(row) {
     const matches = _csvExisting.filter(s => s.engFname && s.engFname.toLowerCase().trim() === efn);
     if (matches.length === 1) return {
       type: 'warn',
-      msg: `ชื่อ Eng "${row.EngFirstName}" ตรงกับ ${matches[0].stipNo||'(ไม่มีรหัส)'}`,
+      msg: bi(`ชื่ออังกฤษ "${row.EngFirstName}" ตรงกับ ${matches[0].stipNo||'(ไม่มีรหัส)'}`, `English name "${row.EngFirstName}" matches ${matches[0].stipNo||'(no ID)'}`),
       fields: ['EngFirstName'],
       match: matches[0],
       canUpdate: !!matches[0].stipNo
@@ -3346,7 +3360,7 @@ function _csvCheckDup(row) {
     const matches = _csvExisting.filter(s => s.fname === row.FirstName);
     if (matches.length >= 2) return {
       type: 'info',
-      msg: `ชื่อ "${row.FirstName}" ซ้ำกับ ${matches.length} คนในระบบ (นามสกุลต่างกัน)`,
+      msg: bi(`ชื่อ "${row.FirstName}" ซ้ำกับ ${matches.length} คนในระบบ (นามสกุลต่างกัน)`, `First name "${row.FirstName}" matches ${matches.length} existing students with different last names.`),
       fields: ['FirstName'],
       match: null
     };
@@ -3359,22 +3373,22 @@ function _validateRow(r) {
   // BirthYear: required, must be CE 1980–2015
   const by = parseInt(r.BirthYear);
   if (!r.BirthYear || isNaN(by)) {
-    issues.push({ field:'BirthYear', msg:'ไม่มีปีเกิด (BirthYear) — ใช้เป็นรหัสผ่านนักเรียน', critical:true });
+    issues.push({ field:'BirthYear', msg:bi('ไม่มีปีเกิด (BirthYear) — ใช้เป็นรหัสผ่านนักเรียน','Missing BirthYear — required for the student password.'), critical:true });
   } else if (by < 1980 || by > 2015) {
-    issues.push({ field:'BirthYear', msg:`ปีเกิด ${by} ค.ศ. ผิดปกติ (ควรอยู่ระหว่าง 1980–2015)`, critical:true });
+    issues.push({ field:'BirthYear', msg:bi(`ปีเกิด ${by} ค.ศ. ผิดปกติ (ควรอยู่ระหว่าง 1980–2015)`, `Birth year ${by} C.E. is outside the expected range (1980–2015).`), critical:true });
   }
   // FirstName: required
   if (!r.FirstName && !r.EngFirstName) {
-    issues.push({ field:'FirstName', msg:'ไม่มีชื่อ (FirstName)', critical:true });
+    issues.push({ field:'FirstName', msg:bi('ไม่มีชื่อ (FirstName)','Missing first name.'), critical:true });
   }
   // Institution: must be MBS / VC / UNI / OTHER or empty
   const validInst = ['MBS','VC','UNI','OTHER'];
   if (r.Institution && !validInst.includes(r.Institution.toUpperCase())) {
-    issues.push({ field:'Institution', msg:`สถาบัน "${r.Institution}" ไม่ถูกต้อง (ควรเป็น MBS/VC/UNI/OTHER)`, critical:false });
+    issues.push({ field:'Institution', msg:bi(`สถาบัน "${r.Institution}" ไม่ถูกต้อง (ควรเป็น MBS/VC/UNI/OTHER)`, `Institution "${r.Institution}" is invalid (use MBS/VC/UNI/OTHER).`), critical:false });
   }
   // IDCard: if provided, must be exactly 13 digits
   if (r.IDCard && !/^\d{13}$/.test(r.IDCard)) {
-    issues.push({ field:'IDCard', msg:`เลขบัตร "${r.IDCard}" ควรเป็นตัวเลข 13 หลัก`, critical:false });
+    issues.push({ field:'IDCard', msg:bi(`เลขบัตร "${r.IDCard}" ควรเป็นตัวเลข 13 หลัก`, `ID card "${r.IDCard}" must contain 13 digits.`), critical:false });
   }
   return issues; // [] = valid
 }
@@ -3387,31 +3401,31 @@ function _csvRenderModal() {
   const infoCnt    = _csvRows.filter(r=>r._dup.type==='info').length;
   const invalidCnt = _csvRows.filter(r=>r._issues && r._issues.length>0).length;
   document.getElementById('csvSummaryLine').textContent =
-    `พบ ${tot} แถว — ใหม่ ${newCnt}` +
-    (updateCnt?` | อัปเดต ${updateCnt}`:'') +
-    ` | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}` +
-    (infoCnt?` | ชื่อพ้อง ${infoCnt}`:'') +
-    (invalidCnt?` | ⚠ ข้อมูลไม่ครบ ${invalidCnt}`:'');
+    bi(`พบ ${tot} แถว — ใหม่ ${newCnt}`, `${tot} rows — New ${newCnt}`) +
+    (updateCnt?bi(` | อัปเดต ${updateCnt}`, ` | Update ${updateCnt}`):'') +
+    bi(` | อาจซ้ำ ${warnCnt} | บัตรซ้ำ ${dupCnt}`, ` | Possible duplicate ${warnCnt} | Duplicate ID ${dupCnt}`) +
+    (infoCnt?bi(` | ชื่อพ้อง ${infoCnt}`, ` | Similar name ${infoCnt}`):'') +
+    (invalidCnt?bi(` | ⚠ ข้อมูลไม่ครบ ${invalidCnt}`, ` | ⚠ Incomplete ${invalidCnt}`):'');
   document.getElementById('csvStatRow').innerHTML = `
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 rounded-full border border-green-200">
-      <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span> ใหม่ <b>${newCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span> ${bi('ใหม่','New')} <b>${newCnt}</b>
     </span>
     ${updateCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 rounded-full border border-blue-300">
-      <span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span> 🔄 อัปเดต <b>${updateCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span> ${bi('🔄 อัปเดต','🔄 Update')} <b>${updateCnt}</b>
     </span>`:''}
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 rounded-full border border-yellow-200">
-      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> อาจซ้ำ <b>${warnCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-yellow-500 flex-shrink-0"></span> ${bi('อาจซ้ำ','Possible duplicate')} <b>${warnCnt}</b>
     </span>
     <span class="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 rounded-full border border-red-200">
-      <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span> บัตรซ้ำ <b>${dupCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span> ${bi('บัตรซ้ำ','Duplicate ID')} <b>${dupCnt}</b>
     </span>
     ${infoCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-full border border-indigo-200">
-      <span class="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0"></span> ชื่อพ้อง <b>${infoCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0"></span> ${bi('ชื่อพ้อง','Similar name')} <b>${infoCnt}</b>
     </span>`:''}
     ${invalidCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 rounded-full border border-amber-300">
-      <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span> ข้อมูลไม่ครบ <b>${invalidCnt}</b>
+      <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span> ${bi('ข้อมูลไม่ครบ','Incomplete')} <b>${invalidCnt}</b>
     </span>`:''}
-    <span class="ml-auto text-gray-400 text-xs italic">field ที่ตรวจ: IDCard → ชื่อ-นามสกุล (ไทย) → (Eng)</span>`;
+    <span class="ml-auto text-gray-400 text-xs italic">${bi('ฟิลด์ที่ตรวจ: IDCard → ชื่อ-นามสกุล (ไทย) → (อังกฤษ)','Checked fields: ID Card → Thai name → English name')}</span>`;
   // Bilingual column headers
   const _isEN = typeof LANG !== 'undefined' && LANG === 'en';
   const thNo = document.getElementById('csvThNo');
@@ -3462,22 +3476,22 @@ function csvRenderTable() {
                dt==='new'?'csv-row-new': dt==='warn'?'csv-row-warn': dt==='dup'?'csv-row-dup':
                dt==='update'?'csv-row-warn':'';
     const badge = dt==='new'
-      ? '<span class="badge badge-green" style="font-size:10px">✓ ใหม่</span>'
+      ? `<span class="badge badge-green" style="font-size:10px">${bi('✓ ใหม่','✓ New')}</span>`
       : dt==='update'
-      ? '<span class="badge" style="font-size:10px;background:#dbeafe;color:#1d4ed8">🔄 อัปเดต</span>'
+      ? `<span class="badge" style="font-size:10px;background:#dbeafe;color:#1d4ed8">${bi('🔄 อัปเดต','🔄 Update')}</span>`
       : dt==='warn'
-      ? '<span class="badge badge-orange" style="font-size:10px">⚠ อาจซ้ำ</span>'
+      ? `<span class="badge badge-orange" style="font-size:10px">${bi('⚠ อาจซ้ำ','⚠ Possible duplicate')}</span>`
       : dt==='dup'
-      ? '<span class="badge badge-red" style="font-size:10px">✕ บัตรซ้ำ</span>'
-      : '<span class="badge badge-blue" style="font-size:10px;background:#dbeafe;color:#1d4ed8">ℹ ชื่อพ้อง</span>';
+      ? `<span class="badge badge-red" style="font-size:10px">${bi('✕ บัตรซ้ำ','✕ Duplicate ID')}</span>`
+      : `<span class="badge badge-blue" style="font-size:10px;background:#dbeafe;color:#1d4ed8">${bi('ℹ ชื่อพ้อง','ℹ Similar name')}</span>`;
     const importBadge = ir==='ok'
-      ? '<span class="badge badge-green" style="font-size:10px;margin-left:4px">✅ บันทึกแล้ว</span>'
+      ? `<span class="badge badge-green" style="font-size:10px;margin-left:4px">${bi('✅ บันทึกแล้ว','✅ Saved')}</span>`
       : ir==='fail'
-      ? '<span class="badge badge-red" style="font-size:10px;margin-left:4px">❌ ล้มเหลว</span>'
+      ? `<span class="badge badge-red" style="font-size:10px;margin-left:4px">${bi('❌ ล้มเหลว','❌ Failed')}</span>`
       : ir==='pending'
-      ? '<span class="badge" style="font-size:10px;margin-left:4px;background:#fef3c7;color:#92400e">⏳ รอ...</span>'
+      ? `<span class="badge" style="font-size:10px;margin-left:4px;background:#fef3c7;color:#92400e">${bi('⏳ รอ...','⏳ Pending...')}</span>`
       : ir==='cancelled'
-      ? '<span class="badge" style="font-size:10px;margin-left:4px;background:#f3f4f6;color:#6b7280">⛔ ยกเลิก</span>'
+      ? `<span class="badge" style="font-size:10px;margin-left:4px;background:#f3f4f6;color:#6b7280">${bi('⛔ ยกเลิก','⛔ Cancelled')}</span>`
       : '';
     const importError = ir==='fail' && r._importError
       ? `<div class="text-xs mt-0.5 text-red-600">↳ ${r._importError}</div>`
@@ -3506,7 +3520,7 @@ function csvRenderTable() {
     const byIssue = issues.find(x=>x.field==='BirthYear');
     const byDisplay = r.BirthYear
       ? `<span class="inline-flex items-center gap-0.5 font-mono font-bold ${byIssue?'text-red-600':'text-amber-600'}">🔑 ${r.BirthYear}</span>`
-      : `<span class="text-red-500 text-xs font-semibold">🔑 ไม่มี!</span>`;
+      : `<span class="text-red-500 text-xs font-semibold">${bi('🔑 ไม่มี!','🔑 Missing!')}</span>`;
 
     // Issues tooltip row
     const issueRows = issues.length
@@ -3601,24 +3615,21 @@ async function csvAbortImport() {
   _csvPausing = true;
   const abortBtn = document.getElementById('csvAbortBtn');
   const notice   = document.getElementById('csvAbortNotice');
-  if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = '⏸ หยุดชั่วคราว...'; }
+  if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = bi('⏸ หยุดชั่วคราว...','⏸ Pausing...'); }
   if (notice)   notice.classList.remove('hidden');
 
   // 2. Show confirmation popup (loop pauses in background while dialog is open)
   const alreadySaved = _csvImportedStipNos.length;
   const cf = await Swal.fire({
-    title: '⏸ หยุดการนำเข้าชั่วคราว',
+    title: bi('⏸ หยุดการนำเข้าชั่วคราว','⏸ Import Paused'),
     html: alreadySaved > 0
-      ? `<p style="font-size:14px;line-height:2">
-           นำเข้าไปแล้ว <b style="color:#16a34a;font-size:16px">${alreadySaved}</b> รายการ<br>
-           ต้องการ <b>นำเข้าต่อ</b> หรือ <b style="color:#dc2626">ยกเลิกและลบข้อมูลทั้งหมด</b>?
-         </p>`
-      : `<p style="font-size:14px">ต้องการ <b>นำเข้าต่อ</b> หรือ <b style="color:#dc2626">ยกเลิก</b>?</p>`,
+      ? bi(`<p style="font-size:14px;line-height:2">นำเข้าไปแล้ว <b style="color:#16a34a;font-size:16px">${alreadySaved}</b> รายการ<br>ต้องการ <b>นำเข้าต่อ</b> หรือ <b style="color:#dc2626">ยกเลิกและลบข้อมูลทั้งหมด</b>?</p>`, `<p style="font-size:14px;line-height:2"><b style="color:#16a34a;font-size:16px">${alreadySaved}</b> record(s) imported.<br><b>Continue</b> or <b style="color:#dc2626">cancel and delete all imported records</b>?</p>`)
+      : bi(`<p style="font-size:14px">ต้องการ <b>นำเข้าต่อ</b> หรือ <b style="color:#dc2626">ยกเลิก</b>?</p>`, `<p style="font-size:14px"><b>Continue importing</b> or <b style="color:#dc2626">cancel</b>?</p>`),
     icon: 'question',
     showDenyButton: true,
     showCancelButton: false,
-    confirmButtonText: '▶ นำเข้าต่อ',
-    denyButtonText: alreadySaved > 0 ? `⛔ ยกเลิกและลบ ${alreadySaved} รายการ` : '⛔ ยกเลิกการนำเข้า',
+    confirmButtonText: bi('▶ นำเข้าต่อ','▶ Continue Import'),
+    denyButtonText: alreadySaved > 0 ? bi(`⛔ ยกเลิกและลบ ${alreadySaved} รายการ`, `⛔ Cancel and delete ${alreadySaved} record(s)`) : bi('⛔ ยกเลิกการนำเข้า','⛔ Cancel Import'),
     confirmButtonColor: '#1e3a8a',
     denyButtonColor: '#dc2626'
   });
@@ -3627,13 +3638,13 @@ async function csvAbortImport() {
   if (cf.isDenied) {
     // User confirmed cancel → set abort flag (loop will skip remaining rows)
     _csvAborted = true;
-    if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = '⏳ กำลังหยุด...'; }
+    if (abortBtn) { abortBtn.disabled = true; abortBtn.innerHTML = bi('⏳ กำลังหยุด...','⏳ Stopping...'); }
   } else {
     // User chose to continue → restore UI
     if (notice) notice.classList.add('hidden');
     if (abortBtn) {
       abortBtn.disabled = false;
-      abortBtn.innerHTML = '<i data-lucide="square" class="w-3 h-3 inline"></i> หยุด';
+      abortBtn.innerHTML = `<i data-lucide="square" class="w-3 h-3 inline"></i> ${bi('หยุด','Stop')}`;
       lucide.createIcons();
     }
   }
@@ -3645,20 +3656,20 @@ async function csvAbortImport() {
 
 async function csvImportSelected() {
   const sel = _csvRows.filter(r=>r._selected);
-  if (!sel.length) { Swal.fire('แจ้งเตือน','กรุณาเลือกอย่างน้อย 1 แถว','warning'); return; }
+  if (!sel.length) { Swal.fire(t('warning'),bi('กรุณาเลือกอย่างน้อย 1 แถว','Select at least one row.'),'warning'); return; }
   // Pre-import validation: warn about critical issues (missing BirthYear etc.)
   const criticalRows = sel.filter(r => r._issues && r._issues.some(x=>x.critical));
   if (criticalRows.length) {
     const byMissing = criticalRows.filter(r => r._issues.some(x=>x.field==='BirthYear'));
-    const nameList = byMissing.slice(0,5).map(r=>`<li>${[r.Title,r.FirstName,r.LastName].filter(Boolean).join(' ')||'(ไม่มีชื่อ)'}</li>`).join('');
-    const more = byMissing.length>5 ? `<li>...และอีก ${byMissing.length-5} รายการ</li>` : '';
+    const nameList = byMissing.slice(0,5).map(r=>`<li>${[r.Title,r.FirstName,r.LastName].filter(Boolean).join(' ')||bi('(ไม่มีชื่อ)','(unnamed)')}</li>`).join('');
+    const more = byMissing.length>5 ? `<li>${bi(`...และอีก ${byMissing.length-5} รายการ`,`...and ${byMissing.length-5} more`)}</li>` : '';
     const cf = await Swal.fire({
-      title:`พบข้อมูลไม่ครบ ${criticalRows.length} รายการ`,
-      html:`<p class="text-sm mb-2">รายการเหล่านี้ <b>ไม่มีปีเกิด (BirthYear)</b> ซึ่งใช้เป็น<b class="text-amber-600">รหัสผ่านนักเรียน</b></p>`+
+      title:bi(`พบข้อมูลไม่ครบ ${criticalRows.length} รายการ`, `${criticalRows.length} incomplete record(s) found`),
+      html:`<p class="text-sm mb-2">${bi('รายการเหล่านี้ <b>ไม่มีปีเกิด (BirthYear)</b> ซึ่งใช้เป็น <b class="text-amber-600">รหัสผ่านนักเรียน</b>','These records have <b>no BirthYear</b>, which is used as the <b class="text-amber-600">student password</b>.')}</p>`+
         `<ul class="text-left text-sm text-red-600 list-disc pl-5">${nameList}${more}</ul>`+
-        `<p class="text-xs text-gray-500 mt-2">ต้องการนำเข้าต่อไปหรือไม่? (นักเรียนจะไม่สามารถเข้าสู่ระบบได้จนกว่าจะกรอกปีเกิด)</p>`,
+        `<p class="text-xs text-gray-500 mt-2">${bi('ต้องการนำเข้าต่อไปหรือไม่? (นักเรียนจะไม่สามารถเข้าสู่ระบบได้จนกว่าจะกรอกปีเกิด)','Continue importing? Students cannot sign in until their birth year is entered.')}</p>`,
       icon:'warning', showCancelButton:true,
-      confirmButtonText:'นำเข้าต่อไป', cancelButtonText:'กลับไปแก้ไข', confirmButtonColor:'#1e3a8a'
+      confirmButtonText:bi('นำเข้าต่อไป','Continue Import'), cancelButtonText:bi('กลับไปแก้ไข','Back to Edit'), confirmButtonColor:'#1e3a8a'
     });
     if (!cf.isConfirmed) return;
   }
@@ -3667,16 +3678,16 @@ async function csvImportSelected() {
   const idCardDupRows = sel.filter(r => r._dup.type==='dup' && !r._dup.canUpdate);
   if (idCardDupRows.length) {
     const cf = await Swal.fire({
-      title:`พบเลขบัตรซ้ำ ${idCardDupRows.length} รายการ`,
-      html:`ข้อมูลเหล่านี้มีเลขบัตรประชาชนตรงกับรายการที่มีอยู่แล้วในระบบ<br><b>ต้องการนำเข้าต่อไปหรือไม่?</b>`,
+      title:bi(`พบเลขบัตรซ้ำ ${idCardDupRows.length} รายการ`, `${idCardDupRows.length} duplicate ID card record(s) found`),
+      html:bi('ข้อมูลเหล่านี้มีเลขบัตรประชาชนตรงกับรายการที่มีอยู่แล้วในระบบ<br><b>ต้องการนำเข้าต่อไปหรือไม่?</b>','These ID card numbers already exist in the system.<br><b>Continue importing?</b>'),
       icon:'warning', showCancelButton:true,
-      confirmButtonText:'นำเข้าต่อไป', cancelButtonText:'ยกเลิก', confirmButtonColor:'#1e3a8a'
+      confirmButtonText:bi('นำเข้าต่อไป','Continue Import'), cancelButtonText:t('cancel'), confirmButtonColor:'#1e3a8a'
     });
     if (!cf.isConfirmed) return;
   }
   // Refresh selected list after possible deselect
   const selFinal = _csvRows.filter(r=>r._selected);
-  if (!selFinal.length) { Swal.fire('แจ้งเตือน','ไม่มีรายการที่เลือก','info'); return; }
+  if (!selFinal.length) { Swal.fire(t('warning'),bi('ไม่มีรายการที่เลือก','No rows selected.'),'info'); return; }
 
   // Reset abort/pause state and session tracking
   _csvAborted      = false;
@@ -3696,8 +3707,8 @@ async function csvImportSelected() {
   // Show progress, reset abort UI, lock import button
   wrap.classList.remove('hidden');
   btn.disabled = true;
-  if (cancelBtn) { cancelBtn.textContent = 'ยกเลิก'; cancelBtn.disabled = false; }
-  if (abortBtn)  { abortBtn.disabled = false; abortBtn.innerHTML = '<i data-lucide="square" class="w-3 h-3 inline"></i> หยุด'; lucide.createIcons(); }
+  if (cancelBtn) { cancelBtn.textContent = t('cancel'); cancelBtn.disabled = false; }
+  if (abortBtn)  { abortBtn.disabled = false; abortBtn.innerHTML = `<i data-lucide="square" class="w-3 h-3 inline"></i> ${bi('หยุด','Stop')}`; lucide.createIcons(); }
   if (notice)    notice.classList.add('hidden');
 
   let ok=0, fail=0, cancelled=0;
@@ -3714,7 +3725,7 @@ async function csvImportSelected() {
     // ── Abort check: stop BEFORE sending this row ──
     if (_csvAborted) {
       row._importResult = 'cancelled';
-      row._importError  = '⛔ ยกเลิกโดยผู้ใช้';
+      row._importError  = bi('⛔ ยกเลิกโดยผู้ใช้','⛔ Cancelled by user');
       row._selected     = false;
       cancelled++;
       continue;
@@ -3722,20 +3733,20 @@ async function csvImportSelected() {
 
     const p = Math.round((i/selFinal.length)*100);
     bar.style.width=p+'%'; pct.textContent=p+'%';
-    lbl.textContent=`กำลังนำเข้า ${i+1}/${selFinal.length}: ${row.Title||''}${row.FirstName||row.EngFirstName||''} ${row.LastName||row.EngLastName||''}`;
+    lbl.textContent=bi(`กำลังนำเข้า ${i+1}/${selFinal.length}: `, `Importing ${i+1}/${selFinal.length}: `)+`${row.Title||''}${row.FirstName||row.EngFirstName||''} ${row.LastName||row.EngLastName||''}`;
     row._importResult = 'pending';
     csvRenderTable();
     try {
       // 60-second timeout per row — prevents the loop hanging if GAS is slow
       const _rowTimeout = new Promise((_, rej) =>
-        setTimeout(() => rej(new Error('หมดเวลา (60s) — GAS ไม่ตอบสนอง')), 60000)
+        setTimeout(() => rej(new Error(t('connectionTimeout'))), 60000)
       );
       // Always use saveStudent — backend auto-updates if StipNo already exists
       let res = await Promise.race([API.saveStudent(_csvToData(row)), _rowTimeout]);
       if (res.status==='success') {
         ok++;
         row._importResult = 'ok';
-        row._importError = res._wasUpdated ? '✏ อัปเดตข้อมูลเดิม' : '';
+        row._importError = res._wasUpdated ? bi('✏ อัปเดตข้อมูลเดิม','✏ Existing record updated') : '';
         row._selected = false;
         // Track StipNo for potential undo (only new saves, not updates)
         if (!res._wasUpdated && (res.stipNo || row.StipNo)) {
@@ -3744,21 +3755,21 @@ async function csvImportSelected() {
       } else {
         fail++;
         row._importResult = 'fail';
-        row._importError = res.message || 'เกิดข้อผิดพลาด';
+        row._importError = res.message || t('error');
       }
     } catch(e) {
       fail++;
       row._importResult = 'fail';
-      row._importError = e.message || 'เกิดข้อผิดพลาด';
+      row._importError = localizeApiMessage(e.message);
     }
   }
 
   bar.style.width='100%'; pct.textContent='100%';
   setTimeout(() => wrap.classList.add('hidden'), 400);
   btn.disabled = false;
-  if (abortBtn) { abortBtn.disabled = false; abortBtn.innerHTML = '<i data-lucide="square" class="w-3 h-3 inline"></i> หยุด'; lucide.createIcons(); }
+  if (abortBtn) { abortBtn.disabled = false; abortBtn.innerHTML = `<i data-lucide="square" class="w-3 h-3 inline"></i> ${bi('หยุด','Stop')}`; lucide.createIcons(); }
   if (notice)   notice.classList.add('hidden');
-  if (cancelBtn){ cancelBtn.textContent = 'ยกเลิก'; cancelBtn.disabled = false; }
+  if (cancelBtn){ cancelBtn.textContent = t('cancel'); cancelBtn.disabled = false; }
 
   // ── Handle aborted import ──
   if (_csvAborted && cancelled > 0) {
@@ -3771,7 +3782,7 @@ async function csvImportSelected() {
   if (_csvAborted) {
     if (ok > 0) {
       // Auto-delete all imported rows (user already confirmed in csvAbortImport)
-      showLoader(true, `กำลังลบข้อมูลที่นำเข้าไปแล้ว ${_csvImportedStipNos.length} รายการ...`);
+      showLoader(true, bi(`กำลังลบข้อมูลที่นำเข้าไปแล้ว ${_csvImportedStipNos.length} รายการ...`, `Removing ${_csvImportedStipNos.length} imported record(s)...`));
       let undone = 0;
       for (const stipNo of [..._csvImportedStipNos]) {
         try {
@@ -3779,7 +3790,7 @@ async function csvImportSelected() {
           if (r.status === 'success') {
             undone++;
             const row = _csvRows.find(x => (x.StipNo === stipNo || x._savedStipNo === stipNo) && x._importResult === 'ok');
-            if (row) { row._importResult = 'cancelled'; row._importError = '↩ ถูกยกเลิก'; row._selected = false; }
+            if (row) { row._importResult = 'cancelled'; row._importError = bi('↩ ถูกยกเลิก','↩ Cancelled'); row._selected = false; }
           }
         } catch(e) { /* ignore */ }
       }
@@ -3787,14 +3798,14 @@ async function csvImportSelected() {
       _csvImportedStipNos = [];
       if (cancelled > 0) csvSetFilter('cancelled'); else { csvRenderTable(); _csvUpdateCount(); }
       Swal.fire({
-        title: '⛔ ยกเลิกการนำเข้าแล้ว',
-        html: `<p style="font-size:14px">ลบข้อมูลออกจากฐานข้อมูลแล้ว <b style="color:#dc2626">${undone}</b> รายการ</p>`,
+        title: bi('⛔ ยกเลิกการนำเข้าแล้ว','⛔ Import Cancelled'),
+        html: bi(`<p style="font-size:14px">ลบข้อมูลออกจากฐานข้อมูลแล้ว <b style="color:#dc2626">${undone}</b> รายการ</p>`, `<p style="font-size:14px">Removed <b style="color:#dc2626">${undone}</b> record(s) from the database.</p>`),
         icon: 'success', timer: 2500, showConfirmButton: false
       });
     } else {
       // Aborted before any import happened
       if (cancelled > 0) csvSetFilter('cancelled'); else { csvRenderTable(); _csvUpdateCount(); }
-      Swal.fire({ title: '⛔ ยกเลิกการนำเข้า', text: 'ไม่มีข้อมูลถูกนำเข้า', icon: 'info', timer: 2000, showConfirmButton: false });
+      Swal.fire({ title: bi('⛔ ยกเลิกการนำเข้า','⛔ Import Cancelled'), text: bi('ไม่มีข้อมูลถูกนำเข้า','No data was imported.'), icon: 'info', timer: 2000, showConfirmButton: false });
     }
     return;
   }
@@ -3814,8 +3825,8 @@ async function csvImportSelected() {
   } else {
     closeCSVModal();
     await Swal.fire({
-      title:'นำเข้าเสร็จสิ้น',
-      html:`<p class="text-base">✅ สำเร็จ <b class="text-green-600">${ok}</b> รายการ</p>`,
+      title:bi('นำเข้าเสร็จสิ้น','Import Complete'),
+      html:bi(`<p class="text-base">✅ สำเร็จ <b class="text-green-600">${ok}</b> รายการ</p>`, `<p class="text-base">✅ Imported <b class="text-green-600">${ok}</b> record(s)</p>`),
       icon:'success', confirmButtonColor:'#1e3a8a'
     });
     if (ok>0) window.location.href='students.html';
@@ -3863,10 +3874,10 @@ function _crmUpdateSummary() {
   const el = document.getElementById('crm_summary');
   if (!el) return;
   el.innerHTML =
-    `<span>✅ สำเร็จ <b>${_crmOkTotal}</b> รายการ</span>` +
+    bi(`<span>✅ สำเร็จ <b>${_crmOkTotal}</b> รายการ</span>`, `<span>✅ Successful <b>${_crmOkTotal}</b></span>`) +
     (remaining > 0
-      ? `&nbsp;&nbsp;<span>❌ ยังค้างอยู่ <b>${remaining}</b> รายการ</span>`
-      : `&nbsp;&nbsp;<span style="color:#86efac">🎉 ครบทุกรายการแล้ว!</span>`);
+      ? bi(`&nbsp;&nbsp;<span>❌ ยังค้างอยู่ <b>${remaining}</b> รายการ</span>`, `&nbsp;&nbsp;<span>❌ Remaining <b>${remaining}</b></span>`)
+      : bi(`&nbsp;&nbsp;<span style="color:#86efac">🎉 ครบทุกรายการแล้ว!</span>`, `&nbsp;&nbsp;<span style="color:#86efac">🎉 All records complete!</span>`));
   const retryBtn = document.getElementById('crm_retryBtn');
   if (retryBtn) retryBtn.classList.toggle('hidden', remaining === 0);
 }
@@ -3881,15 +3892,15 @@ function _crmRender() {
   if (!failRows.length) {
     list.innerHTML = `<div class="py-10 text-center text-gray-400">
       <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-green-400"></i>
-      <p class="font-semibold">ทุกรายการนำเข้าสำเร็จแล้ว</p>
+      <p class="font-semibold">${bi('ทุกรายการนำเข้าสำเร็จแล้ว','All records were imported successfully.')}</p>
     </div>`;
     lucide.createIcons();
     return;
   }
 
   list.innerHTML = failRows.map(r => {
-    const name = [r.Title, r.FirstName||r.EngFirstName, r.LastName||r.EngLastName].filter(Boolean).join(' ') || '(ไม่มีชื่อ)';
-    const errMsg = r._importError || 'เกิดข้อผิดพลาด';
+    const name = [r.Title, r.FirstName||r.EngFirstName, r.LastName||r.EngLastName].filter(Boolean).join(' ') || bi('(ไม่มีชื่อ)','(unnamed)');
+    const errMsg = r._importError || t('error');
     // Determine which fields to highlight based on error
     const isStipDup   = /stip no/i.test(errMsg);
     const isIdCardDup = /id card|idcard/i.test(errMsg);
@@ -3907,50 +3918,50 @@ function _crmRender() {
           <div class="flex items-center gap-1.5 mt-0.5">
             <span class="text-xs text-red-500 leading-snug">❌ ${errMsg}</span>
           </div>
-          ${r.IDCard ? `<div class="text-xs text-gray-400 mt-0.5">บัตร: ${r.IDCard}</div>` : ''}
+          ${r.IDCard ? `<div class="text-xs text-gray-400 mt-0.5">${bi('บัตร','ID Card')}: ${r.IDCard}</div>` : ''}
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
           <button onclick="_crmToggleEdit(${r._idx})" id="crm_editBtn_${r._idx}"
             class="btn btn-sm text-xs font-semibold"
             style="border-color:#d97706;color:#d97706;background:#fffbeb;padding:4px 12px">
-            ✏ แก้ไข
+            ${bi('✏ แก้ไข','✏ Edit')}
           </button>
-          <button onclick="_crmSkip(${r._idx})" title="ข้ามรายการนี้"
+          <button onclick="_crmSkip(${r._idx})" title="${bi('ข้ามรายการนี้','Skip this record')}"
             class="btn btn-sm text-xs text-gray-400 border-gray-200" style="padding:4px 8px">✕</button>
         </div>
       </div>
       <!-- Inline edit form (hidden by default) -->
       <div id="crm_edit_${r._idx}" class="hidden bg-amber-50 border-t border-amber-100 px-4 pb-3 pt-2">
-        <p class="text-xs font-semibold text-amber-800 mb-2">แก้ไขข้อมูลและนำเข้าอีกครั้ง</p>
+        <p class="text-xs font-semibold text-amber-800 mb-2">${bi('แก้ไขข้อมูลและนำเข้าอีกครั้ง','Edit the data and import again')}</p>
         <div class="grid grid-cols-2 gap-2 text-xs mb-2">
           <div>
             <label class="block text-gray-500 mb-0.5 font-medium ${isStipDup?'text-red-600':''}">
-              StipNo ${isStipDup?'⚠ ซ้ำ':''}
+              StipNo ${isStipDup?bi('⚠ ซ้ำ','⚠ duplicate'):''}
             </label>
             <input id="crm_StipNo_${r._idx}" value="${r.StipNo||''}"
               class="border rounded px-2 py-1.5 w-full text-xs font-mono ${isStipDup?'border-red-400 bg-red-50':''}"
-              placeholder="เช่น VC_277">
+              placeholder="${bi('เช่น VC_277','e.g. VC_277')}">
           </div>
           <div>
             <label class="block text-gray-500 mb-0.5 font-medium ${isBirthYear?'text-red-600':''}">
-              BirthYear (ปีเกิด ค.ศ.) 🔑 ${isBirthYear?'⚠':''}
+              ${bi('ปีเกิด (ค.ศ.)','Birth Year (C.E.)')} 🔑 ${isBirthYear?'⚠':''}
             </label>
             <input id="crm_BirthYear_${r._idx}" value="${r.BirthYear||''}" type="number" min="1980" max="2015"
               class="border rounded px-2 py-1.5 w-full text-xs ${isBirthYear?'border-red-400 bg-red-50':''}"
-              placeholder="เช่น 2000">
+              placeholder="${bi('เช่น 2000','e.g. 2000')}">
           </div>
           <div>
             <label class="block text-gray-500 mb-0.5 font-medium ${isIdCardDup?'text-red-600':''}">
-              IDCard (เลขบัตร) ${isIdCardDup?'⚠ ซ้ำ':''}
+              ${bi('เลขบัตรประชาชน','ID Card')} ${isIdCardDup?bi('⚠ ซ้ำ','⚠ duplicate'):''}
             </label>
             <input id="crm_IDCard_${r._idx}" value="${r.IDCard||''}"
               class="border rounded px-2 py-1.5 w-full text-xs font-mono ${isIdCardDup?'border-red-400 bg-red-50':''}"
-              placeholder="13 หลัก" maxlength="13">
+              placeholder="${bi('13 หลัก','13 digits')}" maxlength="13">
           </div>
           <div>
             <label class="block text-gray-500 mb-0.5 font-medium">Institution</label>
             <select id="crm_Institution_${r._idx}" class="border rounded px-2 py-1.5 w-full text-xs">
-              <option value="">— เลือก —</option>
+              <option value="">${bi('— เลือก —','— Select —')}</option>
               <option ${r.Institution==='MBS'?'selected':''}>MBS</option>
               <option ${r.Institution==='VC'?'selected':''}>VC</option>
               <option ${r.Institution==='UNI'?'selected':''}>UNI</option>
@@ -3958,17 +3969,17 @@ function _crmRender() {
             </select>
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">Title (คำนำหน้า)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('คำนำหน้า','Title')}</label>
             <input id="crm_Title_${r._idx}" value="${r.Title||''}"
-              class="border rounded px-2 py-1.5 w-full text-xs" placeholder="นาย / นางสาว / Mr.">
+              class="border rounded px-2 py-1.5 w-full text-xs" placeholder="${bi('นาย / นางสาว / Mr.','Mr. / Mrs. / Miss')}">
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">FirstName (ชื่อ)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('ชื่อ','First Name')}</label>
             <input id="crm_FirstName_${r._idx}" value="${r.FirstName||''}"
               class="border rounded px-2 py-1.5 w-full text-xs">
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">LastName (นามสกุล)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('นามสกุล','Last Name')}</label>
             <input id="crm_LastName_${r._idx}" value="${r.LastName||''}"
               class="border rounded px-2 py-1.5 w-full text-xs">
           </div>
@@ -3993,13 +4004,13 @@ function _crmRender() {
           </div>
         </div>
         <div class="flex gap-2 justify-end mt-1">
-          <button onclick="_crmToggleEdit(${r._idx})" class="btn btn-secondary btn-sm text-xs">ยกเลิก</button>
+          <button onclick="_crmToggleEdit(${r._idx})" class="btn btn-secondary btn-sm text-xs">${t('cancel')}</button>
           <button onclick="_crmSaveEdit(${r._idx})" class="btn btn-sm text-xs"
             style="background:#d97706;color:white;border-color:#d97706">
-            <i data-lucide="check" class="w-3 h-3 inline mr-1"></i>บันทึก (ตรวจสอบใหม่)
+            <i data-lucide="check" class="w-3 h-3 inline mr-1"></i>${bi('บันทึก (ตรวจสอบใหม่)','Save and Recheck')}
           </button>
           <button onclick="_crmSaveAndImport(${r._idx})" class="btn btn-primary btn-sm text-xs">
-            <i data-lucide="upload" class="w-3 h-3 inline mr-1"></i>บันทึก & นำเข้าเดี๋ยวนี้
+            <i data-lucide="upload" class="w-3 h-3 inline mr-1"></i>${bi('บันทึกและนำเข้าทันที','Save and Import Now')}
           </button>
         </div>
       </div>
@@ -4015,7 +4026,7 @@ function _crmToggleEdit(idx) {
   const isOpen = !editDiv.classList.contains('hidden');
   editDiv.classList.toggle('hidden', isOpen);
   if (editBtn) {
-    editBtn.textContent = isOpen ? '✏ แก้ไข' : '▲ ซ่อน';
+    editBtn.textContent = isOpen ? bi('✏ แก้ไข','✏ Edit') : bi('▲ ซ่อน','▲ Hide');
     editBtn.style.background = isOpen ? '#fffbeb' : '#fff7ed';
   }
 }
@@ -4041,7 +4052,7 @@ function _crmSaveEdit(idx) {
   r._issues      = _validateRow(r);
   r._dup         = _csvCheckDup(r);
   r._importResult = 'fail'; // stays fail until successfully imported
-  r._importError  = '✏ แก้ไขแล้ว — กด "บันทึก & นำเข้า" เพื่อส่งข้อมูล';
+  r._importError  = bi('✏ แก้ไขแล้ว — กด "บันทึกและนำเข้า" เพื่อส่งข้อมูล','✏ Edited — select "Save and Import" to submit.');
   // Close edit form and re-render
   _crmToggleEdit(idx);
   _crmRender();
@@ -4061,7 +4072,7 @@ async function _crmSaveAndImport(idx) {
 
   r._importResult = 'pending';
   try {
-    const _t60 = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (60s)')), 60000));
+    const _t60 = new Promise((_, rej) => setTimeout(() => rej(new Error(t('connectionTimeout'))), 60000));
     const isStipDup = r._dup.type === 'dup' && r._dup.canUpdate;
     let res = await Promise.race([
       isStipDup ? API.updateStudent(_csvToData(r)) : API.saveStudent(_csvToData(r)),
@@ -4073,7 +4084,7 @@ async function _crmSaveAndImport(idx) {
     }
     if (res.status === 'success') {
       r._importResult = 'ok';
-      r._importError  = res._wasUpdated ? '✏ อัปเดตข้อมูลเดิม' : '';
+      r._importError  = res._wasUpdated ? bi('✏ อัปเดตข้อมูลเดิม','✏ Existing record updated') : '';
       r._selected     = false;
       _crmOkTotal++;
       // Remove row from modal list with animation
@@ -4087,13 +4098,13 @@ async function _crmSaveAndImport(idx) {
       }
     } else {
       r._importResult = 'fail';
-      r._importError  = res.message || 'เกิดข้อผิดพลาด';
+      r._importError  = res.message || t('error');
       if (rowEl) rowEl.style.opacity = '1';
       _crmRender();
     }
   } catch(e) {
     r._importResult = 'fail';
-    r._importError  = e.message || 'เกิดข้อผิดพลาด';
+    r._importError  = localizeApiMessage(e.message);
     if (rowEl) rowEl.style.opacity = '1';
     _crmRender();
   }
@@ -4153,11 +4164,11 @@ async function _crmRetryAll() {
     if (progressBar) progressBar.style.width = pct + '%';
     if (progressPct) progressPct.textContent = pct + '%';
     const name = [r.Title, r.FirstName||r.EngFirstName, r.LastName||r.EngLastName].filter(Boolean).join(' ');
-    if (progressLbl) progressLbl.textContent = `${i+1}/${failRows.length}: ${name || 'กำลังนำเข้า...'}`;
+    if (progressLbl) progressLbl.textContent = `${i+1}/${failRows.length}: ${name || bi('กำลังนำเข้า...','Importing...')}`;
 
     r._importResult = 'pending';
     try {
-      const _t60r = new Promise((_, rej) => setTimeout(() => rej(new Error('หมดเวลา (60s)')), 60000));
+      const _t60r = new Promise((_, rej) => setTimeout(() => rej(new Error(t('connectionTimeout'))), 60000));
       const isStipDup = r._dup.type === 'dup' && r._dup.canUpdate;
       let res = await Promise.race([
         isStipDup ? API.updateStudent(_csvToData(r)) : API.saveStudent(_csvToData(r)),
@@ -4169,16 +4180,16 @@ async function _crmRetryAll() {
       }
       if (res.status === 'success') {
         r._importResult = 'ok';
-        r._importError  = res._wasUpdated ? '✏ อัปเดตข้อมูลเดิม' : '';
+        r._importError  = res._wasUpdated ? bi('✏ อัปเดตข้อมูลเดิม','✏ Existing record updated') : '';
         r._selected     = false;
         _crmOkTotal++;
       } else {
         r._importResult = 'fail';
-        r._importError  = res.message || 'เกิดข้อผิดพลาด';
+        r._importError  = res.message || t('error');
       }
     } catch(e) {
       r._importResult = 'fail';
-      r._importError  = e.message || 'เกิดข้อผิดพลาด';
+      r._importError  = localizeApiMessage(e.message);
     }
   }
 
@@ -4195,7 +4206,7 @@ async function _crmRetryAll() {
   if (stillFail === 0) {
     setTimeout(() => {
       _crmClose();
-      Swal.fire({ title:'นำเข้าสำเร็จทั้งหมด', icon:'success', timer:2000, showConfirmButton:false });
+      Swal.fire({ title:bi('นำเข้าสำเร็จทั้งหมด','All Records Imported'), icon:'success', timer:2000, showConfirmButton:false });
     }, 500);
   }
 }
@@ -4231,10 +4242,10 @@ function _csvInlineEditHtml(r) {
   const nextIdx = pos < invalidIdxs.length-1 ? invalidIdxs[pos+1] : null;
   const navHtml = invalidIdxs.length > 1 ? `
     <div class="flex items-center gap-1 ml-auto">
-      <span class="text-xs text-gray-400">${pos+1}/${invalidIdxs.length} ปัญหา</span>
-      <button onclick="${prevIdx!==null?`_csvOpenEdit(${prevIdx})`:'void(0)'}" ${prevIdx===null?'disabled':''} title="ก่อนหน้า"
+      <span class="text-xs text-gray-400">${pos+1}/${invalidIdxs.length} ${bi('ปัญหา','issues')}</span>
+      <button onclick="${prevIdx!==null?`_csvOpenEdit(${prevIdx})`:'void(0)'}" ${prevIdx===null?'disabled':''} title="${bi('ก่อนหน้า','Previous')}"
         class="text-xs px-2 py-0.5 rounded border ${prevIdx!==null?'border-amber-400 text-amber-700 hover:bg-amber-50':'border-gray-200 text-gray-300 cursor-not-allowed'} transition">◀</button>
-      <button onclick="${nextIdx!==null?`_csvOpenEdit(${nextIdx})`:'void(0)'}" ${nextIdx===null?'disabled':''} title="ถัดไป"
+      <button onclick="${nextIdx!==null?`_csvOpenEdit(${nextIdx})`:'void(0)'}" ${nextIdx===null?'disabled':''} title="${bi('ถัดไป','Next')}"
         class="text-xs px-2 py-0.5 rounded border ${nextIdx!==null?'border-amber-400 text-amber-700 hover:bg-amber-50':'border-gray-200 text-gray-300 cursor-not-allowed'} transition">▶</button>
     </div>` : '';
 
@@ -4243,62 +4254,62 @@ function _csvInlineEditHtml(r) {
       <div class="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
         <!-- Header -->
         <div class="flex items-center gap-2 flex-wrap px-3 py-2 bg-blue-600 text-white">
-          <span class="font-semibold text-sm">✏ แก้ไขแถวที่ ${r._idx+1}</span>
-          ${issueBadges ? `<div class="flex flex-wrap gap-1">${issueBadges}</div>` : '<span class="text-blue-200 text-xs">ไม่พบปัญหา</span>'}
+          <span class="font-semibold text-sm">${bi(`✏ แก้ไขแถวที่ ${r._idx+1}`, `✏ Edit row ${r._idx+1}`)}</span>
+          ${issueBadges ? `<div class="flex flex-wrap gap-1">${issueBadges}</div>` : `<span class="text-blue-200 text-xs">${bi('ไม่พบปัญหา','No issues')}</span>`}
           ${navHtml}
         </div>
         <!-- Fields grid -->
         <div class="p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs" style="grid-template-columns:repeat(4,1fr)">
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">StipNo (รหัสทุน)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('รหัสทุน (StipNo)','Scholarship ID (StipNo)')}</label>
             ${inp('ce_StipNo', r.StipNo, 'MBS_001 / VC_001 / UNI_001', false)}
           </div>
           <div>
-            <label class="block mb-0.5 font-medium ${issBad('BirthYear')?'text-red-600':'text-gray-500'}">🔑 BirthYear (ปีเกิด ค.ศ.) ${issBad('BirthYear')?'<span class="text-red-500">*</span>':''}</label>
+            <label class="block mb-0.5 font-medium ${issBad('BirthYear')?'text-red-600':'text-gray-500'}">🔑 ${bi('ปีเกิด (ค.ศ.)','Birth Year (C.E.)')} ${issBad('BirthYear')?'<span class="text-red-500">*</span>':''}</label>
             ${inp('ce_BirthYear', r.BirthYear, '1995', issBad('BirthYear'))}
           </div>
           <div>
-            <label class="block mb-0.5 font-medium ${issBad('IDCard')?'text-red-600':'text-gray-500'}">เลขบัตรประชาชน ${issBad('IDCard')?'<span class="text-red-500">*</span>':''}</label>
+            <label class="block mb-0.5 font-medium ${issBad('IDCard')?'text-red-600':'text-gray-500'}">${bi('เลขบัตรประชาชน','ID Card')} ${issBad('IDCard')?'<span class="text-red-500">*</span>':''}</label>
             ${inp('ce_IDCard', r.IDCard, '1234567890123', issBad('IDCard'))}
           </div>
           <div>
-            <label class="block mb-0.5 font-medium ${issBad('Institution')?'text-red-600':'text-gray-500'}">สถาบัน ${issBad('Institution')?'<span class="text-red-500">*</span>':''}</label>
+            <label class="block mb-0.5 font-medium ${issBad('Institution')?'text-red-600':'text-gray-500'}">${bi('สถาบัน','Institution')} ${issBad('Institution')?'<span class="text-red-500">*</span>':''}</label>
             ${sel('ce_Institution', r.Institution, ['','MBS','VC','UNI'], issBad('Institution'))}
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">คำนำหน้า</label>
-            ${inp('ce_Title', r.Title, 'นาย / นางสาว', false)}
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('คำนำหน้า','Title')}</label>
+            ${inp('ce_Title', r.Title, bi('นาย / นางสาว','Mr. / Mrs. / Miss'), false)}
           </div>
           <div>
-            <label class="block mb-0.5 font-medium ${issBad('FirstName')?'text-red-600':'text-gray-500'}">ชื่อ (ไทย) ${issBad('FirstName')?'<span class="text-red-500">*</span>':''}</label>
-            ${inp('ce_FirstName', r.FirstName, 'ชื่อภาษาไทย', issBad('FirstName'))}
+            <label class="block mb-0.5 font-medium ${issBad('FirstName')?'text-red-600':'text-gray-500'}">${bi('ชื่อ (ไทย)','First Name (Thai)')} ${issBad('FirstName')?'<span class="text-red-500">*</span>':''}</label>
+            ${inp('ce_FirstName', r.FirstName, bi('ชื่อภาษาไทย','Thai first name'), issBad('FirstName'))}
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">นามสกุล (ไทย)</label>
-            ${inp('ce_LastName', r.LastName, 'นามสกุลภาษาไทย', false)}
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('นามสกุล (ไทย)','Last Name (Thai)')}</label>
+            ${inp('ce_LastName', r.LastName, bi('นามสกุลภาษาไทย','Thai last name'), false)}
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">สถานะ</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('สถานะ','Status')}</label>
             ${sel('ce_Status', r.Status||'Active', ['Active','Inactive','Graduated','Suspended','Alumni'], false)}
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">ชื่อ (อังกฤษ)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('ชื่อ (อังกฤษ)','First Name (English)')}</label>
             ${inp('ce_EngFirstName', r.EngFirstName, 'First name (English)', false)}
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">นามสกุล (อังกฤษ)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('นามสกุล (อังกฤษ)','Last Name (English)')}</label>
             ${inp('ce_EngLastName', r.EngLastName, 'Last name (English)', false)}
           </div>
           <div>
-            <label class="block text-gray-500 mb-0.5 font-medium">ปีทุน (ScholarshipYear)</label>
+            <label class="block text-gray-500 mb-0.5 font-medium">${bi('ปีทุน','Scholarship Year')}</label>
             ${inp('ce_ScholarshipYear', r.ScholarshipYear, '2024', false)}
           </div>
         </div>
         <!-- Action buttons -->
         <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border-t border-gray-100">
-          <button onclick="_csvCloseEdit()" class="btn btn-secondary btn-sm text-xs">✕ ปิด</button>
-          <button onclick="_csvSaveEdit()" class="btn btn-sm text-xs" style="background:#1e3a8a;color:white;border-color:#1e3a8a">💾 บันทึกและตรวจสอบใหม่</button>
-          <button onclick="_csvSaveAndImport()" class="btn btn-sm text-xs" style="background:#16a34a;color:white;border-color:#16a34a">⬆ บันทึกและนำเข้าแถวนี้</button>
+          <button onclick="_csvCloseEdit()" class="btn btn-secondary btn-sm text-xs">${bi('✕ ปิด','✕ Close')}</button>
+          <button onclick="_csvSaveEdit()" class="btn btn-sm text-xs" style="background:#1e3a8a;color:white;border-color:#1e3a8a">${bi('💾 บันทึกและตรวจสอบใหม่','💾 Save and Recheck')}</button>
+          <button onclick="_csvSaveAndImport()" class="btn btn-sm text-xs" style="background:#16a34a;color:white;border-color:#16a34a">${bi('⬆ บันทึกและนำเข้าแถวนี้','⬆ Save and Import This Row')}</button>
         </div>
       </div>
     </td>

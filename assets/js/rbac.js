@@ -280,7 +280,9 @@ const RBAC = {
           el.disabled = true;
           el.style.opacity = '0.4';
           el.style.cursor  = 'not-allowed';
-          el.title = 'นักเรียนสามารถดูผลการเรียนได้ แต่ไม่สามารถแก้ไขได้';
+          el.title = (typeof LANG !== 'undefined' && LANG === 'en')
+            ? 'Students can view grades but cannot edit them.'
+            : 'นักเรียนสามารถดูผลการเรียนได้ แต่ไม่สามารถแก้ไขได้';
         });
         // Hide delete buttons within grade table
         gradeSection.querySelectorAll('button[onclick*="removeGradeRow"]').forEach(el => {

@@ -22,12 +22,13 @@ window.XLSX = {utils:{}};
 window.fetch = async (url, options) => {
  const action = options?.body ? JSON.parse(options.body).action : new URL(url, location.href).searchParams.get('action');
  __calls.push(action);
- const student = {stipNo:'MBS_001',fname:'ทดสอบ',lname:'นักเรียน',fnameEn:'Test',lnameEn:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active',scholarshipYear:2025,entryYear:2025,phone:'0800000000',idCard:'1234567890123'};
+ const student = {stipNo:'MBS_001',fname:'ทดสอบ',lname:'นักเรียน',engFname:'Test',engLname:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active',scholarshipYear:2025,entryYear:2025,phone:'0800000000',idCard:'1234567890123'};
  let data = {status:'success',data:[],rows:[],students:[],pending:[],sessions:{},stats:{Total:1,MBS:1}};
  if (action==='ping') data.status='ok';
- if (['getStudents','getStudentsForPromotion'].includes(action)) data.data=[student];
+ if (action==='getStudents') data.data=[student];
+ if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student'}]}];
  if (action==='getSystemSettings') data.data={STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}]};
- if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',FirstNameEN:'Test',LastNameEN:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
+ if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
  return {ok:true,json:async()=>data};
@@ -85,7 +86,7 @@ const server = http.createServer((req,res)=>{
      if (location.pathname.endsWith('student-form.html')) {document.getElementById('f_institution').value='MBS';onInstitutionChange();document.getElementById('f_level').selectedIndex=2;}
      await new Promise(resolve => setTimeout(resolve, 50));
      const el=document.querySelector('input[type="text"]:not([readonly]):not([disabled])');if(el) el.value='Unsaved ไทย English';
-     window.__beforeInputs=[...document.querySelectorAll('input,select,textarea')].map(e=>[e.id,e.value,e.checked]);
+     window.__beforeInputs=[...document.querySelectorAll('input[id],select[id],textarea[id]')].map(e=>[e.id,e.value,e.checked]);
      return {calls:__calls.length,errors:__errors.slice()};
    })()`);
    const result=await evaluate(`(async()=>{
@@ -93,7 +94,7 @@ const server = http.createServer((req,res)=>{
      await new Promise(resolve => setTimeout(resolve, 0));
      const en=document.documentElement.lang;
      const missing=[...document.querySelectorAll('[data-t]')].filter(e=>!e.getAttribute('data-t-attr') && e.textContent!==t(e.getAttribute('data-t'))).map(e=>e.getAttribute('data-t'));
-     const enInputs=[...document.querySelectorAll('input,select,textarea')].map(e=>[e.id,e.value,e.checked]);
+     const enInputs=[...document.querySelectorAll('input[id],select[id],textarea[id]')].map(e=>[e.id,e.value,e.checked]);
      document.getElementById('langBtn').click();
      await new Promise(resolve => setTimeout(resolve, 0));
      return {en,th:document.documentElement.lang,calls:__calls.length,errors:__errors,missing,enInputs,beforeInputs:__beforeInputs};
@@ -125,6 +126,19 @@ const server = http.createServer((req,res)=>{
      assert.equal(capture.image,'fixture-image');
      assert.ok(capture.labels.includes(initialLang==='th'?'Active':'กำลังศึกษา'),'chart must use report language');
      assert.equal(capture.lang,capture.previous);assert.equal(capture.saved,capture.previousSaved);
+   }
+   if(initialLang==='en' && file==='students.html') {
+     const dynamic=await evaluate(`({institutionLevel:document.querySelector('#studentTableBody tr td:nth-child(3)')?.textContent||'',scholarshipYear:document.querySelector('#studentTableBody tr td:nth-child(4)')?.textContent||''})`);
+     assert.equal(/[ก-๙]/.test(dynamic.institutionLevel),false,'student level must be English');
+     assert.equal(/[ก-๙]/.test(dynamic.scholarshipYear),false,'academic year must be English');
+   }
+   if(initialLang==='en' && file==='academic-results.html') {
+     const dynamic=await evaluate(`(()=>{document.getElementById('fltYear').value='2568';document.getElementById('fltSem').value='1';applyFilters();return document.getElementById('entryGroupsContainer').textContent;})()`);
+     assert.equal(/[ก-๙]/.test(dynamic),false,'grade-entry dynamic UI must be English');
+   }
+   if(initialLang==='en' && file==='student-profile.html') {
+     const dynamic=await evaluate(`document.getElementById('academicInfo').textContent`);
+     assert.equal(/[ก-๙]/.test(dynamic),false,'profile academic UI must be English');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }

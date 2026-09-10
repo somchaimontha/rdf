@@ -630,7 +630,8 @@ let _allGrades   = []; // STUDENT_GRADES from system settings (shared across mod
 function toggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
 
 document.addEventListener('rdf:languagechange', () => {
-  renderTable(); // re-render table with new language labels
+  populateFilterOptions();
+  applyFilters(); // re-render dynamic options, filters, and table labels
 });
 
 // ── Sort key: extract trailing number from StipNo (MBS_350 → 350) ──
@@ -650,29 +651,7 @@ function instLabelBi(code) {
 // ── Level label (bilingual, shortened) ────────────────────────
 // Converts stored long form (e.g. "มัธยมศึกษาปีที่ 4 (Grade 10)") to compact display
 function levelLabelBi(raw) {
-  if (!raw) return '—';
-  if (LANG === 'en') {
-    // Extract English part from parentheses: "มัธยมศึกษาปีที่ 4 (Grade 10)" → "Grade 10"
-    const m = raw.match(/\(([^)]+)\)/);
-    if (m) return m[1];
-    // VC: "ปวช. ชั้นปีที่ 1" → "ปวช. Yr.1", "ปวส. ชั้นปีที่ 2" → "ปวส. Yr.2"
-    const vc = raw.match(/^(ปวช\.|ปวส\.)\s*ชั้นปีที่\s*(\d+)/);
-    if (vc) return vc[1] + ' Yr.' + vc[2];
-    // UNI: "ปริญญาตรี ปีที่ 1" → "Bachelor Yr.1"
-    const uni = raw.match(/ปริญญาตรี.*ปีที่\s*(\d+)/);
-    if (uni) return 'Bachelor Yr.' + uni[1];
-    return raw;
-  }
-  // Thai: shorten "มัธยมศึกษาปีที่ 4 (Grade 10)" → "ม.4"
-  const mbs = raw.match(/มัธยมศึกษาปีที่\s*(\d+)/);
-  if (mbs) return 'ม.' + mbs[1];
-  // "ปวช. ชั้นปีที่ 1" → "ปวช. 1"
-  const vc = raw.match(/^(ปวช\.|ปวส\.)\s*ชั้นปีที่\s*(\d+)/);
-  if (vc) return vc[1] + ' ' + vc[2];
-  // UNI: "ปริญญาตรี ปีที่ 1" → "ป.ตรี ปี 1"
-  const uni = raw.match(/ปริญญาตรี.*ปีที่\s*(\d+)/);
-  if (uni) return 'ป.ตรี ปี ' + uni[1];
-  return raw;
+  return formatLevel(raw);
 }
 
 // ── Build full student object for calcProfileCompletion ───────
@@ -738,25 +717,29 @@ async function loadStudents() {
 function populateFilterOptions() {
   // Academic years (convert to BE for display)
   const yearSel = document.getElementById('filterYear');
+  const selectedYear = yearSel.value;
   const years = getAcademicYears(allStudents);
   yearSel.innerHTML = `<option value="" data-t="allYears">${t('allYears')}</option>`;
   years.forEach(y => {
     const be = parseInt(y) + 543;
     const opt = document.createElement('option');
     opt.value = y;
-    opt.textContent = `ปีการศึกษา ${be} (${y})`;
+    opt.textContent = LANG === 'en' ? `${be} B.E. (${y} C.E.)` : `ปีการศึกษา ${be} (${y})`;
     yearSel.appendChild(opt);
   });
+  yearSel.value = selectedYear;
   // Levels (dynamic based on institution)
   const levels = new Set();
   allStudents.forEach(s => { if (s.level) levels.add(s.level); });
   const levelSel = document.getElementById('filterLevel');
+  const selectedLevel = levelSel.value;
   levelSel.innerHTML = `<option value="" data-t="allLevels">${t('allLevels')}</option>`;
   [...levels].sort().forEach(l => {
     const opt = document.createElement('option');
-    opt.value = l; opt.textContent = l;
+    opt.value = l; opt.textContent = levelLabelBi(l);
     levelSel.appendChild(opt);
   });
+  levelSel.value = selectedLevel;
 }
 
 function applyFilters() {
@@ -844,7 +827,7 @@ function renderTable() {
               const eng = [s.engTitle, s.engFname, s.engLname].filter(Boolean).join(' ');
               return eng
                 ? `<div class="text-xs font-semibold leading-snug" style="color:#2563eb">${eng}</div>`
-                : `<div class="text-xs leading-snug" style="color:#d1d5db">— (ไม่มีชื่อภาษาอังกฤษ)</div>`;
+                : `<div class="text-xs leading-snug" style="color:#d1d5db">— (${bi('ไม่มีชื่อภาษาอังกฤษ','No English name')})</div>`;
             })()}
             <div class="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
               <span>${fmtIDCard(s.idCard)}</span>
@@ -872,7 +855,7 @@ function renderTable() {
         })() : ''}
       </td>
       <td class="hide-mobile text-xs text-gray-500">
-        ${beYear !== '—' ? `ปีการศึกษา ${beYear}` : '—'}
+        ${beYear !== '—' ? formatAcademicYear(beYear) : '—'}
       </td>
       <td class="hide-mobile text-xs">
         ${(() => {
@@ -882,7 +865,7 @@ function renderTable() {
           const ce = parseInt(yr) - 543;
           return `<span class="font-semibold" style="color:${isAlumni ? '#7c3aed' : '#1d4ed8'}">${yr}</span>
                   <span class="text-gray-400"> / ${ce}</span>
-                  ${isAlumni ? '<br><span style="font-size:10px;color:#9ca3af;font-weight:600">ปีสุดท้าย</span>' : ''}`;
+                  ${isAlumni ? `<br><span style="font-size:10px;color:#9ca3af;font-weight:600">${bi('ปีสุดท้าย','Final academic year')}</span>` : ''}`;
         })()}
       </td>
       <td class="text-sm text-gray-600">${fmtPhone(s.phone)}</td>
@@ -923,10 +906,10 @@ function renderTable() {
           </a>
           ${s.status === 'Graduated' && s.uniName && (s.uniScholarship||'').toLowerCase() !== 'no'
             ? `<button onclick="confirmMoveToUni('${s.stipNo}','${(s.uniName||'').replace(/'/g,"&#39;")}')"
-                       title="ย้ายสถานะไปทุนมหาลัย (อนุมัติทุน RDF ต่อ มหาวิทยาลัย)"
+                       title="${bi('ย้ายสถานะไปทุนมหาวิทยาลัย (อนุมัติทุน RDF ต่อมหาวิทยาลัย)','Approve RDF university scholarship and move to University status')}"
                        style="background:#ede9fe;color:#6d28d9;border:1.5px solid #c4b5fd;border-radius:8px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1.3;white-space:nowrap">
                  <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
-                 <span>อนุมัติทุน ม.</span>
+                 <span>${bi('อนุมัติทุน ม.','Approve university')}</span>
                </button>`
             : ''}
           <button onclick="confirmDelete('${s.stipNo}')" title="${t('delete')}"
@@ -984,8 +967,8 @@ function resetFilters() {
 
 function updateActiveFilters(f) {
   const tags = [];
-  if (f.q)      tags.push(`ค้นหา: "${f.q}"`);
-  if (f.inst)   tags.push(instLabel(f.inst));
+  if (f.q)      tags.push(`${bi('ค้นหา','Search')}: "${f.q}"`);
+  if (f.inst)   tags.push(instLabelBi(f.inst));
   if (f.status) {
     const _statusLabel = f.status === 'Alumni' ? (LANG==='en'?'Alumni (All)':'ศิษย์เก่า (ทุกประเภท)')
       : f.status === 'Continued' ? t('continuedScholarship')
@@ -993,7 +976,7 @@ function updateActiveFilters(f) {
     tags.push(_statusLabel);
   }
   if (f.level)  tags.push(levelLabelBi(f.level));
-  if (f.year)   tags.push(`ปีการศึกษา ${parseInt(f.year)+543}`);
+  if (f.year)   tags.push(formatAcademicYear(f.year));
   const wrap = document.getElementById('activeFiltersWrap');
   const tagEl = document.getElementById('activeFilterTags');
   if (tags.length) {
@@ -1125,21 +1108,21 @@ function closeGradeModal() {
 async function confirmMoveToUni(stipNo, uniName) {
   const { isConfirmed } = await Swal.fire({
     icon: 'question',
-    title: 'อนุมัติทุนมหาวิทยาลัย',
+    title: bi('อนุมัติทุนมหาวิทยาลัย', 'Approve University Scholarship'),
     html: `<div style="text-align:left;font-size:14px;line-height:1.8">
       <b>${stipNo}</b><br>
-      ยืนยันการอนุมัติทุน RDF ให้นักเรียนเข้าศึกษาต่อมหาวิทยาลัย<br>
+      ${bi('ยืนยันการอนุมัติทุน RDF ให้นักเรียนเข้าศึกษาต่อมหาวิทยาลัย','Confirm the RDF scholarship for this student to continue at university.')}<br>
       <span style="color:#6d28d9;font-weight:700">${uniName || '—'}</span><br>
-      <span style="color:#6b7280;font-size:12px">สถานะจะเปลี่ยนจาก <b>ศิษย์เก่า</b> → <b>Active (University / ชั้นปีที่ 1)</b></span>
+      <span style="color:#6b7280;font-size:12px">${bi('สถานะจะเปลี่ยนจาก <b>ศิษย์เก่า</b> → <b>กำลังศึกษา (มหาวิทยาลัย / ชั้นปีที่ 1)</b>','Status will change from <b>Alumni</b> → <b>Active (University / Year 1)</b>')}</span>
     </div>`,
     showCancelButton: true,
     confirmButtonColor: '#6d28d9',
-    confirmButtonText: '✓ อนุมัติ',
-    cancelButtonText: 'ยกเลิก'
+    confirmButtonText: bi('✓ อนุมัติ', '✓ Approve'),
+    cancelButtonText: t('cancel')
   });
   if (!isConfirmed) return;
 
-  showLoader(true, 'กำลังอัปเดตสถานะ…');
+  showLoader(true, bi('กำลังอัปเดตสถานะ…', 'Updating status…'));
   try {
     const today = new Date().toISOString().slice(0,10);
     const r = await API.promoteStudents(
@@ -1150,8 +1133,8 @@ async function confirmMoveToUni(stipNo, uniName) {
     showLoader(false);
     if (r.status === 'success') {
       await Swal.fire({
-        icon: 'success', title: 'อนุมัติสำเร็จ',
-        html: `<b>${stipNo}</b> ย้ายไปอยู่ในกลุ่ม University (ชั้นปีที่ 1) แล้ว`,
+        icon: 'success', title: bi('อนุมัติสำเร็จ', 'Scholarship Approved'),
+        html: bi(`<b>${stipNo}</b> ย้ายไปอยู่ในกลุ่มมหาวิทยาลัย (ชั้นปีที่ 1) แล้ว`, `<b>${stipNo}</b> has moved to University (Year 1).`),
         timer: 2500, showConfirmButton: false
       });
       // Update local data so the row reflects the new status without a full reload
@@ -1164,12 +1147,12 @@ async function confirmMoveToUni(stipNo, uniName) {
       applyFilters();
     } else {
       RDF.logError('students.html', 'confirmMoveToUni()', r.message || 'failed');
-      Swal.fire('ผิดพลาด', r.message || 'ไม่สามารถอัปเดตสถานะได้', 'error');
+      Swal.fire(t('error'), r.message || bi('ไม่สามารถอัปเดตสถานะได้','Unable to update status.'), 'error');
     }
   } catch(e) {
     showLoader(false);
     RDF.logError('students.html', 'confirmMoveToUni()', e.message || 'network error');
-    Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+    Swal.fire(t('error'), t('network_error'), 'error');
   }
 }
 
@@ -1223,12 +1206,12 @@ let _dupScanStart  = 0;
 // Steps: [label, barWidth, activeStep(1-4), stepLabel]
 // Extended to 40s — GAS can have cold-start delays up to ~30s
 const _DUP_STEPS = [
-  { bar:8,  step:1, label:'กำลังโหลดข้อมูลจากฐานข้อมูล...', t:0     },
-  { bar:25, step:1, label:'กำลังโหลดข้อมูลจากฐานข้อมูล...', t:4000  },
-  { bar:40, step:2, label:'กำลังตรวจสอบเลขบัตรประชาชน...',  t:10000 },
-  { bar:58, step:3, label:'กำลังตรวจสอบชื่อ-นามสกุลภาษาไทย...', t:18000 },
-  { bar:74, step:4, label:'กำลังตรวจสอบชื่อภาษาอังกฤษ...',  t:27000 },
-  { bar:88, step:4, label:'กำลังจัดกลุ่มและสรุปผล...',       t:35000 }
+  { bar:8,  step:1, th:'กำลังโหลดข้อมูลจากฐานข้อมูล...', en:'Loading data from the database...', t:0     },
+  { bar:25, step:1, th:'กำลังโหลดข้อมูลจากฐานข้อมูล...', en:'Loading data from the database...', t:4000  },
+  { bar:40, step:2, th:'กำลังตรวจสอบเลขบัตรประชาชน...',  en:'Checking ID card numbers...', t:10000 },
+  { bar:58, step:3, th:'กำลังตรวจสอบชื่อ-นามสกุลภาษาไทย...', en:'Checking Thai names...', t:18000 },
+  { bar:74, step:4, th:'กำลังตรวจสอบชื่อภาษาอังกฤษ...',  en:'Checking English names...', t:27000 },
+  { bar:88, step:4, th:'กำลังจัดกลุ่มและสรุปผล...',       en:'Grouping and summarizing results...', t:35000 }
 ];
 
 function _dupStartScanAnim(totalKnown) {
@@ -1238,7 +1221,7 @@ function _dupStartScanAnim(totalKnown) {
   document.getElementById('dupScanCount').textContent = '0';
   document.getElementById('dupScanTotal').textContent = totalKnown ? totalKnown : '...';
   document.getElementById('dupScanElapsed').textContent = '0';
-  document.getElementById('dupScanLabel').textContent = 'กำลังโหลดข้อมูลจากฐานข้อมูล...';
+  document.getElementById('dupScanLabel').textContent = bi('กำลังโหลดข้อมูลจากฐานข้อมูล...','Loading data from the database...');
   _dupResetSteps();
 
   // Elapsed time ticker
@@ -1250,7 +1233,7 @@ function _dupStartScanAnim(totalKnown) {
     for (let i = _DUP_STEPS.length - 1; i >= 0; i--) {
       if (elapsed * 1000 >= _DUP_STEPS[i].t) {
         document.getElementById('dupScanBar').style.width = _DUP_STEPS[i].bar + '%';
-        document.getElementById('dupScanLabel').textContent = _DUP_STEPS[i].label;
+        document.getElementById('dupScanLabel').textContent = LANG === 'en' ? _DUP_STEPS[i].en : _DUP_STEPS[i].th;
         _dupSetActiveStep(_DUP_STEPS[i].step);
         // Simulate count increment (rough estimate)
         if (totalKnown && _DUP_STEPS[i].bar < 90) {
@@ -1310,7 +1293,7 @@ async function openDupModal() {
   lucide.createIcons();
   _dupGroups = []; _dupIdx = 0; _dupMerged = 0; _dupSkipped = 0; _dupPrimary = -1;
   _showDupState('scanning');
-  document.getElementById('dupModalSubtitle').textContent = 'กำลังวิเคราะห์...';
+  document.getElementById('dupModalSubtitle').textContent = bi('กำลังวิเคราะห์...','Analyzing...');
   document.getElementById('dupProgressBar').style.width = '0%';
   document.getElementById('dupStatBar').style.display = 'none';
 
@@ -1321,19 +1304,19 @@ async function openDupModal() {
   try {
     // 90-second hard timeout — GAS cold-start can be slow, but should never exceed this
     const timeout = new Promise((_, rej) =>
-      setTimeout(() => rej(new Error('หมดเวลาเชื่อมต่อ (90 วินาที) — GAS ไม่ตอบสนอง โปรดลองอีกครั้ง')), 90000)
+      setTimeout(() => rej(new Error(t('connectionTimeout'))), 90000)
     );
     const res = await Promise.race([API.findDuplicates(), timeout]);
     _dupStopScanAnim();
 
     if (res.status !== 'success') {
-      Swal.fire('ข้อผิดพลาด', res.message, 'error');
+      Swal.fire(t('error'), res.message, 'error');
       closeDupModal(); return;
     }
 
     // Finish progress bar
     document.getElementById('dupScanBar').style.width = '100%';
-    document.getElementById('dupScanLabel').textContent = 'วิเคราะห์เสร็จสิ้น ✓';
+    document.getElementById('dupScanLabel').textContent = bi('วิเคราะห์เสร็จสิ้น ✓','Analysis complete ✓');
     _dupSetActiveStep(5);
     if (knownTotal) {
       document.getElementById('dupScanCount').textContent = res.scanned || knownTotal;
@@ -1352,12 +1335,12 @@ async function openDupModal() {
     if (_dupGroups.length === 0) {
       _showDupState('none');
       document.getElementById('dupModalSubtitle').textContent =
-        `ตรวจสอบ ${scanned} นักเรียน · ไม่พบซ้ำ`;
+        bi(`ตรวจสอบ ${scanned} นักเรียน · ไม่พบซ้ำ`, `Checked ${scanned} students · no duplicates found`);
       document.getElementById('statScannedNone').textContent = scanned;
       lucide.createIcons();
     } else {
       document.getElementById('dupModalSubtitle').textContent =
-        `ตรวจสอบ ${scanned} นักเรียน · พบ ${_dupGroups.length} กลุ่มซ้ำ`;
+        bi(`ตรวจสอบ ${scanned} นักเรียน · พบ ${_dupGroups.length} กลุ่มซ้ำ`, `Checked ${scanned} students · ${_dupGroups.length} duplicate group(s) found`);
       _dupShowStats(scanned, byReason, _dupGroups.length);
       _dupIdx = 0;
       _renderDupGroup();
@@ -1366,13 +1349,13 @@ async function openDupModal() {
   } catch(e) {
     _dupStopScanAnim();
     _showDupState('scanning');  // keep modal open so user can retry
-    document.getElementById('dupScanLabel').textContent = 'เกิดข้อผิดพลาด — กดปิดแล้วลองใหม่';
+    document.getElementById('dupScanLabel').textContent = bi('เกิดข้อผิดพลาด — กดปิดแล้วลองใหม่','An error occurred — close this dialog and try again.');
     document.getElementById('dupScanBar').style.width   = '0%';
     Swal.fire({
       icon: 'error',
-      title: 'ตรวจสอบไม่สำเร็จ',
-      text: e.message || 'เชื่อมต่อ GAS ไม่ได้',
-      confirmButtonText: 'ปิด',
+      title: bi('ตรวจสอบไม่สำเร็จ','Check Failed'),
+      text: localizeApiMessage(e.message || bi('เชื่อมต่อ GAS ไม่ได้','Unable to connect to the service.')),
+      confirmButtonText: bi('ปิด','Close'),
       confirmButtonColor: '#b45309'
     }).then(() => closeDupModal());
   }
@@ -1392,7 +1375,9 @@ function _showDupState(state) {
 }
 
 function _dupReasonLabel(reason, confidence) {
-  const labels = { IDCard:'เลขบัตรประชาชนซ้ำ', ThaiName:'ชื่อไทยซ้ำ', EngName:'ชื่ออังกฤษซ้ำ' };
+  const labels = LANG === 'en'
+    ? { IDCard:'Duplicate ID card', ThaiName:'Duplicate Thai name', EngName:'Duplicate English name' }
+    : { IDCard:'เลขบัตรประชาชนซ้ำ', ThaiName:'ชื่อไทยซ้ำ', EngName:'ชื่ออังกฤษซ้ำ' };
   const colors  = { high:'background:#fee2e2;color:#991b1b', medium:'background:#fef3c7;color:#92400e' };
   return { label: labels[reason] || reason, style: colors[confidence] || colors.medium };
 }
@@ -1406,7 +1391,7 @@ function _renderDupGroup() {
   document.getElementById('dupProgressBar').style.width = Math.round((_dupIdx / total) * 100) + '%';
 
   // Nav labels
-  document.getElementById('dupGroupBadge').textContent = `กลุ่มที่ ${_dupIdx + 1}`;
+  document.getElementById('dupGroupBadge').textContent = bi(`กลุ่มที่ ${_dupIdx + 1}`, `Group ${_dupIdx + 1}`);
   document.getElementById('dupNavLabel').textContent   = `${_dupIdx + 1} / ${total}`;
   document.getElementById('dupPrevBtn').disabled = _dupIdx === 0;
   document.getElementById('dupNextBtn').disabled = _dupIdx === total - 1;
@@ -1422,7 +1407,7 @@ function _renderDupGroup() {
   const mv = g.reason === 'IDCard'
     ? g.matchValue.substring(0,3) + '─────────' + g.matchValue.slice(-2) + ' (' + g.matchValue + ')'
     : g.matchValue;
-  mvEl.textContent = 'ตรงกัน: ' + mv;
+  mvEl.textContent = `${bi('ตรงกัน','Matched')}: ${mv}`;
 
   // Normalize _rowIdx to integer for safe API calls
   g.students.forEach(s => { s._rowIdx = parseInt(s._rowIdx) || 0; });
@@ -1461,14 +1446,14 @@ function _renderDupGroup() {
       .filter(v => v && v.trim()).length;
     return `
     <div class="rounded-xl p-3 transition select-none" style="${cardStyle}"
-         onclick="dupSelectPrimary(${arrayIdx})" title="${isPrimary ? 'ข้อมูลหลัก (จะถูกเก็บไว้)' : 'คลิกเพื่อเลือกเป็นข้อมูลหลัก'}">
+         onclick="dupSelectPrimary(${arrayIdx})" title="${isPrimary ? bi('ข้อมูลหลัก (จะถูกเก็บไว้)','Primary record (will be kept)') : bi('คลิกเพื่อเลือกเป็นข้อมูลหลัก','Select as the primary record')}">
       <div class="flex items-start justify-between mb-2">
         <span class="text-xs font-bold px-2 py-0.5 rounded" style="${badgeStyle}">
-          ${isPrimary ? '★ ข้อมูลหลัก' : '○ คลิกเพื่อเลือก'}
+          ${isPrimary ? bi('★ ข้อมูลหลัก','★ Primary') : bi('○ คลิกเพื่อเลือก','○ Click to select')}
         </span>
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <span class="text-xs font-semibold" style="color:${sColor}">${s.status||'—'}</span>
-          <span class="text-xs text-gray-300" title="ความสมบูรณ์ของข้อมูล">${score}/7</span>
+          <span class="text-xs text-gray-300" title="${bi('ความสมบูรณ์ของข้อมูล','Data completeness')}">${score}/7</span>
         </div>
       </div>
       <p class="font-bold text-xs text-amber-700 mb-0.5 font-mono">StipNo: ${s.stipNo} <span class="text-gray-300 font-normal">(row ${s._rowIdx})</span></p>
@@ -1476,11 +1461,11 @@ function _renderDupGroup() {
       ${s.engFirstName ? `<p class="text-xs text-gray-400">${s.engFirstName} ${s.engLastName||''}</p>` : ''}
       <div class="mt-2 pt-2 border-t border-gray-100 space-y-0.5 text-xs text-gray-500">
         <div><b>${LANG==='en'?'Institution':'สถาบัน'}:</b> ${instLabelBi(s.institution)} | <b>${LANG==='en'?'Level':'ระดับ'}:</b> ${levelLabelBi(s.level)}</div>
-        <div><b>ปีเกิด:</b> ${s.birthYear||'—'} | <b>โทร:</b> ${s.phone||'—'}</div>
-        ${s.idCard ? `<div class="font-mono text-blue-600"><b>บัตร:</b> ${s.idCard.substring(0,3)}-${s.idCard.substring(3,9)}-${s.idCard.substring(9)}</div>` : '<div class="text-red-300">บัตร: ไม่มีข้อมูล</div>'}
-        <div class="text-gray-300"><b>สร้าง:</b> ${s.createdAt||'—'}</div>
+        <div><b>${bi('ปีเกิด','Birth year')}:</b> ${s.birthYear||'—'} | <b>${bi('โทร','Phone')}:</b> ${s.phone||'—'}</div>
+        ${s.idCard ? `<div class="font-mono text-blue-600"><b>${bi('บัตร','ID')}:</b> ${s.idCard.substring(0,3)}-${s.idCard.substring(3,9)}-${s.idCard.substring(9)}</div>` : `<div class="text-red-300">${bi('บัตร: ไม่มีข้อมูล','ID: No data')}</div>`}
+        <div class="text-gray-300"><b>${bi('สร้าง','Created')}:</b> ${s.createdAt||'—'}</div>
       </div>
-      ${isPrimary ? '<div class="mt-2 text-xs text-amber-700 font-semibold text-center">✓ จะเก็บระเบียนนี้ไว้</div>' : ''}
+      ${isPrimary ? `<div class="mt-2 text-xs text-amber-700 font-semibold text-center">${bi('✓ จะเก็บระเบียนนี้ไว้','✓ This record will be kept')}</div>` : ''}
     </div>`;
   }).join('');
   lucide.createIcons();
@@ -1511,7 +1496,7 @@ async function dupMerge() {
   const g = _dupGroups[_dupIdx];
   // _dupPrimary is a 0-based array index
   if (!g || _dupPrimary < 0 || _dupPrimary >= g.students.length) {
-    Swal.fire('แจ้งเตือน', 'กรุณาเลือกข้อมูลหลักก่อน (คลิกที่การ์ด)', 'warning');
+    Swal.fire(t('warning'), bi('กรุณาเลือกข้อมูลหลักก่อน (คลิกที่การ์ด)','Select the primary record first by clicking a card.'), 'warning');
     return;
   }
 
@@ -1521,23 +1506,23 @@ async function dupMerge() {
   if (!toMerge.length) return;
 
   // Build confirm dialog info
-  const primaryLabel = `[แถว ${primaryRec._rowIdx}] ${primaryRec.stipNo||'?'} — ${((primaryRec.title||'')+' '+(primaryRec.firstName||'')+' '+(primaryRec.lastName||'')).trim()}`;
-  const mergeLabels  = toMerge.map(s => `[แถว ${s._rowIdx}] ${s.stipNo||'?'} — ${((s.title||'')+' '+(s.firstName||'')+' '+(s.lastName||'')).trim()}`);
+  const primaryLabel = `[${bi('แถว','row')} ${primaryRec._rowIdx}] ${primaryRec.stipNo||'?'} — ${((primaryRec.title||'')+' '+(primaryRec.firstName||'')+' '+(primaryRec.lastName||'')).trim()}`;
+  const mergeLabels  = toMerge.map(s => `[${bi('แถว','row')} ${s._rowIdx}] ${s.stipNo||'?'} — ${((s.title||'')+' '+(s.firstName||'')+' '+(s.lastName||'')).trim()}`);
 
   const cf = await Swal.fire({
-    title: 'ยืนยันการผสาน',
+    title: bi('ยืนยันการผสาน','Confirm Merge'),
     html: `<div class="text-left text-sm space-y-2">
-      <p>ข้อมูลหลัก (เก็บไว้):<br><b class="text-amber-800">${primaryLabel}</b></p>
-      <p>ลบออก (${mergeLabels.length} รายการ):<br>${mergeLabels.map(l=>`<b class="text-red-600">${l}</b>`).join('<br>')}</p>
-      <p class="text-gray-400 text-xs mt-2">ข้อมูลที่ขาดหายในข้อมูลหลักจะถูกเติมจากระเบียนที่ลบ</p>
+      <p>${bi('ข้อมูลหลัก (เก็บไว้)','Primary record (kept)')}:<br><b class="text-amber-800">${primaryLabel}</b></p>
+      <p>${bi(`ลบออก (${mergeLabels.length} รายการ)`,`Remove (${mergeLabels.length} record(s))`)}:<br>${mergeLabels.map(l=>`<b class="text-red-600">${l}</b>`).join('<br>')}</p>
+      <p class="text-gray-400 text-xs mt-2">${bi('ข้อมูลที่ขาดหายในข้อมูลหลักจะถูกเติมจากระเบียนที่ลบ','Missing fields in the primary record will be filled from the removed records.')}</p>
     </div>`,
     icon: 'warning', showCancelButton: true,
-    confirmButtonText: 'ผสานและลบ', cancelButtonText: 'ยกเลิก',
+    confirmButtonText: bi('ผสานและลบ','Merge and Remove'), cancelButtonText: t('cancel'),
     confirmButtonColor: '#b45309'
   });
   if (!cf.isConfirmed) return;
 
-  showLoader(true, 'กำลังผสานข้อมูล...');
+  showLoader(true, bi('กำลังผสานข้อมูล...','Merging records...'));
   try {
     let allOk = true;
     // Sort descending by rowIdx — delete higher rows first so lower indices don't shift
@@ -1546,7 +1531,7 @@ async function dupMerge() {
       const res = await API.mergeStudentRows(primaryRec._rowIdx, rec._rowIdx);
       if (res.status !== 'success') {
         showLoader(false);
-        Swal.fire('ผสานไม่สำเร็จ', res.message || 'เกิดข้อผิดพลาด', 'error');
+        Swal.fire(bi('ผสานไม่สำเร็จ','Merge Failed'), res.message || t('error'), 'error');
         allOk = false; break;
       }
     }
@@ -1568,19 +1553,19 @@ async function dupMerge() {
     }
 
     Swal.fire({ toast:true, position:'top-end', icon:'success',
-      title:`ผสานสำเร็จ ${toMerge.length} ระเบียน → ${primaryRec.stipNo||'แถว '+primaryRec._rowIdx}`, timer:3000, showConfirmButton:false });
+      title:bi(`ผสานสำเร็จ ${toMerge.length} ระเบียน → ${primaryRec.stipNo||'แถว '+primaryRec._rowIdx}`, `Merged ${toMerge.length} record(s) → ${primaryRec.stipNo||'row '+primaryRec._rowIdx}`), timer:3000, showConfirmButton:false });
 
     if (_dupGroups.length === 0) {
       _showDupDone();
     } else {
       if (_dupIdx >= _dupGroups.length) _dupIdx = _dupGroups.length - 1;
       _dupPrimary = -1;
-      document.getElementById('dupModalSubtitle').textContent = `เหลือ ${_dupGroups.length} กลุ่ม`;
+      document.getElementById('dupModalSubtitle').textContent = bi(`เหลือ ${_dupGroups.length} กลุ่ม`, `${_dupGroups.length} group(s) remaining`);
       _renderDupGroup();
     }
   } catch(e) {
     showLoader(false);
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
   }
 }
 
@@ -1588,9 +1573,9 @@ function _showDupDone() {
   _showDupState('done');
   document.getElementById('dupProgressBar').style.width = '100%';
   document.getElementById('dupDoneMsg').textContent =
-    _dupMerged > 0 ? `ผสานสำเร็จ ${_dupMerged} กลุ่ม` : 'ตรวจสอบครบทุกกลุ่มแล้ว';
+    _dupMerged > 0 ? bi(`ผสานสำเร็จ ${_dupMerged} กลุ่ม`, `Merged ${_dupMerged} group(s)`) : bi('ตรวจสอบครบทุกกลุ่มแล้ว','All groups reviewed');
   document.getElementById('dupDoneDetail').textContent =
-    `ผสาน ${_dupMerged} กลุ่ม · ข้าม ${_dupSkipped} กลุ่ม`;
+    bi(`ผสาน ${_dupMerged} กลุ่ม · ข้าม ${_dupSkipped} กลุ่ม`, `Merged ${_dupMerged} group(s) · skipped ${_dupSkipped} group(s)`);
   lucide.createIcons();
 }
 

@@ -538,7 +538,7 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
   document.getElementById('profileBadges').innerHTML = `
     <span class="badge ${stColor}">${stLabel}</span>
     <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff">${instLabel(d.Institution)}</span>
-    ${d.CurrentLevel ? `<span class="badge" style="background:rgba(255,255,255,0.2);color:#fff">${d.CurrentLevel}</span>` : ''}`;
+    ${d.CurrentLevel ? `<span class="badge" style="background:rgba(255,255,255,0.2);color:#fff">${formatLevel(d.CurrentLevel)}</span>` : ''}`;
 
   // Document title
   document.querySelector('title').removeAttribute('data-t');
@@ -549,10 +549,10 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
   const beEntry = d.EntryYear ? parseInt(d.EntryYear)+543 : '—';
   document.getElementById('academicInfo').innerHTML = infoSection([
     [lang==='th'?'สถานที่ศึกษา':'Institution',         instLabel(d.Institution)],
-    [lang==='th'?'ระดับชั้น':'Current Level',          d.CurrentLevel],
+    [lang==='th'?'ระดับชั้น':'Current Level',          formatLevel(d.CurrentLevel)],
     [lang==='th'?'รหัสนักเรียน':'Student ID',          d.StudentID],
-    [lang==='th'?'ปีที่ได้รับทุน':'Scholarship Year',  `${beYear} (${d.ScholarshipYear||'—'})`],
-    [lang==='th'?'ปีที่เข้าเรียน/ภาค':'Entry Year/Term',`${beEntry} / ภาค ${d.EntryTerm||'—'}`],
+    [lang==='th'?'ปีที่ได้รับทุน':'Scholarship Year',  lang==='en' ? formatAcademicYear(d.ScholarshipYear) : `${beYear} (${d.ScholarshipYear||'—'})`],
+    [lang==='th'?'ปีที่เข้าเรียน/ภาค':'Entry Year/Term',lang==='en' ? `${formatAcademicYear(d.EntryYear)} / Term ${d.EntryTerm||'—'}` : `${beEntry} / ภาค ${d.EntryTerm||'—'}`],
     [lang==='th'?'สาขาวิชา':'Major',                  d.Major],
     [lang==='th'?'แผนกวิชา':'Department',             d.Department],
     [lang==='th'?'สถานศึกษาเดิม':'Previous School',   d.OldSchool],
@@ -577,13 +577,13 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
     [lang==='th'?'สัญชาติ':'Nationality', d.Nationality],
     [lang==='th'?'ศาสนา':'Religion',     d.Religion],
     [lang==='th'?'ความสามารถพิเศษ':'Special Talents', d.Talent||'—'],
-    [lang==='th'?'น้ำหนัก/ส่วนสูง':'Weight/Height', `${d.Weight||'—'} กก. / ${d.Height||'—'} ซม.`],
+    [lang==='th'?'น้ำหนัก/ส่วนสูง':'Weight/Height', lang==='en' ? `${d.Weight||'—'} kg / ${d.Height||'—'} cm` : `${d.Weight||'—'} กก. / ${d.Height||'—'} ซม.`],
     [lang==='th'?'หมู่เลือด':'Blood Type', d.BloodType||'—'],
-    [lang==='th'?'โรคประจำตัว':'Disease', d.Disease||lang==='th'?'ไม่มี':'None'],
+    [lang==='th'?'โรคประจำตัว':'Disease', d.Disease || (lang==='th'?'ไม่มี':'None')],
   ]);
 
   // Contact
-  const addr = [d.Village, d.HouseNo?`เลขที่ ${d.HouseNo}`:'', d.Moo?`หมู่ ${d.Moo}`:'', d.Tambon, d.Amphoe, d.Province].filter(Boolean).join(', ');
+  const addr = [d.Village, d.HouseNo?`${lang==='th'?'เลขที่':'No.'} ${d.HouseNo}`:'', d.Moo?`${lang==='th'?'หมู่':'Village No.'} ${d.Moo}`:'', d.Tambon, d.Amphoe, d.Province].filter(Boolean).join(', ');
   document.getElementById('contactInfo').innerHTML = infoSection([
     [lang==='th'?'โทรศัพท์ 1':'Phone 1',  fmtPhone(d.Phone1)],
     [lang==='th'?'โทรศัพท์ 2':'Phone 2',  d.Phone2 ? fmtPhone(d.Phone2) : '—'],
@@ -597,9 +597,9 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
     [lang==='th'?'สถานภาพบิดา-มารดา':'Parents Status',
       d.ParentStatus + (d.ParentStatusOther?` — ${d.ParentStatusOther}`:'')],
     [lang==='th'?'บิดา':'Father',
-      fName + (d.Parent1_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${fmtIDCard(d.Parent1_IDCard)}</span>` : '')],
+      fName + (d.Parent1_IDCard ? `<br><span class="text-xs text-gray-400">${lang==='th'?'บัตรประชาชน':'ID Card'}: ${fmtIDCard(d.Parent1_IDCard)}</span>` : '')],
     [lang==='th'?'มารดา/ผู้ปกครอง':'Mother/Guardian',
-      mName + (d.Parent2_IDCard ? `<br><span class="text-xs text-gray-400">บัตรประชาชน: ${fmtIDCard(d.Parent2_IDCard)}</span>` : '')],
+      mName + (d.Parent2_IDCard ? `<br><span class="text-xs text-gray-400">${lang==='th'?'บัตรประชาชน':'ID Card'}: ${fmtIDCard(d.Parent2_IDCard)}</span>` : '')],
   ]);
 
   // University
@@ -653,7 +653,7 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
   const _colorFor    = pct => pct===100 ? '#16a34a' : pct>=50 ? '#d97706' : '#dc2626';
   const _secBars = _comp.sections.map(s => `
     <div class="flex items-center gap-2 mb-2">
-      <span class="text-xs text-gray-500 flex-shrink-0" style="width:130px">${s.label_th}</span>
+      <span class="text-xs text-gray-500 flex-shrink-0" style="width:130px">${lang==='en'?s.label_en:s.label_th}</span>
       <div style="flex:1;height:7px;background:#e2e8f0;border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.07)">
         <div class="completion-bar-fill" style="height:100%;width:0;background:${_gradientFor(s.pct)};border-radius:10px;transition:width 0.8s cubic-bezier(.4,0,.2,1)" data-target="${s.pct}"></div>
       </div>
@@ -684,7 +684,7 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
     <div class="card-header flex items-center justify-between" style="background:${_mainGradient}">
       <div class="flex items-center gap-2">
         <i data-lucide="shield-check" class="w-4 h-4"></i>
-        <span class="font-semibold">ความสมบูรณ์ของโปรไฟล์</span>
+        <span class="font-semibold">${lang==='th'?'ความสมบูรณ์ของโปรไฟล์':'Profile Completion'}</span>
       </div>
       <div class="flex items-center gap-2">
         <div style="width:80px;height:6px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden">
@@ -700,12 +700,12 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">${_secBars}</div>
       ${_comp.pct < 100 ? `<div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
-        <p class="text-xs text-gray-500">${_isStudentView ? 'กรุณากรอกข้อมูลให้ครบเพื่อให้มูลนิธิสามารถติดต่อและดูแลท่านได้อย่างครบถ้วน' : 'ข้อมูลนักเรียนยังไม่สมบูรณ์'}</p>
+        <p class="text-xs text-gray-500">${_isStudentView ? bi('กรุณากรอกข้อมูลให้ครบเพื่อให้มูลนิธิสามารถติดต่อและดูแลท่านได้อย่างครบถ้วน','Please complete your information so the foundation can contact and support you.') : bi('ข้อมูลนักเรียนยังไม่สมบูรณ์','The student profile is incomplete.')}</p>
         <a href="student-form.html?stipNo=${encodeURIComponent(d.StipNo||'')}" class="btn btn-warning btn-sm">
-          <i data-lucide="edit" class="w-3.5 h-3.5"></i> กรอกข้อมูลเพิ่มเติม
+          <i data-lucide="edit" class="w-3.5 h-3.5"></i> ${bi('กรอกข้อมูลเพิ่มเติม','Complete profile')}
         </a>
       </div>` : `<div class="mt-3 flex items-center justify-center gap-2 text-green-700 font-semibold text-sm">
-        <i data-lucide="check-circle-2" class="w-4 h-4"></i> ข้อมูลครบถ้วนสมบูรณ์
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i> ${bi('ข้อมูลครบถ้วนสมบูรณ์','Profile complete')}
       </div>`}
     </div>`;
 
@@ -934,7 +934,7 @@ function renderPromoHistory(rows, lang) {
     graduate:      { th:'สำเร็จการศึกษา',          en:'Graduated',               color:'#059669', bg:'#f0fdf4', icon:'graduation-cap' },
     uni:           { th:'เรียนต่อมหาวิทยาลัย',     en:'University (RDF)',         color:'#7c3aed', bg:'#faf5ff', icon:'building-2' },
     uni_own:       { th:'เรียนต่อ ม. (ทุนตัวเอง)', en:'University (Own Funding)', color:'#9333ea', bg:'#fdf4ff', icon:'building-2' },
-    continue_inst: { th:'จบ ปวช. + ต่อ ปวส.',      en:'Grad ปวช. + Continue ปวส.',color:'#0d9488', bg:'#f0fdfa', icon:'award' },
+    continue_inst: { th:'จบ ปวช. + ต่อ ปวส.',      en:'Vocational Certificate → Higher Vocational Certificate',color:'#0d9488', bg:'#f0fdfa', icon:'award' },
     resign:        { th:'ลาออก',                   en:'Resigned',                color:'#dc2626', bg:'#fef2f2', icon:'log-out' },
     withdraw_sch:  { th:'ถอนทุน',                  en:'Scholarship Withdrawn',   color:'#b91c1c', bg:'#fef2f2', icon:'x-circle' },
     hold:          { th:'พักการเรียน',              en:'On Hold',                 color:'#d97706', bg:'#fffbeb', icon:'pause-circle' },
@@ -972,8 +972,8 @@ function renderPromoHistory(rows, lang) {
               <i data-lucide="${a.icon}" style="width:10px;height:10px"></i>${lbl}
             </span>
             <span style="font-size:12px;color:#374151;display:flex;align-items:center;gap:4px">
-              <span style="color:#6b7280">${r.OldLevel||'—'}</span>
-              ${r.NewLevel ? `<i data-lucide="arrow-right" style="width:11px;height:11px;color:#9ca3af"></i><span style="font-weight:600;color:${a.color}">${r.NewLevel}</span>` : ''}
+              <span style="color:#6b7280">${formatLevel(r.OldLevel,lang)}</span>
+              ${r.NewLevel ? `<i data-lucide="arrow-right" style="width:11px;height:11px;color:#9ca3af"></i><span style="font-weight:600;color:${a.color}">${formatLevel(r.NewLevel,lang)}</span>` : ''}
             </span>
           </div>
           <div style="font-size:10px;color:#9ca3af;white-space:nowrap;flex-shrink:0">

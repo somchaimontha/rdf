@@ -762,19 +762,19 @@ function renderTermList() {
 
           <!-- Actions -->
           <div style="display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid #f3f4f6">
-            <button onclick="editTerm('${term.id}')" title="แก้ไข"
+            <button onclick="editTerm('${term.id}')" title="${t('edit')}"
                     style="flex:1;padding:5px 0;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;
                            border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:flex;
                            align-items:center;justify-content:center;gap:3px">
               <i data-lucide="edit" style="width:12px;height:12px"></i> ${isEN?'Edit':'แก้ไข'}
             </button>
-            <button onclick="sendTermNotif('${term.id}')" title="แจ้งเตือน"
+            <button onclick="sendTermNotif('${term.id}')" title="${t('notifications')}"
                     style="flex:1;padding:5px 0;border:1px solid #bbf7d0;background:#f0fdf4;color:#16a34a;
                            border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:flex;
                            align-items:center;justify-content:center;gap:3px">
               <i data-lucide="bell" style="width:12px;height:12px"></i> ${isEN?'Notify':'แจ้งเตือน'}
             </button>
-            <button onclick="deleteTerm('${term.id}')" title="ลบ"
+            <button onclick="deleteTerm('${term.id}')" title="${t('delete')}"
                     style="padding:5px 8px;border:1px solid #fecaca;background:#fff5f5;color:#dc2626;
                            border-radius:8px;font-size:11px;cursor:pointer">
               <i data-lucide="trash-2" style="width:12px;height:12px"></i>
@@ -934,10 +934,10 @@ async function saveTerm() {
   const endDate   = document.getElementById('tfEnd').value;
 
   if (!labelTH || !labelEN || !acadYear || !startDate || !endDate) {
-    Swal.fire(t('warning'), 'กรุณากรอกข้อมูลที่จำเป็น (*)', 'warning'); return;
+    Swal.fire(t('warning'), bi('กรุณากรอกข้อมูลที่จำเป็น (*)','Please complete all required fields (*).'), 'warning'); return;
   }
   if (new Date(startDate) >= new Date(endDate)) {
-    Swal.fire(t('warning'), 'วันปิดภาคเรียนต้องมาหลังวันเปิดภาคเรียน', 'warning'); return;
+    Swal.fire(t('warning'), bi('วันปิดภาคเรียนต้องมาหลังวันเปิดภาคเรียน','The term end date must be after the start date.'), 'warning'); return;
   }
 
   const id = document.getElementById('tfId').value || genTermId();
@@ -1009,7 +1009,7 @@ async function persistTerms() {
     if (r.status !== 'success') throw new Error(r.message || t('error'));
   } catch(e) {
     showLoader(false);
-    Swal.fire(t('error'), e.message, 'error');
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
     throw e;
   }
 }
@@ -1019,8 +1019,10 @@ function populateBatchTerms() {
   const sel = document.getElementById('batchTermRef');
   if (!sel) return;
   const isEN = LANG === 'en';
-  sel.innerHTML = `<option value="">— เลือกปีการศึกษา —</option>` +
+  const selected = sel.value;
+  sel.innerHTML = `<option value="">${bi('— เลือกปีการศึกษา —','— Select Academic Year —')}</option>` +
     TERMS.map(t => `<option value="${t.id}">${isEN?t.labelEN:t.labelTH} (${t.acadYear})</option>`).join('');
+  sel.value = selected;
 }
 
 async function loadBatchPreview() {
@@ -1032,7 +1034,7 @@ async function loadBatchPreview() {
   const eligible = STUDENTS.filter(s => s.institution === inst && s.status === 'Active');
   if (!eligible.length) {
     wrap.classList.remove('hidden');
-    cont.innerHTML = `<div class="text-center text-gray-400 py-4 text-xs">ไม่พบนักเรียนที่กำลังศึกษาในสถานศึกษานี้</div>`;
+    cont.innerHTML = `<div class="text-center text-gray-400 py-4 text-xs">${bi('ไม่พบนักเรียนที่กำลังศึกษาในสถานศึกษานี้','No active students were found at this institution.')}</div>`;
     info.textContent = '';
     return;
   }
@@ -1042,20 +1044,20 @@ async function loadBatchPreview() {
   cont.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr style="background:#f3f4f6">
-        <th style="padding:5px 8px;text-align:left">รหัสทุน</th>
-        <th style="padding:5px 8px;text-align:left">ชื่อ</th>
-        <th style="padding:5px 8px;text-align:left">ระดับชั้น</th>
+        <th style="padding:5px 8px;text-align:left">${t('stipNo')}</th>
+        <th style="padding:5px 8px;text-align:left">${bi('ชื่อ','Name')}</th>
+        <th style="padding:5px 8px;text-align:left">${t('level')}</th>
       </tr></thead>
       <tbody>
         ${preview.map((s,i) => `
           <tr style="background:${i%2===0?'#fff':'#f9fafb'}">
             <td style="padding:4px 8px;font-family:monospace;color:#1d4ed8">${s.stipNo||'—'}</td>
             <td style="padding:4px 8px">${s.name||'—'}</td>
-            <td style="padding:4px 8px;color:#6b7280">${s.level||'—'}</td>
+            <td style="padding:4px 8px;color:#6b7280">${formatLevel(s.level)}</td>
           </tr>`).join('')}
       </tbody>
     </table>`;
-  info.textContent = `แสดง ${preview.length} จาก ${eligible.length} คน`;
+  info.textContent = `${t('showing')} ${preview.length} ${t('of')} ${eligible.length} ${bi('คน','students')}`;
 }
 
 function goBatchPromotion() {
@@ -1132,7 +1134,7 @@ async function sendNotification() {
   const bodyTH  = document.getElementById('notifBodyTH').value.trim();
   const bodyEN  = document.getElementById('notifBodyEN').value.trim();
   if (!titleTH || !bodyTH) {
-    Swal.fire(t('warning'), 'กรุณากรอกหัวข้อและข้อความ', 'warning'); return;
+    Swal.fire(t('warning'), bi('กรุณากรอกหัวข้อและข้อความ','Please enter a title and message.'), 'warning'); return;
   }
   const notif = {
     id: genNotifId(),
@@ -1205,7 +1207,7 @@ function renderNotifHistory() {
             ${n.audienceKey ? `<span style="font-size:10px;background:#eff6ff;color:#1d4ed8;padding:1px 6px;border-radius:6px">${n.audienceKey}</span>` : ''}
           </div>
         </div>
-        <button onclick="deleteNotif('${n.id}')" title="ลบ"
+        <button onclick="deleteNotif('${n.id}')" title="${t('delete')}"
                 style="color:#d1d5db;background:none;border:none;cursor:pointer;flex-shrink:0;padding:4px">
           <i data-lucide="x" style="width:12px;height:12px"></i>
         </button>
@@ -1238,7 +1240,7 @@ function renderNotifPanel() {
   if (!list) return;
   const sorted = [...NOTIFS].sort((a,b) => new Date(b.sentAt)-new Date(a.sentAt)).slice(0,20);
   if (!sorted.length) {
-    list.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">ไม่มีการแจ้งเตือน</div>`; return;
+    list.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">${bi('ไม่มีการแจ้งเตือน','No notifications')}</div>`; return;
   }
   const TYPE_COLOR = { term_start:'#16a34a', term_end:'#dc2626', promotion:'#7c3aed', graduation:'#d97706', general:'#1d4ed8' };
   list.innerHTML = sorted.map(n => {
@@ -1370,6 +1372,8 @@ document.addEventListener('rdf:languagechange', () => {
   renderScheduleGrid();
   renderNotifHistory();
   renderNotifPanel();
+  populateBatchTerms();
+  if (!document.getElementById('batchPreview')?.classList.contains('hidden')) loadBatchPreview();
 });
 
 // ── Init ───────────────────────────────────────────────────────

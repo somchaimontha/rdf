@@ -74,6 +74,32 @@ test('English dictionary contains no untranslated Thai interface strings', () =>
   }
 });
 
+test('canonical Thai levels, academic years, signature roles, and API messages localize safely', () => {
+  const { context: c } = setup('th');
+  assert.equal(c.formatLevel('มัธยมศึกษาปีที่ 4 (Grade 10)', 'en'), 'Grade 10');
+  assert.equal(c.formatLevel('ปวช. ชั้นปีที่ 2', 'en'), 'Vocational Certificate — Year 2');
+  assert.equal(c.formatLevel('ปวส. ชั้นปีที่ 1', 'en'), 'Higher Vocational Certificate — Year 1');
+  assert.equal(c.formatLevel('ชั้นปีที่ 3', 'en'), "Bachelor's Degree — Year 3");
+  assert.equal(c.formatAcademicYear(2025, 'en'), '2568 B.E. / 2025 C.E.');
+  assert.equal(c.formatAcademicYear(2568, 'th'), 'ปีการศึกษา 2568');
+  assert.equal(c.formatSignatoryRole('ผู้ตรวจสอบข้อมูล', 'en'), 'Data Reviewer');
+  assert.equal(c.localizeApiMessage('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'loginFailed', 'en'), 'Incorrect username or password.');
+  assert.equal(c.localizeApiMessage('ข้อมูลไม่ครบ / Missing fields', 'error', 'en'), 'Missing fields');
+  assert.equal(c.localizeApiMessage('ข้อความใหม่จากเซิร์ฟเวอร์', 'error', 'en'), 'Error');
+});
+
+test('known dynamic English views do not contain the previous Thai-only labels', () => {
+  const checks = {
+    'students.html': ['ปวช. Yr.', '>ปีสุดท้าย</span>', '<span>อนุมัติทุน ม.</span>', 'tags.push(`ค้นหา:', 'tags.push(`ปีการศึกษา '],
+    'academic-results.html': ["textContent = 'อัปเดต: '", "title=\"${isEN?'ลบผลการเรียน':'ลบผลการเรียน'}\"", '> ล้างกลุ่มนี้', '>ไม่พบข้อมูลผลการเรียน</td>'],
+    'academic-terms.html': ['title="แก้ไข"', 'title="แจ้งเตือน"', 'title="ลบ"', 'sel.innerHTML = `<option value="">— เลือกปีการศึกษา —</option>`', '>ไม่พบนักเรียนที่กำลังศึกษาในสถานศึกษานี้</div>'],
+  };
+  for (const [file, snippets] of Object.entries(checks)) {
+    const content = fs.readFileSync(path.join(root, file), 'utf8');
+    for (const snippet of snippets) assert.equal(content.includes(snippet), false, `${file}: ${snippet}`);
+  }
+});
+
 test('report capture restores screen language even when capture fails', () => {
   const { context: c, events } = setup('th');
   const reports = fs.readFileSync(path.join(root, 'reports.html'), 'utf8');

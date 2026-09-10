@@ -453,6 +453,11 @@ const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb
 const INST_LABEL  = { MBS:'MBS — โรงเรียนแม่สะเรียงฯ', VC:'VC — วิทยาลัยการอาชีพ', UNI:'University / มหาวิทยาลัย', OTHER:'อื่นๆ' };
 const INST_ORDER  = { MBS:0, VC:1, UNI:2, OTHER:3 };
 
+function academicInstLabel(code) {
+  if (LANG === 'en') return ({ MBS:'MBS — Maesariang Boripat Suksa School', VC:'VC — Maesariang Industrial and Community Education College', UNI:'University', OTHER:'Other' })[code] || code;
+  return INST_LABEL[code] || code;
+}
+
 // Level ordering (same as promotion.html) for consistent row sorting
 const LEVEL_OPTIONS = {
   MBS:  ['มัธยมศึกษาปีที่ 1 (Grade 7)','มัธยมศึกษาปีที่ 2 (Grade 8)','มัธยมศึกษาปีที่ 3 (Grade 9)',
@@ -523,13 +528,13 @@ async function loadAll() {
     applyFilters();
 
     const ts = document.getElementById('arTimestamp');
-    if (ts) ts.textContent = 'อัปเดต: ' + new Date().toLocaleString('th-TH');
+    if (ts) ts.textContent = `${bi('อัปเดต','Updated')}: ${new Date().toLocaleString(getLocale())}`;
 
     showLoader(false);
   } catch(e) {
     showLoader(false);
     RDF.logError('academic-results.html', 'loadPage()', e.message);
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
   }
 }
 
@@ -663,7 +668,7 @@ function buildEntryGroups(year, sem, inst) {
 function buildGroupCard(grpKey, students, year, sem, isEN) {
   const color = INST_COLORS[grpKey] || '#6b7280';
   const bg    = INST_BG[grpKey]    || '#f9fafb';
-  const label = INST_LABEL[grpKey] || grpKey;
+  const label = academicInstLabel(grpKey);
 
   const gradedCount = students.filter(s =>
     _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === year && g.semester === sem)
@@ -683,7 +688,7 @@ function buildGroupCard(grpKey, students, year, sem, isEN) {
         <div class="font-semibold text-gray-800" style="font-size:12px">${name}</div>
         <div style="font-size:10px;color:#9ca3af">${s.StipNo}</div>
       </td>
-      <td style="font-size:11px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.CurrentLevel||'—'}</td>
+      <td style="font-size:11px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${formatLevel(s.CurrentLevel)}</td>
       <td style="text-align:center">
         <input type="number" step="0.01" min="0" max="4"
                id="gpa_${s.StipNo}" value="${gpaVal}"
@@ -704,7 +709,7 @@ function buildGroupCard(grpKey, students, year, sem, isEN) {
       <td class="text-center no-print" style="width:40px">
         ${existing ? `<button onclick="deleteGrade('${s.StipNo}',${year},'${sem}')"
           style="color:#dc2626;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:11px"
-          title="${isEN?'ลบผลการเรียน':'ลบผลการเรียน'}">
+          title="${bi('ลบผลการเรียน','Delete grade')}">
           <i data-lucide="trash-2" style="width:13px;height:13px;display:inline-block;vertical-align:middle"></i>
         </button>` : ''}
       </td>
@@ -720,7 +725,7 @@ function buildGroupCard(grpKey, students, year, sem, isEN) {
         ${gradedCount > 0 ? `<span style="font-size:11px;color:${color};background:${color}18;border-radius:6px;padding:2px 8px;font-weight:700">${gradedCount} ${isEN?'graded':'มีผลการเรียนแล้ว'}</span>` : ''}
       </div>
       <button onclick="clearGroupGPA('${grpKey}')" class="btn btn-secondary btn-sm text-xs no-print" style="font-size:11px;padding:4px 10px">
-        <i data-lucide="eraser" class="w-3 h-3"></i> ล้างกลุ่มนี้
+        <i data-lucide="eraser" class="w-3 h-3"></i> ${bi('ล้างกลุ่มนี้','Clear this group')}
       </button>
     </div>
     <div class="overflow-x-auto">
@@ -783,7 +788,7 @@ function buildHistoryTable(year, sem, inst) {
   if (countEl) countEl.textContent = `${filtered.length} ${isEN?'record(s)':'รายการ'}`;
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-10 text-xs">ไม่พบข้อมูลผลการเรียน</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-10 text-xs">${bi('ไม่พบข้อมูลผลการเรียน','No grade records found')}</td></tr>`;
     return;
   }
 
@@ -801,7 +806,7 @@ function buildHistoryTable(year, sem, inst) {
           : `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
       : g.stipNo;
     const inst2 = stu?.Institution || '—';
-    const level = stu?.CurrentLevel || '—';
+    const level = formatLevel(stu?.CurrentLevel);
     const gpaV  = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
     const upd   = g.updatedAt ? new Date(g.updatedAt).toLocaleDateString(getLocale()) : '—';
     return `<tr style="border-bottom:1px solid #f1f5f9">
@@ -822,7 +827,7 @@ function buildHistoryTable(year, sem, inst) {
       <td class="no-print" style="text-align:center">
         <button onclick="deleteGrade('${g.stipNo}',${g.acadYear},'${g.semester}')"
           style="color:#dc2626;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:11px"
-          title="ลบ">
+          title="${t('delete')}">
           <i data-lucide="trash-2" style="width:13px;height:13px;display:inline-block;vertical-align:middle"></i>
         </button>
       </td>
@@ -857,7 +862,7 @@ async function saveGrades() {
   });
 
   if (!newEntries.length) {
-    Swal.fire('คำเตือน', 'ยังไม่ได้กรอก GPA ใดๆ กรุณากรอกคะแนนก่อนบันทึก', 'warning');
+    Swal.fire(t('warning'), bi('ยังไม่ได้กรอก GPA กรุณากรอกคะแนนก่อนบันทึก','No GPA has been entered. Enter at least one grade before saving.'), 'warning');
     return;
   }
 
@@ -871,21 +876,21 @@ async function saveGrades() {
   });
   _GRADES = Object.values(gradeMap);
 
-  showLoader(true, 'กำลังบันทึก...');
+  showLoader(true, t('saving'));
   try {
     const r = await API.saveSetting('STUDENT_GRADES', _GRADES);
     showLoader(false);
-    if (r.status !== 'success') throw new Error(r.message || 'บันทึกไม่สำเร็จ');
+    if (r.status !== 'success') throw new Error(r.message || bi('บันทึกไม่สำเร็จ','Unable to save grades.'));
     _SETTINGS['STUDENT_GRADES'] = _GRADES;
     Swal.fire({
-      icon:'success', title:'บันทึกสำเร็จ',
-      text:`บันทึก ${newEntries.length} รายการ — ปีการศึกษา ${year} ${semLabel(sem, false)}`,
+      icon:'success', title:t('saved'),
+      text:bi(`บันทึก ${newEntries.length} รายการ — ปีการศึกษา ${year} ${semLabel(sem, false)}`, `Saved ${newEntries.length} record(s) — Academic Year ${year}, ${semLabel(sem, true)}`),
       timer:2500, showConfirmButton:false,
     });
     applyFilters();
   } catch(e) {
     showLoader(false);
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
   }
 }
 
@@ -897,10 +902,10 @@ async function deleteGrade(stipNo, acadYear, semester) {
   const stu  = findStudent(stipNo);
   const name = stu ? `${stu.FirstName||''} ${stu.LastName||''}`.trim() : stipNo;
   const cf = await Swal.fire({
-    title: 'ยืนยันการลบ?', icon:'warning',
+    title: t('deleteConfirm'), icon:'warning',
     showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
-    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก',
-    html:`ลบผลการเรียนของ <b>${name}</b> (${acadYear} ${semLabel(semester,false)})?`,
+    confirmButtonText:t('delete'), cancelButtonText:t('cancel'),
+    html:bi(`ลบผลการเรียนของ <b>${name}</b> (${acadYear} ${semLabel(semester,false)})?`, `Delete the grade for <b>${name}</b> (${acadYear}, ${semLabel(semester,true)})?`),
   });
   if (!cf.isConfirmed) return;
 
@@ -915,7 +920,7 @@ async function deleteGrade(stipNo, acadYear, semester) {
   } catch(e) {
     showLoader(false);
     RDF.logError('academic-results.html', 'saveGrades()', e.message);
-    Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
   }
 }
 
@@ -923,6 +928,7 @@ async function deleteGrade(stipNo, acadYear, semester) {
 // EXPORT TO EXCEL
 // ══════════════════════════════════════════════════════════
 function exportToExcel() {
+  const isEN = LANG === 'en';
   const year = parseInt(document.getElementById('fltYear').value) || 0;
   const sem  = document.getElementById('fltSem').value;
   const inst = document.getElementById('fltInst').value;
@@ -936,7 +942,7 @@ function exportToExcel() {
   }
 
   if (!filtered.length) {
-    Swal.fire('ไม่มีข้อมูล', 'ไม่พบผลการเรียนสำหรับเงื่อนไขที่เลือก', 'warning');
+    Swal.fire(t('noData'), bi('ไม่พบผลการเรียนสำหรับเงื่อนไขที่เลือก','No grades match the selected filters.'), 'warning');
     return;
   }
 
@@ -954,13 +960,12 @@ function exportToExcel() {
   const data = filtered.map((g, i) => {
     const stu = findStudent(g.stipNo);
     const name = stu ? `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim() : g.stipNo;
-    const isEN = LANG === 'en';
     return {
       [t('exportNo')]:                 i+1,
       [t('stipNo')]:                   g.stipNo,
       [t('gradeColName')]:             name,
       [t('gradeColInst')]:             stu?.Institution || '—',
-      [t('arColLevel')]:               stu?.CurrentLevel || '—',
+      [t('arColLevel')]:               formatLevel(stu?.CurrentLevel),
       [t('arAcadYearLabel')]:          g.acadYear,
       [t('arColSemester')]:            semLabel(g.semester, isEN),
       'GPA':                           g.gpa != null ? parseFloat(g.gpa) : '',
@@ -976,13 +981,13 @@ function exportToExcel() {
     {wch:18},{wch:18},{wch:8},{wch:25},{wch:20},{wch:18},
   ];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'ผลการเรียน');
+  XLSX.utils.book_append_sheet(wb, ws, bi('ผลการเรียน','Grades'));
 
   const parts = [];
   if (year) parts.push(String(year));
-  if (sem)  parts.push(semLabel(sem, false));
+  if (sem)  parts.push(semLabel(sem, isEN));
   if (inst) parts.push(inst);
-  const filename = `ผลการเรียน${parts.length?'_'+parts.join('_'):''}.xlsx`;
+  const filename = `${bi('ผลการเรียน','academic-results')}${parts.length?'_'+parts.join('_'):''}.xlsx`;
   XLSX.writeFile(wb, filename);
 }
 
@@ -1019,7 +1024,7 @@ function openPrintModal() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:#7c3aed">${i+1}</span>
-              <span class="font-semibold text-gray-700 text-sm">${s.role||(t('signatory')+' '+(i+1))}</span>
+              <span class="font-semibold text-gray-700 text-sm">${formatSignatoryRole(s.role)||(t('signatory')+' '+(i+1))}</span>
               ${s.name?`<span class="text-gray-500 text-xs">${s.name}</span>`:'<span class="text-gray-300 text-xs italic" data-t="unnamedSignatory">ยังไม่ระบุชื่อ</span>'}
             </div>
             ${s.position?`<div class="text-gray-400 text-xs ml-7">${s.position}</div>`:''}
@@ -1051,7 +1056,7 @@ function doPrint() {
   const html = generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, sortBy, selSigs });
   const win  = window.open('','_blank','width=1200,height=850');
   if (!win) {
-    Swal.fire('ข้อผิดพลาด','เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup','error');
+    Swal.fire(t('error'), bi('เบราว์เซอร์บล็อกหน้าต่างรายงาน กรุณาอนุญาตป๊อปอัป','The browser blocked the report window. Please allow pop-ups.'), 'error');
     return;
   }
   win.document.open();
@@ -1136,7 +1141,7 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
   const lowest  = gpas.length ? Math.min(...gpas).toFixed(2) : '—';
   const below2  = gpas.filter(v=>v<2).length;
 
-  const autoSubject = subject || `${inst?inst:SL.allInst}${acad?' — ปีการศึกษา '+acad:''}${sem?' ('+semLabel(sem,isEN)+')':''}`;
+  const autoSubject = subject || `${inst?inst:SL.allInst}${acad?' — '+bi('ปีการศึกษา ','Academic Year ')+acad:''}${sem?' ('+semLabel(sem,isEN)+')':''}`;
 
   const gpaColor = v => {
     if (v==null) return '#9ca3af';
@@ -1176,7 +1181,7 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
       <div style="display:flex;justify-content:space-evenly;gap:16px;flex-wrap:wrap">
         ${selSigs.map(s => `
         <div style="text-align:center;min-width:160px;flex:1;max-width:220px">
-          <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px">${s.role||''}</div>
+          <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px">${formatSignatoryRole(s.role,lang)}</div>
           <div style="border-top:1px solid #374151;margin:38px 12px 6px"></div>
           <div style="font-size:9pt;font-weight:700">${s.name||'.................................................'}</div>
           ${s.position?`<div style="font-size:8pt;color:#6b7280;margin-top:2px">${s.position}</div>`:''}
@@ -1244,7 +1249,7 @@ tr:nth-child(even) td{background:#faf5ff}
   <div>
     <div class="sum-title">${SL.summary}</div>
     <table class="sum-tbl">
-      <thead><tr><th>${SL.summary}</th><th style="text-align:center">ค่า / Value</th></tr></thead>
+      <thead><tr><th>${SL.summary}</th><th style="text-align:center">${bi('ค่า','Value',lang)}</th></tr></thead>
       <tbody>${summaryRows}</tbody>
     </table>
   </div>
@@ -1275,6 +1280,8 @@ document.addEventListener('rdf:languagechange', () => {
     populateTermDropdown();
     sel.value = curr;
   }
+  const ts = document.getElementById('arTimestamp');
+  if (ts) ts.textContent = `${bi('อัปเดต','Updated')}: ${new Date().toLocaleString(getLocale())}`;
   applyFilters();
 });
 

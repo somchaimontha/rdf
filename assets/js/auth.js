@@ -145,6 +145,10 @@ async function handleLogin() {
       });
     } finally { clearTimeout(_timer); }
     const result = await res.json();
+    if (result && typeof result.message === 'string') {
+      result.rawMessage = result.message;
+      result.message = localizeApiMessage(result.message, 'loginFailed');
+    }
     showLoader(false);
     if (result.status === 'success') {
       setUser({

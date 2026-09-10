@@ -5745,11 +5745,11 @@ async function wfSaveAllNotes() {
   const changes = window._wfNoteChanges || {};
   const entries = Object.entries(changes);
   if (entries.length === 0) {
-    Swal.fire({ title: 'ไม่มีการเปลี่ยนแปลง', icon: 'info', timer: 1500, showConfirmButton: false });
+    Swal.fire({ title: t('noChanges'), icon: 'info', timer: 1500, showConfirmButton: false });
     return;
   }
   const reqUser = (getUser()||{}).username || 'Admin';
-  showLoader(true, 'บันทึกหมายเหตุ...');
+  showLoader(true, bi('กำลังบันทึกหมายเหตุ...','Saving notes...'));
   let ok = 0, fail = 0;
   for (const [stipNo, note] of entries) {
     try {
@@ -5760,7 +5760,7 @@ async function wfSaveAllNotes() {
   showLoader(false);
   window._wfNoteChanges = {};
   Swal.fire({
-    title: fail === 0 ? 'บันทึกสำเร็จ' : `บันทึก ${ok} สำเร็จ, ${fail} ล้มเหลว`,
+    title: fail === 0 ? t('saved') : bi(`บันทึกสำเร็จ ${ok} รายการ, ล้มเหลว ${fail} รายการ`, `Saved ${ok}; ${fail} failed`),
     icon:  fail === 0 ? 'success' : 'warning',
     timer: 2000, showConfirmButton: false,
   });
@@ -5782,30 +5782,30 @@ function wfRenderStudentList() {
 
   const resignN = all.filter(x => x.act === 'resign').length;
   const wdN     = all.filter(x => x.act === 'withdraw_sch').length;
-  countEl.innerHTML = all.length === 0 ? 'ไม่มีข้อมูล'
-    : `<span style="color:#be123c">✕ ลาออก ${resignN}</span> · <span style="color:#9f1239">🚫 ถอนทุน ${wdN}</span> · รวม ${all.length} คน`;
+  countEl.innerHTML = all.length === 0 ? t('noData')
+    : bi(`<span style="color:#be123c">✕ ลาออก ${resignN}</span> · <span style="color:#9f1239">🚫 ถอนทุน ${wdN}</span> · รวม ${all.length} คน`, `<span style="color:#be123c">✕ Resigned ${resignN}</span> · <span style="color:#9f1239">🚫 Scholarship withdrawn ${wdN}</span> · Total ${all.length} students`);
 
   if (all.length === 0) {
-    listEl.innerHTML = `<div class="text-xs text-gray-400 p-5 text-center">ยังไม่มีนักเรียนที่ลาออกหรือถอนทุนในระบบ</div>`;
+    listEl.innerHTML = `<div class="text-xs text-gray-400 p-5 text-center">${bi('ยังไม่มีนักเรียนที่ลาออกหรือถอนทุนในระบบ','No resigned or scholarship-withdrawn students yet.')}</div>`;
     return;
   }
   if (filtered.length === 0) {
-    listEl.innerHTML = `<div class="text-xs text-gray-400 p-4 text-center">ไม่พบนักเรียนที่ตรงกัน</div>`;
+    listEl.innerHTML = `<div class="text-xs text-gray-400 p-4 text-center">${bi('ไม่พบนักเรียนที่ตรงกัน','No matching students found.')}</div>`;
     return;
   }
 
   listEl.innerHTML = filtered.map(x => {
-    const name = ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).trim() || '(ไม่มีชื่อ)';
+    const name = ((x.Title||'')+(x.FirstName||'')+' '+(x.LastName||'')).trim() || bi('(ไม่มีชื่อ)','(unnamed)');
     const typeLabel = x.act === 'resign'
-      ? `<span style="color:#be123c;font-weight:700;font-size:10px;white-space:nowrap;background:#fee2e2;padding:1px 6px;border-radius:4px">✕ ลาออก</span>`
-      : `<span style="color:#9f1239;font-weight:700;font-size:10px;white-space:nowrap;background:#ffe4e6;padding:1px 6px;border-radius:4px">🚫 ถอนทุน</span>`;
+      ? `<span style="color:#be123c;font-weight:700;font-size:10px;white-space:nowrap;background:#fee2e2;padding:1px 6px;border-radius:4px">${bi('✕ ลาออก','✕ Resigned')}</span>`
+      : `<span style="color:#9f1239;font-weight:700;font-size:10px;white-space:nowrap;background:#ffe4e6;padding:1px 6px;border-radius:4px">${bi('🚫 ถอนทุน','🚫 Scholarship withdrawn')}</span>`;
     const badge = x.source === 'saved'
-      ? `<span class="wf-badge-saved">✓ บันทึกแล้ว</span>`
-      : `<span class="wf-badge-pending">⏳ รอบันทึก</span>`;
+      ? `<span class="wf-badge-saved">${bi('✓ บันทึกแล้ว','✓ Saved')}</span>`
+      : `<span class="wf-badge-pending">${bi('⏳ รอบันทึก','⏳ Pending')}</span>`;
     const sub = [x.StipNo, x.institution, x.level, x.acadYear].filter(Boolean).join(' · ');
     const promoNote = x.promoNotes
       ? `<div style="color:#6b7280;font-size:10px;margin-top:3px;padding:3px 7px;background:#f3f4f6;border-radius:4px;border-left:2px solid #d1d5db">
-           <span style="color:#9ca3af">📋 หมายเหตุ (เลื่อนชั้น):</span> ${x.promoNotes}
+           <span style="color:#9ca3af">📋 ${bi('หมายเหตุ (เลื่อนชั้น)','Promotion notes')}:</span> ${x.promoNotes}
          </div>` : '';
     const wfNote = (x.withdrawalNote || window._wfNoteChanges?.[x.StipNo] || '');
     return `<div class="px-3 py-2.5 text-xs border-b border-gray-100 last:border-0 hover:bg-rose-50">
@@ -5820,7 +5820,7 @@ function wfRenderStudentList() {
           ${promoNote}
           <div class="mt-1.5 flex items-center gap-1.5">
             <input type="text" class="wf-field" style="padding:3px 7px;font-size:10px;flex:1"
-              placeholder="เพิ่มหมายเหตุใบลาออก..."
+              placeholder="${bi('เพิ่มหมายเหตุใบลาออก...','Add withdrawal notes...')}"
               value="${wfNote.replace(/"/g,'&quot;')}"
               oninput="wfNoteChanged('${x.StipNo}', this.value)">
           </div>
@@ -6038,7 +6038,7 @@ function renderStatsChart() {
   // Count decisions
   const ACTIONS = [
     { key:'promote',        label: LANG==='th'?'เลื่อนชั้น':'Promote',              color:'#1d4ed8' },
-    { key:'continue_inst',  label: LANG==='th'?'จบ+ต่อ ปวส.':'Grad+Cont.ปวส.',     color:'#059669' },
+    { key:'continue_inst',  label: LANG==='th'?'จบ+ต่อ ปวส.':'Continue to Higher Vocational', color:'#059669' },
     { key:'graduate',    label: LANG==='th'?'จบการศึกษา':'Graduate',             color:'#16a34a' },
     { key:'uni',         label: LANG==='th'?'ต่อม. (RDF)':'Uni (RDF)',           color:'#7c3aed' },
     { key:'uni_own',     label: LANG==='th'?'ต่อม. (ตนเอง)':'Uni (Own)',         color:'#a21caf' },
