@@ -22,6 +22,24 @@ function _getToken() {
   try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
 }
 
+const _API_CODE_I18N_KEYS = {
+  ACCESS_DENIED: 'dfErrorAccessDenied', SETUP_REQUIRED: 'dfErrorSetupRequired', BUSY: 'dfErrorBusy',
+  VALIDATION_ERROR: 'dfErrorValidation', DUPLICATE_KEY: 'dfErrorDuplicateKey', IMMUTABLE_KEY: 'dfErrorImmutableKey',
+  SECTION_NOT_FOUND: 'dfErrorSectionNotFound', OPTIONS_REQUIRED: 'dfErrorOptionsRequired', DUPLICATE_OPTION: 'dfErrorDuplicateOption',
+  VALIDATION_RANGE_ERROR: 'dfErrorValidationRange', UNSAFE_TYPE_CHANGE: 'dfErrorUnsafeType',
+  UNSAFE_CARDINALITY_CHANGE: 'dfErrorUnsafeCardinality', UNSAFE_SECTION_CHANGE: 'dfErrorUnsafeSection',
+  INVALID_DEFAULT_VALUE: 'dfErrorInvalidDefault', FIELD_NOT_FOUND: 'dfErrorFieldNotFound', ENTITY_NOT_FOUND: 'dfErrorEntityNotFound',
+  FIELD_NOT_AVAILABLE: 'dfErrorFieldUnavailable', FIELD_ACCESS_DENIED: 'dfErrorAccessDenied', FIELD_NOT_VISIBLE: 'dfErrorFieldUnavailable',
+  INVALID_RECORD_ID: 'dfErrorInvalidRecord', FIELD_VALIDATION_ERROR: 'dfErrorFieldValidation', DUPLICATE_VALUE: 'dfErrorDuplicateValue'
+};
+
+function _localizeStructuredApiData(data) {
+  if (!data || data.status !== 'error' || !data.code || typeof t !== 'function') return data;
+  const key = _API_CODE_I18N_KEYS[data.code];
+  if (key) data.message = t(key);
+  return data;
+}
+
 // Share identical read requests made during the same page load. Dashboard
 // widgets often need the same student/settings data, so one response can feed
 // all of them instead of starting duplicate Apps Script executions.
@@ -29,8 +47,9 @@ const _apiGetInFlight = new Map();
 const _apiGetCache = new Map();
 const _API_GET_CACHE_MS = 20000;
 const _API_CACHEABLE_GET_ACTIONS = new Set([
-  'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPendingScholarshipRequests',
-  'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents'
+  'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPublicSettings', 'getPendingScholarshipRequests',
+  'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents',
+  'getDynamicFormSchema', 'getDynamicFieldAdminData', 'previewDynamicFieldSetup'
 ]);
 let _apiGetCacheGeneration = 0;
 
@@ -65,6 +84,7 @@ async function _apiGetNetwork(params, timeoutMs) {
     data.rawMessage = data.message;
     data.message = localizeApiMessage(data.message, data.status === 'success' ? 'success' : 'error');
   }
+  _localizeStructuredApiData(data);
   if (data.status === 'error' && data.rawMessage === 'Unauthorized. Please login again.') {
     // Session expired — force re-login (only if NOT already on the login page)
     const path = window.location.pathname;
@@ -126,6 +146,7 @@ async function apiPost(body, timeoutMs) {
     data.rawMessage = data.message;
     data.message = localizeApiMessage(data.message, data.status === 'success' ? 'success' : 'error');
   }
+  _localizeStructuredApiData(data);
   if (data.status === 'error' && data.rawMessage === 'Unauthorized. Please login again.') {
     const path = window.location.pathname;
     const onLogin = path.endsWith('index.html') || path.endsWith('/') || path === '';
@@ -153,11 +174,26 @@ const API = {
   async getUniNames()          { return apiGet({ action: 'getUniNames' }); },
   async saveStudent(data)      { return apiPost({ action: 'saveStudent',   student: data }); },
   async updateStudent(data)    { return apiPost({ action: 'updateStudent', student: data }); },
+  async getDynamicFormSchema(entityType, entityId) {
+    return apiGet({ action: 'getDynamicFormSchema', entityType: entityType || 'student', entityId: entityId || '' });
+  },
+  async getDynamicFieldAdminData(entityType) {
+    return apiGet({ action: 'getDynamicFieldAdminData', entityType: entityType || 'student' });
+  },
+  async previewDynamicFieldSetup() { return apiGet({ action: 'previewDynamicFieldSetup' }); },
+  async setupDynamicFieldSchema() { return apiPost({ action: 'setupDynamicFieldSchema' }, 90000); },
+  async saveDynamicSection(section) { return apiPost({ action: 'saveDynamicSection', section }); },
+  async saveDynamicField(field, options) { return apiPost({ action: 'saveDynamicField', field, options: options || [] }); },
+  async archiveDynamicField(fieldId) { return apiPost({ action: 'archiveDynamicField', fieldId }); },
+  async saveStudentDynamicValues(entityType, entityId, changes, removeRecords) {
+    return apiPost({ action: 'saveStudentDynamicValues', entityType: entityType || 'student', entityId, changes: changes || [], removeRecords: removeRecords || [] });
+  },
   async getAdmins()               { return apiGet({ action: 'getAdmins' }); },
   async saveAdmin(data)            { return apiPost({ action: 'saveAdmin',   admin: data,   reqUser: (getUser()||{}).username||'' }); },
   async loginWithGoogle(idToken)   { return apiPost({ action: 'loginWithGoogle', idToken }); },
   async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }); },
   async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }); },
+  async getPublicSettings()        { return apiGet({ action: 'getPublicSettings' }); },
   async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }); },
   async getLogs(limit)             { return apiGet({ action: 'getLogs', limit: limit || 200 }); },
   async parseOCRText(text)                    { return apiPost({ action: 'parseOCRText', ocrText: text }); },

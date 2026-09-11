@@ -158,6 +158,14 @@
       <h4 class="font-bold text-gray-800 text-base mb-1" data-t="menuSettings">ตั้งค่าระบบ</h4>
       <p class="text-xs text-gray-500" data-t="menuSettingsDesc">จัดการผู้ดูแลและตั้งค่าระบบ</p>
     </div>
+    <div class="menu-card" style="border-top-color:#0f766e"
+         onclick="window.location.href='custom-fields.html'">
+      <div class="menu-icon" style="background:#f0fdfa">
+        <i data-lucide="list-plus" class="w-7 h-7" style="color:#0f766e"></i>
+      </div>
+      <h4 class="font-bold text-gray-800 text-base mb-1" data-t="dfMenuTitle">ช่องข้อมูลเพิ่มเติม</h4>
+      <p class="text-xs text-gray-500" data-t="dfMenuDesc">สร้างส่วนและฟิลด์แบบปรับเปลี่ยนได้สำหรับประวัตินักเรียน</p>
+    </div>
   </div>
 
   <!-- Incomplete Profiles Alert — Admin view -->
@@ -320,12 +328,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.0.4"></script>
+<script src="assets/js/config.js?v=2.0.5"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.0.4"></script>
-<script src="assets/js/api.js?v=2.0.4"></script>
-<script src="assets/js/auth.js?v=2.0.4"></script>
-<script src="assets/js/rbac.js"></script>
+<script src="assets/js/i18n.js?v=2.0.5"></script>
+<script src="assets/js/api.js?v=2.0.5"></script>
+<script src="assets/js/auth.js?v=2.0.5"></script>
+<script src="assets/js/rbac.js?v=2.0.5"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -383,7 +391,7 @@ async function loadQuickStats() {
 async function loadDashboardProgressively() {
   await loadQuickStats();
   const loadDetails = () => {
-    loadStats();
+    if (RBAC.has('viewStudents')) loadStats();
     if (RBAC.has('viewStudents') || (RBAC.has('viewPromotion') && RBAC.has('viewSchApprovalPanel'))) loadNotifications();
   };
   if ('requestIdleCallback' in window) {

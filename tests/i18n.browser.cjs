@@ -43,6 +43,9 @@ window.fetch = async (url, options) => {
  if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
+ if (action==='getDynamicFormSchema') data={status:'success',setupRequired:false,schemaVersion:'1.0.0',sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'ข้อมูลที่กำหนดจากระบบ',descriptionEN:'System-configured information',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}}],options:[],values:location.pathname.endsWith('/student-profile.html')?[{valueId:'val_1',fieldId:'fld_note',recordId:'single',value:'Fixture value'}]:[]};
+ if (action==='getDynamicFieldAdminData') data={status:'success',setupRequired:false,schemaVersion:'1.0.0',setup:{status:'success',ready:true,schemaVersion:'1.0.0',sheets:[{name:'FormSections',exists:true,missingHeaders:[],rowCount:1}]},sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'',descriptionEN:'',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},visibleRoles:['SuperAdmin'],cardinality:'single',collapsible:true,active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,active:true,archived:false,valueCount:1,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}}],options:[]};
+ if (action==='previewDynamicFieldSetup') data={status:'success',ready:true,schemaVersion:'1.0.0',sheets:[]};
  return {ok:true,json:async()=>data};
 };
 `;
@@ -74,7 +77,7 @@ const server = http.createServer((req,res)=>{
  try {
   await send('Network.enable');
   await send('Network.setBlockedURLs',{urls:['https://*']});
-  for (const initialLang of ['th','en']) for (const file of ['index.html','dashboard.html','students.html','student-form.html','student-profile.html','reports.html','academic-results.html','academic-terms.html','promotion.html','settings.html']) {
+  for (const initialLang of ['th','en']) for (const file of ['index.html','dashboard.html','students.html','student-form.html','student-profile.html','reports.html','academic-results.html','academic-terms.html','promotion.html','settings.html','custom-fields.html']) {
    const pageUrl=base+'/'+file+'?testLang='+initialLang+(file==='student-profile.html'?'&stipNo=MBS_001':'');
    await send('Page.navigate',{url:pageUrl});
    const deadline=Date.now()+10000;
@@ -99,6 +102,9 @@ const server = http.createServer((req,res)=>{
    if(file==='settings.html') {
      await evaluate('Promise.all([loadOverview(), loadActiveSessions(), loadStudentEditableFields(), loadRbacPermissions()])');
      await evaluate(`document.querySelector('#studentFieldsGrid input').click(); openAdminModal(); document.getElementById('m_fname').value='Unsaved Admin';`);
+   }
+   if(file==='custom-fields.html') {
+     await evaluate(`openFieldEditor(adminData.fields[0]);document.getElementById('fld_label_th').value='ค่าที่ยังไม่บันทึก';document.querySelector('#fld_visible_roles input').click();`);
    }
    if(file==='reports.html') await evaluate('openRptPrintModal()');
    if(file==='academic-results.html') await evaluate('openPrintModal()');
@@ -220,6 +226,14 @@ const server = http.createServer((req,res)=>{
    if(initialLang==='en' && file==='student-profile.html') {
      const dynamic=await evaluate(`document.getElementById('academicInfo').textContent`);
      assert.equal(/[ก-๙]/.test(dynamic),false,'profile academic UI must be English');
+     const extra=await evaluate(`document.getElementById('dynamicFieldsProfile').textContent`);
+     assert.match(extra,/Additional Information/,'dynamic profile section must use English metadata');
+   }
+   if(initialLang==='en' && file==='custom-fields.html') {
+     const builder=await evaluate(`({label:document.getElementById('fld_label_th').value,selected:[...document.querySelectorAll('#fld_visible_roles input:checked')].map(e=>e.value),schema:document.getElementById('schemaList').textContent})`);
+     assert.equal(builder.label,'ค่าที่ยังไม่บันทึก','builder must preserve unsaved metadata on language switch');
+     assert.equal(builder.selected.includes('SuperAdmin'),false,'builder must preserve unsaved permission selection');
+     assert.match(builder.schema,/Additional Information/,'builder list must use English metadata');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }

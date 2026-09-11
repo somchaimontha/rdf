@@ -296,10 +296,10 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.0.4"></script>
-<script src="assets/js/i18n.js?v=2.0.4"></script>
-<script src="assets/js/api.js?v=2.0.4"></script>
-<script src="assets/js/auth.js?v=2.0.4"></script>
+<script src="assets/js/config.js?v=2.0.5"></script>
+<script src="assets/js/i18n.js?v=2.0.5"></script>
+<script src="assets/js/api.js?v=2.0.5"></script>
+<script src="assets/js/auth.js?v=2.0.5"></script>
 <script>
 document.getElementById('appVersion').textContent = RDF.VERSION;
 if (getUser()) window.location.href = 'dashboard.html';
@@ -435,7 +435,7 @@ async function handleGoogleCredential(response) {
 
   async function loadLoginSettings() {
     try {
-      const r = await API.getSystemSettings();
+      const r = await API.getPublicSettings();
       const data = r.data || {};
 
       // Admin contact link

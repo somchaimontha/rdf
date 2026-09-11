@@ -370,6 +370,11 @@
 
   <nav id="sbarNav" aria-label="Settings Navigation">
 
+    <a id="customFieldsNav" class="sbar-item" href="custom-fields.html">
+      <i data-lucide="list-plus" class="sbar-icon"></i>
+      <span class="sbar-item-label" data-t="dfMenuTitle">ช่องข้อมูลเพิ่มเติม</span>
+    </a>
+
     <!-- 1. ผู้ดูแลระบบ -->
     <button class="sbar-item" data-section="panelAdmins" onclick="sbarGo('panelAdmins',this)">
       <i data-lucide="users" class="sbar-icon"></i>
@@ -2095,12 +2100,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.0.4"></script>
+<script src="assets/js/config.js?v=2.0.5"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.0.4"></script>
-<script src="assets/js/api.js?v=2.0.4"></script>
-<script src="assets/js/auth.js?v=2.0.4"></script>
-<script src="assets/js/rbac.js"></script>
+<script src="assets/js/i18n.js?v=2.0.5"></script>
+<script src="assets/js/api.js?v=2.0.5"></script>
+<script src="assets/js/auth.js?v=2.0.5"></script>
+<script src="assets/js/rbac.js?v=2.0.5"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -2111,6 +2116,8 @@ RBAC.enforcePage(['viewSettings']);
 const user = requireAuth();
 if (user) {
   renderNavUser(user);
+  const customFieldsNav = document.getElementById('customFieldsNav');
+  if (customFieldsNav && !RBAC.has('manageCustomFields')) customFieldsNav.style.display = 'none';
   if (user.role === 'SuperAdmin')
     document.getElementById('superAdminBadge').classList.remove('hidden');
 }
@@ -4020,6 +4027,7 @@ const PERM_DEFS = [
   { group:'เลื่อนชั้น', key:'runPromotion',          th:'ดำเนินการเลื่อนชั้น (batch)',               en:'Run batch promotion' },
   { group:'เลื่อนชั้น', key:'viewSchApprovalPanel',  th:'ดูและอนุมัติคำขอทุนมหาวิทยาลัย (RDF)',     en:'View & approve university scholarship requests' },
   { group:'การแจ้งเตือน', key:'manageNotifications', th:'สร้างและลบประกาศแจ้งเตือน',                 en:'Create and delete notifications' },
+  { group:'ตั้งค่า',     key:'manageCustomFields', th:'จัดการส่วนและช่องข้อมูลเพิ่มเติม',          en:'Manage custom form sections and fields' },
   { group:'ตั้งค่า',     key:'viewSettings',   th:'เข้าถึงหน้าตั้งค่าระบบ',         en:'Access settings page' },
   { group:'ตั้งค่า',     key:'editSettings',   th:'แก้ไขการตั้งค่าระบบ (SuperAdmin)', en:'Edit system settings' },
   { group:'ประวัติ',          key:'viewUniHistory', th:'ดูประวัติการเปลี่ยนมหาวิทยาลัย',   en:'View university transfer history' },

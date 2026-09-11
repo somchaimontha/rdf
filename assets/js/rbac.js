@@ -19,6 +19,7 @@
  *  viewPromotion     — access promotion.html
  *  runPromotion      — execute batch promotions
  *  manageNotifications — create and delete system notifications
+ *  manageCustomFields — configure metadata-driven form sections and fields
  *  viewSettings      — access settings.html
  *  editSettings      — modify system settings (SuperAdmin only)
  *  viewReports       — view & export reports
@@ -370,6 +371,7 @@ const RBAC = {
     const isStudent  = user.role === 'Student';
     const canPromo   = this.has('viewPromotion');
     const canSettings = this.has('editSettings') || this.has('viewSettings');
+    const canCustomFields = this.has('manageCustomFields');
 
     if (isStudent) {
       // Hide all admin menu cards
@@ -405,6 +407,8 @@ const RBAC = {
         const oc = card.getAttribute('onclick') || '';
         if (oc.includes('settings.html') && !canSettings) {
           _rbacDimCard(card, 'viewSettings');
+        } else if (oc.includes('custom-fields.html') && !canCustomFields) {
+          _rbacDimCard(card, 'manageCustomFields');
         } else if (oc.includes('promotion.html') && !canPromo) {
           _rbacDimCard(card, 'viewPromotion');
         }

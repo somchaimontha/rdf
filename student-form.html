@@ -881,6 +881,9 @@
     </div>
   </div>
 
+  <!-- Metadata-driven fields configured by authorized administrators -->
+  <div id="dynamicFieldsForm" hidden></div>
+
   <!-- Submit Buttons -->
   <div class="flex flex-col-reverse md:flex-row justify-end gap-3 pb-6">
     <a href="students.html" class="btn btn-secondary">
@@ -1243,11 +1246,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.0.4"></script>
-<script src="assets/js/i18n.js?v=2.0.4"></script>
-<script src="assets/js/api.js?v=2.0.4"></script>
-<script src="assets/js/auth.js?v=2.0.4"></script>
-<script src="assets/js/rbac.js"></script>
+<script src="assets/js/config.js?v=2.0.5"></script>
+<script src="assets/js/i18n.js?v=2.0.5"></script>
+<script src="assets/js/api.js?v=2.0.5"></script>
+<script src="assets/js/auth.js?v=2.0.5"></script>
+<script src="assets/js/rbac.js?v=2.0.5"></script>
+<script src="assets/js/dynamic-fields.js?v=2.0.5"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
@@ -1483,6 +1487,25 @@ function _acKeyNav(e, field) {
 const urlParams = new URLSearchParams(window.location.search);
 const editStipNo = urlParams.get('stipNo');
 let ocrStream = null;
+
+function getDynamicCoreContext() {
+  const value = id => document.getElementById(id)?.value || '';
+  return {
+    StipNo: value('f_stipNo'), Status: value('f_status'), Institution: value('f_institution'),
+    CurrentLevel: value('f_level'), ScholarshipYear: value('f_scholarshipYear'), EntryYear: value('f_entryYear'),
+    Sex: value('f_gender'), Province: value('f_province'), Nationality: value('f_nationality'),
+    UniName: value('f_uniName'), UniProvince: value('f_uniProvince'), BankName: value('f_bankName')
+  };
+}
+
+DynamicFields.initForm({
+  containerId: 'dynamicFieldsForm',
+  entityType: 'student',
+  entityId: editStipNo || '',
+  getContext: getDynamicCoreContext
+});
+document.getElementById('studentForm').addEventListener('input', () => DynamicFields.refreshVisibility());
+document.getElementById('studentForm').addEventListener('change', () => DynamicFields.refreshVisibility());
 
 // ── Grade section state (shared STUDENT_GRADES DB) ──────────
 let _formGrades   = [];   // full array from system settings
@@ -2584,6 +2607,12 @@ async function collectForm() {
 
 // ── Save ──
 async function saveStudent() {
+  await DynamicFields.ready();
+  const dynamicValidation = DynamicFields.validate();
+  if (!dynamicValidation.valid) {
+    Swal.fire(t('warning'), dynamicValidation.message || t('dfPleaseCheckFields'), 'warning');
+    return;
+  }
   const data = await collectForm();
   if (!data) return;
   const isEdit = document.getElementById('f_editMode').value === 'edit';
@@ -2679,6 +2708,19 @@ async function saveStudent() {
     showLoader(false);
     if (result.status === 'success') {
       const finalStipNo = result.stipNo || data.StipNo;
+      showLoader(true, t('dfSaving'));
+      const dynamicResult = await DynamicFields.save(finalStipNo);
+      showLoader(false);
+      if (dynamicResult.status !== 'success') {
+        RDF.logError('student-form.html', 'saveStudentDynamicValues()', dynamicResult.message || dynamicResult.code || 'Dynamic field save failed');
+        await Swal.fire({
+          icon: 'warning',
+          title: t('dfCoreSavedExtraFailed'),
+          text: dynamicResult.message || t('dfSaveError'),
+          confirmButtonColor: '#1e3a8a'
+        });
+        return;
+      }
       // Upload any pending documents
       if (_docFiles.length > 0) {
         await uploadPendingDocs(finalStipNo, data.Institution || 'Other');

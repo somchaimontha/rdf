@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-t="dfPageTitle">จัดการช่องข้อมูลเพิ่มเติม</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{rdfBlue:'#1e3a8a'}}}}</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  .builder-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 9px rgba(15,23,42,.05)}
+  .builder-head{padding:12px 15px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:9px}
+  .builder-body{padding:15px}.builder-label{display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 5px}
+  .builder-input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 9px;font-size:12px;color:#1e293b;background:#fff;min-height:37px}
+  .builder-input:focus{outline:0;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  .schema-section{border:1px solid #dbe4f0;border-radius:10px;overflow:hidden;margin-bottom:10px}
+  .schema-section-head{display:flex;align-items:center;gap:7px;padding:9px 10px;background:#f8fafc}
+  .schema-field{display:flex;align-items:center;gap:7px;padding:8px 10px 8px 20px;border-top:1px solid #edf2f7;font-size:11px}
+  .schema-name{min-width:0;flex:1}.schema-name strong,.schema-name span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .schema-name span{font-size:10px;color:#94a3b8}.icon-btn{border:0;background:transparent;border-radius:6px;padding:4px;color:#64748b;cursor:pointer}
+  .icon-btn:hover{background:#e2e8f0;color:#1d4ed8}.icon-btn.danger:hover{background:#fee2e2;color:#dc2626}
+  .badge-mini{font-size:9px;font-weight:750;padding:2px 6px;border-radius:999px;white-space:nowrap}
+  .role-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.role-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#334155}
+  .option-row{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:7px;align-items:end;margin-bottom:7px}
+  .editor-section{border:1px solid #e2e8f0;border-radius:11px;padding:13px;margin-bottom:13px}.editor-section h4{font-size:12px;font-weight:800;color:#1e3a8a;margin-bottom:10px}
+  .setup-sheet{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid #f1f5f9}.setup-sheet:last-child{border:0}
+  .preview-box{border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
+  @media(max-width:760px){.role-grid{grid-template-columns:1fr 1fr}.option-row{grid-template-columns:1fr}.option-row button{justify-self:start}}
+</style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+<div id="loader" class="hidden"><div class="loader-spinner"></div><p id="loaderText"><span data-t="stLoading">กำลังโหลด...</span></p></div>
+
+<nav class="rdf-nav">
+  <div class="nav-inner">
+    <a href="dashboard.html" class="nav-brand">
+      <div class="text-right hide-mobile"><div class="nav-title"><h1 data-t="foundationShort">มูลนิธิฯ Dr. Robert Dyckerhoff</h1><p data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</p></div></div>
+      <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
+    </a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+      <div id="navUserWrap" class="hidden nav-user"><img id="navAvatar" src="" alt="User" class="nav-avatar"><div class="hide-mobile"><div id="navUserName" class="nav-user-name">—</div><div id="navUserRole" class="nav-user-role">—</div></div></div>
+      <button id="btnLogout" onclick="logout()" class="hidden text-white opacity-60 hover:opacity-100 transition ml-1" data-t-title="logout"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+    </div>
+  </div>
+</nav>
+
+<main class="container main-content flex-1">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+    <div>
+      <a href="settings.html" class="text-xs text-gray-400 hover:text-blue-700 inline-flex items-center gap-1 mb-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i><span data-t="dfBackSettings">กลับหน้าตั้งค่า</span></a>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="list-plus" class="w-5 h-5 text-blue-700"></i><span data-t="dfPageTitle">จัดการช่องข้อมูลเพิ่มเติม</span></h2>
+      <p class="text-xs text-gray-500 mt-1" data-t="dfPageSubtitle">กำหนดส่วน ฟิลด์ ตัวเลือก เงื่อนไข และสิทธิ์ โดยไม่แก้โครงสร้างข้อมูลนักเรียนเดิม</p>
+    </div>
+    <div class="text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700"><span data-t="dfEntityStudent">ข้อมูลนักเรียน</span> · <span id="schemaVersion">—</span></div>
+  </div>
+
+  <section id="setupPanel" class="builder-card mb-5">
+    <div class="builder-head"><i data-lucide="database" class="w-4 h-4 text-blue-700"></i><h3 class="font-bold text-sm text-gray-800" data-t="dfSetupTitle">สถานะโครงสร้างข้อมูลเพิ่มเติม</h3><span id="setupBadge" class="badge-mini ml-auto"></span></div>
+    <div class="builder-body grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="md:col-span-2"><p id="setupDescription" class="text-xs text-gray-600 mb-2"></p><div id="setupSheets"></div><p class="text-[10px] text-emerald-700 mt-2" data-t="dfSetupSafeNote">การติดตั้งจะเพิ่มเฉพาะชีตหรือหัวคอลัมน์ที่ขาด และจะไม่ล้างหรือลบข้อมูลเดิม</p></div>
+      <div class="flex items-center md:justify-end"><button id="setupBtn" type="button" class="btn btn-primary" onclick="runSetup()"><i data-lucide="database-zap" class="w-4 h-4"></i><span data-t="dfRunSetup">ติดตั้งโครงสร้างที่ขาด</span></button></div>
+    </div>
+  </section>
+
+  <div id="builderWorkspace" class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+    <section class="builder-card lg:col-span-2 self-start">
+      <div class="builder-head"><i data-lucide="layers-3" class="w-4 h-4 text-blue-700"></i><h3 class="font-bold text-sm text-gray-800" data-t="dfSchemaTitle">โครงสร้างแบบฟอร์ม</h3><button type="button" class="btn btn-primary btn-sm ml-auto" onclick="openSectionEditor()"><i data-lucide="plus" class="w-3.5 h-3.5"></i><span data-t="dfAddSection">เพิ่มส่วน</span></button></div>
+      <div class="builder-body"><div id="schemaList"></div></div>
+    </section>
+
+    <section class="builder-card lg:col-span-3">
+      <div id="editorEmpty" class="p-10 text-center text-gray-400"><i data-lucide="mouse-pointer-click" class="w-8 h-8 mx-auto mb-2"></i><p class="text-sm" data-t="dfSelectEditor">เลือกส่วนหรือฟิลด์ที่ต้องการแก้ไข</p></div>
+
+      <form id="sectionEditor" class="hidden" onsubmit="event.preventDefault();saveSectionEditor()">
+        <div class="builder-head"><i data-lucide="panel-top" class="w-4 h-4 text-blue-700"></i><h3 id="sectionEditorTitle" class="font-bold text-sm text-gray-800"></h3></div>
+        <div class="builder-body">
+          <input id="sec_id" type="hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <label><span class="builder-label" data-t="dfKey">คีย์ถาวร</span><input id="sec_key" class="builder-input" required pattern="[a-z][a-z0-9_]{1,59}" data-t-placeholder="dfKeyPlaceholder"></label>
+            <label><span class="builder-label" data-t="dfDisplayOrder">ลำดับแสดงผล</span><input id="sec_order" class="builder-input" type="number" min="0" value="1"></label>
+            <label><span class="builder-label" data-t="dfNameTH">ชื่อภาษาไทย</span><input id="sec_name_th" class="builder-input" required></label>
+            <label><span class="builder-label" data-t="dfNameEN">ชื่อภาษาอังกฤษ</span><input id="sec_name_en" class="builder-input" required></label>
+            <label><span class="builder-label" data-t="dfDescriptionTH">คำอธิบายภาษาไทย</span><textarea id="sec_desc_th" class="builder-input" rows="2"></textarea></label>
+            <label><span class="builder-label" data-t="dfDescriptionEN">คำอธิบายภาษาอังกฤษ</span><textarea id="sec_desc_en" class="builder-input" rows="2"></textarea></label>
+            <label><span class="builder-label" data-t="dfCardinality">รูปแบบรายการ</span><select id="sec_cardinality" class="builder-input"><option value="single" data-t="dfSingle">รายการเดียว</option><option value="repeatable" data-t="dfRepeatable">เพิ่มซ้ำได้หลายรายการ</option></select></label>
+            <div class="flex items-end gap-4 pb-2"><label class="role-item"><input id="sec_active" type="checkbox" checked><span data-t="dfActive">เปิดใช้งาน</span></label><label class="role-item"><input id="sec_collapsible" type="checkbox" checked><span data-t="dfCollapsible">ย่อส่วนได้</span></label></div>
+          </div>
+          <div class="editor-section"><h4 data-t="dfVisibleRoles">สิทธิ์ที่มองเห็น</h4><div id="sec_visible_roles" class="role-grid"></div></div>
+          <div class="editor-section"><h4 data-t="dfVisibilityCondition">เงื่อนไขการแสดงผล</h4><div id="sec_condition"></div></div>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary" onclick="closeEditors()" data-t="cancel">ยกเลิก</button><button type="submit" class="btn btn-primary"><i data-lucide="save" class="w-4 h-4"></i><span data-t="save">บันทึกข้อมูล</span></button></div>
+        </div>
+      </form>
+
+      <form id="fieldEditor" class="hidden" onsubmit="event.preventDefault();saveFieldEditor()">
+        <div class="builder-head"><i data-lucide="text-cursor-input" class="w-4 h-4 text-blue-700"></i><h3 id="fieldEditorTitle" class="font-bold text-sm text-gray-800"></h3></div>
+        <div class="builder-body">
+          <input id="fld_id" type="hidden">
+          <div class="editor-section"><h4 data-t="dfBasicInfo">ข้อมูลพื้นฐาน</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label><span class="builder-label" data-t="dfSection">ส่วน</span><select id="fld_section" class="builder-input" required></select></label>
+              <label><span class="builder-label" data-t="dfFieldType">ชนิดฟิลด์</span><select id="fld_type" class="builder-input" onchange="toggleOptionsEditor();renderFieldPreview()"></select></label>
+              <label><span class="builder-label" data-t="dfKey">คีย์ถาวร</span><input id="fld_key" class="builder-input" required pattern="[a-z][a-z0-9_]{1,59}" data-t-placeholder="dfKeyPlaceholder"></label>
+              <label><span class="builder-label" data-t="dfDisplayOrder">ลำดับแสดงผล</span><input id="fld_order" class="builder-input" type="number" min="0" value="1"></label>
+              <label><span class="builder-label" data-t="dfLabelTH">ป้ายชื่อภาษาไทย</span><input id="fld_label_th" class="builder-input" required oninput="renderFieldPreview()"></label>
+              <label><span class="builder-label" data-t="dfLabelEN">ป้ายชื่อภาษาอังกฤษ</span><input id="fld_label_en" class="builder-input" required oninput="renderFieldPreview()"></label>
+              <label><span class="builder-label" data-t="dfPlaceholderTH">ข้อความตัวอย่างภาษาไทย</span><input id="fld_placeholder_th" class="builder-input"></label>
+              <label><span class="builder-label" data-t="dfPlaceholderEN">ข้อความตัวอย่างภาษาอังกฤษ</span><input id="fld_placeholder_en" class="builder-input"></label>
+              <label><span class="builder-label" data-t="dfDescriptionTH">คำอธิบายภาษาไทย</span><textarea id="fld_desc_th" class="builder-input" rows="2"></textarea></label>
+              <label><span class="builder-label" data-t="dfDescriptionEN">คำอธิบายภาษาอังกฤษ</span><textarea id="fld_desc_en" class="builder-input" rows="2"></textarea></label>
+              <label><span class="builder-label" data-t="dfHelpTH">คำแนะนำภาษาไทย</span><textarea id="fld_help_th" class="builder-input" rows="2"></textarea></label>
+              <label><span class="builder-label" data-t="dfHelpEN">คำแนะนำภาษาอังกฤษ</span><textarea id="fld_help_en" class="builder-input" rows="2"></textarea></label>
+            </div>
+          </div>
+
+          <div class="editor-section"><h4 data-t="dfBehaviorValidation">พฤติกรรมและการตรวจสอบ</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <label class="role-item"><input id="fld_active" type="checkbox" checked><span data-t="dfActive">เปิดใช้งาน</span></label>
+              <label class="role-item"><input id="fld_visible" type="checkbox" checked><span data-t="dfVisible">แสดงผล</span></label>
+              <label class="role-item"><input id="fld_editable" type="checkbox" checked><span data-t="dfEditable">แก้ไขได้</span></label>
+              <label class="role-item"><input id="fld_required" type="checkbox"><span data-t="dfRequired">บังคับกรอก</span></label>
+              <label class="role-item"><input id="fld_unique" type="checkbox"><span data-t="dfUnique">ห้ามค่าซ้ำ</span></label>
+              <label class="role-item"><input id="fld_searchable" type="checkbox"><span data-t="dfSearchable">ใช้ค้นหาได้</span></label>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <label><span class="builder-label" data-t="dfMinLength">ความยาวต่ำสุด</span><input id="fld_min_length" class="builder-input" type="number" min="0"></label>
+              <label><span class="builder-label" data-t="dfMaxLength">ความยาวสูงสุด</span><input id="fld_max_length" class="builder-input" type="number" min="0"></label>
+              <label><span class="builder-label" data-t="dfMinValue">ค่าต่ำสุด</span><input id="fld_min_value" class="builder-input" type="number" step="any"></label>
+              <label><span class="builder-label" data-t="dfMaxValue">ค่าสูงสุด</span><input id="fld_max_value" class="builder-input" type="number" step="any"></label>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <label><span class="builder-label" data-t="dfPattern">รูปแบบตรวจสอบ (Regular Expression)</span><input id="fld_pattern" class="builder-input"></label>
+              <label><span class="builder-label" data-t="dfDefaultValue">ค่าเริ่มต้น</span><input id="fld_default" class="builder-input"></label>
+              <label><span class="builder-label" data-t="dfValidationMessageTH">ข้อความผิดพลาดภาษาไทย</span><input id="fld_validation_th" class="builder-input"></label>
+              <label><span class="builder-label" data-t="dfValidationMessageEN">ข้อความผิดพลาดภาษาอังกฤษ</span><input id="fld_validation_en" class="builder-input"></label>
+            </div>
+          </div>
+
+          <div id="optionsEditor" class="editor-section hidden"><div class="flex items-center mb-2"><h4 class="mb-0" data-t="dfOptions">ตัวเลือก</h4><button type="button" class="btn btn-secondary btn-sm ml-auto" onclick="addOptionRow()"><i data-lucide="plus" class="w-3.5 h-3.5"></i><span data-t="dfAddOption">เพิ่มตัวเลือก</span></button></div><div id="optionRows"></div></div>
+
+          <div class="editor-section"><h4 data-t="dfPermissions">สิทธิ์ของฟิลด์</h4><p class="builder-label" data-t="dfVisibleRoles">สิทธิ์ที่มองเห็น</p><div id="fld_visible_roles" class="role-grid mb-3"></div><p class="builder-label" data-t="dfEditableRoles">สิทธิ์ที่แก้ไขได้</p><div id="fld_editable_roles" class="role-grid"></div></div>
+          <div class="editor-section"><h4 data-t="dfVisibilityCondition">เงื่อนไขการแสดงผล</h4><div id="fld_condition"></div></div>
+          <div class="editor-section"><h4 data-t="dfPreview">ตัวอย่าง</h4><div id="fieldPreview" class="preview-box"></div></div>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary" onclick="closeEditors()" data-t="cancel">ยกเลิก</button><button type="submit" class="btn btn-primary"><i data-lucide="save" class="w-4 h-4"></i><span data-t="save">บันทึกข้อมูล</span></button></div>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+
+<footer class="rdf-footer"><div class="footer-left"><strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong><span class="mx-2 hide-xs">•</span><span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span></div><div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" data-t-title="hintClickToCheckAgain"><span class="db-dot"></span><span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span></div></footer>
+
+<script src="assets/js/config.js?v=2.0.5"></script>
+<script src="assets/js/i18n.js?v=2.0.5"></script>
+<script src="assets/js/api.js?v=2.0.5"></script>
+<script src="assets/js/auth.js?v=2.0.5"></script>
+<script src="assets/js/rbac.js?v=2.0.5"></script>
+<script>
+const user = requireAuth();
+if (user) renderNavUser(user);
+if (user) RBAC.enforcePage(['manageCustomFields']);
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+lucide.createIcons(); initDBStatus();
+
+const DF_ROLES = ['SuperAdmin','Manager','Finance','Committee','DormTeacher','Student'];
+const DF_TYPES = ['text','textarea','number','decimal','email','tel','date','datetime','select','multiselect','radio','checkbox','boolean','url','readonly','hidden'];
+const DF_OPERATORS = ['equals','not_equals','contains','in','not_in','is_empty','is_not_empty'];
+const DF_CORE_FIELDS = ['Status','Institution','CurrentLevel','ScholarshipYear','EntryYear','Sex','Province','Nationality','UniName','UniProvince','BankName'];
+let adminData = { sections:[], fields:[], options:[], setupRequired:true };
+
+const el = id => document.getElementById(id);
+const value = id => el(id)?.value?.trim() || '';
+const checked = id => !!el(id)?.checked;
+const localName = item => LANG === 'en' ? (item.nameEN || item.labelEN || item.nameTH || item.labelTH || '') : (item.nameTH || item.labelTH || item.nameEN || item.labelEN || '');
+const make = (tag, cls, text) => { const node=document.createElement(tag); if(cls)node.className=cls;if(text!==undefined)node.textContent=String(text);return node; };
+
+function roleChecks(containerId, selected) {
+  const container=el(containerId); container.replaceChildren(); const chosen=new Set(selected || DF_ROLES);
+  DF_ROLES.forEach(role=>{const label=make('label','role-item');const input=document.createElement('input');input.type='checkbox';input.value=role;input.checked=chosen.has(role);label.append(input,document.createTextNode(RBAC.roleLabel(role)));container.appendChild(label);});
+}
+function selectedRoles(containerId) { return [...el(containerId).querySelectorAll('input:checked')].map(input=>input.value); }
+
+function conditionEditor(containerId, rules) {
+  const container=el(containerId); container.replaceChildren();
+  const condition=rules?.conditions?.[0] || {};
+  const grid=make('div','grid grid-cols-1 md:grid-cols-4 gap-2');
+  const source=document.createElement('select');source.className='builder-input df-cond-source';
+  [['',t('dfNoCondition')],['core',t('dfCoreField')],['custom',t('dfCustomField')]].forEach(([v,l])=>source.appendChild(new Option(l,v)));source.value=condition.source||'';
+  const field=document.createElement('select');field.className='builder-input df-cond-field';
+  const operator=document.createElement('select');operator.className='builder-input df-cond-operator';
+  DF_OPERATORS.forEach(op=>operator.appendChild(new Option(t('dfOperator_'+op),op)));operator.value=condition.operator||'equals';
+  const expected=document.createElement('input');expected.className='builder-input df-cond-value';expected.placeholder=t('dfExpectedValue');expected.value=condition.value??'';
+  const rebuildFields=()=>{const previous=field.value||condition.field||'';field.replaceChildren(new Option(t('dfSelectField'),''));const items=source.value==='core'?DF_CORE_FIELDS:adminData.fields.filter(f=>!f.archived).map(f=>f.fieldId);items.forEach(item=>{const meta=adminData.fields.find(f=>f.fieldId===item);field.appendChild(new Option(meta?localName(meta):item,item));});field.value=previous;};
+  source.addEventListener('change',rebuildFields);grid.append(source,field,operator,expected);container.appendChild(grid);rebuildFields();
+}
+function readCondition(containerId) { const c=el(containerId);const source=c.querySelector('.df-cond-source').value;const field=c.querySelector('.df-cond-field').value;if(!source||!field)return {logic:'AND',conditions:[]};return {logic:'AND',conditions:[{source,field,operator:c.querySelector('.df-cond-operator').value,value:c.querySelector('.df-cond-value').value}]}; }
+
+function setSetupStatus(setup) {
+  el('schemaVersion').textContent=setup?.schemaVersion || adminData.schemaVersion || '—';
+  const ready=setup?.ready===true;el('setupBadge').textContent=ready?t('dfSetupReady'):t('dfSetupRequired');el('setupBadge').style.cssText=ready?'background:#dcfce7;color:#166534':'background:#fef3c7;color:#92400e';
+  el('setupDescription').textContent=ready?t('dfSetupReadyDesc'):t('dfSetupRequiredDesc');el('setupBtn').disabled=ready;el('setupBtn').style.opacity=ready?'.5':'1';
+  const list=el('setupSheets');list.replaceChildren();(setup?.sheets||[]).forEach(sheet=>{const row=make('div','setup-sheet');const dot=make('span','badge-mini',sheet.exists&&!sheet.missingHeaders.length?'✓':'!');dot.style.cssText=sheet.exists&&!sheet.missingHeaders.length?'background:#dcfce7;color:#166534':'background:#fee2e2;color:#991b1b';const name=make('strong','text-gray-700',sheet.name);const detail=make('span','text-gray-400 ml-auto',`${t('dfRows')}: ${sheet.rowCount||0} · ${t('dfMissingHeaders')}: ${(sheet.missingHeaders||[]).length}`);row.append(dot,name,detail);list.appendChild(row);});
+}
+
+async function loadAdminData() {
+  showLoader(true,t('loading'));
+  try { const result=await API.getDynamicFieldAdminData('student');showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfLoadError'));adminData=result;setSetupStatus(result.setup||result);renderSchemaList();populateSectionSelect(); }
+  catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}
+}
+
+async function runSetup() {
+  const confirmation=await Swal.fire({icon:'question',title:t('dfRunSetup'),text:t('dfSetupConfirm'),showCancelButton:true,confirmButtonText:t('confirm'),cancelButtonText:t('cancel'),confirmButtonColor:'#1e3a8a'});if(!confirmation.isConfirmed)return;
+  showLoader(true,t('dfInstalling'));try{const result=await API.setupDynamicFieldSchema();showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfSetupError'));await Swal.fire({icon:'success',title:t('success'),text:t('dfSetupComplete'),timer:1800,showConfirmButton:false});await loadAdminData();}catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}
+}
+
+function iconButton(icon,title,handler,danger) { const button=make('button',`icon-btn${danger?' danger':''}`);button.type='button';button.title=title;const i=document.createElement('i');i.setAttribute('data-lucide',icon);i.className='w-3.5 h-3.5';button.appendChild(i);button.addEventListener('click',handler);return button; }
+function renderSchemaList() {
+  const list=el('schemaList');list.replaceChildren();
+  if(adminData.setupRequired){list.appendChild(make('div','text-xs text-amber-700 text-center p-5',t('dfSetupFirst')));return;}
+  const sections=[...adminData.sections].sort((a,b)=>a.displayOrder-b.displayOrder);
+  if(!sections.length){list.appendChild(make('div','text-xs text-gray-400 text-center p-5',t('dfNoSections')));return;}
+  sections.forEach((section,index)=>{const box=make('div','schema-section');const head=make('div','schema-section-head');const names=make('div','schema-name');names.append(make('strong','text-xs text-gray-800',localName(section)||section.sectionKey),make('span','',section.sectionKey));head.append(names);
+    const status=make('span','badge-mini',section.active?t('dfActive'):t('dfInactive'));status.style.cssText=section.active?'background:#dcfce7;color:#166534':'background:#e2e8f0;color:#475569';head.append(status,iconButton('arrow-up',t('dfMoveUp'),()=>moveSection(section,-1),false),iconButton('arrow-down',t('dfMoveDown'),()=>moveSection(section,1),false),iconButton('pencil',t('dfEditSection'),()=>openSectionEditor(section),false),iconButton('plus',t('dfAddField'),()=>openFieldEditor(null,section.sectionId),false));box.appendChild(head);
+    const fields=adminData.fields.filter(field=>field.sectionId===section.sectionId).sort((a,b)=>a.displayOrder-b.displayOrder);
+    if(!fields.length)box.appendChild(make('div','schema-field text-gray-400',t('dfNoFields')));
+    fields.forEach(field=>{const row=make('div','schema-field');const name=make('div','schema-name');name.append(make('strong','text-gray-700',localName(field)||field.fieldKey),make('span','',`${field.fieldKey} · ${field.fieldType} · ${field.valueCount||0} ${t('dfValues')}`));row.append(name);if(field.archived){const archived=make('span','badge-mini',t('dfArchived'));archived.style.cssText='background:#fee2e2;color:#991b1b';row.append(archived);}row.append(iconButton('arrow-up',t('dfMoveUp'),()=>moveField(field,-1),false),iconButton('arrow-down',t('dfMoveDown'),()=>moveField(field,1),false),iconButton('pencil',t('dfEditField'),()=>openFieldEditor(field),false),iconButton('archive',t('dfArchive'),()=>archiveField(field),true));box.appendChild(row);});list.appendChild(box);});lucide.createIcons();
+}
+
+function closeEditors(){el('sectionEditor').classList.add('hidden');el('fieldEditor').classList.add('hidden');el('editorEmpty').classList.remove('hidden');}
+function showEditor(id){el('editorEmpty').classList.add('hidden');el('sectionEditor').classList.toggle('hidden',id!=='sectionEditor');el('fieldEditor').classList.toggle('hidden',id!=='fieldEditor');}
+function openSectionEditor(section) { if(adminData.setupRequired)return;showEditor('sectionEditor');el('sectionEditorTitle').textContent=section?t('dfEditSection'):t('dfAddSection');el('sec_id').value=section?.sectionId||'';el('sec_key').value=section?.sectionKey||'';el('sec_key').readOnly=!!section;el('sec_order').value=section?.displayOrder??adminData.sections.length+1;el('sec_name_th').value=section?.nameTH||'';el('sec_name_en').value=section?.nameEN||'';el('sec_desc_th').value=section?.descriptionTH||'';el('sec_desc_en').value=section?.descriptionEN||'';el('sec_cardinality').value=section?.cardinality||'single';el('sec_active').checked=section?.active!==false;el('sec_collapsible').checked=section?.collapsible!==false;roleChecks('sec_visible_roles',section?.visibleRoles);conditionEditor('sec_condition',section?.visibilityRules);lucide.createIcons(); }
+async function saveSectionEditor(){const section={sectionId:value('sec_id'),sectionKey:value('sec_key'),nameTH:value('sec_name_th'),nameEN:value('sec_name_en'),descriptionTH:value('sec_desc_th'),descriptionEN:value('sec_desc_en'),displayOrder:Number(value('sec_order'))||0,cardinality:value('sec_cardinality'),active:checked('sec_active'),collapsible:checked('sec_collapsible'),visibleRoles:selectedRoles('sec_visible_roles'),visibilityRules:readCondition('sec_condition')};await saveAndReload(()=>API.saveDynamicSection(section),t('dfSectionSaved'));}
+
+function populateSectionSelect(){const select=el('fld_section');if(!select)return;const selected=select.value;select.replaceChildren(new Option(t('dfSelectSection'),''));[...adminData.sections].filter(s=>s.active).sort((a,b)=>a.displayOrder-b.displayOrder).forEach(section=>select.appendChild(new Option(localName(section)||section.sectionKey,section.sectionId)));select.value=selected;}
+function populateTypes(force){const select=el('fld_type');const selected=select.value;if(select.options.length&&!force)return;select.replaceChildren();DF_TYPES.forEach(type=>select.appendChild(new Option(t('dfType_'+type),type)));if(selected)select.value=selected;}
+function openFieldEditor(field,sectionId){if(adminData.setupRequired||!adminData.sections.length)return;showEditor('fieldEditor');populateTypes();populateSectionSelect();el('fieldEditorTitle').textContent=field?t('dfEditField'):t('dfAddField');el('fld_id').value=field?.fieldId||'';el('fld_section').value=field?.sectionId||sectionId||'';el('fld_type').value=field?.fieldType||'text';el('fld_key').value=field?.fieldKey||'';el('fld_key').readOnly=!!field;el('fld_order').value=field?.displayOrder??adminData.fields.filter(f=>f.sectionId===(sectionId||el('fld_section').value)).length+1;el('fld_label_th').value=field?.labelTH||'';el('fld_label_en').value=field?.labelEN||'';el('fld_placeholder_th').value=field?.placeholderTH||'';el('fld_placeholder_en').value=field?.placeholderEN||'';el('fld_desc_th').value=field?.descriptionTH||'';el('fld_desc_en').value=field?.descriptionEN||'';el('fld_help_th').value=field?.helpTextTH||'';el('fld_help_en').value=field?.helpTextEN||'';el('fld_active').checked=field?.active!==false;el('fld_visible').checked=field?.visible!==false;el('fld_editable').checked=field?.editable!==false;el('fld_required').checked=!!field?.required;el('fld_unique').checked=!!field?.unique;el('fld_searchable').checked=!!field?.searchable;el('fld_min_length').value=field?.minLength??'';el('fld_max_length').value=field?.maxLength??'';el('fld_min_value').value=field?.minValue??'';el('fld_max_value').value=field?.maxValue??'';el('fld_pattern').value=field?.validationPattern||'';el('fld_default').value=field?.defaultValue||'';el('fld_validation_th').value=field?.validationMessageTH||'';el('fld_validation_en').value=field?.validationMessageEN||'';roleChecks('fld_visible_roles',field?.visibleRoles);roleChecks('fld_editable_roles',field?.editableRoles||['SuperAdmin','Manager','DormTeacher']);conditionEditor('fld_condition',field?.visibilityRules);el('optionRows').replaceChildren();const options=adminData.options.filter(o=>o.fieldId===field?.fieldId);options.forEach(addOptionRow);toggleOptionsEditor();renderFieldPreview();lucide.createIcons();}
+
+function addOptionRow(option){
+  const row=make('div','option-row');row.dataset.optionId=option?.optionId||'';
+  const specs=[['value','dfOptionValue',option?.value||''],['th','dfOptionTH',option?.labelTH||''],['en','dfOptionEN',option?.labelEN||'']];
+  specs.forEach(([name,key,val])=>{const label=document.createElement('label');const caption=make('span','builder-label',t(key));caption.dataset.t=key;const input=document.createElement('input');input.className=`builder-input opt-${name}`;input.value=val;input.required=true;label.append(caption,input);row.appendChild(label);});
+  row.dataset.active=option?.active===false?'false':'true';
+  const activeLabel=make('label','role-item pb-2');const active=document.createElement('input');active.type='checkbox';active.checked=row.dataset.active==='true';active.addEventListener('change',()=>{row.dataset.active=active.checked?'true':'false';});const activeText=make('span','',t('dfActive'));activeText.dataset.t='dfActive';activeLabel.append(active,activeText);row.appendChild(activeLabel);
+  const actions=make('div','flex items-center pb-1');
+  actions.append(iconButton('arrow-up',t('dfMoveUp'),()=>moveOptionRow(row,-1)),iconButton('arrow-down',t('dfMoveDown'),()=>moveOptionRow(row,1)),iconButton('trash-2',t('dfRemoveOption'),()=>{if(row.dataset.optionId){row.dataset.active='false';row.classList.add('hidden');}else row.remove();},true));
+  row.appendChild(actions);el('optionRows').appendChild(row);lucide.createIcons();
+}
+function moveOptionRow(row,direction){const sibling=direction<0?row.previousElementSibling:row.nextElementSibling;if(!sibling)return;if(direction<0)row.parentElement.insertBefore(row,sibling);else row.parentElement.insertBefore(sibling,row);renderFieldPreview();}
+function toggleOptionsEditor(){const uses=['select','multiselect','radio'].includes(value('fld_type'));el('optionsEditor').classList.toggle('hidden',!uses);if(uses&&!el('optionRows').children.length)addOptionRow();}
+function readOptions(){return [...el('optionRows').children].map((row,index)=>({optionId:row.dataset.optionId||'',value:row.querySelector('.opt-value').value.trim(),labelTH:row.querySelector('.opt-th').value.trim(),labelEN:row.querySelector('.opt-en').value.trim(),displayOrder:index+1,active:row.dataset.active!=='false'}));}
+function readOptionalNumber(id){const raw=value(id);return raw===''?null:Number(raw);}
+function fieldPayload(field){const section=adminData.sections.find(s=>s.sectionId===(field?.sectionId||value('fld_section')));return {fieldId:field?.fieldId||value('fld_id'),fieldKey:field?.fieldKey||value('fld_key'),sectionId:field?.sectionId||value('fld_section'),fieldType:field?.fieldType||value('fld_type'),labelTH:field?.labelTH??value('fld_label_th'),labelEN:field?.labelEN??value('fld_label_en'),placeholderTH:field?.placeholderTH??value('fld_placeholder_th'),placeholderEN:field?.placeholderEN??value('fld_placeholder_en'),helpTextTH:field?.helpTextTH??value('fld_help_th'),helpTextEN:field?.helpTextEN??value('fld_help_en'),descriptionTH:field?.descriptionTH??value('fld_desc_th'),descriptionEN:field?.descriptionEN??value('fld_desc_en'),defaultValue:field?.defaultValue??value('fld_default'),required:field?.required??checked('fld_required'),unique:field?.unique??checked('fld_unique'),searchable:field?.searchable??checked('fld_searchable'),editable:field?.editable??checked('fld_editable'),visible:field?.visible??checked('fld_visible'),active:field?.active??checked('fld_active'),displayOrder:field?.displayOrder??(Number(value('fld_order'))||0),minLength:field?.minLength??readOptionalNumber('fld_min_length'),maxLength:field?.maxLength??readOptionalNumber('fld_max_length'),minValue:field?.minValue??readOptionalNumber('fld_min_value'),maxValue:field?.maxValue??readOptionalNumber('fld_max_value'),validationPattern:field?.validationPattern??value('fld_pattern'),validationMessageTH:field?.validationMessageTH??value('fld_validation_th'),validationMessageEN:field?.validationMessageEN??value('fld_validation_en'),visibleRoles:field?.visibleRoles||selectedRoles('fld_visible_roles'),editableRoles:field?.editableRoles||selectedRoles('fld_editable_roles'),visibilityRules:field?.visibilityRules||readCondition('fld_condition'),cardinality:section?.cardinality||'single'};}
+async function saveFieldEditor(){const options=readOptions();await saveAndReload(()=>API.saveDynamicField(fieldPayload(null),options),t('dfFieldSaved'));}
+
+function optionsFor(field){return adminData.options.filter(o=>o.fieldId===field.fieldId).map(o=>({...o}));}
+async function saveAndReload(operation,message){showLoader(true,t('saving'));try{const result=await operation();showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfSaveError'));await Swal.fire({icon:'success',title:message,timer:1300,showConfirmButton:false});closeEditors();await loadAdminData();}catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}}
+async function archiveField(field){if(field.archived){openFieldEditor(field);return;}const result=await Swal.fire({icon:'warning',title:t('dfArchive'),text:t('dfArchiveConfirm'),showCancelButton:true,confirmButtonText:t('dfArchive'),cancelButtonText:t('cancel'),confirmButtonColor:'#dc2626'});if(!result.isConfirmed)return;await saveAndReload(()=>API.archiveDynamicField(field.fieldId),t('dfFieldArchived'));}
+
+async function moveSection(section,direction){const items=[...adminData.sections].sort((a,b)=>a.displayOrder-b.displayOrder);const index=items.findIndex(x=>x.sectionId===section.sectionId);const other=items[index+direction];if(!other)return;const first={...section,displayOrder:other.displayOrder};const second={...other,displayOrder:section.displayOrder};await saveAndReload(async()=>{const a=await API.saveDynamicSection(first);if(a.status!=='success')return a;return API.saveDynamicSection(second);},t('dfOrderSaved'));}
+async function moveField(field,direction){const items=adminData.fields.filter(x=>x.sectionId===field.sectionId).sort((a,b)=>a.displayOrder-b.displayOrder);const index=items.findIndex(x=>x.fieldId===field.fieldId);const other=items[index+direction];if(!other)return;const first=fieldPayload({...field,displayOrder:other.displayOrder});const second=fieldPayload({...other,displayOrder:field.displayOrder});await saveAndReload(async()=>{const a=await API.saveDynamicField(first,optionsFor(field));if(a.status!=='success')return a;return API.saveDynamicField(second,optionsFor(other));},t('dfOrderSaved'));}
+
+function renderFieldPreview(){const box=el('fieldPreview');if(!box)return;box.replaceChildren();const label=make('label','builder-label',LANG==='en'?(value('fld_label_en')||value('fld_label_th')||t('dfPreviewLabel')):(value('fld_label_th')||value('fld_label_en')||t('dfPreviewLabel')));box.appendChild(label);const type=value('fld_type')||'text';let control;if(type==='textarea'){control=document.createElement('textarea');control.rows=2;}else if(['select','multiselect'].includes(type)){control=document.createElement('select');control.multiple=type==='multiselect';readOptions().filter(o=>o.active).forEach(o=>control.appendChild(new Option(LANG==='en'?(o.labelEN||o.labelTH||o.value):(o.labelTH||o.labelEN||o.value),o.value)));}else{control=document.createElement('input');control.type=['number','email','tel','date','url'].includes(type)?type:'text';if(['checkbox','boolean'].includes(type))control.type='checkbox';}control.className='builder-input';control.disabled=true;box.appendChild(control);}
+
+document.addEventListener('rdf:languagechange',()=>{
+  const sectionOpen=!el('sectionEditor').classList.contains('hidden');
+  const fieldOpen=!el('fieldEditor').classList.contains('hidden');
+  const sectionRoles=sectionOpen?selectedRoles('sec_visible_roles'):null;
+  const sectionRules=sectionOpen?readCondition('sec_condition'):null;
+  const fieldVisibleRoles=fieldOpen?selectedRoles('fld_visible_roles'):null;
+  const fieldEditableRoles=fieldOpen?selectedRoles('fld_editable_roles'):null;
+  const fieldRules=fieldOpen?readCondition('fld_condition'):null;
+  setSetupStatus(adminData.setup||adminData);renderSchemaList();populateSectionSelect();populateTypes(true);
+  if(sectionOpen){roleChecks('sec_visible_roles',sectionRoles);conditionEditor('sec_condition',sectionRules);}
+  if(fieldOpen){roleChecks('fld_visible_roles',fieldVisibleRoles);roleChecks('fld_editable_roles',fieldEditableRoles);conditionEditor('fld_condition',fieldRules);renderFieldPreview();}
+});
+loadAdminData();
+</script>
+</body>
+</html>
