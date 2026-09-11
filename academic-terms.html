@@ -31,17 +31,6 @@
       <img src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF" class="nav-logo">
     </a>
     <div class="nav-right">
-      <!-- Notification Bell -->
-      <button id="notifBell" onclick="toggleNotifPanel()" title="การแจ้งเตือน"
-              style="position:relative;background:rgba(255,255,255,.15);border:none;border-radius:50%;
-                     width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-                     cursor:pointer;color:#fff;margin-right:4px;transition:background .15s" data-t-title="notifTitle">
-        <i data-lucide="bell" class="w-4 h-4"></i>
-        <span id="notifBadge" class="hidden"
-              style="position:absolute;top:3px;right:3px;background:#ef4444;color:#fff;border-radius:999px;
-                     font-size:9px;font-weight:700;min-width:14px;height:14px;display:flex;
-                     align-items:center;justify-content:center;padding:0 2px">0</span>
-      </button>
       <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
       <div id="navUserWrap" class="hidden nav-user">
         <img id="navAvatar" src="" alt="User" class="nav-avatar">
@@ -56,44 +45,6 @@
     </div>
   </div>
 </nav>
-
-<!-- Notification Panel (dropdown) — collapsible, never blocks UI -->
-<div id="notifPanel"
-     style="display:none;position:fixed;top:60px;right:12px;z-index:9990;width:340px;
-            background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);
-            overflow:hidden;flex-direction:column;
-            transition:max-height .25s cubic-bezier(.4,0,.2,1);max-height:480px">
-  <!-- Header — click to collapse/expand -->
-  <div onclick="collapseNotifPanel(event)"
-       style="background:#1e3a8a;color:#fff;padding:11px 14px;display:flex;align-items:center;
-              justify-content:space-between;cursor:pointer;user-select:none;flex-shrink:0">
-    <span style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">
-      <i data-lucide="bell" class="w-4 h-4"></i>
-      <span data-t="notifTitle">การแจ้งเตือน</span>
-    </span>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="event.stopPropagation();markAllRead()"
-              style="font-size:11px;color:#93c5fd;background:none;border:none;cursor:pointer"
-              data-t="notifMarkAll">อ่านแล้วทั้งหมด</button>
-      <!-- chevron rotates when collapsed -->
-      <i id="notifChevron" data-lucide="chevron-up"
-         style="width:16px;height:16px;transition:transform .25s;flex-shrink:0"></i>
-    </div>
-  </div>
-  <!-- Collapsible body -->
-  <div id="notifPanelBody" style="display:flex;flex-direction:column;overflow:hidden;flex:1">
-    <div id="notifList" style="overflow-y:auto;max-height:340px;padding:8px 0">
-      <div class="text-center text-gray-400 text-sm py-8"><span data-t="stLoading">กำลังโหลด...</span></div>
-    </div>
-    <div style="border-top:1px solid #e5e7eb;padding:10px 14px;background:#f9fafb;flex-shrink:0">
-      <button onclick="openNotifCompose()" class="btn btn-sm w-full"
-              style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
-        <i data-lucide="send" class="w-3.5 h-3.5"></i>
-        <span data-t="notifCompose">ส่งการแจ้งเตือน</span>
-      </button>
-    </div>
-  </div>
-</div>
 
 <main class="container main-content">
 
@@ -350,7 +301,7 @@
         <div class="card-header" style="background:#374151">
           <i data-lucide="bell" class="w-4 h-4"></i>
           <span data-t="notifHistory">ประวัติการแจ้งเตือน</span>
-          <button onclick="loadNotifications()" class="ml-auto text-white opacity-60 hover:opacity-100">
+          <button onclick="loadAll()" class="ml-auto text-white opacity-60 hover:opacity-100">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           </button>
         </div>
@@ -562,10 +513,10 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.0.3"></script>
-<script src="assets/js/i18n.js"></script>
-<script src="assets/js/api.js?v=2.0.3"></script>
-<script src="assets/js/auth.js?v=2.0.3"></script>
+<script src="assets/js/config.js?v=2.0.4"></script>
+<script src="assets/js/i18n.js?v=2.0.4"></script>
+<script src="assets/js/api.js?v=2.0.4"></script>
+<script src="assets/js/auth.js?v=2.0.4"></script>
 <script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
@@ -574,6 +525,11 @@ RBAC.enforcePage(['viewStudents']);
 const user = requireAuth();
 if (user) renderNavUser(user);
 document.getElementById('footerYear').textContent = new Date().getFullYear();
+const canManageNotifications = RBAC.has('manageNotifications');
+if (!canManageNotifications) {
+  document.getElementById('tab3Btn')?.classList.add('hidden');
+  document.getElementById('tabContent3')?.classList.add('hidden');
+}
 
 // ── State ──────────────────────────────────────────────────────
 let TERMS     = [];   // all academic terms (from system settings)
@@ -641,7 +597,7 @@ async function loadAll() {
     renderTermList();
     renderScheduleGrid();
     renderNotifHistory();
-    renderNotifPanel();
+    _setSystemNotifications(NOTIFS);
     populateBatchTerms();
   } catch(e) {
     showLoader(false);
@@ -768,12 +724,12 @@ function renderTermList() {
                            align-items:center;justify-content:center;gap:3px">
               <i data-lucide="edit" style="width:12px;height:12px"></i> ${isEN?'Edit':'แก้ไข'}
             </button>
-            <button onclick="sendTermNotif('${term.id}')" title="${t('notifications')}"
+            ${canManageNotifications ? `<button onclick="sendTermNotif('${term.id}')" title="${t('notifications')}"
                     style="flex:1;padding:5px 0;border:1px solid #bbf7d0;background:#f0fdf4;color:#16a34a;
                            border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:flex;
                            align-items:center;justify-content:center;gap:3px">
               <i data-lucide="bell" style="width:12px;height:12px"></i> ${isEN?'Notify':'แจ้งเตือน'}
-            </button>
+            </button>` : ''}
             <button onclick="deleteTerm('${term.id}')" title="${t('delete')}"
                     style="padding:5px 8px;border:1px solid #fecaca;background:#fff5f5;color:#dc2626;
                            border-radius:8px;font-size:11px;cursor:pointer">
@@ -969,16 +925,18 @@ async function saveTerm() {
   else TERMS.push(term);
 
   // Auto-create notifications if requested
-  if (term.notifStart) _autoCreateNotif(term, 'term_start');
-  if (term.notifEnd)   _autoCreateNotif(term, 'term_end');
-  if (term.notifExam && term.examDate) _autoCreateNotif(term, 'exam');
+  if (canManageNotifications) {
+    if (term.notifStart) _autoCreateNotif(term, 'term_start');
+    if (term.notifEnd)   _autoCreateNotif(term, 'term_end');
+    if (term.notifExam && term.examDate) _autoCreateNotif(term, 'exam');
+  }
 
   await persistTerms();
   closeTermForm();
   renderTermList();
   renderActiveTermBar();
   renderScheduleGrid();
-  renderNotifPanel();
+  _setSystemNotifications(NOTIFS);
   populateBatchTerms();
   showToast(t('saved'), `${LANG==='en'?'Term':'ปีการศึกษา'} "${LANG==='en'?labelEN:labelTH}" ${LANG==='en'?'saved':'บันทึกแล้ว'}`, 'success');
 }
@@ -1092,6 +1050,7 @@ function goBatchGraduation() {
 function genNotifId() { return 'N' + Date.now().toString(36).toUpperCase(); }
 
 function _autoCreateNotif(term, kind) {
+  if (!canManageNotifications) return;
   const isEN = LANG === 'en';
   const lbl  = { th: term.labelTH, en: term.labelEN };
   const templates = {
@@ -1122,7 +1081,7 @@ function _autoCreateNotif(term, kind) {
     titleTH: tmpl.titleTH, titleEN: tmpl.titleEN,
     bodyTH: tmpl.bodyTH,   bodyEN: tmpl.bodyEN,
     link: 'academic-terms.html',
-    sentBy: (user||{}).displayName || 'System',
+    sentBy: (user||{}).name || (user||{}).username || 'System',
     sentAt: new Date().toISOString(),
     readBy: [],
   };
@@ -1130,6 +1089,7 @@ function _autoCreateNotif(term, kind) {
 }
 
 async function sendNotification() {
+  if (!canManageNotifications) return;
   const titleTH = document.getElementById('notifMsgTitle').value.trim();
   const bodyTH  = document.getElementById('notifBodyTH').value.trim();
   const bodyEN  = document.getElementById('notifBodyEN').value.trim();
@@ -1143,20 +1103,21 @@ async function sendNotification() {
     titleTH, titleEN: titleTH, // use same if not provided
     bodyTH, bodyEN: bodyEN || bodyTH,
     link: document.getElementById('notifLink').value,
-    sentBy: (user||{}).displayName || 'Admin',
+    sentBy: (user||{}).name || (user||{}).username || 'Admin',
     sentAt: new Date().toISOString(),
     readBy: [],
   };
   NOTIFS.push(notif);
   await persistNotifs();
   renderNotifHistory();
-  renderNotifPanel();
+  _setSystemNotifications(NOTIFS);
   // Clear form
   ['notifMsgTitle','notifBodyTH','notifBodyEN'].forEach(id => document.getElementById(id).value = '');
   showToast(t('success'), `${LANG==='en'?'Notification sent':'ส่งการแจ้งเตือนแล้ว'}`, 'success');
 }
 
 function sendTermNotif(termId) {
+  if (!canManageNotifications) return;
   const term = TERMS.find(x => x.id === termId);
   if (!term) return;
   const st  = termStatus(term);
@@ -1164,12 +1125,13 @@ function sendTermNotif(termId) {
   _autoCreateNotif(term, st === 'upcoming' ? 'term_start' : st === 'active' ? 'term_end' : 'term_start');
   persistNotifs().then(() => {
     renderNotifHistory();
-    renderNotifPanel();
+    _setSystemNotifications(NOTIFS);
     showToast(t('success'), `${LANG==='en'?'Notification created for':'สร้างการแจ้งเตือนสำหรับ'} ${lbl}`, 'success');
   });
 }
 
 async function persistNotifs() {
+  if (!canManageNotifications) return;
   try {
     const r = await API.saveSetting(NOTIF_KEY, NOTIFS);
     if (r.status !== 'success') console.warn('Notif save error:', r.message);
@@ -1207,114 +1169,25 @@ function renderNotifHistory() {
             ${n.audienceKey ? `<span style="font-size:10px;background:#eff6ff;color:#1d4ed8;padding:1px 6px;border-radius:6px">${n.audienceKey}</span>` : ''}
           </div>
         </div>
-        <button onclick="deleteNotif('${n.id}')" title="${t('delete')}"
+        ${canManageNotifications ? `<button onclick="deleteNotif('${n.id}')" title="${t('delete')}"
                 style="color:#d1d5db;background:none;border:none;cursor:pointer;flex-shrink:0;padding:4px">
           <i data-lucide="x" style="width:12px;height:12px"></i>
-        </button>
+        </button>` : ''}
       </div>`;
   }).join('');
   lucide.createIcons();
 }
 
 async function deleteNotif(id) {
+  if (!canManageNotifications) return;
   NOTIFS = NOTIFS.filter(n => n.id !== id);
   await persistNotifs();
   renderNotifHistory();
-  renderNotifPanel();
-}
-
-// ── Notification Panel (navbar) ────────────────────────────────
-function loadNotifications() { renderNotifPanel(); }
-
-function renderNotifPanel() {
-  const isEN   = LANG === 'en';
-  const readIds = JSON.parse(localStorage.getItem('rdfReadNotifs')||'[]');
-  const unread = NOTIFS.filter(n => !readIds.includes(n.id));
-  const badge  = document.getElementById('notifBadge');
-  if (badge) {
-    badge.textContent = unread.length > 9 ? '9+' : unread.length;
-    badge.classList.toggle('hidden', unread.length === 0);
-  }
-
-  const list  = document.getElementById('notifList');
-  if (!list) return;
-  const sorted = [...NOTIFS].sort((a,b) => new Date(b.sentAt)-new Date(a.sentAt)).slice(0,20);
-  if (!sorted.length) {
-    list.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">${bi('ไม่มีการแจ้งเตือน','No notifications')}</div>`; return;
-  }
-  const TYPE_COLOR = { term_start:'#16a34a', term_end:'#dc2626', promotion:'#7c3aed', graduation:'#d97706', general:'#1d4ed8' };
-  list.innerHTML = sorted.map(n => {
-    const isRead = readIds.includes(n.id);
-    const color  = TYPE_COLOR[n.type] || '#1d4ed8';
-    const title  = isEN ? (n.titleEN||n.titleTH) : n.titleTH;
-    const body   = isEN ? (n.bodyEN||n.bodyTH)   : n.bodyTH;
-    const date   = new Date(n.sentAt).toLocaleDateString(isEN?'en-GB':'th-TH', { dateStyle:'short' });
-    return `
-      <div onclick="markRead('${n.id}')${n.link ? `; window.location='${n.link}'` : ''}"
-           style="padding:10px 14px;cursor:pointer;background:${isRead?'transparent':'#eff6ff'};
-                  border-left:3px solid ${isRead?'transparent':color};border-bottom:1px solid #f3f4f6;
-                  transition:background .1s;pointer-events:all"
-           onmouseover="this.style.background='#f9fafb'"
-           onmouseout="this.style.background='${isRead?'transparent':'#eff6ff'}'">
-        <div style="font-weight:${isRead?'500':'700'};font-size:12px;color:#111827;margin-bottom:1px">${title||'—'}</div>
-        <div style="font-size:11px;color:#6b7280;margin-bottom:3px">${body||''}</div>
-        <div style="font-size:10px;color:#9ca3af">${date}</div>
-      </div>`;
-  }).join('');
-}
-
-function markRead(id) {
-  const read = JSON.parse(localStorage.getItem('rdfReadNotifs')||'[]');
-  if (!read.includes(id)) { read.push(id); localStorage.setItem('rdfReadNotifs', JSON.stringify(read)); }
-  renderNotifPanel();
-}
-
-function markAllRead() {
-  const all = NOTIFS.map(n => n.id);
-  localStorage.setItem('rdfReadNotifs', JSON.stringify(all));
-  renderNotifPanel();
-}
-
-let _notifPanelOpen     = false;
-let _notifPanelCollapsed = false;
-
-function toggleNotifPanel() {
-  _notifPanelOpen = !_notifPanelOpen;
-  const panel = document.getElementById('notifPanel');
-  if (_notifPanelOpen) {
-    panel.style.display = 'flex';
-    _notifPanelCollapsed = false;
-    _applyNotifCollapse(false);
-  } else {
-    panel.style.display = 'none';
-  }
-}
-
-// Collapse/expand the notification panel body (header click)
-function collapseNotifPanel(e) {
-  e.stopPropagation(); // don't close via outside-click handler
-  _notifPanelCollapsed = !_notifPanelCollapsed;
-  _applyNotifCollapse(_notifPanelCollapsed);
-}
-
-function _applyNotifCollapse(collapsed) {
-  const panel   = document.getElementById('notifPanel');
-  const body    = document.getElementById('notifPanelBody');
-  const chevron = document.getElementById('notifChevron');
-  if (collapsed) {
-    panel.style.maxHeight    = '46px';   // header height only
-    body.style.overflow      = 'hidden';
-    body.style.maxHeight     = '0';
-    chevron.style.transform  = 'rotate(180deg)';
-  } else {
-    panel.style.maxHeight    = '480px';
-    body.style.overflow      = '';
-    body.style.maxHeight     = '';
-    chevron.style.transform  = 'rotate(0deg)';
-  }
+  _setSystemNotifications(NOTIFS);
 }
 
 function openNotifCompose()  {
+  if (!canManageNotifications) return;
   const m = document.getElementById('notifComposeModal');
   m.style.display = 'flex';
   lucide.createIcons();
@@ -1371,7 +1244,7 @@ document.addEventListener('rdf:languagechange', () => {
   renderTermList();
   renderScheduleGrid();
   renderNotifHistory();
-  renderNotifPanel();
+  _setSystemNotifications(NOTIFS);
   populateBatchTerms();
   if (!document.getElementById('batchPreview')?.classList.contains('hidden')) loadBatchPreview();
 });
@@ -1383,16 +1256,6 @@ document.getElementById('batchDate').value = new Date().toISOString().split('T')
 const style = document.createElement('style');
 style.textContent = `@keyframes toastIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }`;
 document.head.appendChild(style);
-
-// Close notif panel on outside click
-document.addEventListener('click', e => {
-  if (_notifPanelOpen &&
-      !document.getElementById('notifBell').contains(e.target) &&
-      !document.getElementById('notifPanel').contains(e.target)) {
-    _notifPanelOpen = false;
-    document.getElementById('notifPanel').style.display = 'none';
-  }
-});
 
 loadAll();
 initDBStatus();

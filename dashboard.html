@@ -64,7 +64,7 @@
   <!-- System Notice Banner (loaded dynamically) -->
   <div id="systemNoticeBanner" class="hidden mb-4 fade-in-up"></div>
 
-  <!-- Notification Alerts (loaded dynamically — Manager/SuperAdmin only) -->
+  <!-- Notification Alerts (loaded dynamically according to RBAC permissions) -->
   <div id="dashAlerts" class="hidden mb-4 fade-in-up">
     <div class="rounded-2xl border overflow-hidden" style="border-color:#e2e8f0;background:#fff">
       <div class="flex items-center gap-2 px-4 py-2.5" style="background:#1e3a8a">
@@ -320,11 +320,11 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.0.3"></script>
+<script src="assets/js/config.js?v=2.0.4"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js"></script>
-<script src="assets/js/api.js?v=2.0.3"></script>
-<script src="assets/js/auth.js?v=2.0.3"></script>
+<script src="assets/js/i18n.js?v=2.0.4"></script>
+<script src="assets/js/api.js?v=2.0.4"></script>
+<script src="assets/js/auth.js?v=2.0.4"></script>
 <script src="assets/js/rbac.js"></script>
 <script>
 lucide.createIcons();
@@ -384,7 +384,7 @@ async function loadDashboardProgressively() {
   await loadQuickStats();
   const loadDetails = () => {
     loadStats();
-    if (['SuperAdmin','Manager'].includes(user.role)) loadNotifications();
+    if (RBAC.has('viewStudents') || (RBAC.has('viewPromotion') && RBAC.has('viewSchApprovalPanel'))) loadNotifications();
   };
   if ('requestIdleCallback' in window) {
     requestIdleCallback(loadDetails, { timeout: 1200 });
@@ -395,15 +395,17 @@ async function loadDashboardProgressively() {
 
 async function loadNotifications() {
   try {
-    const res = await API.getPendingScholarshipRequests();
-    const pending = (res.status === 'success') ? (res.students || res.data || []) : [];
-    const pendingCount = pending.length;
-
-    // Fetch suspended students from existing student data
-    const stuRes = await API.getStudents();
-    const allStu = stuRes.status === 'success' ? (stuRes.data || []) : [];
-    const suspended = allStu.filter(s => s.status === 'Suspended');
-    const suspendedCount = suspended.length;
+    const canApprove = RBAC.has('viewPromotion') && RBAC.has('viewSchApprovalPanel');
+    const canViewStudents = RBAC.has('viewStudents');
+    const [pendingResult, studentResult] = await Promise.all([
+      canApprove ? API.getPendingScholarshipRequests().catch(() => null) : Promise.resolve(null),
+      canViewStudents ? API.getStudents().catch(() => null) : Promise.resolve(null),
+    ]);
+    const pending = pendingResult && pendingResult.status === 'success'
+      ? (pendingResult.pending || pendingResult.students || pendingResult.data || []) : [];
+    const allStu = studentResult && studentResult.status === 'success' ? (studentResult.data || []) : [];
+    const pendingCount = canApprove ? pending.length : 0;
+    const suspendedCount = canViewStudents ? allStu.filter(s => s.status === 'Suspended').length : 0;
 
     dashboardNotifications = [pendingCount, suspendedCount];
     renderDashboardNotifications(...dashboardNotifications);
@@ -483,6 +485,7 @@ async function loadSystemNotice() {
     // This ensures every page loads the admin-configured permissions
     RBAC.cachePermissions(r.data);
     RBAC.cacheStudentFields(r.data);
+    if (typeof _refreshNotifBell === 'function') _refreshNotifBell(true);
     const n = r.data['SYSTEM_NOTICE'];
     if (!n || !n.active || !n.text) return;
     const styles = {

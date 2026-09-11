@@ -18,6 +18,7 @@
  *  importStudents    — CSV import
  *  viewPromotion     — access promotion.html
  *  runPromotion      — execute batch promotions
+ *  manageNotifications — create and delete system notifications
  *  viewSettings      — access settings.html
  *  editSettings      — modify system settings (SuperAdmin only)
  *  viewReports       — view & export reports
@@ -42,6 +43,7 @@ const RBAC_MAP = {
   SuperAdmin:  ['*'],
   Manager:     ['viewStudents','editStudents','deleteStudents','importStudents',
                 'viewPromotion','runPromotion','viewSchApprovalPanel',
+                'manageNotifications',
                 'viewSettings',
                 'viewReports','exportData','printProfile',
                 'viewUniHistory'],

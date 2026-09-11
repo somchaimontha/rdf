@@ -11,6 +11,7 @@ window.__calls = []; window.__errors = [];
 addEventListener('error', e => __errors.push(e.message));
 addEventListener('unhandledrejection', e => __errors.push(String(e.reason)));
 localStorage.setItem('rdfLang', new URLSearchParams(location.search).get('testLang') || 'th');
+localStorage.removeItem('rdfRbacPermissions');
 if (location.pathname.endsWith('/index.html')) localStorage.removeItem('rdfUser');
 else localStorage.setItem('rdfUser', JSON.stringify({name:'Test Admin',username:'test',role:'SuperAdmin',sessionToken:'fixture',loginTime:Date.now()}));
 window.tailwind = {};
@@ -30,7 +31,15 @@ window.fetch = async (url, options) => {
  if (action==='getDashboardStats') data.stats={MBS:28,VC:15,UNI:3,Alumni:128,Total:174};
  if (action==='getStudents') data.data=[student];
  if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student'}]}];
- if (action==='getSystemSettings') data.data={STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}]};
+ if (action==='getSystemSettings') data.data={
+   STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}],
+   NOTIFICATIONS:[
+     {id:'N_ALL',type:'general',audienceKey:'all',titleTH:'ประกาศทั้งหมด',titleEN:'Everyone notice',bodyTH:'รายละเอียด',bodyEN:'Details',link:'dashboard.html',sentBy:'Admin',sentAt:'2026-09-10T08:00:00Z'},
+     {id:'N_ADMIN',type:'general',audienceKey:'admin',titleTH:'ประกาศผู้ดูแล',titleEN:'Admin notice',bodyTH:'รายละเอียด',bodyEN:'Details',link:'settings.html',sentBy:'Admin',sentAt:'2026-09-10T09:00:00Z'},
+     {id:'N_MBS',type:'exam',audienceKey:'MBS',titleTH:'ประกาศ MBS',titleEN:'MBS notice',bodyTH:'รายละเอียด',bodyEN:'Details',link:'academic-terms.html',sentBy:'Admin',sentAt:'2026-09-10T10:00:00Z'},
+     {id:'N_UNI',type:'exam',audienceKey:'UNI',titleTH:'ประกาศ UNI',titleEN:'UNI notice',bodyTH:'รายละเอียด',bodyEN:'Details',link:'academic-terms.html',sentBy:'Admin',sentAt:'2026-09-10T11:00:00Z'}
+   ]
+ };
  if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
@@ -79,6 +88,14 @@ const server = http.createServer((req,res)=>{
    await delay(50);
    const startup=await evaluate('({lang:document.documentElement.lang, saved:localStorage.getItem("rdfLang"), url:location.href, errors:window.__errors, ready:document.readyState})');
    assert.equal(startup.lang,initialLang,file+' saved language '+JSON.stringify(startup));
+   const quickCounts = file === 'dashboard.html'
+     ? await evaluate(`['statMBS','statVC','statUNI','statAlumni'].map(id=>document.getElementById(id).textContent)`)
+     : null;
+   if (file !== 'index.html') {
+     const notificationDom=await evaluate(`({panels:document.querySelectorAll('#notifPanel').length,badges:document.querySelectorAll('#notifBadge').length,bells:document.querySelectorAll('#notifBellBtn').length,legacy:document.querySelectorAll('#notifBell').length})`);
+     assert.deepEqual(notificationDom,{panels:1,badges:1,bells:1,legacy:0},file+' must use one shared notification center');
+     await evaluate(`_refreshNotifBell()`);
+   }
    if(file==='settings.html') {
      await evaluate('Promise.all([loadOverview(), loadActiveSessions(), loadStudentEditableFields(), loadRbacPermissions()])');
      await evaluate(`document.querySelector('#studentFieldsGrid input').click(); openAdminModal(); document.getElementById('m_fname').value='Unsaved Admin';`);
@@ -112,7 +129,57 @@ const server = http.createServer((req,res)=>{
      assert.equal(startupCalls.quick,1,'dashboard must request quick stats once');
      assert.equal(startupCalls.students,1,'dashboard must share the student request');
      assert.equal(startupCalls.pending,1,'dashboard must share the pending-request call');
-     assert.deepEqual(startupCalls.counts,['28','15','3','128'],'quick stats must render before full student data');
+     assert.deepEqual(quickCounts,['28','15','3','128'],'quick stats must render before full student data');
+     if (initialLang === 'en') {
+       const notifications=await evaluate(`(()=>{
+         const original=getUser();
+         const pending=[{StipNo:'MBS_010',FirstName:'อนุมัติ',LastName:'ทุน',EngFirstName:'Approval',EngLastName:'Student',UniName:'มหาวิทยาลัยทดสอบ',UniNameEN:'Test University',SchApprovalStatus:'Pending'}];
+         const students=[
+           {stipNo:'MBS_011',fname:'พัก',lname:'เรียน',engFname:'Suspended',engLname:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 5 (Grade 11)',status:'Suspended'},
+           {stipNo:'MBS_012',fname:'ข้อมูล',lname:'ไม่ครบ',engFname:'Incomplete',engLname:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active'},
+           {stipNo:'MBS_013',fname:'เรียนต่อ',lname:'มหาวิทยาลัย',engFname:'University',engLname:'Candidate',institution:'MBS',level:'มัธยมศึกษาปีที่ 6 (Grade 12)',status:'Graduated',uniName:'มหาวิทยาลัยทดสอบ',uniScholarship:'Yes'}
+         ];
+         const staffKinds=role=>{
+           setUser({...original,role});_notifCurrentUser=getUser();
+           return _buildStaffNotifications(getUser(),pending,students).map(item=>item.id.split(':')[0]).sort();
+         };
+         const superAdmin=staffKinds('SuperAdmin');
+         setUser({...original,role:'Manager'});const managerCanManage=RBAC.has('manageNotifications');
+         const finance=staffKinds('Finance');
+         const financeCanManage=RBAC.has('manageNotifications');
+         const dormTeacher=staffKinds('DormTeacher');
+         setUser({...original,role:'Student',stipNo:'MBS_001'});_notifCurrentUser=getUser();
+         const own=_buildStudentNotifications(getUser(),{StipNo:'MBS_001',FirstName:'ทดสอบ',Status:'Active'}).map(item=>item.id.split(':')[0]);
+         const broadcasts=[
+           {id:'all',audienceKey:'all',titleEN:'All',link:'dashboard.html'},
+           {id:'admin',audienceKey:'admin',titleEN:'Admin',link:'settings.html'},
+           {id:'mbs',audienceKey:'MBS',titleEN:'MBS',link:'academic-terms.html'},
+           {id:'uni',audienceKey:'UNI',titleEN:'UNI',link:'academic-terms.html'}
+         ];
+         const studentBroadcasts=_buildBroadcastNotifications(getUser(),broadcasts,{Institution:'MBS'}).map(item=>({id:item.id,href:item.href}));
+         setUser(original);_notifCurrentUser=original;
+         localStorage.removeItem(_notifReadKey());
+         _notifSource={user:original,isStudent:false,pending,students,ownStudent:null};_notifLoaded=true;_notifLoadFailed=false;_rebuildNotifItems();_renderNotifPanel();
+         document.getElementById('notifBellBtn').click();
+         const open=document.getElementById('notifPanel').classList.contains('open');
+         const details=[...document.querySelectorAll('.notif-item')].every(el=>el.querySelector('.notif-title')&&el.querySelector('.notif-desc')&&el.getAttribute('href'));
+         const beforeUnread=document.querySelectorAll('.notif-item.unread').length;
+         document.getElementById('notifMarkAllBtn').click();
+         const afterUnread=document.querySelectorAll('.notif-item.unread').length;
+         return {superAdmin,managerCanManage,finance,financeCanManage,dormTeacher,own,studentBroadcasts,open,details,beforeUnread,afterUnread};
+       })()`);
+       assert.deepEqual(notifications.superAdmin,['approval','incomplete','suspended','university'],'SuperAdmin notification permissions');
+       assert.equal(notifications.managerCanManage,true,'Manager can manage system notifications by default');
+       assert.deepEqual(notifications.finance,['suspended'],'Finance notification permissions');
+       assert.equal(notifications.financeCanManage,false,'Finance cannot manage system notifications by default');
+       assert.deepEqual(notifications.dormTeacher,['incomplete','suspended'],'DormTeacher notification permissions');
+       assert.deepEqual(notifications.own,['own-profile'],'Student must only receive their own profile notification');
+       assert.deepEqual(notifications.studentBroadcasts,[{id:'broadcast:all',href:'dashboard.html'},{id:'broadcast:mbs',href:'dashboard.html'}],'Student broadcasts must match their institution and safe destinations');
+       assert.equal(notifications.open,true,'bell must open the notification list');
+       assert.equal(notifications.details,true,'each notification must show details and a destination');
+       assert.ok(notifications.beforeUnread>0,'new notifications must be unread');
+       assert.equal(notifications.afterUnread,0,'mark all read must clear unread state');
+     }
    }
    if(file==='index.html') {
      const googleLogin=await evaluate(`({configured:typeof _gClientId==='string'&&_gClientId===RDF.GOOGLE_CLIENT_ID&&_gClientId.length>0,button:getComputedStyle(document.getElementById('googleBtnWrap')).display,warning:getComputedStyle(document.getElementById('googleNotCfg')).display})`);
