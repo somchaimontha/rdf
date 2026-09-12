@@ -87,6 +87,9 @@ test('dynamic visibility rules support every declared operator and AND/OR logic'
     { source: 'core', field: 'Status', operator: 'equals', value: 'Graduated' },
     { source: 'custom', field: 'fld_level', operator: 'equals', value: 'advanced' },
   ] }, core, custom), true);
+  assert.equal(c._dfEvaluateRules({ logic: 'AND', conditions: [
+    { source: 'core', field: 'Status', operator: 'in', value: ['graduated', 'ACTIVE'] },
+  ] }, core, custom), true, 'structured comparisons should ignore letter case');
 });
 
 test('server validation rejects invalid types, unsafe patterns, and unknown options', () => {
@@ -149,6 +152,11 @@ test('section, field, value, role filtering, and archive work end to end', () =>
   assert.equal(ownSchema.status, 'success');
   assert.equal(ownSchema.fields.length, 1);
   assert.equal(ownSchema.fields[0].canEdit, true);
+  const adminData = c.getDynamicFieldAdminData(admin, 'student');
+  assert.equal(adminData.status, 'success');
+  assert.equal(adminData.conditionCatalog.core.Status.includes('Active'), true);
+  assert.equal(adminData.conditionCatalog.core.Institution.includes('MBS'), true);
+  assert.equal(adminData.conditionCatalog.custom[field.fieldId].includes('science'), true);
   assert.equal(c.getDynamicFormSchema({ username: 'MBS_002', role: 'Student' }, 'student', 'MBS_001').code, 'ACCESS_DENIED');
   assert.equal(c.saveStudentDynamicValues(student, 'student', 'MBS_001', [{ fieldId: field.fieldId, recordId: 'single', value: 'unknown' }], []).validation, 'OPTION');
   const saved = c.saveStudentDynamicValues(student, 'student', 'MBS_001', [{ fieldId: field.fieldId, recordId: 'single', value: 'science' }], []);

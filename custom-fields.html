@@ -31,7 +31,12 @@
   .guide-summary .guide-chevron{transition:transform .2s}.guide-card[open] .guide-chevron{transform:rotate(180deg)}
   .guide-step{display:flex;gap:9px;align-items:flex-start}.guide-step-num{width:23px;height:23px;flex:0 0 23px;border-radius:999px;background:#dbeafe;color:#1d4ed8;display:grid;place-items:center;font-size:10px;font-weight:800}
   .guide-example{border:1px solid #dbe4f0;border-radius:11px;padding:12px;background:#f8fafc}.guide-example code{font-size:10px;color:#1e3a8a;background:#e0e7ff;border-radius:5px;padding:2px 5px;word-break:break-word}
-  @media(max-width:760px){.role-grid{grid-template-columns:1fr 1fr}.option-row{grid-template-columns:1fr}.option-row button{justify-self:start}}
+  .condition-builder{border:1px solid #dbeafe;background:#f8fbff;border-radius:11px;padding:12px}.condition-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .condition-summary{display:flex;align-items:flex-start;gap:7px;margin-top:10px;border-radius:8px;background:#eff6ff;color:#1e3a8a;padding:8px 10px;font-size:11px;line-height:1.5}
+  .condition-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;max-height:190px;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:7px}
+  .condition-value-option{display:flex;align-items:flex-start;gap:6px;border-radius:6px;padding:5px 6px;font-size:11px;color:#334155;cursor:pointer}.condition-value-option:hover{background:#eff6ff}.condition-value-option input{margin-top:2px}
+  .condition-empty{border:1px dashed #cbd5e1;border-radius:8px;padding:9px;color:#64748b;background:#fff;font-size:11px}
+  @media(max-width:760px){.role-grid{grid-template-columns:1fr 1fr}.option-row,.condition-grid{grid-template-columns:1fr}.option-row button{justify-self:start}.condition-values{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
@@ -91,8 +96,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <article class="guide-example">
           <div class="flex items-start gap-2 mb-2"><i data-lucide="briefcase-business" class="w-4 h-4 text-violet-700 mt-0.5"></i><div><strong class="block text-xs text-gray-800" data-t="dfExampleWorkTitle">ประวัติการทำงาน — เฉพาะศิษย์เก่า</strong><span class="text-[11px] text-gray-500" data-t="dfExampleWorkDesc">เลือกรูปแบบ “เพิ่มซ้ำได้หลายรายการ” เพื่อเก็บงานหลายแห่ง</span></div></div>
-          <p class="text-[11px] text-gray-600 mb-1"><span data-t="dfExampleCondition">เงื่อนไข:</span> <code>Status</code> → <span data-t="dfOperator_in">อยู่ในรายการ</span></p>
-          <code>Graduated,Resigned,WithdrawnScholarship,Incomplete,University</code>
+          <p class="text-[11px] text-gray-600"><span data-t="dfExampleCondition">เงื่อนไข:</span> <strong data-t="dfExampleWorkConditionSummary">สถานะอยู่ในกลุ่มศิษย์เก่า</strong></p>
           <p class="text-[11px] text-gray-500 mt-2" data-t="dfExampleWorkFields">ฟิลด์แนะนำ: สถานที่ทำงาน ตำแหน่ง วันที่เริ่ม วันที่สิ้นสุด และรายละเอียดงาน</p>
           <button type="button" class="btn btn-secondary btn-sm mt-3" onclick="applySectionExample('employment')"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i><span data-t="dfUseExample">ใช้ตัวอย่างนี้</span></button>
         </article>
@@ -194,11 +198,11 @@
 
 <footer class="rdf-footer"><div class="footer-left"><strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong><span class="mx-2 hide-xs">•</span><span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span></div><div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" data-t-title="hintClickToCheckAgain"><span class="db-dot"></span><span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span></div></footer>
 
-<script src="assets/js/config.js?v=2.0.6"></script>
-<script src="assets/js/i18n.js?v=2.0.6"></script>
-<script src="assets/js/api.js?v=2.0.6"></script>
-<script src="assets/js/auth.js?v=2.0.6"></script>
-<script src="assets/js/rbac.js?v=2.0.6"></script>
+<script src="assets/js/config.js?v=2.0.7"></script>
+<script src="assets/js/i18n.js?v=2.0.7"></script>
+<script src="assets/js/api.js?v=2.0.7"></script>
+<script src="assets/js/auth.js?v=2.0.7"></script>
+<script src="assets/js/rbac.js?v=2.0.7"></script>
 <script>
 const user = requireAuth();
 if (user) renderNavUser(user);
@@ -210,6 +214,14 @@ const DF_ROLES = ['SuperAdmin','Manager','Finance','Committee','DormTeacher','St
 const DF_TYPES = ['text','textarea','number','decimal','email','tel','date','datetime','select','multiselect','radio','checkbox','boolean','url','readonly','hidden'];
 const DF_OPERATORS = ['equals','not_equals','contains','in','not_in','is_empty','is_not_empty'];
 const DF_CORE_FIELDS = ['Status','Institution','CurrentLevel','ScholarshipYear','EntryYear','Sex','Province','Nationality','UniName','UniProvince','BankName'];
+const DF_CORE_LABEL_KEYS = {Status:'dfCoreStatus',Institution:'dfCoreInstitution',CurrentLevel:'dfCoreCurrentLevel',ScholarshipYear:'dfCoreScholarshipYear',EntryYear:'dfCoreEntryYear',Sex:'dfCoreSex',Province:'dfCoreProvince',Nationality:'dfCoreNationality',UniName:'dfCoreUniName',UniProvince:'dfCoreUniProvince',BankName:'dfCoreBankName'};
+const DF_LEVEL_VALUES = [
+  'มัธยมศึกษาปีที่ 1 (Grade 7)','มัธยมศึกษาปีที่ 2 (Grade 8)','มัธยมศึกษาปีที่ 3 (Grade 9)','มัธยมศึกษาปีที่ 4 (Grade 10)','มัธยมศึกษาปีที่ 5 (Grade 11)','มัธยมศึกษาปีที่ 6 (Grade 12)',
+  'ปวช. ชั้นปีที่ 1','ปวช. ชั้นปีที่ 2','ปวช. ชั้นปีที่ 3','ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2','ชั้นปีที่ 1','ชั้นปีที่ 2','ชั้นปีที่ 3','ชั้นปีที่ 4','ชั้นปีที่ 5','ชั้นปีที่ 6','ปีที่ 1','ปีที่ 2','ปีที่ 3','ปีที่ 4','ปีที่ 5','ปีที่ 6','อื่นๆ'
+];
+const DF_PROVINCE_VALUES = [
+  'กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี','กรุงเทพมหานคร'
+];
 let adminData = { sections:[], fields:[], options:[], setupRequired:true };
 
 const el = id => document.getElementById(id);
@@ -237,20 +249,152 @@ function roleChecks(containerId, selected) {
 }
 function selectedRoles(containerId) { return [...el(containerId).querySelectorAll('input:checked')].map(input=>input.value); }
 
-function conditionEditor(containerId, rules) {
-  const container=el(containerId); container.replaceChildren();
-  const condition=rules?.conditions?.[0] || {};
-  const grid=make('div','grid grid-cols-1 md:grid-cols-4 gap-2');
-  const source=document.createElement('select');source.className='builder-input df-cond-source';
-  [['',t('dfNoCondition')],['core',t('dfCoreField')],['custom',t('dfCustomField')]].forEach(([v,l])=>source.appendChild(new Option(l,v)));source.value=condition.source||'';
-  const field=document.createElement('select');field.className='builder-input df-cond-field';
-  const operator=document.createElement('select');operator.className='builder-input df-cond-operator';
-  DF_OPERATORS.forEach(op=>operator.appendChild(new Option(t('dfOperator_'+op),op)));operator.value=condition.operator||'equals';
-  const expected=document.createElement('input');expected.className='builder-input df-cond-value';expected.placeholder=t('dfExpectedValue');expected.value=condition.value??'';
-  const rebuildFields=()=>{const previous=field.value||condition.field||'';field.replaceChildren(new Option(t('dfSelectField'),''));const items=source.value==='core'?DF_CORE_FIELDS:adminData.fields.filter(f=>!f.archived).map(f=>f.fieldId);items.forEach(item=>{const meta=adminData.fields.find(f=>f.fieldId===item);field.appendChild(new Option(meta?localName(meta):item,item));});field.value=previous;};
-  source.addEventListener('change',rebuildFields);grid.append(source,field,operator,expected);container.appendChild(grid);rebuildFields();
+function uniqueConditionValues(values) {
+  const seen=new Set();
+  return (values||[]).map(value=>String(value??'').trim()).filter(value=>{const normalized=value.toLowerCase();if(!value||seen.has(normalized))return false;seen.add(normalized);return true;});
 }
-function readCondition(containerId) { const c=el(containerId);const source=c.querySelector('.df-cond-source').value;const field=c.querySelector('.df-cond-field').value;if(!source||!field)return {logic:'AND',conditions:[]};return {logic:'AND',conditions:[{source,field,operator:c.querySelector('.df-cond-operator').value,value:c.querySelector('.df-cond-value').value}]}; }
+
+function defaultConditionValues(field) {
+  if(field==='Status')return ['Active','Graduated','Suspended','Incomplete','Resigned','WithdrawnScholarship','University','Other'];
+  if(field==='Institution')return ['MBS','VC','UNI','OTHER'];
+  if(field==='Sex')return ['Male','Female'];
+  if(field==='CurrentLevel')return DF_LEVEL_VALUES;
+  if(field==='Province')return DF_PROVINCE_VALUES;
+  if(field==='Nationality')return ['ไทย','บุคคลที่ไม่มีสถานะทางทะเบียน'];
+  if(field==='ScholarshipYear'||field==='EntryYear')return Array.from({length:101},(_,index)=>String(2100-index));
+  return [];
+}
+
+function conditionChoices(source, field) {
+  const catalog=adminData.conditionCatalog?.[source]?.[field]||[];
+  if(source==='core')return uniqueConditionValues([...defaultConditionValues(field),...catalog]);
+  const optionValues=adminData.options.filter(option=>option.fieldId===field&&option.active!==false).map(option=>option.value);
+  const meta=adminData.fields.find(item=>item.fieldId===field);
+  const booleanValues=['boolean','checkbox'].includes(meta?.fieldType)?['true','false']:[];
+  return uniqueConditionValues([...optionValues,...booleanValues,...catalog]);
+}
+
+function conditionFieldLabel(source, field) {
+  if(source==='core')return t(DF_CORE_LABEL_KEYS[field]||field);
+  const meta=adminData.fields.find(item=>item.fieldId===field);
+  return meta?(localName(meta)||meta.fieldKey):field;
+}
+
+function conditionValueLabel(source, field, raw) {
+  const value=String(raw??'');
+  if(source==='custom'){
+    const option=adminData.options.find(item=>item.fieldId===field&&String(item.value)===value);
+    if(option)return LANG==='en'?(option.labelEN||option.labelTH||value):(option.labelTH||option.labelEN||value);
+    const meta=adminData.fields.find(item=>item.fieldId===field);
+    if(['boolean','checkbox'].includes(meta?.fieldType))return value==='true'?t('dfConditionYes'):t('dfConditionNo');
+  }
+  if(field==='Status')return (LANG==='en'?RDF.STATUS_LABELS_EN:RDF.STATUS_LABELS_TH)?.[value]||value;
+  if(field==='Institution')return LANG==='en'?(RDF.INSTITUTION_DATA?.[value]?.nameEN||value):(RDF.INSTITUTION_DATA?.[value]?.nameTH||value);
+  if(field==='CurrentLevel')return formatLevel(value,LANG);
+  if(field==='ScholarshipYear'||field==='EntryYear')return formatAcademicYear(value,LANG);
+  if(field==='Sex')return value==='Male'?t('dfConditionMale'):value==='Female'?t('dfConditionFemale'):value;
+  if(field==='Nationality'&&value==='ไทย')return t('dfConditionThaiNationality');
+  if(field==='Nationality'&&value==='บุคคลที่ไม่มีสถานะทางทะเบียน')return t('dfConditionStateless');
+  return value;
+}
+
+function readConditionValue(container) {
+  const multi=container.querySelector('.df-cond-values');
+  if(multi)return [...multi.querySelectorAll('.df-cond-value-option-input:checked')].map(input=>input.value);
+  return container.querySelector('.df-cond-value')?.value?.trim()||'';
+}
+
+function conditionEditor(containerId, rules) {
+  const container=el(containerId);container.replaceChildren();
+  const condition=rules?.conditions?.[0]||{};
+  const builder=make('div','condition-builder');
+  const help=make('p','text-[11px] text-gray-500 mb-3',t('dfConditionBuilderHelp'));
+  const sourceLabel=make('label','block');const sourceCaption=make('span','builder-label',t('dfConditionStepSource'));
+  const source=document.createElement('select');source.className='builder-input df-cond-source';
+  [['',t('dfConditionAlways')],['core',t('dfConditionFromCore')],['custom',t('dfConditionFromCustom')]].forEach(([stored,label])=>source.appendChild(new Option(label,stored)));
+  source.value=condition.source||'';sourceLabel.append(sourceCaption,source);
+
+  const controls=make('div','condition-grid mt-3');
+  const fieldLabel=make('label','block');fieldLabel.appendChild(make('span','builder-label',t('dfConditionStepField')));
+  const field=document.createElement('select');field.className='builder-input df-cond-field';fieldLabel.appendChild(field);
+  const operatorLabel=make('label','block');operatorLabel.appendChild(make('span','builder-label',t('dfConditionStepOperator')));
+  const operator=document.createElement('select');operator.className='builder-input df-cond-operator';operatorLabel.appendChild(operator);
+  const valueBlock=make('div','block');valueBlock.appendChild(make('span','builder-label',t('dfConditionStepValue')));
+  const valueHost=make('div','df-cond-value-host');valueBlock.appendChild(valueHost);
+  controls.append(fieldLabel,operatorLabel,valueBlock);
+
+  const summary=make('div','condition-summary');const summaryIcon=document.createElement('i');summaryIcon.setAttribute('data-lucide','eye');summaryIcon.className='w-3.5 h-3.5 mt-0.5 shrink-0';const summaryText=make('span','df-cond-summary');summary.append(summaryIcon,summaryText);
+
+  const updateSummary=()=>{
+    if(!source.value){summaryText.textContent=t('dfConditionSummaryAlways');return;}
+    if(!field.value||!operator.value){summaryText.textContent=t('dfConditionSummaryIncomplete');return;}
+    const raw=readConditionValue(container);const values=Array.isArray(raw)?raw:[raw];
+    const valueText=['is_empty','is_not_empty'].includes(operator.value)?'':values.filter(Boolean).map(item=>conditionValueLabel(source.value,field.value,item)).join(', ');
+    summaryText.textContent=[t('dfConditionSummaryWhen'),conditionFieldLabel(source.value,field.value),t('dfOperator_'+operator.value),valueText].filter(Boolean).join(' ');
+  };
+
+  const rebuildValue=(selectedValue)=>{
+    valueHost.replaceChildren();
+    const op=operator.value;
+    if(!source.value||!field.value){valueBlock.classList.add('hidden');updateSummary();return;}
+    valueBlock.classList.remove('hidden');
+    if(['is_empty','is_not_empty'].includes(op)){valueHost.appendChild(make('div','condition-empty',t('dfConditionNoValueNeeded')));updateSummary();return;}
+    const selected=Array.isArray(selectedValue)?selectedValue:String(selectedValue??'').split(',').map(item=>item.trim()).filter(Boolean);
+    const choices=uniqueConditionValues([...conditionChoices(source.value,field.value),...selected]);
+    if(['in','not_in'].includes(op)&&choices.length){
+      const list=make('div','condition-values df-cond-values');const chosen=new Set(selected.map(item=>item.toLowerCase()));
+      choices.forEach(raw=>{const label=make('label','condition-value-option');const input=document.createElement('input');input.type='checkbox';input.className='df-cond-value-option-input';input.value=raw;input.checked=chosen.has(raw.toLowerCase());input.addEventListener('change',updateSummary);label.append(input,document.createTextNode(conditionValueLabel(source.value,field.value,raw)));list.appendChild(label);});
+      if(choices.length>12){const search=document.createElement('input');search.type='search';search.className='builder-input mb-2';search.placeholder=t('dfConditionSearchValues');search.addEventListener('input',()=>{const query=search.value.trim().toLowerCase();[...list.children].forEach(label=>label.classList.toggle('hidden',!!query&&!label.textContent.toLowerCase().includes(query)));});valueHost.appendChild(search);}
+      valueHost.appendChild(list);valueHost.appendChild(make('p','text-[10px] text-gray-400 mt-1',t('dfConditionMultiHint')));
+    }else if(choices.length&&op!=='contains'){
+      const select=document.createElement('select');select.className='builder-input df-cond-value';select.required=true;select.appendChild(new Option(t('dfConditionSelectValue'),''));
+      choices.forEach(raw=>select.appendChild(new Option(conditionValueLabel(source.value,field.value,raw),raw)));select.value=selected[0]||'';select.addEventListener('change',updateSummary);valueHost.appendChild(select);
+    }else{
+      const input=document.createElement('input');input.className='builder-input df-cond-value';input.required=true;input.placeholder=t('dfConditionCustomValue');
+      const meta=source.value==='custom'?adminData.fields.find(item=>item.fieldId===field.value):null;
+      input.type=['number','decimal'].includes(meta?.fieldType)||['ScholarshipYear','EntryYear'].includes(field.value)?'number':meta?.fieldType==='date'?'date':'text';input.value=selected[0]||'';input.addEventListener('input',updateSummary);valueHost.append(input,make('p','text-[10px] text-amber-600 mt-1',t('dfConditionManualHint')));
+    }
+    updateSummary();
+  };
+
+  const rebuildOperators=(selectedOperator,selectedValue)=>{
+    operator.replaceChildren();
+    const choices=conditionChoices(source.value,field.value);
+    const available=choices.length?['equals','not_equals','in','not_in','is_empty','is_not_empty']:['equals','not_equals','contains','is_empty','is_not_empty'];
+    if(selectedOperator&&!available.includes(selectedOperator))available.splice(2,0,selectedOperator);
+    available.forEach(op=>operator.appendChild(new Option(t('dfOperator_'+op),op)));operator.value=selectedOperator||'equals';
+    rebuildValue(selectedValue);
+  };
+
+  const rebuildFields=(selectedField,selectedOperator,selectedValue)=>{
+    field.replaceChildren(new Option(t('dfSelectFieldFriendly'),''));
+    if(source.value==='core')DF_CORE_FIELDS.forEach(item=>field.appendChild(new Option(conditionFieldLabel('core',item),item)));
+    if(source.value==='custom')adminData.fields.filter(item=>!item.archived&&item.active!==false).forEach(item=>field.appendChild(new Option(localName(item)||item.fieldKey,item.fieldId)));
+    field.value=selectedField||'';controls.classList.toggle('hidden',!source.value);fieldLabel.classList.toggle('hidden',!source.value);operatorLabel.classList.toggle('hidden',!field.value);
+    rebuildOperators(selectedOperator||'equals',selectedValue);
+  };
+
+  source.addEventListener('change',()=>rebuildFields('','equals',''));
+  field.addEventListener('change',()=>{operatorLabel.classList.toggle('hidden',!field.value);rebuildOperators('equals','');});
+  operator.addEventListener('change',()=>rebuildValue(readConditionValue(container)));
+  builder.append(help,sourceLabel,controls,summary);container.appendChild(builder);
+  rebuildFields(condition.field||'',condition.operator||'equals',condition.value??'');lucide.createIcons();
+}
+
+function readCondition(containerId) {
+  const container=el(containerId);const source=container.querySelector('.df-cond-source')?.value||'';const field=container.querySelector('.df-cond-field')?.value||'';
+  if(!source||!field)return {logic:'AND',conditions:[]};
+  return {logic:'AND',conditions:[{source,field,operator:container.querySelector('.df-cond-operator')?.value||'equals',value:readConditionValue(container)}]};
+}
+
+function validateConditionEditor(containerId) {
+  const rule=readCondition(containerId).conditions[0];
+  if(!rule)return true;
+  const requiresValue=!['is_empty','is_not_empty'].includes(rule.operator);
+  const hasValue=Array.isArray(rule.value)?rule.value.length>0:String(rule.value||'').trim()!=='';
+  if(rule.field&&(!requiresValue||hasValue))return true;
+  Swal.fire(t('error'),t('dfConditionValueRequired'),'error');return false;
+}
 
 function setSetupStatus(setup) {
   el('schemaVersion').textContent=setup?.schemaVersion || adminData.schemaVersion || '—';
@@ -286,12 +430,12 @@ function renderSchemaList() {
 function closeEditors(){el('sectionEditor').classList.add('hidden');el('fieldEditor').classList.add('hidden');el('editorEmpty').classList.remove('hidden');}
 function showEditor(id){el('editorEmpty').classList.add('hidden');el('sectionEditor').classList.toggle('hidden',id!=='sectionEditor');el('fieldEditor').classList.toggle('hidden',id!=='fieldEditor');}
 function openSectionEditor(section) { if(adminData.setupRequired)return;showEditor('sectionEditor');el('sectionEditorTitle').textContent=section?t('dfEditSection'):t('dfAddSection');el('sec_id').value=section?.sectionId||'';el('sec_key').value=section?.sectionKey||generateStableKey('section');el('sec_key').readOnly=true;el('sec_order').value=section?.displayOrder??adminData.sections.length+1;el('sec_name_th').value=section?.nameTH||'';el('sec_name_en').value=section?.nameEN||'';el('sec_desc_th').value=section?.descriptionTH||'';el('sec_desc_en').value=section?.descriptionEN||'';el('sec_cardinality').value=section?.cardinality||'single';el('sec_active').checked=section?.active!==false;el('sec_collapsible').checked=section?.collapsible!==false;roleChecks('sec_visible_roles',section?.visibleRoles);conditionEditor('sec_condition',section?.visibilityRules);lucide.createIcons(); }
-async function saveSectionEditor(){const section={sectionId:value('sec_id'),sectionKey:value('sec_key'),nameTH:value('sec_name_th'),nameEN:value('sec_name_en'),descriptionTH:value('sec_desc_th'),descriptionEN:value('sec_desc_en'),displayOrder:Number(value('sec_order'))||0,cardinality:value('sec_cardinality'),active:checked('sec_active'),collapsible:checked('sec_collapsible'),visibleRoles:selectedRoles('sec_visible_roles'),visibilityRules:readCondition('sec_condition')};await saveAndReload(()=>API.saveDynamicSection(section),t('dfSectionSaved'));}
+async function saveSectionEditor(){if(!validateConditionEditor('sec_condition'))return;const section={sectionId:value('sec_id'),sectionKey:value('sec_key'),nameTH:value('sec_name_th'),nameEN:value('sec_name_en'),descriptionTH:value('sec_desc_th'),descriptionEN:value('sec_desc_en'),displayOrder:Number(value('sec_order'))||0,cardinality:value('sec_cardinality'),active:checked('sec_active'),collapsible:checked('sec_collapsible'),visibleRoles:selectedRoles('sec_visible_roles'),visibilityRules:readCondition('sec_condition')};await saveAndReload(()=>API.saveDynamicSection(section),t('dfSectionSaved'));}
 
 function applySectionExample(kind){
   if(adminData.setupRequired){Swal.fire(t('error'),t('dfSetupFirst'),'error');return;}
   const presets={
-    employment:{nameTH:'ประวัติการทำงาน',nameEN:'Employment History',descriptionTH:'บันทึกประวัติการทำงานของศิษย์เก่า',descriptionEN:'Employment records for alumni',rules:{logic:'AND',conditions:[{source:'core',field:'Status',operator:'in',value:'Graduated,Resigned,WithdrawnScholarship,Incomplete,University'}]}},
+    employment:{nameTH:'ประวัติการทำงาน',nameEN:'Employment History',descriptionTH:'บันทึกประวัติการทำงานของศิษย์เก่า',descriptionEN:'Employment records for alumni',rules:{logic:'AND',conditions:[{source:'core',field:'Status',operator:'in',value:['Graduated','Resigned','WithdrawnScholarship','Incomplete','University']}]}},
     achievement:{nameTH:'ประวัติผลงาน',nameEN:'Achievement History',descriptionTH:'บันทึกผลงานและรางวัลของนักเรียนทุกสถาบัน',descriptionEN:'Achievements and awards for students from every institution',rules:{logic:'AND',conditions:[]}}
   };
   const preset=presets[kind];if(!preset)return;
@@ -319,7 +463,7 @@ function toggleOptionsEditor(){const uses=['select','multiselect','radio'].inclu
 function readOptions(){return [...el('optionRows').children].map((row,index)=>({optionId:row.dataset.optionId||'',value:row.querySelector('.opt-value').value.trim(),labelTH:row.querySelector('.opt-th').value.trim(),labelEN:row.querySelector('.opt-en').value.trim(),displayOrder:index+1,active:row.dataset.active!=='false'}));}
 function readOptionalNumber(id){const raw=value(id);return raw===''?null:Number(raw);}
 function fieldPayload(field){const section=adminData.sections.find(s=>s.sectionId===(field?.sectionId||value('fld_section')));return {fieldId:field?.fieldId||value('fld_id'),fieldKey:field?.fieldKey||value('fld_key'),sectionId:field?.sectionId||value('fld_section'),fieldType:field?.fieldType||value('fld_type'),labelTH:field?.labelTH??value('fld_label_th'),labelEN:field?.labelEN??value('fld_label_en'),placeholderTH:field?.placeholderTH??value('fld_placeholder_th'),placeholderEN:field?.placeholderEN??value('fld_placeholder_en'),helpTextTH:field?.helpTextTH??value('fld_help_th'),helpTextEN:field?.helpTextEN??value('fld_help_en'),descriptionTH:field?.descriptionTH??value('fld_desc_th'),descriptionEN:field?.descriptionEN??value('fld_desc_en'),defaultValue:field?.defaultValue??value('fld_default'),required:field?.required??checked('fld_required'),unique:field?.unique??checked('fld_unique'),searchable:field?.searchable??checked('fld_searchable'),editable:field?.editable??checked('fld_editable'),visible:field?.visible??checked('fld_visible'),active:field?.active??checked('fld_active'),displayOrder:field?.displayOrder??(Number(value('fld_order'))||0),minLength:field?.minLength??readOptionalNumber('fld_min_length'),maxLength:field?.maxLength??readOptionalNumber('fld_max_length'),minValue:field?.minValue??readOptionalNumber('fld_min_value'),maxValue:field?.maxValue??readOptionalNumber('fld_max_value'),validationPattern:field?.validationPattern??value('fld_pattern'),validationMessageTH:field?.validationMessageTH??value('fld_validation_th'),validationMessageEN:field?.validationMessageEN??value('fld_validation_en'),visibleRoles:field?.visibleRoles||selectedRoles('fld_visible_roles'),editableRoles:field?.editableRoles||selectedRoles('fld_editable_roles'),visibilityRules:field?.visibilityRules||readCondition('fld_condition'),cardinality:section?.cardinality||'single'};}
-async function saveFieldEditor(){const options=readOptions();await saveAndReload(()=>API.saveDynamicField(fieldPayload(null),options),t('dfFieldSaved'));}
+async function saveFieldEditor(){if(!validateConditionEditor('fld_condition'))return;const options=readOptions();await saveAndReload(()=>API.saveDynamicField(fieldPayload(null),options),t('dfFieldSaved'));}
 
 function optionsFor(field){return adminData.options.filter(o=>o.fieldId===field.fieldId).map(o=>({...o}));}
 async function saveAndReload(operation,message){showLoader(true,t('saving'));try{const result=await operation();showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfSaveError'));await Swal.fire({icon:'success',title:message,timer:1300,showConfirmButton:false});closeEditors();await loadAdminData();}catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}}

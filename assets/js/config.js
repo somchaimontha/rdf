@@ -7,7 +7,7 @@ const RDF = {
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.0.6",
+  VERSION: "2.0.7",
   DEFAULT_LANG: "th",
   INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"Other" },
   INSTITUTION_LABELS_TH: { MBS:'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"', VC:'วิทยาลัยการอาชีพแม่สะเรียง', UNI:'มหาวิทยาลัย', OTHER:'อื่นๆ' },

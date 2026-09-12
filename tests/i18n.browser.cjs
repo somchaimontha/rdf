@@ -240,6 +240,12 @@ const server = http.createServer((req,res)=>{
      assert.match(generated.field.key,/^field_[a-f0-9]{16}$/,'new field must receive an automatic stable key');
      assert.equal(generated.section.readOnly,true,'section stable key must be read-only');
      assert.equal(generated.field.readOnly,true,'field stable key must be read-only');
+     const conditionUx=await evaluate(`(()=>{conditionEditor('sec_condition',{logic:'AND',conditions:[{source:'core',field:'Status',operator:'in',value:['Graduated','WithdrawnScholarship']}]});const root=document.getElementById('sec_condition');return {values:readCondition('sec_condition').conditions[0].value,labels:[...root.querySelectorAll('.condition-value-option')].map(e=>e.textContent),summary:root.querySelector('.df-cond-summary').textContent,manual:!!root.querySelector('.df-cond-value'),multi:!!root.querySelector('.df-cond-values')};})()`);
+     assert.deepEqual(conditionUx.values,['Graduated','WithdrawnScholarship'],'condition builder must preserve stored values without typing');
+     assert.ok(conditionUx.labels.includes('Graduated'),'condition builder must show readable status labels');
+     assert.match(conditionUx.summary,/Result: show when Scholarship status Is in list/,'condition builder must explain the resulting rule');
+     assert.equal(conditionUx.manual,false,'standard status conditions must not use manual text input');
+     assert.equal(conditionUx.multi,true,'in-list conditions must use a multi-choice control');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }
