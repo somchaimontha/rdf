@@ -230,10 +230,16 @@ const server = http.createServer((req,res)=>{
      assert.match(extra,/Additional Information/,'dynamic profile section must use English metadata');
    }
    if(initialLang==='en' && file==='custom-fields.html') {
-     const builder=await evaluate(`({label:document.getElementById('fld_label_th').value,selected:[...document.querySelectorAll('#fld_visible_roles input:checked')].map(e=>e.value),schema:document.getElementById('schemaList').textContent})`);
+     const builder=await evaluate(`({label:document.getElementById('fld_label_th').value,selected:[...document.querySelectorAll('#fld_visible_roles input:checked')].map(e=>e.value),schema:document.getElementById('schemaList').textContent,guide:document.getElementById('usageGuide').textContent})`);
      assert.equal(builder.label,'ค่าที่ยังไม่บันทึก','builder must preserve unsaved metadata on language switch');
      assert.equal(builder.selected.includes('SuperAdmin'),false,'builder must preserve unsaved permission selection');
      assert.match(builder.schema,/Additional Information/,'builder list must use English metadata');
+     assert.match(builder.guide,/How to use custom fields/,'builder guide must switch to English');
+     const generated=await evaluate(`(()=>{openSectionEditor();const section={key:document.getElementById('sec_key').value,readOnly:document.getElementById('sec_key').readOnly};openFieldEditor(null,adminData.sections[0].sectionId);return {section,field:{key:document.getElementById('fld_key').value,readOnly:document.getElementById('fld_key').readOnly}};})()`);
+     assert.match(generated.section.key,/^section_[a-f0-9]{16}$/,'new section must receive an automatic stable key');
+     assert.match(generated.field.key,/^field_[a-f0-9]{16}$/,'new field must receive an automatic stable key');
+     assert.equal(generated.section.readOnly,true,'section stable key must be read-only');
+     assert.equal(generated.field.readOnly,true,'field stable key must be read-only');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }

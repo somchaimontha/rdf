@@ -27,6 +27,10 @@
   .editor-section{border:1px solid #e2e8f0;border-radius:11px;padding:13px;margin-bottom:13px}.editor-section h4{font-size:12px;font-weight:800;color:#1e3a8a;margin-bottom:10px}
   .setup-sheet{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid #f1f5f9}.setup-sheet:last-child{border:0}
   .preview-box{border:1px dashed #94a3b8;border-radius:10px;padding:12px;background:#f8fafc}
+  .guide-summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;align-items:center;gap:9px}.guide-summary::-webkit-details-marker{display:none}
+  .guide-summary .guide-chevron{transition:transform .2s}.guide-card[open] .guide-chevron{transform:rotate(180deg)}
+  .guide-step{display:flex;gap:9px;align-items:flex-start}.guide-step-num{width:23px;height:23px;flex:0 0 23px;border-radius:999px;background:#dbeafe;color:#1d4ed8;display:grid;place-items:center;font-size:10px;font-weight:800}
+  .guide-example{border:1px solid #dbe4f0;border-radius:11px;padding:12px;background:#f8fafc}.guide-example code{font-size:10px;color:#1e3a8a;background:#e0e7ff;border-radius:5px;padding:2px 5px;word-break:break-word}
   @media(max-width:760px){.role-grid{grid-template-columns:1fr 1fr}.option-row{grid-template-columns:1fr}.option-row button{justify-self:start}}
 </style>
 </head>
@@ -65,6 +69,44 @@
     </div>
   </section>
 
+  <details id="usageGuide" class="builder-card guide-card mb-5" open>
+    <summary class="guide-summary">
+      <i data-lucide="book-open" class="w-4 h-4 text-blue-700"></i>
+      <span class="font-bold text-sm text-gray-800" data-t="dfGuideTitle">วิธีใช้งานช่องข้อมูลเพิ่มเติม</span>
+      <i data-lucide="chevron-down" class="guide-chevron w-4 h-4 text-gray-400 ml-auto"></i>
+    </summary>
+    <div class="builder-body border-t border-slate-200">
+      <p class="text-xs text-gray-600 mb-4" data-t="dfGuideIntro">สร้างส่วนข้อมูลก่อน แล้วเพิ่มฟิลด์ภายในส่วนนั้น ระบบจะแสดงผลในแบบฟอร์มและโปรไฟล์นักเรียนตามเงื่อนไขและสิทธิ์ที่กำหนด</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div class="guide-step"><span class="guide-step-num">1</span><div><strong class="block text-xs text-gray-800" data-t="dfGuideStep1Title">สร้างส่วนข้อมูล</strong><span class="text-[11px] text-gray-500" data-t="dfGuideStep1Desc">กด “เพิ่มส่วน” ระบุชื่อไทย อังกฤษ และเลือกรายการเดียวหรือเพิ่มซ้ำได้</span></div></div>
+        <div class="guide-step"><span class="guide-step-num">2</span><div><strong class="block text-xs text-gray-800" data-t="dfGuideStep2Title">กำหนดกลุ่มเป้าหมาย</strong><span class="text-[11px] text-gray-500" data-t="dfGuideStep2Desc">เลือกบทบาทที่มองเห็น และตั้งเงื่อนไขจากสถานะ สถาบัน หรือข้อมูลหลักอื่น</span></div></div>
+        <div class="guide-step"><span class="guide-step-num">3</span><div><strong class="block text-xs text-gray-800" data-t="dfGuideStep3Title">เพิ่มฟิลด์</strong><span class="text-[11px] text-gray-500" data-t="dfGuideStep3Desc">เลือกชนิดฟิลด์ ป้ายสองภาษา validation และสิทธิ์แก้ไขของแต่ละบทบาท</span></div></div>
+        <div class="guide-step"><span class="guide-step-num">4</span><div><strong class="block text-xs text-gray-800" data-t="dfGuideStep4Title">ตรวจผลและใช้งาน</strong><span class="text-[11px] text-gray-500" data-t="dfGuideStep4Desc">เปิดแบบฟอร์มหรือโปรไฟล์นักเรียนที่ตรงเงื่อนไข ตรวจทั้งภาษาไทยและอังกฤษก่อนใช้งานจริง</span></div></div>
+      </div>
+      <div class="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 mb-4 text-[11px] text-blue-900">
+        <strong data-t="dfKeyGuideTitle">คีย์ถาวร:</strong>
+        <span data-t="dfKeyGuideDesc">ระบบจะสุ่มคีย์ที่ไม่ซ้ำให้เมื่อสร้างส่วนหรือฟิลด์ คีย์จะไม่เปลี่ยนเมื่อแก้ชื่อ และแก้ไขไม่ได้หลังบันทึก</span>
+      </div>
+      <h4 class="text-xs font-extrabold text-gray-800 mb-2" data-t="dfGuideExamplesTitle">ตัวอย่างสำหรับระบบนี้</h4>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <article class="guide-example">
+          <div class="flex items-start gap-2 mb-2"><i data-lucide="briefcase-business" class="w-4 h-4 text-violet-700 mt-0.5"></i><div><strong class="block text-xs text-gray-800" data-t="dfExampleWorkTitle">ประวัติการทำงาน — เฉพาะศิษย์เก่า</strong><span class="text-[11px] text-gray-500" data-t="dfExampleWorkDesc">เลือกรูปแบบ “เพิ่มซ้ำได้หลายรายการ” เพื่อเก็บงานหลายแห่ง</span></div></div>
+          <p class="text-[11px] text-gray-600 mb-1"><span data-t="dfExampleCondition">เงื่อนไข:</span> <code>Status</code> → <span data-t="dfOperator_in">อยู่ในรายการ</span></p>
+          <code>Graduated,Resigned,WithdrawnScholarship,Incomplete,University</code>
+          <p class="text-[11px] text-gray-500 mt-2" data-t="dfExampleWorkFields">ฟิลด์แนะนำ: สถานที่ทำงาน ตำแหน่ง วันที่เริ่ม วันที่สิ้นสุด และรายละเอียดงาน</p>
+          <button type="button" class="btn btn-secondary btn-sm mt-3" onclick="applySectionExample('employment')"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i><span data-t="dfUseExample">ใช้ตัวอย่างนี้</span></button>
+        </article>
+        <article class="guide-example">
+          <div class="flex items-start gap-2 mb-2"><i data-lucide="award" class="w-4 h-4 text-amber-600 mt-0.5"></i><div><strong class="block text-xs text-gray-800" data-t="dfExampleAchievementTitle">ประวัติผลงาน — นักเรียนทุกสถาบัน</strong><span class="text-[11px] text-gray-500" data-t="dfExampleAchievementDesc">เลือกรูปแบบ “เพิ่มซ้ำได้หลายรายการ” และเลือก “ไม่มีเงื่อนไข” เพื่อแสดงกับทุกสถาบัน</span></div></div>
+          <p class="text-[11px] text-gray-600"><span data-t="dfExampleCondition">เงื่อนไข:</span> <strong data-t="dfNoCondition">ไม่มีเงื่อนไข</strong></p>
+          <p class="text-[11px] text-gray-500 mt-2" data-t="dfExampleAchievementFields">ฟิลด์แนะนำ: ชื่อผลงาน ประเภท วันที่ได้รับ ระดับรางวัล รายละเอียด และ URL หลักฐาน</p>
+          <button type="button" class="btn btn-secondary btn-sm mt-3" onclick="applySectionExample('achievement')"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i><span data-t="dfUseExample">ใช้ตัวอย่างนี้</span></button>
+        </article>
+      </div>
+      <p class="text-[10px] text-gray-400 mt-3" data-t="dfGuideStoredValuesNote">ค่าเงื่อนไขต้องใช้รหัสที่ระบบจัดเก็บ เช่น Status: Active หรือ Graduated และ Institution: MBS, VC, UNI หรือ OTHER</p>
+    </div>
+  </details>
+
   <div id="builderWorkspace" class="grid grid-cols-1 lg:grid-cols-5 gap-5">
     <section class="builder-card lg:col-span-2 self-start">
       <div class="builder-head"><i data-lucide="layers-3" class="w-4 h-4 text-blue-700"></i><h3 class="font-bold text-sm text-gray-800" data-t="dfSchemaTitle">โครงสร้างแบบฟอร์ม</h3><button type="button" class="btn btn-primary btn-sm ml-auto" onclick="openSectionEditor()"><i data-lucide="plus" class="w-3.5 h-3.5"></i><span data-t="dfAddSection">เพิ่มส่วน</span></button></div>
@@ -79,7 +121,7 @@
         <div class="builder-body">
           <input id="sec_id" type="hidden">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <label><span class="builder-label" data-t="dfKey">คีย์ถาวร</span><input id="sec_key" class="builder-input" required pattern="[a-z][a-z0-9_]{1,59}" data-t-placeholder="dfKeyPlaceholder"></label>
+            <label><span class="builder-label" data-t="dfKey">คีย์ถาวร</span><input id="sec_key" class="builder-input bg-slate-50" required readonly pattern="[a-z][a-z0-9_]{1,59}" data-t-placeholder="dfKeyPlaceholder"><span class="block text-[10px] text-gray-400 mt-1" data-t="dfKeyAutoNote">ระบบสร้างอัตโนมัติและแก้ไขไม่ได้หลังบันทึก</span></label>
             <label><span class="builder-label" data-t="dfDisplayOrder">ลำดับแสดงผล</span><input id="sec_order" class="builder-input" type="number" min="0" value="1"></label>
             <label><span class="builder-label" data-t="dfNameTH">ชื่อภาษาไทย</span><input id="sec_name_th" class="builder-input" required></label>
             <label><span class="builder-label" data-t="dfNameEN">ชื่อภาษาอังกฤษ</span><input id="sec_name_en" class="builder-input" required></label>
@@ -102,7 +144,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <label><span class="builder-label" data-t="dfSection">ส่วน</span><select id="fld_section" class="builder-input" required></select></label>
               <label><span class="builder-label" data-t="dfFieldType">ชนิดฟิลด์</span><select id="fld_type" class="builder-input" onchange="toggleOptionsEditor();renderFieldPreview()"></select></label>
-              <label><span class="builder-label" data-t="dfKey">คีย์ถาวร</span><input id="fld_key" class="builder-input" required pattern="[a-z][a-z0-9_]{1,59}" data-t-placeholder="dfKeyPlaceholder"></label>
+              <label><span class="builder-label" data-t="dfKey">คีย์ถาวร</span><input id="fld_key" class="builder-input bg-slate-50" required readonly pattern="[a-z][a-z0-9_]{1,59}" data-t-placeholder="dfKeyPlaceholder"><span class="block text-[10px] text-gray-400 mt-1" data-t="dfKeyAutoNote">ระบบสร้างอัตโนมัติและแก้ไขไม่ได้หลังบันทึก</span></label>
               <label><span class="builder-label" data-t="dfDisplayOrder">ลำดับแสดงผล</span><input id="fld_order" class="builder-input" type="number" min="0" value="1"></label>
               <label><span class="builder-label" data-t="dfLabelTH">ป้ายชื่อภาษาไทย</span><input id="fld_label_th" class="builder-input" required oninput="renderFieldPreview()"></label>
               <label><span class="builder-label" data-t="dfLabelEN">ป้ายชื่อภาษาอังกฤษ</span><input id="fld_label_en" class="builder-input" required oninput="renderFieldPreview()"></label>
@@ -152,11 +194,11 @@
 
 <footer class="rdf-footer"><div class="footer-left"><strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong><span class="mx-2 hide-xs">•</span><span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span></div><div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" data-t-title="hintClickToCheckAgain"><span class="db-dot"></span><span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span></div></footer>
 
-<script src="assets/js/config.js?v=2.0.5"></script>
-<script src="assets/js/i18n.js?v=2.0.5"></script>
-<script src="assets/js/api.js?v=2.0.5"></script>
-<script src="assets/js/auth.js?v=2.0.5"></script>
-<script src="assets/js/rbac.js?v=2.0.5"></script>
+<script src="assets/js/config.js?v=2.0.6"></script>
+<script src="assets/js/i18n.js?v=2.0.6"></script>
+<script src="assets/js/api.js?v=2.0.6"></script>
+<script src="assets/js/auth.js?v=2.0.6"></script>
+<script src="assets/js/rbac.js?v=2.0.6"></script>
 <script>
 const user = requireAuth();
 if (user) renderNavUser(user);
@@ -175,6 +217,19 @@ const value = id => el(id)?.value?.trim() || '';
 const checked = id => !!el(id)?.checked;
 const localName = item => LANG === 'en' ? (item.nameEN || item.labelEN || item.nameTH || item.labelTH || '') : (item.nameTH || item.labelTH || item.nameEN || item.labelEN || '');
 const make = (tag, cls, text) => { const node=document.createElement(tag); if(cls)node.className=cls;if(text!==undefined)node.textContent=String(text);return node; };
+
+function generateStableKey(kind) {
+  const prefix=kind==='section'?'section':'field';
+  const used=new Set(kind==='section'?adminData.sections.map(item=>item.sectionKey):adminData.fields.map(item=>item.fieldKey));
+  for(let attempt=0;attempt<10;attempt++){
+    let suffix='';
+    if(window.crypto?.getRandomValues){const bytes=new Uint8Array(8);window.crypto.getRandomValues(bytes);suffix=[...bytes].map(byte=>byte.toString(16).padStart(2,'0')).join('');}
+    else suffix=(Date.now().toString(36)+Math.random().toString(36).slice(2)).slice(0,16);
+    const key=`${prefix}_${suffix}`.toLowerCase();
+    if(!used.has(key))return key;
+  }
+  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`.slice(0,60).toLowerCase();
+}
 
 function roleChecks(containerId, selected) {
   const container=el(containerId); container.replaceChildren(); const chosen=new Set(selected || DF_ROLES);
@@ -230,12 +285,24 @@ function renderSchemaList() {
 
 function closeEditors(){el('sectionEditor').classList.add('hidden');el('fieldEditor').classList.add('hidden');el('editorEmpty').classList.remove('hidden');}
 function showEditor(id){el('editorEmpty').classList.add('hidden');el('sectionEditor').classList.toggle('hidden',id!=='sectionEditor');el('fieldEditor').classList.toggle('hidden',id!=='fieldEditor');}
-function openSectionEditor(section) { if(adminData.setupRequired)return;showEditor('sectionEditor');el('sectionEditorTitle').textContent=section?t('dfEditSection'):t('dfAddSection');el('sec_id').value=section?.sectionId||'';el('sec_key').value=section?.sectionKey||'';el('sec_key').readOnly=!!section;el('sec_order').value=section?.displayOrder??adminData.sections.length+1;el('sec_name_th').value=section?.nameTH||'';el('sec_name_en').value=section?.nameEN||'';el('sec_desc_th').value=section?.descriptionTH||'';el('sec_desc_en').value=section?.descriptionEN||'';el('sec_cardinality').value=section?.cardinality||'single';el('sec_active').checked=section?.active!==false;el('sec_collapsible').checked=section?.collapsible!==false;roleChecks('sec_visible_roles',section?.visibleRoles);conditionEditor('sec_condition',section?.visibilityRules);lucide.createIcons(); }
+function openSectionEditor(section) { if(adminData.setupRequired)return;showEditor('sectionEditor');el('sectionEditorTitle').textContent=section?t('dfEditSection'):t('dfAddSection');el('sec_id').value=section?.sectionId||'';el('sec_key').value=section?.sectionKey||generateStableKey('section');el('sec_key').readOnly=true;el('sec_order').value=section?.displayOrder??adminData.sections.length+1;el('sec_name_th').value=section?.nameTH||'';el('sec_name_en').value=section?.nameEN||'';el('sec_desc_th').value=section?.descriptionTH||'';el('sec_desc_en').value=section?.descriptionEN||'';el('sec_cardinality').value=section?.cardinality||'single';el('sec_active').checked=section?.active!==false;el('sec_collapsible').checked=section?.collapsible!==false;roleChecks('sec_visible_roles',section?.visibleRoles);conditionEditor('sec_condition',section?.visibilityRules);lucide.createIcons(); }
 async function saveSectionEditor(){const section={sectionId:value('sec_id'),sectionKey:value('sec_key'),nameTH:value('sec_name_th'),nameEN:value('sec_name_en'),descriptionTH:value('sec_desc_th'),descriptionEN:value('sec_desc_en'),displayOrder:Number(value('sec_order'))||0,cardinality:value('sec_cardinality'),active:checked('sec_active'),collapsible:checked('sec_collapsible'),visibleRoles:selectedRoles('sec_visible_roles'),visibilityRules:readCondition('sec_condition')};await saveAndReload(()=>API.saveDynamicSection(section),t('dfSectionSaved'));}
+
+function applySectionExample(kind){
+  if(adminData.setupRequired){Swal.fire(t('error'),t('dfSetupFirst'),'error');return;}
+  const presets={
+    employment:{nameTH:'ประวัติการทำงาน',nameEN:'Employment History',descriptionTH:'บันทึกประวัติการทำงานของศิษย์เก่า',descriptionEN:'Employment records for alumni',rules:{logic:'AND',conditions:[{source:'core',field:'Status',operator:'in',value:'Graduated,Resigned,WithdrawnScholarship,Incomplete,University'}]}},
+    achievement:{nameTH:'ประวัติผลงาน',nameEN:'Achievement History',descriptionTH:'บันทึกผลงานและรางวัลของนักเรียนทุกสถาบัน',descriptionEN:'Achievements and awards for students from every institution',rules:{logic:'AND',conditions:[]}}
+  };
+  const preset=presets[kind];if(!preset)return;
+  openSectionEditor();
+  el('sec_name_th').value=preset.nameTH;el('sec_name_en').value=preset.nameEN;el('sec_desc_th').value=preset.descriptionTH;el('sec_desc_en').value=preset.descriptionEN;el('sec_cardinality').value='repeatable';conditionEditor('sec_condition',preset.rules);
+  el('sectionEditor').scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 function populateSectionSelect(){const select=el('fld_section');if(!select)return;const selected=select.value;select.replaceChildren(new Option(t('dfSelectSection'),''));[...adminData.sections].filter(s=>s.active).sort((a,b)=>a.displayOrder-b.displayOrder).forEach(section=>select.appendChild(new Option(localName(section)||section.sectionKey,section.sectionId)));select.value=selected;}
 function populateTypes(force){const select=el('fld_type');const selected=select.value;if(select.options.length&&!force)return;select.replaceChildren();DF_TYPES.forEach(type=>select.appendChild(new Option(t('dfType_'+type),type)));if(selected)select.value=selected;}
-function openFieldEditor(field,sectionId){if(adminData.setupRequired||!adminData.sections.length)return;showEditor('fieldEditor');populateTypes();populateSectionSelect();el('fieldEditorTitle').textContent=field?t('dfEditField'):t('dfAddField');el('fld_id').value=field?.fieldId||'';el('fld_section').value=field?.sectionId||sectionId||'';el('fld_type').value=field?.fieldType||'text';el('fld_key').value=field?.fieldKey||'';el('fld_key').readOnly=!!field;el('fld_order').value=field?.displayOrder??adminData.fields.filter(f=>f.sectionId===(sectionId||el('fld_section').value)).length+1;el('fld_label_th').value=field?.labelTH||'';el('fld_label_en').value=field?.labelEN||'';el('fld_placeholder_th').value=field?.placeholderTH||'';el('fld_placeholder_en').value=field?.placeholderEN||'';el('fld_desc_th').value=field?.descriptionTH||'';el('fld_desc_en').value=field?.descriptionEN||'';el('fld_help_th').value=field?.helpTextTH||'';el('fld_help_en').value=field?.helpTextEN||'';el('fld_active').checked=field?.active!==false;el('fld_visible').checked=field?.visible!==false;el('fld_editable').checked=field?.editable!==false;el('fld_required').checked=!!field?.required;el('fld_unique').checked=!!field?.unique;el('fld_searchable').checked=!!field?.searchable;el('fld_min_length').value=field?.minLength??'';el('fld_max_length').value=field?.maxLength??'';el('fld_min_value').value=field?.minValue??'';el('fld_max_value').value=field?.maxValue??'';el('fld_pattern').value=field?.validationPattern||'';el('fld_default').value=field?.defaultValue||'';el('fld_validation_th').value=field?.validationMessageTH||'';el('fld_validation_en').value=field?.validationMessageEN||'';roleChecks('fld_visible_roles',field?.visibleRoles);roleChecks('fld_editable_roles',field?.editableRoles||['SuperAdmin','Manager','DormTeacher']);conditionEditor('fld_condition',field?.visibilityRules);el('optionRows').replaceChildren();const options=adminData.options.filter(o=>o.fieldId===field?.fieldId);options.forEach(addOptionRow);toggleOptionsEditor();renderFieldPreview();lucide.createIcons();}
+function openFieldEditor(field,sectionId){if(adminData.setupRequired||!adminData.sections.length)return;showEditor('fieldEditor');populateTypes();populateSectionSelect();el('fieldEditorTitle').textContent=field?t('dfEditField'):t('dfAddField');el('fld_id').value=field?.fieldId||'';el('fld_section').value=field?.sectionId||sectionId||'';el('fld_type').value=field?.fieldType||'text';el('fld_key').value=field?.fieldKey||generateStableKey('field');el('fld_key').readOnly=true;el('fld_order').value=field?.displayOrder??adminData.fields.filter(f=>f.sectionId===(sectionId||el('fld_section').value)).length+1;el('fld_label_th').value=field?.labelTH||'';el('fld_label_en').value=field?.labelEN||'';el('fld_placeholder_th').value=field?.placeholderTH||'';el('fld_placeholder_en').value=field?.placeholderEN||'';el('fld_desc_th').value=field?.descriptionTH||'';el('fld_desc_en').value=field?.descriptionEN||'';el('fld_help_th').value=field?.helpTextTH||'';el('fld_help_en').value=field?.helpTextEN||'';el('fld_active').checked=field?.active!==false;el('fld_visible').checked=field?.visible!==false;el('fld_editable').checked=field?.editable!==false;el('fld_required').checked=!!field?.required;el('fld_unique').checked=!!field?.unique;el('fld_searchable').checked=!!field?.searchable;el('fld_min_length').value=field?.minLength??'';el('fld_max_length').value=field?.maxLength??'';el('fld_min_value').value=field?.minValue??'';el('fld_max_value').value=field?.maxValue??'';el('fld_pattern').value=field?.validationPattern||'';el('fld_default').value=field?.defaultValue||'';el('fld_validation_th').value=field?.validationMessageTH||'';el('fld_validation_en').value=field?.validationMessageEN||'';roleChecks('fld_visible_roles',field?.visibleRoles);roleChecks('fld_editable_roles',field?.editableRoles||['SuperAdmin','Manager','DormTeacher']);conditionEditor('fld_condition',field?.visibilityRules);el('optionRows').replaceChildren();const options=adminData.options.filter(o=>o.fieldId===field?.fieldId);options.forEach(addOptionRow);toggleOptionsEditor();renderFieldPreview();lucide.createIcons();}
 
 function addOptionRow(option){
   const row=make('div','option-row');row.dataset.optionId=option?.optionId||'';

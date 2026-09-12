@@ -158,3 +158,29 @@ test('section, field, value, role filtering, and archive work end to end', () =>
   assert.equal(archived.preservedValues, 1);
   assert.equal(c.getDynamicFormSchema(student, 'student', 'MBS_001').fields.length, 0);
 });
+
+test('server generates unique stable keys and prevents section key changes', () => {
+  const { context: c } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+
+  const section = c.saveDynamicSection(admin, {
+    nameTH: 'ประวัติการทำงาน', nameEN: 'Employment History', cardinality: 'repeatable',
+    visibilityRules: { logic: 'AND', conditions: [] },
+  });
+  assert.equal(section.status, 'success');
+  assert.match(section.sectionKey, /^section_[a-f0-9]{12}$/);
+
+  const field = c.saveDynamicField(admin, {
+    sectionId: section.sectionId, fieldType: 'text', labelTH: 'สถานที่ทำงาน', labelEN: 'Employer',
+    visibilityRules: { logic: 'AND', conditions: [] },
+  }, []);
+  assert.equal(field.status, 'success');
+  assert.match(field.fieldKey, /^field_[a-f0-9]{12}$/);
+
+  const changed = c.saveDynamicSection(admin, {
+    sectionId: section.sectionId, sectionKey: 'changed_key', nameTH: 'ประวัติการทำงาน',
+    nameEN: 'Employment History', cardinality: 'repeatable', visibilityRules: { logic: 'AND', conditions: [] },
+  });
+  assert.equal(changed.code, 'IMMUTABLE_KEY');
+});

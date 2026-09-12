@@ -40,7 +40,7 @@ flowchart LR
 | `CustomFieldValues` | ค่าของ entity โดยอ้างอิง `EntityID`, `FieldID`, `RecordID` และสถานะ Active |
 | `CustomFieldAuditLog` | ประวัติผู้ใช้ บทบาท การกระทำ ค่าเดิม ค่าใหม่ และผลลัพธ์ |
 
-`FieldID`, `SectionID`, `OptionID`, `ValueID` และ `RecordID` เป็นรหัสคงที่ ค่า `FieldKey` และ `SectionKey` เปลี่ยนไม่ได้หลังสร้างเพื่อไม่ให้ข้อมูลเดิมเสียความสัมพันธ์
+`FieldID`, `SectionID`, `OptionID`, `ValueID` และ `RecordID` เป็นรหัสคงที่ ระบบสุ่ม `FieldKey` และ `SectionKey` ที่ไม่ซ้ำให้อัตโนมัติเมื่อสร้างรายการ และล็อกไม่ให้เปลี่ยนหลังบันทึกเพื่อไม่ให้ข้อมูลเดิมเสียความสัมพันธ์ การแก้ชื่อไทยหรืออังกฤษไม่มีผลต่อคีย์เหล่านี้
 
 ## ความปลอดภัยและความเข้ากันได้
 
@@ -74,6 +74,14 @@ flowchart LR
 5. เปิดฟอร์มหรือโปรไฟล์นักเรียนเพื่อตรวจผล
 
 เงื่อนไขรองรับ `equals`, `not_equals`, `contains`, `in`, `not_in`, `is_empty` และ `is_not_empty` โดยเลือกอ้างอิงข้อมูลหลักหรือ `FieldID` ของ custom field
+
+ตัวอย่าง **ประวัติการทำงานเฉพาะศิษย์เก่า** ให้สร้าง section แบบ `repeatable` และตั้งเงื่อนไขข้อมูลหลัก `Status` ด้วย operator `in` และค่า:
+
+```text
+Graduated,Resigned,WithdrawnScholarship,Incomplete,University
+```
+
+ตัวอย่าง **ประวัติผลงานสำหรับทุกสถาบัน** ให้สร้าง section แบบ `repeatable` และไม่ตั้งเงื่อนไข `Institution` ส่วนหน้า `custom-fields.html` มีปุ่มตัวอย่างสำหรับกรอกการตั้งค่า section ทั้งสองกรณีนี้ให้ตรวจสอบก่อนบันทึก
 
 ## i18n สำหรับงานต่อจากนี้
 
