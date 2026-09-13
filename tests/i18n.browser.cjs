@@ -43,9 +43,9 @@ window.fetch = async (url, options) => {
  if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
- if (action==='getDynamicFormSchema') data={status:'success',setupRequired:false,schemaVersion:'1.0.0',sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'ข้อมูลที่กำหนดจากระบบ',descriptionEN:'System-configured information',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}}],options:[],values:location.pathname.endsWith('/student-profile.html')?[{valueId:'val_1',fieldId:'fld_note',recordId:'single',value:'Fixture value'}]:[]};
- if (action==='getDynamicFieldAdminData') data={status:'success',setupRequired:false,schemaVersion:'1.0.0',setup:{status:'success',ready:true,schemaVersion:'1.0.0',sheets:[{name:'FormSections',exists:true,missingHeaders:[],rowCount:1}]},sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'',descriptionEN:'',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},visibleRoles:['SuperAdmin'],cardinality:'single',collapsible:true,active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,active:true,archived:false,valueCount:1,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}}],options:[]};
- if (action==='previewDynamicFieldSetup') data={status:'success',ready:true,schemaVersion:'1.0.0',sheets:[]};
+ if (action==='getDynamicFormSchema') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'ข้อมูลที่กำหนดจากระบบ',descriptionEN:'System-configured information',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true},{sectionId:'sec_work',sectionKey:'employment_history',nameTH:'ประวัติการทำงาน',nameEN:'Employment History',descriptionTH:'',descriptionEN:'',displayOrder:2,visibilityRules:{logic:'AND',conditions:[]},cardinality:'repeatable',active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_start',fieldKey:'start_month',labelTH:'เดือนเริ่มต้น',labelEN:'Start month',fieldType:'month',sectionId:'sec_work',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_end',fieldKey:'end_month',labelTH:'เดือนสิ้นสุด',labelEN:'End month',fieldType:'month',sectionId:'sec_work',displayOrder:2,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_duration',fieldKey:'employment_duration',labelTH:'ระยะเวลาทำงาน',labelEN:'Employment duration',fieldType:'calculated_duration',sectionId:'sec_work',displayOrder:3,required:false,visible:true,editable:false,canEdit:false,calculationType:'month_range_duration',calculationConfig:{startFieldId:'fld_start',endFieldId:'fld_end',useCurrentMonth:true},visibilityRules:{logic:'AND',conditions:[]}}],options:[],values:location.pathname.endsWith('/student-profile.html')?[{valueId:'val_1',fieldId:'fld_note',recordId:'single',value:'Fixture value'},{valueId:'val_2',fieldId:'fld_start',recordId:'rec_work_1',value:'2025-01'},{valueId:'val_3',fieldId:'fld_end',recordId:'rec_work_1',value:'2025-12'}]:[]};
+ if (action==='getDynamicFieldAdminData') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',setup:{status:'success',ready:true,schemaVersion:'1.1.0',sheets:[{name:'FormSections',exists:true,missingHeaders:[],rowCount:1}]},sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'',descriptionEN:'',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},visibleRoles:['SuperAdmin'],cardinality:'single',collapsible:true,active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,active:true,archived:false,valueCount:1,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_start',fieldKey:'start_month',labelTH:'เดือนเริ่มต้น',labelEN:'Start month',fieldType:'month',sectionId:'sec_profile',displayOrder:2,active:true,archived:false,valueCount:0,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_end',fieldKey:'end_month',labelTH:'เดือนสิ้นสุด',labelEN:'End month',fieldType:'month',sectionId:'sec_profile',displayOrder:3,active:true,archived:false,valueCount:0,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_duration',fieldKey:'employment_duration',labelTH:'ระยะเวลาทำงาน',labelEN:'Employment duration',fieldType:'calculated_duration',sectionId:'sec_profile',displayOrder:4,editable:false,active:true,archived:false,valueCount:0,calculationType:'month_range_duration',calculationConfig:{startFieldId:'fld_start',endFieldId:'fld_end',useCurrentMonth:true},visibilityRules:{logic:'AND',conditions:[]}}],options:[]};
+ if (action==='previewDynamicFieldSetup') data={status:'success',ready:true,schemaVersion:'1.1.0',sheets:[]};
  return {ok:true,json:async()=>data};
 };
 `;
@@ -131,6 +131,8 @@ const server = http.createServer((req,res)=>{
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
    if(file==='dashboard.html') {
+     const customFieldsShortcut=await evaluate(`!![...document.querySelectorAll('.menu-card')].find(card=>card.getAttribute('onclick')?.includes('custom-fields.html'))`);
+     assert.equal(customFieldsShortcut,false,'advanced custom-field builder must live under settings instead of the dashboard');
      const startupCalls=await evaluate(`({quick:__calls.filter(a=>a==='getDashboardStats').length,students:__calls.filter(a=>a==='getStudents').length,pending:__calls.filter(a=>a==='getPendingScholarshipRequests').length,counts:['statMBS','statVC','statUNI','statAlumni'].map(id=>document.getElementById(id).textContent)})`);
      assert.equal(startupCalls.quick,1,'dashboard must request quick stats once');
      assert.equal(startupCalls.students,1,'dashboard must share the student request');
@@ -228,6 +230,27 @@ const server = http.createServer((req,res)=>{
      assert.equal(/[ก-๙]/.test(dynamic),false,'profile academic UI must be English');
      const extra=await evaluate(`document.getElementById('dynamicFieldsProfile').textContent`);
      assert.match(extra,/Additional Information/,'dynamic profile section must use English metadata');
+     assert.match(extra,/Employment duration/,'calculated employment duration must appear in the profile');
+     assert.match(extra,/1 year/,'month-range duration must include both boundary months');
+   }
+   if(initialLang==='en' && file==='student-form.html') {
+     const duration=await evaluate(`(()=>{
+       const start=document.querySelector('[data-df-field="fld_start"] [data-df-input]');
+       const end=document.querySelector('[data-df-field="fld_end"] [data-df-input]');
+       start.value='2025-01';start.dispatchEvent(new Event('input',{bubbles:true}));
+       end.value='2025-12';end.dispatchEvent(new Event('input',{bubbles:true}));
+       const calculated=document.querySelector('[data-df-calculated="fld_duration"]');
+       return {value:calculated?.value||'',readOnly:calculated?.readOnly===true};
+     })()`);
+     assert.deepEqual(duration,{value:'1 year',readOnly:true},'duration must recalculate immediately and remain read-only');
+     const shortcut=await evaluate(`({shown:getComputedStyle(document.getElementById('customFieldAdminShortcut')).display,href:document.querySelector('#customFieldAdminShortcut a')?.getAttribute('href')})`);
+     assert.notEqual(shortcut.shown,'none','authorized administrators must see the form-builder shortcut in the student form');
+     assert.equal(shortcut.href,'custom-fields.html');
+   }
+   if(initialLang==='en' && file==='students.html') {
+     const shortcut=await evaluate(`({shown:getComputedStyle(document.getElementById('manageCustomFieldsBtn')).display,href:document.getElementById('manageCustomFieldsBtn').getAttribute('href')})`);
+     assert.notEqual(shortcut.shown,'none','authorized administrators must see the form-builder shortcut in the student list');
+     assert.equal(shortcut.href,'custom-fields.html');
    }
    if(initialLang==='en' && file==='custom-fields.html') {
      const builder=await evaluate(`({label:document.getElementById('fld_label_th').value,selected:[...document.querySelectorAll('#fld_visible_roles input:checked')].map(e=>e.value),schema:document.getElementById('schemaList').textContent,guide:document.getElementById('usageGuide').textContent})`);
@@ -246,6 +269,12 @@ const server = http.createServer((req,res)=>{
      assert.match(conditionUx.summary,/Result: show when Scholarship status Is in list/,'condition builder must explain the resulting rule');
      assert.equal(conditionUx.manual,false,'standard status conditions must not use manual text input');
      assert.equal(conditionUx.multi,true,'in-list conditions must use a multi-choice control');
+     const calculationUx=await evaluate(`(()=>{const field=adminData.fields.find(item=>item.fieldType==='calculated_duration');openFieldEditor(field);return {start:document.getElementById('fld_calc_start').value,end:document.getElementById('fld_calc_end').value,sourceCount:document.getElementById('fld_calc_start').options.length-1,editableDisabled:document.getElementById('fld_editable').disabled,calculationVisible:!document.getElementById('calculationEditor').classList.contains('hidden')};})()`);
+     assert.deepEqual(calculationUx,{start:'fld_start',end:'fld_end',sourceCount:2,editableDisabled:true,calculationVisible:true},'calculated duration editor must use guided source selections');
+     const audienceUx=await evaluate(`(()=>{openSectionEditor(adminData.sections[0]);const initial={audience:document.getElementById('sec_audience').value,advanced:!document.getElementById('sec_condition_section').classList.contains('hidden')};applySectionExample('employment');const rules=sectionRulesForAudience();return {initial,audience:document.getElementById('sec_audience').value,advanced:!document.getElementById('sec_condition_section').classList.contains('hidden'),statuses:rules.conditions[0].value};})()`);
+     assert.deepEqual(audienceUx.initial,{audience:'all',advanced:false},'unconditional sections must use the friendly All students choice');
+     assert.equal(audienceUx.audience,'alumni');assert.equal(audienceUx.advanced,false,'alumni preset should not expose advanced conditions');
+     assert.deepEqual(audienceUx.statuses,['Graduated','Resigned','WithdrawnScholarship','Incomplete','University'],'alumni choice must map to stored status codes');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }

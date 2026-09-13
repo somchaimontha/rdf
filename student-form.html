@@ -881,6 +881,12 @@
     </div>
   </div>
 
+  <div id="customFieldAdminShortcut" class="hidden mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 items-center gap-3">
+    <i data-lucide="layout-template" class="w-5 h-5 text-blue-700 flex-shrink-0"></i>
+    <div class="min-w-0 flex-1"><p class="text-sm font-bold text-blue-900" data-t="dfManageFromStudentFormTitle">ต้องการเพิ่มหรือแก้ไขส่วนข้อมูลในแบบฟอร์มนี้?</p><p class="text-xs text-blue-700 mt-0.5" data-t="dfManageFromStudentFormDesc">เปิดหน้าจัดรูปแบบในแท็บใหม่ แล้วกลับมารีเฟรชหน้านี้เพื่อกรอกข้อมูลตามรูปแบบที่สร้าง</p></div>
+    <a href="custom-fields.html" target="_blank" rel="noopener" class="btn btn-secondary btn-sm flex-shrink-0"><i data-lucide="settings-2" class="w-4 h-4"></i><span data-t="dfOpenBuilder">จัดรูปแบบส่วนข้อมูล</span></a>
+  </div>
+
   <!-- Metadata-driven fields configured by authorized administrators -->
   <div id="dynamicFieldsForm" hidden></div>
 
@@ -1246,17 +1252,20 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.0.7"></script>
-<script src="assets/js/i18n.js?v=2.0.7"></script>
-<script src="assets/js/api.js?v=2.0.7"></script>
-<script src="assets/js/auth.js?v=2.0.7"></script>
-<script src="assets/js/rbac.js?v=2.0.7"></script>
-<script src="assets/js/dynamic-fields.js?v=2.0.7"></script>
+<script src="assets/js/config.js?v=2.0.8"></script>
+<script src="assets/js/i18n.js?v=2.0.8"></script>
+<script src="assets/js/api.js?v=2.0.8"></script>
+<script src="assets/js/auth.js?v=2.0.8"></script>
+<script src="assets/js/rbac.js?v=2.0.8"></script>
+<script src="assets/js/dynamic-fields.js?v=2.0.8"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
-if (user) renderNavUser(user);
+if (user) {
+  renderNavUser(user);
+  if (RBAC.has('manageCustomFields')) document.getElementById('customFieldAdminShortcut')?.classList.replace('hidden','flex');
+}
 
 // ── Nationality & Religion select options (bilingual) ──────────────────────
 const _NAT_OPTS = [

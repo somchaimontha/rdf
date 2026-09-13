@@ -129,7 +129,9 @@
     (state.schema?.fields || []).forEach(field => {
       const own = state.current.get(keyOf(field.fieldId, recordId));
       const single = state.current.get(keyOf(field.fieldId, 'single'));
-      values[field.fieldId] = own !== undefined ? parseComparable(field, own) : parseComparable(field, single);
+      const calculated = field.fieldType === 'calculated_duration' ? calculateDurationMonths(field, recordId) : null;
+      values[field.fieldId] = calculated !== null ? String(calculated) :
+        (own !== undefined ? parseComparable(field, own) : parseComparable(field, single));
       values[field.fieldKey] = values[field.fieldId];
     });
     return values;
@@ -177,6 +179,46 @@
     return (state.schema?.options || []).filter(option => option.fieldId === fieldId);
   }
 
+  function monthSerial(raw) {
+    const match = String(raw || '').trim().match(/^(\d{4})-(\d{2})/);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    return month >= 1 && month <= 12 ? year * 12 + month - 1 : null;
+  }
+
+  function calculateDurationMonths(field, recordId) {
+    const config = field?.calculationConfig || {};
+    if (!config.startFieldId || !config.endFieldId) return null;
+    const read = fieldId => state.current.get(keyOf(fieldId, recordId)) ?? state.current.get(keyOf(fieldId, 'single')) ?? '';
+    const start = monthSerial(read(config.startFieldId));
+    let end = monthSerial(read(config.endFieldId));
+    if (end === null && config.useCurrentMonth !== false) {
+      const now = new Date();
+      end = now.getFullYear() * 12 + now.getMonth();
+    }
+    if (start === null || end === null || end < start) return null;
+    return end - start + 1;
+  }
+
+  function formatDurationMonths(months) {
+    if (!Number.isInteger(months) || months < 1) return '';
+    const years = Math.floor(months / 12);
+    const remaining = months % 12;
+    const parts = [];
+    if (years) parts.push(`${years} ${t(years === 1 ? 'dfDurationYear' : 'dfDurationYears')}`);
+    if (remaining) parts.push(`${remaining} ${t(remaining === 1 ? 'dfDurationMonth' : 'dfDurationMonths')}`);
+    return parts.join(' ');
+  }
+
+  function refreshCalculatedFields() {
+    if (!state.container || !state.schema) return;
+    state.container.querySelectorAll('[data-df-calculated]').forEach(control => {
+      const field = state.schema.fields.find(item => item.fieldId === control.dataset.dfCalculated);
+      control.value = field ? formatDurationMonths(calculateDurationMonths(field, control.dataset.dfRecord || 'single')) : '';
+    });
+  }
+
   function controlValue(field, root) {
     if (field.fieldType === 'radio') return root.querySelector('input:checked')?.value || '';
     const el = root.querySelector('[data-df-input]');
@@ -220,7 +262,14 @@
     const id = `df_${safeId(field.fieldId)}_${safeId(recordId)}`;
     const options = fieldOptions(field.fieldId);
     let control;
-    if (field.fieldType === 'textarea') {
+    if (field.fieldType === 'calculated_duration') {
+      control = document.createElement('input');
+      control.type = 'text'; control.className = 'df-control'; control.readOnly = true;
+      control.dataset.dfCalculated = field.fieldId; control.dataset.dfRecord = recordId;
+      control.value = formatDurationMonths(calculateDurationMonths(field, recordId));
+      wrapper.appendChild(control);
+      return;
+    } else if (field.fieldType === 'textarea') {
       control = make('textarea', 'df-control'); control.rows = 3;
     } else if (field.fieldType === 'select' || field.fieldType === 'multiselect') {
       control = make('select', 'df-control');
@@ -245,7 +294,7 @@
       control.append(input, labelText);
     } else {
       control = document.createElement('input');
-      const typeMap = { number: 'number', decimal: 'number', email: 'email', tel: 'tel', date: 'date', datetime: 'datetime-local', url: 'url', hidden: 'hidden' };
+      const typeMap = { number: 'number', decimal: 'number', email: 'email', tel: 'tel', date: 'date', month: 'month', datetime: 'datetime-local', url: 'url', hidden: 'hidden' };
       control.type = typeMap[field.fieldType] || 'text';
       control.className = field.fieldType === 'hidden' ? '' : 'df-control';
       if (field.fieldType === 'decimal') control.step = 'any';
@@ -283,7 +332,8 @@
     return wrapper;
   }
 
-  function formatProfileValue(field, rawValue) {
+  function formatProfileValue(field, rawValue, recordId) {
+    if (field.fieldType === 'calculated_duration') return formatDurationMonths(calculateDurationMonths(field, recordId));
     const value = normalizeValue(field, rawValue);
     if (!value || (field.fieldType === 'multiselect' && value === '[]')) return '';
     if (field.fieldType === 'boolean' || field.fieldType === 'checkbox') return value === 'true' ? t('yes') : t('no');
@@ -302,6 +352,13 @@
       const date = new Date(field.fieldType === 'date' ? `${value}T00:00:00` : value);
       if (!Number.isNaN(date.getTime())) return new Intl.DateTimeFormat(currentLang() === 'en' ? 'en-GB' : 'th-TH', field.fieldType === 'date' ? { dateStyle: 'medium' } : { dateStyle: 'medium', timeStyle: 'short' }).format(date);
     }
+    if (field.fieldType === 'month') {
+      const match = value.match(/^(\d{4})-(\d{2})$/);
+      if (match) {
+        const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+        return new Intl.DateTimeFormat(currentLang() === 'en' ? 'en-GB' : 'th-TH', { month: 'long', year: 'numeric' }).format(date);
+      }
+    }
     return value;
   }
 
@@ -309,7 +366,7 @@
     const grid = make('div', 'df-profile-grid');
     fields.forEach(field => {
       if (!rulesPass(field.visibilityRules, recordId)) return;
-      const value = formatProfileValue(field, state.current.get(keyOf(field.fieldId, recordId)));
+      const value = formatProfileValue(field, state.current.get(keyOf(field.fieldId, recordId)), recordId);
       if (!value || field.fieldType === 'hidden') return;
       const item = make('div', 'df-profile-item');
       item.dataset.dfField = field.fieldId; item.dataset.dfRecord = recordId;
@@ -402,6 +459,7 @@
 
   function refreshVisibility() {
     if (!state.container || !state.schema || state.mode !== 'form') return;
+    refreshCalculatedFields();
     state.container.querySelectorAll('[data-df-section]').forEach(sectionEl => {
       const section = state.schema.sections.find(item => item.sectionId === sectionEl.dataset.dfSection);
       sectionEl.hidden = !section || !rulesPass(section.visibilityRules, 'single');
@@ -428,7 +486,8 @@
       REQUIRED: 'dfValidationRequired', MIN_LENGTH: 'dfValidationMinLength', MAX_LENGTH: 'dfValidationMaxLength',
       NUMBER: 'dfValidationNumber', DECIMAL: 'dfValidationNumber', MIN_VALUE: 'dfValidationMinValue',
       MAX_VALUE: 'dfValidationMaxValue', EMAIL: 'dfValidationEmail', TEL: 'dfValidationTel',
-      URL: 'dfValidationUrl', PATTERN: 'dfValidationPattern', OPTION: 'dfValidationOption', DATE: 'dfValidationDate', DATETIME: 'dfValidationDate'
+      URL: 'dfValidationUrl', PATTERN: 'dfValidationPattern', OPTION: 'dfValidationOption', DATE: 'dfValidationDate',
+      MONTH: 'dfValidationMonth', DATETIME: 'dfValidationDate'
     };
     return t(messages[code] || 'dfValidationInvalid');
   }
@@ -449,6 +508,7 @@
     if (field.fieldType === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'EMAIL';
     if (field.fieldType === 'tel' && !/^[0-9+()\-\s]{6,30}$/.test(value)) return 'TEL';
     if (field.fieldType === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'DATE';
+    if (field.fieldType === 'month' && !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(value)) return 'MONTH';
     if (field.fieldType === 'datetime' && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return 'DATETIME';
     if (field.fieldType === 'url' && !/^https?:\/\/[^\s]+$/i.test(value)) return 'URL';
     const allowedOptions = fieldOptions(field.fieldId).map(option => option.value);
@@ -490,7 +550,7 @@
   }
 
   function visibleEditableKey(field, recordId) {
-    if (!field.canEdit || state.removedRecords.has(recordId)) return false;
+    if (!field.canEdit || field.fieldType === 'calculated_duration' || state.removedRecords.has(recordId)) return false;
     const section = state.schema.sections.find(item => item.sectionId === field.sectionId);
     return !!section && rulesPass(section.visibilityRules, 'single') && rulesPass(field.visibilityRules, recordId);
   }

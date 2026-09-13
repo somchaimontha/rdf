@@ -23,14 +23,15 @@ function _getToken() {
 }
 
 const _API_CODE_I18N_KEYS = {
-  ACCESS_DENIED: 'dfErrorAccessDenied', SETUP_REQUIRED: 'dfErrorSetupRequired', BUSY: 'dfErrorBusy',
+  ACCESS_DENIED: 'dfErrorAccessDenied', SETUP_REQUIRED: 'dfErrorSetupRequired', BUSY: 'dfErrorBusy', RATE_LIMITED: 'dfErrorRateLimited',
   VALIDATION_ERROR: 'dfErrorValidation', DUPLICATE_KEY: 'dfErrorDuplicateKey', IMMUTABLE_KEY: 'dfErrorImmutableKey',
   SECTION_NOT_FOUND: 'dfErrorSectionNotFound', OPTIONS_REQUIRED: 'dfErrorOptionsRequired', DUPLICATE_OPTION: 'dfErrorDuplicateOption',
   VALIDATION_RANGE_ERROR: 'dfErrorValidationRange', UNSAFE_TYPE_CHANGE: 'dfErrorUnsafeType',
   UNSAFE_CARDINALITY_CHANGE: 'dfErrorUnsafeCardinality', UNSAFE_SECTION_CHANGE: 'dfErrorUnsafeSection',
   INVALID_DEFAULT_VALUE: 'dfErrorInvalidDefault', FIELD_NOT_FOUND: 'dfErrorFieldNotFound', ENTITY_NOT_FOUND: 'dfErrorEntityNotFound',
   FIELD_NOT_AVAILABLE: 'dfErrorFieldUnavailable', FIELD_ACCESS_DENIED: 'dfErrorAccessDenied', FIELD_NOT_VISIBLE: 'dfErrorFieldUnavailable',
-  INVALID_RECORD_ID: 'dfErrorInvalidRecord', FIELD_VALIDATION_ERROR: 'dfErrorFieldValidation', DUPLICATE_VALUE: 'dfErrorDuplicateValue'
+  INVALID_RECORD_ID: 'dfErrorInvalidRecord', FIELD_VALIDATION_ERROR: 'dfErrorFieldValidation', DUPLICATE_VALUE: 'dfErrorDuplicateValue',
+  INVALID_CALCULATION_CONFIG: 'dfErrorInvalidCalculation'
 };
 
 function _localizeStructuredApiData(data) {

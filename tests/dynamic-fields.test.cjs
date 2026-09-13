@@ -123,10 +123,33 @@ test('dynamic schema setup remains additive and defines stable value records', (
   assert.match(source, /CustomFieldDefinitions/);
   assert.match(source, /CustomFieldAuditLog/);
   assert.match(source, /'RecordID'/);
+  assert.match(source, /'CalculationType'/);
+  assert.match(source, /'CalculationConfig'/);
   assert.match(source, /'Active','CreatedAt'/);
   const dynamicBlock = source.slice(source.indexOf('Dynamic Custom Fields'));
   assert.doesNotMatch(dynamicBlock, /clear\s*\(/);
   assert.doesNotMatch(dynamicBlock, /deleteSheet|deleteColumn|deleteRow/);
+});
+
+test('pending calculation headers do not hide existing custom fields', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  const definitionSheet = spreadsheet.getSheetByName('CustomFieldDefinitions');
+  const indexes = ['CalculationType', 'CalculationConfig']
+    .map(header => definitionSheet.rows[0].indexOf(header)).sort((a, b) => b - a);
+  definitionSheet.rows.forEach(row => indexes.forEach(index => row.splice(index, 1)));
+  assert.equal(c.previewDynamicFieldSetup().ready, false);
+  assert.equal(c._dfSetupReady(), true);
+});
+
+test('dynamic field writes are rate limited per authenticated account', () => {
+  const { context: c } = loadBackendWithSheets();
+  const admin = { username: 'admin@example.com', role: 'SuperAdmin' };
+  for (let index = 0; index < 40; index += 1) {
+    assert.equal(c._dfMutationRateLimited(admin, 'admin', 40), false);
+  }
+  assert.equal(c._dfMutationRateLimited(admin, 'admin', 40), true);
+  assert.equal(c._dfMutationRateLimited({ username: 'other@example.com', role: 'SuperAdmin' }, 'admin', 40), false);
 });
 
 test('section, field, value, role filtering, and archive work end to end', () => {
@@ -191,4 +214,56 @@ test('server generates unique stable keys and prevents section key changes', () 
     nameEN: 'Employment History', cardinality: 'repeatable', visibilityRules: { logic: 'AND', conditions: [] },
   });
   assert.equal(changed.code, 'IMMUTABLE_KEY');
+});
+
+test('month fields and calculated employment duration are configured safely', () => {
+  const { context: c } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+
+  const section = c.saveDynamicSection(admin, {
+    nameTH: 'ประวัติการทำงาน', nameEN: 'Employment History', cardinality: 'repeatable',
+    visibilityRules: { logic: 'AND', conditions: [] },
+  });
+  const start = c.saveDynamicField(admin, {
+    sectionId: section.sectionId, fieldType: 'month', labelTH: 'เดือนเริ่มต้น', labelEN: 'Start month',
+    visibilityRules: { logic: 'AND', conditions: [] },
+  }, []);
+  const end = c.saveDynamicField(admin, {
+    sectionId: section.sectionId, fieldType: 'month', labelTH: 'เดือนสิ้นสุด', labelEN: 'End month',
+    visibilityRules: { logic: 'AND', conditions: [] },
+  }, []);
+  assert.equal(start.status, 'success');
+  assert.equal(end.status, 'success');
+  assert.equal(c._dfValidateValue({ FieldType: 'month' }, '2026-09', []), '');
+  assert.equal(c._dfValidateValue({ FieldType: 'month' }, '2026-13', []), 'MONTH');
+
+  const invalid = c.saveDynamicField(admin, {
+    sectionId: section.sectionId, fieldType: 'calculated_duration', labelTH: 'ระยะเวลา', labelEN: 'Duration',
+    calculationConfig: { startFieldId: start.fieldId, endFieldId: start.fieldId },
+    visibilityRules: { logic: 'AND', conditions: [] },
+  }, []);
+  assert.equal(invalid.code, 'INVALID_CALCULATION_CONFIG');
+
+  const duration = c.saveDynamicField(admin, {
+    sectionId: section.sectionId, fieldType: 'calculated_duration', labelTH: 'ระยะเวลา', labelEN: 'Duration',
+    calculationConfig: { startFieldId: start.fieldId, endFieldId: end.fieldId, useCurrentMonth: true },
+    editable: true, required: true, unique: true,
+    visibilityRules: { logic: 'AND', conditions: [] },
+  }, []);
+  assert.equal(duration.status, 'success');
+  const schema = c.getDynamicFormSchema(admin, 'student', 'MBS_001');
+  const calculated = schema.fields.find(field => field.fieldId === duration.fieldId);
+  assert.equal(calculated.fieldType, 'calculated_duration');
+  assert.equal(calculated.canEdit, false);
+  assert.equal(calculated.editable, false);
+  assert.equal(calculated.required, false);
+  assert.equal(calculated.calculationType, 'month_range_duration');
+  assert.equal(calculated.calculationConfig.startFieldId, start.fieldId);
+  assert.equal(calculated.calculationConfig.endFieldId, end.fieldId);
+
+  const rejected = c.saveStudentDynamicValues(admin, 'student', 'MBS_001', [
+    { fieldId: duration.fieldId, recordId: 'rec_work_1', value: '12' },
+  ], []);
+  assert.equal(rejected.code, 'FIELD_ACCESS_DENIED');
 });
