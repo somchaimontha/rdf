@@ -376,6 +376,43 @@ test('employment setup stops when legacy work data or a similar custom section e
   assert.equal(second.context.setupEmploymentHistorySchema(admin).code, 'EMPLOYMENT_REVIEW_REQUIRED');
 });
 
+test('employment setup safely reuses an empty matching section without duplicating it', () => {
+  const { context: c } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  const manual = c.saveDynamicSection(admin, {
+    sectionKey: 'existing_work_history', nameTH: 'ประวัติการทำงาน', nameEN: 'Employment History',
+    cardinality: 'repeatable', visibilityRules: { logic: 'AND', conditions: [] },
+  });
+  assert.equal(manual.status, 'success');
+  const preview = c.previewEmploymentHistorySetup(admin);
+  assert.equal(preview.candidateSections.length, 1);
+  assert.equal(preview.candidateSections[0].adoptable, true);
+  assert.equal(preview.candidateSections[0].recommendedTargetKey, 'alumni_employment_history');
+
+  const installed = c.setupEmploymentHistorySchema(admin, {
+    adoptCandidateSectionId: manual.sectionId,
+    adoptTargetSectionKey: 'alumni_employment_history',
+  });
+  assert.equal(installed.status, 'success');
+  assert.equal(installed.ready, true);
+  assert.ok(installed.changed.some(item => item.type === 'section_adoption' && item.sectionId === manual.sectionId));
+  const sections = c.DynamicFieldRepository.readTable('FormSections').objects;
+  const adopted = sections.find(section => section.SectionID === manual.sectionId);
+  assert.equal(adopted.SectionKey, 'alumni_employment_history');
+  assert.equal(sections.filter(section => section.SectionKey === 'alumni_employment_history').length, 1);
+  assert.equal(sections.some(section => section.SectionKey === 'existing_work_history'), false);
+  assert.equal(c.previewEmploymentHistorySetup(admin).candidateSections.length, 0);
+
+  const sectionCount = sections.length;
+  const repeated = c.setupEmploymentHistorySchema(admin, {
+    adoptCandidateSectionId: manual.sectionId,
+    adoptTargetSectionKey: 'alumni_employment_history',
+  });
+  assert.equal(repeated.alreadyReady, true);
+  assert.equal(c.DynamicFieldRepository.readTable('FormSections').objects.length, sectionCount);
+});
+
 test('employment report joins profile identity without copying it into work values', () => {
   const { context: c, spreadsheet } = loadBackendWithSheets();
   const admin = { username: 'admin', role: 'SuperAdmin' };

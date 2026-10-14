@@ -489,6 +489,12 @@ const server = http.createServer((req,res)=>{
      assert.equal(migration.rows,1,'legacy migration preview rows');
      assert.equal(migration.selected,1,'only ready legacy rows are selected');
      assert.match(migration.text,/RDF Foundation/,'legacy workplace mapping preview');
+     const adoption=await evaluate(`(()=>{employmentTemplatePlan={status:'success',launchMode:'enabled',ready:false,safeToInstall:false,setupRequired:false,missingSections:[{sectionKey:'alumni_employment_summary'}],missingFields:[{fieldKey:'employment_current_status'}],conflicts:[],candidateSections:[{sectionId:'sec_existing',sectionKey:'section_existing',nameTH:'ประวัติการทำงาน',nameEN:'Employment History',fieldCount:0,adoptable:true,recommendedTargetKey:'alumni_employment_history'}],legacy:{rowsWithEmployment:0},operational:{sheets:[]}};renderEmploymentTemplatePlan();const button=document.getElementById('employmentTemplateBtn');return {text:button.textContent.trim(),disabled:button.disabled,candidate:button.dataset.adoptCandidateId,target:button.dataset.adoptTargetKey,notice:document.getElementById('employmentTemplateDetails').textContent};})()`);
+     assert.equal(adoption.text,'Reuse section and install template','empty matching section must offer controlled reuse');
+     assert.equal(adoption.disabled,false,'controlled reuse must be available after launch mode is enabled');
+     assert.equal(adoption.candidate,'sec_existing');
+     assert.equal(adoption.target,'alumni_employment_history');
+     assert.match(adoption.notice,/retain its SectionID/,'reuse explanation must state that the original SectionID is preserved');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }
