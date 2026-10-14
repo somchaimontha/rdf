@@ -10,6 +10,8 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 /* ── Layout ── */
 .rpt-card {
@@ -39,6 +41,77 @@
 .kpi-val { font-size:24px; font-weight:800; color:#0f172a; line-height:1; }
 .kpi-label { font-size:11px; color:#6b7280; font-weight:500; }
 .kpi-sub { font-size:10px; color:#9ca3af; }
+/* ── Employment report ── */
+.emp-kpi-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+@media(min-width:768px){ .emp-kpi-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media(min-width:1024px){ .emp-kpi-grid { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+.emp-kpi { border:1px solid #dce7e2; border-radius:12px; padding:12px 14px; background:#f8fbfa; }
+.emp-kpi.is-positive { background:#ecfdf5; border-color:#a7f3d0; }
+.emp-kpi.is-warning { background:#fffbeb; border-color:#fde68a; }
+.emp-kpi.is-urgent { background:#fff1f2; border-color:#fecdd3; }
+.emp-kpi-value { color:#0f172a; font-size:20px; font-weight:800; line-height:1.2; }
+.emp-kpi-label { color:#64748b; font-size:10px; margin-top:2px; }
+.emp-cell-line { display:block; line-height:1.45; }
+.emp-cell-muted { color:#94a3b8; font-size:10px; }
+.emp-status-pill { display:inline-flex; align-items:center; border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+.emp-followup-item { border:1px solid #e2e8f0; border-radius:10px; padding:10px; background:#fff; }
+.emp-followup-item .icon-btn { border:0; background:transparent; border-radius:6px; padding:4px; color:#64748b; cursor:pointer; }
+.emp-followup-item .icon-btn:hover { background:#e2e8f0; color:#1d4ed8; }
+.emp-followup-item .icon-btn.danger:hover { background:#fee2e2; color:#dc2626; }
+/* ── Report workspace: scholarship statistics are the primary task ── */
+.report-view-switcher {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:1fr; gap:10px;
+  margin-bottom:16px; padding:6px; border:1px solid #dbe4ea; border-radius:16px;
+  background:#eef2f6; box-shadow:inset 0 1px 2px rgba(15,23,42,.04);
+}
+.report-view-tab {
+  min-width:0; min-height:72px; height:100%; display:flex; align-items:center; gap:12px; padding:12px 14px;
+  border:1px solid transparent; border-radius:11px; color:#64748b; text-align:left;
+  background:transparent; cursor:pointer; transition:background .18s,border-color .18s,box-shadow .18s,color .18s;
+}
+.report-view-tab:hover { background:rgba(255,255,255,.65); color:#334155; }
+.report-view-tab:focus-visible { outline:3px solid rgba(37,99,235,.25); outline-offset:2px; }
+.report-view-icon {
+  width:40px; height:40px; flex:0 0 40px; display:flex; align-items:center; justify-content:center;
+  border-radius:11px; background:#e2e8f0; color:#64748b;
+}
+.report-view-copy { min-width:0; flex:1; }
+.report-view-title { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:800; line-height:1.25; }
+.report-view-desc { display:block; margin-top:3px; font-size:10px; line-height:1.4; color:#94a3b8; }
+.report-view-tab[data-report-view="employment"][aria-selected="true"] {
+  background:#fff; border-color:#a7f3d0; color:#065f46; box-shadow:0 3px 12px rgba(6,95,70,.10);
+}
+.report-view-tab[data-report-view="employment"][aria-selected="true"] .report-view-icon { background:#d1fae5; color:#047857; }
+.report-view-tab[data-report-view="scholarship"][aria-selected="true"] {
+  background:#fff; border-color:#bfdbfe; color:#1e3a8a; box-shadow:0 3px 12px rgba(30,58,138,.10);
+}
+.report-view-tab[data-report-view="scholarship"][aria-selected="true"] .report-view-icon { background:#dbeafe; color:#1d4ed8; }
+#reportsWorkspace[data-report-view="employment"] [data-report-panel="scholarship"],
+#reportsWorkspace[data-report-view="employment"] [data-report-action="scholarship"],
+#reportsWorkspace[data-report-view="scholarship"] [data-report-panel="employment"] { display:none !important; }
+#employmentReportSection { margin-top:0; border-color:#a7f3d0; box-shadow:0 8px 28px rgba(6,95,70,.09); }
+#employmentReportSection > .rpt-card-header {
+  padding:16px 18px; font-size:16px; letter-spacing:0;
+  background:linear-gradient(120deg,#065f46 0%,#047857 60%,#0f766e 100%) !important;
+}
+.emp-header-copy { min-width:0; }
+.emp-header-subtitle { display:block; margin-top:3px; color:#d1fae5; font-size:10px; font-weight:500; line-height:1.4; }
+.emp-coverage { border:1px solid #d1fae5; border-radius:12px; background:#f0fdf4; padding:11px 13px; margin-bottom:12px; }
+.emp-coverage-track { height:7px; overflow:hidden; border-radius:999px; background:#dce7e2; }
+.emp-coverage-bar { width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#14b8a6); transition:width .3s ease; }
+.scholarship-data-source {
+  display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; padding:11px 13px;
+  border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a;
+}
+.scholarship-data-source strong { display:block; font-size:12px; }
+.scholarship-data-source span { display:block; margin-top:2px; font-size:10px; color:#64748b; line-height:1.45; }
+@media(max-width:639px){
+  .report-view-switcher { grid-template-columns:1fr; }
+  .report-view-tab { padding:10px 12px; }
+  .report-view-desc { white-space:normal; }
+  #employmentReportSection > .rpt-card-header { align-items:flex-start; flex-wrap:wrap; }
+  #empAsOf { width:100%; margin-left:28px; }
+}
 /* ── Filters bar ── */
 .filters-bar {
   background:#fff; border:1px solid #e5e7eb; border-radius:12px;
@@ -105,6 +178,76 @@
   background:#f8faff; border:1.5px solid #e5e7eb; border-radius:8px; padding:5px 12px;
   transition:border-color .15s; }
 .pr-check-row label:has(input:checked) { border-color:#1d4ed8; background:#eff6ff; }
+.rpt-meta-grid>* { min-width:0; }
+/* ── Responsive report composer ── */
+.report-composer-overlay {
+  position:fixed; top:60px; right:0; bottom:0; left:0; z-index:70; display:flex; align-items:center; justify-content:center;
+  padding:16px; background:rgba(15,23,42,.58); backdrop-filter:blur(3px);
+}
+.report-composer-shell {
+  width:min(1120px,100%); max-height:calc(100dvh - 92px); display:flex; flex-direction:column;
+  overflow:hidden; border-radius:18px; background:#fff; box-shadow:0 28px 80px rgba(15,23,42,.32);
+}
+.report-composer-header { flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:15px 18px; background:#065f46; color:#fff; }
+.report-composer-body { min-height:0; flex:1 1 auto; display:grid; grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); }
+.report-composer-config, .report-composer-preview-wrap { min-width:0; overflow-y:auto; padding:16px; overscroll-behavior:contain; }
+.report-composer-config {
+  border-right:1px solid #e2e8f0; overflow-y:scroll; scrollbar-gutter:stable;
+  scrollbar-width:auto; scrollbar-color:#94a3b8 #eef2f7;
+}
+.report-composer-config::-webkit-scrollbar { width:12px; }
+.report-composer-config::-webkit-scrollbar-track { background:#eef2f7; border-left:1px solid #e2e8f0; }
+.report-composer-config::-webkit-scrollbar-thumb { background:#94a3b8; border:3px solid #eef2f7; border-radius:999px; }
+.report-composer-config::-webkit-scrollbar-thumb:hover { background:#64748b; }
+.report-composer-preview-wrap { background:#eef2f6; }
+.report-composer-footer { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; border-top:1px solid #e2e8f0; background:#f8fafc; }
+.report-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.report-field-option { display:flex; align-items:center; gap:7px; min-width:0; padding:7px 9px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; font-size:11px; color:#475569; cursor:pointer; }
+.report-field-option:has(input:checked) { border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
+.report-preview-page { min-height:100%; border:1px solid #cbd5e1; border-radius:8px; padding:18px; background:#fff; color:#1f2937; box-shadow:0 8px 24px rgba(15,23,42,.10); overflow:hidden; }
+.report-preview-page[data-orientation="portrait"] { max-width:620px; margin-inline:auto; }
+.report-preview-page table { width:100%; border-collapse:collapse; font-size:9px; }
+.report-preview-page th,.report-preview-page td { min-width:0; padding:5px; border:1px solid #dbe3e8; text-align:left; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; white-space:normal; }
+.report-preview-page th { background:#ecfdf5; color:#065f46; }
+.report-preview-page .preview-signatures { display:flex; gap:20px; justify-content:flex-end; margin-top:28px; }
+.report-preview-page .preview-signature { width:150px; text-align:center; font-size:9px; color:#475569; }
+.report-preview-page .preview-signature-line { margin:24px 0 5px; border-top:1px solid #64748b; }
+.report-format-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.report-format-option { display:flex; align-items:flex-start; gap:9px; min-width:0; padding:10px; border:1.5px solid #e2e8f0; border-radius:10px; cursor:pointer; background:#fff; }
+.report-format-option:has(input:checked) { border-color:#34d399; background:#ecfdf5; color:#065f46; }
+.report-qr-panel { border:1px solid #cbd5e1; border-radius:11px; padding:11px; background:#f8fafc; }
+.report-qr-panel.is-issued { border-color:#a7f3d0; background:#f0fdf4; }
+.report-preview-header { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:start; gap:10px; border-bottom:2px solid #047857; padding-bottom:10px; margin-bottom:10px; }
+.report-preview-qr { width:54px; height:54px; display:flex; align-items:center; justify-content:center; border:1px dashed #94a3b8; border-radius:6px; color:#94a3b8; font-size:8px; text-align:center; overflow:hidden; }
+.report-preview-qr img,.report-preview-qr canvas { width:100%!important; height:100%!important; }
+.report-preview-footer { margin-top:16px; padding-top:7px; border-top:1px solid #cbd5e1; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; color:#64748b; font-size:8px; overflow-wrap:anywhere; }
+.report-preview-table-section + .report-preview-table-section { margin-top:14px; padding-top:12px; border-top:1px dashed #cbd5e1; }
+@media(max-width:800px){
+  .report-composer-overlay { align-items:stretch; padding:8px; }
+  .report-composer-shell { max-height:calc(100dvh - 76px); border-radius:13px; }
+  .report-composer-body { display:block; overflow-y:auto; }
+  .report-composer-config,.report-composer-preview-wrap { overflow:visible; padding:13px; scrollbar-gutter:auto; }
+  .report-composer-config { border-right:0; border-bottom:1px solid #e2e8f0; }
+  .report-composer-footer { flex-wrap:wrap; }
+  .report-composer-footer .composer-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; }
+}
+body:has(#rdfLocalAuditBanner) .report-composer-overlay { bottom:30px; }
+#rptPrintModal { position:fixed; left:0; right:0; bottom:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:8px; }
+#rptPrintModal.hidden { display:none!important; }
+#rptPrintModal,#empFollowUpModal { top:60px; }
+#rptPrintModal>div { width:100%; max-width:680px; max-height:calc(100dvh - 92px)!important; overflow:hidden; display:flex; flex-direction:column; }
+#rptPrintModal .rpt-modal-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
+@media(max-width:480px){
+  body:has(#rdfLocalAuditBanner) .report-composer-overlay { bottom:68px; }
+  body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:68px; }
+  body:has(#rdfLocalAuditBanner) #rptPrintModal>div { max-height:calc(100dvh - 144px)!important; }
+  .report-field-grid { grid-template-columns:1fr; }
+  .report-format-grid { grid-template-columns:1fr; }
+  .rpt-meta-grid { grid-template-columns:1fr; }
+  .report-composer-header { padding:12px 14px; }
+  .report-composer-footer .composer-actions { grid-template-columns:1fr; }
+}
 /* ── Print (browser print — fallback) ── */
 @media print {
   .no-print, .rdf-nav, .rdf-footer, #loader, .filters-bar { display:none !important; }
@@ -152,12 +295,12 @@
   </div>
 </nav>
 
-<main class="container main-content">
+<main class="container main-content" id="reportsWorkspace" data-report-view="scholarship">
 
   <!-- Back link + Page header -->
-  <a href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit no-print">
+  <a id="reportsBackLink" href="dashboard.html" class="text-gray-400 hover:text-rdfBlue text-xs flex items-center gap-1 mb-3 font-semibold transition w-fit no-print">
     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-    <span data-t="promoBackDash">กลับหน้าหลัก</span>
+    <span id="reportsBackLinkText" data-t="promoBackDash">กลับหน้าหลัก</span>
   </a>
 
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3 no-print fade-up">
@@ -166,24 +309,47 @@
         <i data-lucide="bar-chart-2" class="w-5 h-5" style="color:#1e3a8a"></i>
         <span data-t="rptTitle">รายงานและสถิติ / Reports & Statistics</span>
       </h2>
-      <p class="text-xs text-gray-400 mt-0.5" data-t="rptSubtitle">ภาพรวมข้อมูลนักเรียนทุน แนวโน้ม และการวิเคราะห์</p>
+      <p class="text-xs text-gray-400 mt-0.5" data-t="rptSubtitle">ติดตามภาวะการทำงานของศิษย์เก่า และดูสถิติทุนการศึกษา</p>
     </div>
     <div class="flex gap-2 flex-wrap">
-      <button onclick="loadReportData()" class="btn btn-secondary btn-sm">
+      <button onclick="reloadAllReports()" class="btn btn-secondary btn-sm">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         <span data-t="promoReload">โหลดใหม่</span>
       </button>
-      <button onclick="openRptPrintModal()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe">
+      <button onclick="openRptPrintModal()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe" data-report-action="scholarship">
         <i data-lucide="printer" class="w-4 h-4"></i>
         <span data-t="rptPrint">พิมพ์รายงานทางการ</span>
       </button>
     </div>
   </div>
 
+  <!-- Scholarship statistics are the primary view; alumni employment remains available as a secondary view. -->
+  <div class="report-view-switcher no-print fade-up delay-1" role="tablist" data-t-aria-label="rptViewSwitcherLabel">
+    <button type="button" id="reportTabScholarship" class="report-view-tab" role="tab" aria-selected="true" aria-controls="scholarshipReports" tabindex="0" data-report-view="scholarship" onclick="switchReportView('scholarship', true)">
+      <span class="report-view-icon"><i data-lucide="chart-no-axes-combined" class="w-5 h-5"></i></span>
+      <span class="report-view-copy">
+        <span class="report-view-title" data-t="rptViewScholarship">สถิติทุนการศึกษา</span>
+        <span class="report-view-desc" data-t="rptViewScholarshipDesc">แนวโน้มการรับทุน สถานะ ระดับชั้น และการลาออก</span>
+      </span>
+    </button>
+    <button type="button" id="reportTabEmployment" class="report-view-tab" role="tab" aria-selected="false" aria-controls="employmentReportSection" tabindex="-1" data-report-view="employment" onclick="switchReportView('employment', true)">
+      <span class="report-view-icon"><i data-lucide="briefcase-business" class="w-5 h-5"></i></span>
+      <span class="report-view-copy">
+        <span class="report-view-title"><span data-t="rptViewEmployment">ภาวะการทำงานของศิษย์เก่า</span></span>
+        <span class="report-view-desc" data-t="rptViewEmploymentDesc">ตรวจสอบสถานะ สถานที่ทำงาน ระยะเวลา และงานติดตาม</span>
+      </span>
+    </button>
+  </div>
+
+  <div class="scholarship-data-source fade-up delay-1" data-report-panel="scholarship">
+    <i data-lucide="database" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+    <div><strong data-t="rptLiveDataTitle">คำนวณจากทะเบียนนักเรียนปัจจุบัน</strong><span id="scholarshipDataSummary">—</span></div>
+  </div>
+
   <!-- ═══ FILTERS BAR ═══
        All filters update charts in-memory from _CACHE.
        No extra API calls triggered. -->
-  <div class="filters-bar no-print fade-up delay-1">
+  <div class="filters-bar no-print fade-up delay-1" data-report-panel="scholarship">
     <i data-lucide="filter" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
     <!-- Academic year multi-select -->
     <div class="filter-group">
@@ -230,7 +396,7 @@
 
   <!-- ═══ KPI CARDS ═══
        Computed from centralized _CACHE; no extra API calls. -->
-  <div class="kpi-grid mb-5 fade-up delay-1" id="kpiGrid">
+  <div class="kpi-grid mb-5 fade-up delay-1" id="kpiGrid" data-report-panel="scholarship">
     <!-- Rendered by buildKPICards() -->
     <div class="kpi-card"><div class="kpi-icon" style="background:#eff6ff"><i data-lucide="users" class="w-5 h-5" style="color:#1d4ed8"></i></div><div class="kpi-val" id="kpiTotal">—</div><div class="kpi-label" data-t="rptKpiTotal">นักเรียนทั้งหมด</div></div>
     <div class="kpi-card"><div class="kpi-icon" style="background:#f0fdf4"><i data-lucide="check-circle" class="w-5 h-5" style="color:#16a34a"></i></div><div class="kpi-val" id="kpiActive">—</div><div class="kpi-label" data-t="rptKpiActive">กำลังศึกษา</div></div>
@@ -241,7 +407,7 @@
   </div>
 
   <!-- ═══ CHARTS GRID ═══ -->
-  <div class="charts-grid">
+  <div class="charts-grid" id="scholarshipReports" data-report-panel="scholarship" role="tabpanel" aria-labelledby="reportTabScholarship">
 
     <!-- 1. Enrollment Trend (line) — full width -->
     <div class="rpt-card col-span-2 fade-up delay-2">
@@ -363,7 +529,7 @@
   </div><!-- /charts-grid -->
 
   <!-- ═══ DATA TABLE ═══ — Summary table for printing -->
-  <div class="rpt-card mt-5 fade-up delay-3">
+  <div class="rpt-card mt-5 fade-up delay-3" data-report-panel="scholarship">
     <div class="rpt-card-header" style="background:#374151">
       <i data-lucide="table" class="w-4 h-4"></i>
       <span data-t="rptTableTitle">ตารางสรุปรายปีการศึกษา</span>
@@ -390,15 +556,254 @@
     </div>
   </div>
 
+  <!-- Employment status report — identity is joined from Students by StipNo. -->
+  <section class="rpt-card fade-up delay-2" id="employmentReportSection" data-report-panel="employment" role="tabpanel" aria-labelledby="reportTabEmployment">
+    <div class="rpt-card-header">
+      <i data-lucide="briefcase-business" class="w-4 h-4"></i>
+      <span class="emp-header-copy"><span data-t="empReportTitle">รายงานภาวะการทำงานของศิษย์เก่า</span><span class="emp-header-subtitle" data-t="empReportHeaderDesc">สรุปข้อมูลการทำงานและงานติดตามที่ต้องดำเนินการ</span></span>
+      <span id="empAsOf" class="ml-auto text-emerald-100 text-xs font-normal"></span>
+    </div>
+    <div class="rpt-card-body">
+      <p class="text-xs text-gray-500 mb-3" data-t="empReportDescription">ข้อมูลบุคคลและสถาบันอ้างจากโปรไฟล์เดิม ส่วนประวัติการทำงานเก็บแยกเป็นหลายรายการโดยไม่คัดลอกข้อมูลบุคคล</p>
+      <div id="empAuditNotice" class="hidden rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 mb-3 text-xs font-semibold text-orange-900" data-t="empAuditModeNotice">ระบบติดตามอยู่ในโหมดตรวจสอบแบบอ่านอย่างเดียว สามารถดูรายงานและ Preview ได้ แต่ยังติดตั้ง ย้ายข้อมูล หรือบันทึกการติดตามไม่ได้</div>
+
+      <div id="empReportLoading" class="text-center text-gray-400 py-8 text-xs" data-t="stLoading">กำลังโหลด...</div>
+      <div id="empReportError" class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700"></div>
+      <div id="empSetupRequired" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div class="flex items-start gap-3">
+          <i data-lucide="triangle-alert" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+          <div>
+            <p class="font-bold text-sm text-amber-900" data-t="empReportSetupTitle">ยังไม่ได้ติดตั้งแม่แบบข้อมูลการทำงาน</p>
+            <p class="text-xs text-amber-800 mt-1" data-t="empReportSetupDesc">ติดตั้งผ่านหน้าจัดการช่องข้อมูลเพิ่มเติม ระบบจะตรวจข้อมูลเดิมก่อนและจะไม่ย้ายหรือเขียนทับอัตโนมัติ</p>
+            <a id="empSetupLink" href="custom-fields.html" class="hidden btn btn-sm mt-3" style="background:#92400e;color:#fff;border:none">
+              <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+              <span data-t="empOpenSetup">เปิดหน้าติดตั้งแม่แบบ</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div id="empReportContent" class="hidden">
+        <div id="empLegacyWarning" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 mb-3 text-xs text-amber-800"></div>
+
+        <div class="emp-coverage">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <span class="text-xs font-bold text-emerald-900" data-t="empCoverageLabel">ความครบถ้วนของข้อมูลภาวะการทำงาน</span>
+            <strong id="empCoverageValue" class="text-sm text-emerald-800">0%</strong>
+          </div>
+          <div class="emp-coverage-track" role="progressbar" id="empCoverageProgress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-t-aria-label="empCoverageLabel"><div id="empCoverageBar" class="emp-coverage-bar"></div></div>
+        </div>
+
+        <div class="emp-kpi-grid mb-4">
+          <div class="emp-kpi"><div class="emp-kpi-value" id="empKpiEligible">—</div><div class="emp-kpi-label" data-t="empKpiEligible">ศิษย์เก่าที่อยู่ในขอบเขต</div></div>
+          <div class="emp-kpi is-positive"><div class="emp-kpi-value" id="empKpiReported">—</div><div class="emp-kpi-label" data-t="empKpiReported">มีข้อมูลภาวะการทำงาน</div></div>
+          <div class="emp-kpi is-warning"><div class="emp-kpi-value" id="empKpiMissing">—</div><div class="emp-kpi-label" data-t="empKpiMissing">ยังไม่รายงาน</div></div>
+          <div class="emp-kpi is-urgent"><div class="emp-kpi-value" id="empKpiOverdue">—</div><div class="emp-kpi-label" data-t="empKpiOverdue">เลยกำหนดติดตาม</div></div>
+          <div class="emp-kpi"><div class="emp-kpi-value" id="empKpiRecords">—</div><div class="emp-kpi-label" data-t="empKpiRecords">รายการประวัติการทำงาน</div></div>
+          <div class="emp-kpi"><div class="emp-kpi-value" id="empKpiFollowUps">—</div><div class="emp-kpi-label" data-t="empKpiFollowUps">บันทึกการติดตาม</div></div>
+        </div>
+
+        <div class="filters-bar no-print" style="margin-bottom:12px;padding:10px 12px;background:#f8fafc">
+          <i data-lucide="filter" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+          <div class="filter-group">
+            <span class="filter-label" data-t="rptFilterInst">สถาบัน</span>
+            <select id="empFltInst" class="filter-select" onchange="applyEmploymentFilters()">
+              <option value="" data-t="promoAllInst">ทุกสถาบัน</option>
+              <option value="MBS">MBS</option>
+              <option value="VC">VC</option>
+              <option value="UNI">University</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label" data-t="empReportStatus">ภาวะการทำงาน</span>
+            <select id="empFltStatus" class="filter-select" onchange="applyEmploymentFilters()">
+              <option value="" data-t="empStatusAll">ทุกภาวะการทำงาน</option>
+              <option value="employed_full_time" data-t="empStatusFullTime">ทำงานประจำเต็มเวลา</option>
+              <option value="employed_part_time" data-t="empStatusPartTime">ทำงานนอกเวลา</option>
+              <option value="self_employed" data-t="empStatusSelfEmployed">ประกอบธุรกิจส่วนตัว</option>
+              <option value="freelance" data-t="empStatusFreelance">อาชีพอิสระ</option>
+              <option value="studying_and_working" data-t="empStatusStudyingWorking">ศึกษาต่อและทำงาน</option>
+              <option value="studying_only" data-t="empStatusStudyingOnly">ศึกษาต่อและยังไม่ได้ทำงาน</option>
+              <option value="unemployed_seeking" data-t="empStatusSeeking">ยังไม่มีงานและกำลังหางาน</option>
+              <option value="unemployed_not_seeking" data-t="empStatusNotSeeking">ยังไม่มีงานและไม่ได้หางาน</option>
+              <option value="unavailable" data-t="empStatusUnavailable">ยังไม่ทราบสถานะ</option>
+              <option value="other" data-t="empStatusOther">อื่น ๆ</option>
+              <option value="__unreported__" data-t="empStatusUnreported">ยังไม่รายงาน</option>
+            </select>
+          </div>
+          <div class="filter-group flex-1" style="min-width:190px">
+            <span class="filter-label" data-t="empSearchLabel">ค้นหา</span>
+            <input id="empFltSearch" type="search" class="filter-input w-full" oninput="applyEmploymentFilters()" placeholder="ค้นหาชื่อ รหัสทุน สถานที่ทำงาน หรือตำแหน่ง" data-t-placeholder="empSearchPlaceholder">
+          </div>
+          <button type="button" onclick="resetEmploymentFilters()" class="btn btn-secondary btn-sm mt-auto" style="height:32px">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            <span data-t="rptReset">ล้างตัวกรอง</span>
+          </button>
+          <button id="empExportBtn" type="button" onclick="openEmploymentReportComposer()" class="btn btn-sm mt-auto" style="height:32px;background:#047857;color:#fff;border:none">
+            <i data-lucide="file-cog" class="w-3.5 h-3.5"></i><span data-t="empBuildReport">สร้างรายงาน</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto border border-gray-200 rounded-xl">
+          <table class="w-full text-xs" id="employmentTable">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb">
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColAlumni">ศิษย์เก่า</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColStatus">ภาวะการทำงาน</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColWorkplace">สถานที่ทำงาน</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColJob">ตำแหน่ง/ประเภทงาน</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColPeriod">ช่วงเวลาทำงาน</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColDuration">ระยะเวลา</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColVerification">การตรวจสอบ/ที่มา</th>
+                <th class="px-3 py-2 text-center font-700 text-gray-500 whitespace-nowrap no-print" data-t="empColFollowUp">ติดตาม</th>
+              </tr>
+            </thead>
+            <tbody id="employmentTableBody">
+              <tr><td colspan="8" class="text-center text-gray-400 py-8"><span data-t="stLoading">กำลังโหลด...</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="empResultCount" class="text-[11px] text-gray-400 mt-2"></p>
+      </div>
+    </div>
+  </section>
+
 </main>
+
+<!-- Employment follow-up modal. Stores contact events only; profile/work values remain referenced. -->
+<div id="empFollowUpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full overflow-hidden" style="max-width:900px;max-height:92vh">
+    <div class="flex items-center gap-3 px-5 py-4 border-b" style="background:#065f46">
+      <i data-lucide="messages-square" class="w-5 h-5 text-white"></i>
+      <div class="min-w-0"><h3 class="font-bold text-white" data-t="empFollowUpTitle">บันทึกการติดตามศิษย์เก่า</h3><p id="empFollowUpPerson" class="text-xs text-emerald-100 truncate"></p></div>
+      <button type="button" onclick="closeEmploymentFollowUp()" class="ml-auto text-white opacity-70 hover:opacity-100" data-t-aria-label="cancel"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="p-5 overflow-y-auto" style="max-height:calc(92vh - 70px)">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <form id="empFollowUpForm" class="space-y-3" onsubmit="saveEmploymentFollowUp(event)">
+          <input type="hidden" id="empFollowUpId">
+          <div class="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2 text-[11px] text-emerald-800" data-t="empFollowUpNoDuplicateNote">บันทึกนี้อ้างอิงโปรไฟล์และรายการงานเดิม จึงไม่เก็บชื่อหรือสถานที่ทำงานซ้ำ</div>
+          <label class="block"><span class="pr-label" data-t="empFollowUpWorkRecord">รายการงานที่เกี่ยวข้อง</span><select id="empFollowUpRecord" class="pr-field"></select></label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label><span class="pr-label" data-t="empFollowUpContactDate">วันที่ติดต่อ</span><input id="empFollowUpContactDate" type="date" class="pr-field" required></label>
+            <label><span class="pr-label" data-t="empFollowUpNextDate">วันติดตามครั้งถัดไป</span><input id="empFollowUpNextDate" type="date" class="pr-field"></label>
+            <label><span class="pr-label" data-t="empFollowUpMethod">ช่องทางติดต่อ</span><select id="empFollowUpMethod" class="pr-field" required>
+              <option value="phone" data-t="empMethodPhone">โทรศัพท์</option><option value="email" data-t="empMethodEmail">อีเมล</option><option value="line" data-t="empMethodLine">LINE</option><option value="social" data-t="empMethodSocial">โซเชียลมีเดีย</option><option value="in_person" data-t="empMethodInPerson">พบด้วยตนเอง</option><option value="video_call" data-t="empMethodVideo">วิดีโอคอล</option><option value="other" data-t="empMethodOther">อื่น ๆ</option>
+            </select></label>
+            <label><span class="pr-label" data-t="empFollowUpOutcome">ผลการติดตาม</span><select id="empFollowUpOutcome" class="pr-field" required>
+              <option value="reached_no_change" data-t="empOutcomeNoChange">ติดต่อได้ ข้อมูลไม่เปลี่ยน</option><option value="employment_updated" data-t="empOutcomeUpdated">ปรับปรุงข้อมูลงานแล้ว</option><option value="verification_completed" data-t="empOutcomeVerified">ตรวจสอบข้อมูลแล้ว</option><option value="unreachable" data-t="empOutcomeUnreachable">ติดต่อไม่ได้</option><option value="follow_up_needed" data-t="empOutcomeFollowUp">ต้องติดตามอีกครั้ง</option><option value="declined" data-t="empOutcomeDeclined">ไม่ประสงค์ให้ข้อมูล</option><option value="other" data-t="empOutcomeOther">อื่น ๆ</option>
+            </select></label>
+          </div>
+          <label class="block"><span class="pr-label" data-t="empFollowUpAssigned">ผู้รับผิดชอบ</span><input id="empFollowUpAssigned" class="pr-field" maxlength="120" data-t-placeholder="empFollowUpAssignedPlaceholder" placeholder="ชื่อหรือทีมผู้รับผิดชอบ"></label>
+          <label class="block"><span class="pr-label" data-t="empFollowUpNotes">บันทึกการติดตาม</span><textarea id="empFollowUpNotes" class="pr-field" rows="3" maxlength="1000" data-t-placeholder="empFollowUpNotesPlaceholder" placeholder="รายละเอียดที่จำเป็น โดยไม่คัดลอกข้อมูลโปรไฟล์"></textarea></label>
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="resetEmploymentFollowUpForm()" class="btn btn-secondary btn-sm"><span data-t="empClearForm">ล้างแบบฟอร์ม</span></button>
+            <button type="submit" class="btn btn-sm" style="background:#047857;color:#fff;border:none"><i data-lucide="save" class="w-3.5 h-3.5"></i><span data-t="empFollowUpSave">บันทึกการติดตาม</span></button>
+          </div>
+        </form>
+        <div>
+          <div class="flex items-center justify-between mb-2"><h4 class="font-bold text-sm text-gray-800" data-t="empFollowUpHistory">ประวัติการติดตาม</h4><span id="empFollowUpCount" class="badge-mini"></span></div>
+          <div id="empFollowUpList" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Employment report composer: one source for preview, CSV, formal print and signatures. -->
+<div id="empReportComposerModal" class="hidden report-composer-overlay" onclick="closeEmploymentReportComposer(event)">
+  <div class="report-composer-shell" role="dialog" aria-modal="true" aria-labelledby="empReportComposerTitle" onclick="event.stopPropagation()">
+    <div class="report-composer-header">
+      <span class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,.14)"><i data-lucide="file-cog" class="w-5 h-5"></i></span>
+      <div class="min-w-0"><h3 id="empReportComposerTitle" class="font-bold" data-t="empComposerTitle">สร้างรายงานภาวะการทำงาน</h3><p class="text-xs text-emerald-100 mt-0.5" data-t="empComposerDesc">เลือกหัวข้อ ตรวจพรีวิว และใช้ผู้ลงนามจากการตั้งค่าเดียวกัน</p></div>
+      <button type="button" onclick="closeEmploymentReportComposer()" class="ml-auto text-white opacity-70 hover:opacity-100" data-t-aria-label="cancel"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="report-composer-body">
+      <div class="report-composer-config">
+        <div class="pr-section">
+          <span class="pr-label" data-t="rptPrLang">ภาษารายงาน</span>
+          <div class="pr-radio-row">
+            <label><input type="radio" name="empComposerLang" value="th" class="accent-emerald-600" onchange="markEmploymentReportDirty();refreshEmploymentReportComposer()"> ภาษาไทย</label>
+            <label><input type="radio" name="empComposerLang" value="en" class="accent-emerald-600" onchange="markEmploymentReportDirty();refreshEmploymentReportComposer()"> English</label>
+          </div>
+        </div>
+        <div class="pr-section">
+          <label class="pr-label" for="empComposerSubject" data-t="empComposerSubject">ชื่อรายงาน</label>
+          <input id="empComposerSubject" class="pr-field" data-t-placeholder="empComposerSubjectPlaceholder" placeholder="รายงานภาวะการทำงานของศิษย์เก่า" oninput="markEmploymentReportDirty();renderEmploymentReportPreview()">
+        </div>
+        <div class="pr-section">
+          <span class="pr-label" data-t="empComposerFilters">ขอบเขตข้อมูลที่จะรายงาน</span>
+          <div id="empComposerFilterContext" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600"></div>
+        </div>
+        <div class="pr-section">
+          <span class="pr-label" data-t="empComposerFileType">ประเภทไฟล์</span>
+          <div class="report-format-grid">
+            <label class="report-format-option">
+              <input type="radio" name="empComposerFormat" value="xlsx" class="accent-emerald-600 mt-0.5" onchange="refreshEmploymentReportComposer()">
+              <span class="min-w-0"><strong class="block text-xs" data-t="empComposerExcel">Excel (.xlsx)</strong><small class="block text-[10px] text-gray-500 mt-0.5" data-t="empComposerExcelHelp">ข้อมูลตารางและชีตตรวจสอบอ้างอิง</small></span>
+            </label>
+            <label class="report-format-option">
+              <input type="radio" name="empComposerFormat" value="pdf" class="accent-emerald-600 mt-0.5" onchange="refreshEmploymentReportComposer()">
+              <span class="min-w-0"><strong class="block text-xs" data-t="empComposerPdf">PDF / พิมพ์</strong><small class="block text-[10px] text-gray-500 mt-0.5" data-t="empComposerPdfHelp">เอกสารทางการพร้อม QR และผู้ลงนาม</small></span>
+            </label>
+          </div>
+        </div>
+        <div class="pr-section">
+          <span class="pr-label" data-t="empComposerPageSetup">การตั้งค่าหน้ากระดาษ</span>
+          <div class="pr-radio-row">
+            <label><input type="radio" name="empComposerOrientation" value="landscape" class="accent-emerald-600" onchange="renderEmploymentReportPreview()"> <span data-t="empComposerLandscape">แนวนอน (ค่าเริ่มต้น)</span></label>
+            <label><input type="radio" name="empComposerOrientation" value="portrait" class="accent-emerald-600" onchange="renderEmploymentReportPreview()"> <span data-t="empComposerPortrait">แนวตั้ง</span></label>
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1" data-t="empComposerPageHelp">PDF จะแบ่งคอลัมน์เป็นหลายตารางอัตโนมัติ เพื่อไม่ให้ข้อความหรือตารางหลุดระยะขอบ A4</p>
+        </div>
+        <div class="pr-section">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="pr-label" style="margin:0" data-t="empComposerFields">หัวข้อที่แสดง/ส่งออก</span>
+            <div class="flex gap-2"><button type="button" class="text-[11px] font-semibold text-emerald-700 hover:underline" onclick="selectEmploymentReportFields('default')" data-t="empComposerRecommended">ชุดแนะนำ</button><button type="button" class="text-[11px] font-semibold text-blue-700 hover:underline" onclick="selectEmploymentReportFields('all')" data-t="empComposerSelectAll">เลือกทั้งหมด</button></div>
+          </div>
+          <div id="empReportFieldList" class="report-field-grid"></div>
+          <p id="empReportFieldError" class="hidden text-xs text-red-600 mt-2" data-t="empComposerFieldRequired">กรุณาเลือกอย่างน้อย 1 หัวข้อ</p>
+        </div>
+        <div class="pr-section">
+          <div class="flex items-center justify-between gap-2 mb-2"><span class="pr-label" style="margin:0" data-t="rptPrSigs">ผู้ลงนามในเอกสาร</span><a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')" class="text-[11px] font-semibold text-blue-700 hover:underline" data-t="rptPrSigSettings">ตั้งค่าผู้ลงนาม</a></div>
+          <div id="empReportSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100"></div>
+          <p class="text-[11px] text-gray-400 mt-2" data-t="empComposerSignatureSource">อ้างอิงรายชื่อเดียวกับรายงานอื่นในระบบ จึงไม่สร้างข้อมูลผู้ลงนามซ้ำ</p>
+        </div>
+        <div id="empReportQrPanel" class="report-qr-panel pr-section">
+          <div class="flex items-start gap-2">
+            <i data-lucide="qr-code" class="w-4 h-4 text-emerald-700 mt-0.5 flex-shrink-0"></i>
+            <div class="min-w-0 flex-1">
+              <strong class="block text-xs text-gray-700" data-t="empComposerQrTitle">QR ตรวจสอบรายงาน</strong>
+              <p id="empReportQrStatus" class="text-[10px] text-gray-500 mt-1" data-t="empComposerQrPending">ระบบจะสร้างเลขอ้างอิงและ QR เมื่อส่งออกครั้งแรก และใช้รายการเดิมเมื่อเนื้อหารายงานไม่เปลี่ยน</p>
+              <p id="empReportReference" class="hidden text-[11px] font-bold text-emerald-800 mt-2 break-all"></p>
+              <button id="empRegenerateQrBtn" type="button" class="hidden text-[10px] font-semibold text-amber-700 hover:underline mt-2" onclick="regenerateEmploymentReportQr()" data-t="empComposerQrRegenerate">สร้าง QR ใหม่แบบมีเงื่อนไข</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="report-composer-preview-wrap">
+        <div class="flex items-center justify-between mb-2"><span class="pr-label" style="margin:0" data-t="empComposerPreview">พรีวิวเอกสาร</span><span id="empComposerPreviewCount" class="text-[11px] text-gray-500"></span></div>
+        <div id="empReportPreview" class="report-preview-page"></div>
+      </div>
+    </div>
+    <div class="report-composer-footer">
+      <p id="empComposerPermissionNote" class="text-[11px] text-gray-500" data-t="empComposerPermissionNote">ปุ่มส่งออกจะแสดงตามสิทธิ์ของผู้ใช้</p>
+      <div class="composer-actions flex gap-2">
+        <button type="button" onclick="closeEmploymentReportComposer()" class="btn btn-secondary btn-sm"><span data-t="cancel">ยกเลิก</span></button>
+        <button id="empComposerExportBtn" type="button" onclick="exportEmploymentReport()" class="btn btn-sm" style="background:#047857;color:#fff;border:none"><i data-lucide="file-down" class="w-4 h-4"></i><span data-t="empComposerExport">ส่งออกรายงาน</span></button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ FORMAL PRINT REPORT MODAL ═══
      Matches promotion.html print modal pattern exactly.
      Chart images captured via canvas.toDataURL() — no extra libs needed.
      Signatures loaded from SETTINGS['SIGNATURE_BLOCK'] (same source as promotion.html).
 -->
-<div id="rptPrintModal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,.5)">
-  <div class="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-hidden" style="max-width:680px">
+<div id="rptPrintModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style="background:rgba(0,0,0,.5)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col" style="max-width:680px;max-height:calc(100dvh - 16px)">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b" style="background:#1e3a8a">
       <h3 class="font-bold text-white flex items-center gap-2 text-base">
@@ -410,34 +815,57 @@
       </button>
     </div>
 
-    <div class="p-5 space-y-0" style="max-height:82vh;overflow-y:auto">
+    <div class="rpt-modal-scroll p-4 sm:p-5 space-y-0 flex-1 min-h-0">
 
       <!-- Report Language -->
       <div class="pr-section">
         <span class="pr-label" data-t="rptPrLang">ภาษารายงาน / Report Language</span>
         <div class="pr-radio-row">
-          <label><input type="radio" name="rptPrLang" value="th" checked class="accent-blue-600"> ภาษาไทย</label>
-          <label><input type="radio" name="rptPrLang" value="en" class="accent-blue-600"> English</label>
+          <label><input type="radio" name="rptPrLang" value="th" checked class="accent-blue-600" onchange="markScholarshipReportDirty();renderReportFilterContext()"> ภาษาไทย</label>
+          <label><input type="radio" name="rptPrLang" value="en" class="accent-blue-600" onchange="markScholarshipReportDirty();renderReportFilterContext()"> English</label>
         </div>
       </div>
 
       <!-- Academic Year + Date -->
-      <div class="grid grid-cols-2 gap-3 pr-section">
+      <div class="rpt-meta-grid grid grid-cols-2 gap-3 pr-section">
         <div>
           <span class="pr-label" data-t="rptPrAcad">ปีการศึกษา / Academic Year</span>
-          <input type="text" id="rptPrAcad" class="pr-field" placeholder="2024-2025">
+          <input type="text" id="rptPrAcad" class="pr-field" placeholder="2024-2025" oninput="markScholarshipReportDirty()">
         </div>
         <div>
           <span class="pr-label" data-t="rptPrDate">วันที่รายงาน / Report Date</span>
-          <input type="date" id="rptPrDate" class="pr-field">
+          <input type="date" id="rptPrDate" class="pr-field" onchange="markScholarshipReportDirty()">
         </div>
       </div>
 
       <!-- Organization + Subject -->
       <div class="pr-section">
         <span class="pr-label" data-t="rptPrSubject">เรื่อง / Document Subject</span>
-        <input type="text" id="rptPrSubject" class="pr-field"
+        <input type="text" id="rptPrSubject" class="pr-field" oninput="markScholarshipReportDirty()"
           placeholder="จะสร้างให้อัตโนมัติหากว่างไว้ / Auto-generated if blank" data-t-placeholder="hintAutoGeneratedIfBlankLabelLabel">
+      </div>
+
+      <!-- Export format + page setup -->
+      <div class="pr-section">
+        <span class="pr-label" data-t="rptPrFileType">ประเภทไฟล์</span>
+        <div class="report-format-grid">
+          <label class="report-format-option">
+            <input type="radio" name="rptPrFormat" value="xlsx" class="accent-blue-600 mt-0.5">
+            <span class="min-w-0"><strong class="block text-xs" data-t="empComposerExcel">Excel (.xlsx)</strong><small class="block text-[10px] text-gray-500 mt-0.5" data-t="rptPrExcelHelp">ตารางสรุปและชีตตรวจสอบอ้างอิง</small></span>
+          </label>
+          <label class="report-format-option">
+            <input type="radio" name="rptPrFormat" value="pdf" checked class="accent-blue-600 mt-0.5">
+            <span class="min-w-0"><strong class="block text-xs" data-t="empComposerPdf">PDF / พิมพ์</strong><small class="block text-[10px] text-gray-500 mt-0.5" data-t="rptPrPdfHelp">เอกสารทางการพร้อมแผนภูมิ QR และผู้ลงนาม</small></span>
+          </label>
+        </div>
+      </div>
+      <div class="pr-section">
+        <span class="pr-label" data-t="empComposerPageSetup">การตั้งค่าหน้ากระดาษ</span>
+        <div class="pr-radio-row">
+          <label><input type="radio" name="rptPrOrientation" value="landscape" checked class="accent-blue-600"> <span data-t="empComposerLandscape">แนวนอน (ค่าเริ่มต้น)</span></label>
+          <label><input type="radio" name="rptPrOrientation" value="portrait" class="accent-blue-600"> <span data-t="empComposerPortrait">แนวตั้ง</span></label>
+        </div>
+        <p class="text-[10px] text-gray-400 mt-1" data-t="rptPrPageHelp">ระบบปรับแผนภูมิและตารางให้อยู่ภายในระยะขอบ A4 ตามแนวกระดาษ</p>
       </div>
 
       <!-- Filter context display -->
@@ -451,27 +879,27 @@
         <span class="pr-label" data-t="rptPrCharts">แผนภูมิที่ต้องการในรายงาน / Charts to Include</span>
         <div class="pr-check-row">
           <label>
-            <input type="checkbox" name="rptPrChart" value="enroll" checked class="accent-blue-600">
+            <input type="checkbox" name="rptPrChart" value="enroll" checked class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <i data-lucide="trending-up" class="w-3.5 h-3.5" style="color:#1e3a8a"></i>
             <span data-t="rptChartEnrollShort">แนวโน้มการรับทุน</span>
           </label>
           <label>
-            <input type="checkbox" name="rptPrChart" value="status" checked class="accent-blue-600">
+            <input type="checkbox" name="rptPrChart" value="status" checked class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <i data-lucide="pie-chart" class="w-3.5 h-3.5" style="color:#7c3aed"></i>
             <span data-t="rptChartStatusShort">สถานะนักเรียน</span>
           </label>
           <label>
-            <input type="checkbox" name="rptPrChart" value="inst" class="accent-blue-600">
+            <input type="checkbox" name="rptPrChart" value="inst" class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <i data-lucide="bar-chart" class="w-3.5 h-3.5" style="color:#ea580c"></i>
             <span data-t="rptChartInstShort">สถาบัน</span>
           </label>
           <label>
-            <input type="checkbox" name="rptPrChart" value="withdraw" class="accent-blue-600">
+            <input type="checkbox" name="rptPrChart" value="withdraw" class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <i data-lucide="trending-down" class="w-3.5 h-3.5" style="color:#9f1239"></i>
             <span data-t="rptChartWithdrawShort">การลาออก/ถอนทุน</span>
           </label>
           <label>
-            <input type="checkbox" name="rptPrChart" value="compare" checked class="accent-blue-600">
+            <input type="checkbox" name="rptPrChart" value="compare" checked class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <i data-lucide="line-chart" class="w-3.5 h-3.5" style="color:#16a34a"></i>
             <span data-t="rptChartCompareShort">จบ vs ลาออก</span>
           </label>
@@ -482,9 +910,9 @@
       <div class="pr-section">
         <span class="pr-label" data-t="rptPrTable">ตารางข้อมูล / Data Table</span>
         <div class="pr-radio-row">
-          <label><input type="radio" name="rptPrTable" value="summary" checked class="accent-blue-600">
+          <label><input type="radio" name="rptPrTable" value="summary" checked class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <span data-t="rptPrTableSummary">ตารางสรุปรายปี</span></label>
-          <label><input type="radio" name="rptPrTable" value="none" class="accent-blue-600">
+          <label><input type="radio" name="rptPrTable" value="none" class="accent-blue-600" onchange="markScholarshipReportDirty()">
             <span data-t="rptPrTableNone">ไม่ใส่ตาราง</span></label>
         </div>
       </div>
@@ -506,6 +934,18 @@
         <p class="text-xs text-gray-400 mt-1.5"><span data-t="uiSelectSignatoriesToIncludeManageNamesIn">ติ๊กเลือกผู้ลงนามที่ต้องการ • กำหนดรายชื่อได้ที่ การตั้งค่า → ผู้ลงนามในเอกสาร</span></p>
       </div>
 
+      <div id="rptPrQrPanel" class="report-qr-panel pr-section">
+        <div class="flex items-start gap-2">
+          <i data-lucide="qr-code" class="w-4 h-4 text-blue-700 mt-0.5 flex-shrink-0"></i>
+          <div class="min-w-0 flex-1">
+            <strong class="block text-xs text-gray-700" data-t="empComposerQrTitle">QR ตรวจสอบรายงาน</strong>
+            <p id="rptPrQrStatus" class="text-[10px] text-gray-500 mt-1" data-t="empComposerQrPending">ระบบจะสร้างเลขอ้างอิงและ QR เมื่อส่งออกครั้งแรก และใช้รายการเดิมเมื่อเนื้อหารายงานไม่เปลี่ยน</p>
+            <p id="rptPrReference" class="hidden text-[11px] font-bold text-blue-800 mt-2 break-all"></p>
+            <button id="rptPrRegenerateBtn" type="button" class="hidden text-[10px] font-semibold text-amber-700 hover:underline mt-2" onclick="regenerateScholarshipReportQr()" data-t="empComposerQrRegenerate">สร้าง QR ใหม่แบบมีเงื่อนไข</button>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
         <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
         <span data-t="rptPrHint">รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 แนวนอน แผนภูมิฝังเป็นรูปภาพ พร้อมลายเซ็นท้ายเอกสาร</span>
@@ -513,13 +953,13 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
+    <div class="flex flex-wrap justify-between items-center gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t bg-gray-50 flex-shrink-0">
       <button onclick="closeRptPrintModal()" class="btn btn-secondary btn-sm">
         <span data-t="cancel">ยกเลิก</span>
       </button>
-      <button onclick="doRptPrint()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
-        <i data-lucide="printer" class="w-4 h-4"></i>
-        <span data-t="rptPrGenerate">สร้างและพิมพ์รายงาน</span>
+      <button id="rptPrExportBtn" onclick="exportScholarshipReport()" class="btn btn-sm font-bold" style="background:#1d4ed8;color:#fff;border:none">
+        <i data-lucide="file-down" class="w-4 h-4"></i>
+        <span data-t="rptPrGenerate">ส่งออกรายงาน</span>
       </button>
     </div>
   </div>
@@ -538,12 +978,12 @@
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.0.8"></script>
+<script src="assets/js/config.js?v=2.3.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.0.8"></script>
-<script src="assets/js/auth.js?v=2.0.8"></script>
-<script src="assets/js/rbac.js?v=2.0.8"></script>
-<script src="assets/js/api.js?v=2.0.8"></script>
+<script src="assets/js/i18n.js?v=2.3.0"></script>
+<script src="assets/js/auth.js?v=2.3.0"></script>
+<script src="assets/js/rbac.js?v=2.3.0"></script>
+<script src="assets/js/api.js?v=2.3.0"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
@@ -560,6 +1000,12 @@ const _CACHE = {
   loadedAt: null,    // ISO timestamp of last fetch
 };
 
+const _EMP_CACHE = {
+  response: null,    // Employment response joined to Students by StipNo
+  error: '',
+  loaded: false,
+};
+
 // ── Withdrawal statuses (centralized definition) ──
 const WITHDRAW_STATUSES = new Set(['Resigned','WithdrawnScholarship']);
 
@@ -568,6 +1014,52 @@ const _CHARTS = {
   enroll: null, status: null, inst: null,
   withdraw: null, level: null, compare: null,
 };
+
+// Keep scholarship analytics visually primary while retaining the alumni workflow
+// as an on-demand secondary view. Switching views is client-side and never reloads data.
+function switchReportView(view, moveFocus = false) {
+  const next = view === 'scholarship' ? 'scholarship' : 'employment';
+  const workspace = document.getElementById('reportsWorkspace');
+  if (!workspace) return;
+  workspace.dataset.reportView = next;
+  document.querySelectorAll('.report-view-tab').forEach(tab => {
+    const selected = tab.dataset.reportView === next;
+    tab.setAttribute('aria-selected', String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && moveFocus) tab.focus({ preventScroll:true });
+  });
+  document.querySelectorAll('[data-report-panel]').forEach(panel => {
+    panel.setAttribute('aria-hidden', String(panel.dataset.reportPanel !== next));
+  });
+  if (next === 'scholarship') {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      Object.values(_CHARTS).forEach(chart => {
+        if (typeof chart?.resize === 'function') chart.resize();
+      });
+    }));
+  }
+}
+
+function applyReportEntryContext() {
+  const params = new URLSearchParams(window.location.search);
+  const fromAlumni = params.get('source') === 'alumni';
+  const backLink = document.getElementById('reportsBackLink');
+  const backText = document.getElementById('reportsBackLinkText');
+  if (backLink && backText) {
+    backLink.href = fromAlumni ? 'students.html?status=Alumni' : 'dashboard.html';
+    backText.dataset.t = fromAlumni ? 'backToAlumniList' : 'promoBackDash';
+    backText.textContent = t(backText.dataset.t);
+  }
+  return params.get('view') === 'employment' ? 'employment' : 'scholarship';
+}
+
+document.querySelectorAll('.report-view-tab').forEach(tab => {
+  tab.addEventListener('keydown', event => {
+    if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    switchReportView(tab.dataset.reportView === 'employment' ? 'scholarship' : 'employment', true);
+  });
+});
 
 // ── Chart color palette ──
 const PALETTE = {
@@ -580,7 +1072,7 @@ const PALETTE = {
 };
 
 // ── Status labels (bilingual) ──
-function statusLabel(key) {
+function statusLabel(key, lang=LANG) {
   const MAP = {
     th: { Active:'กำลังศึกษา', Graduated:'สำเร็จการศึกษา', University:'ต่อมหาวิทยาลัย',
           Suspended:'พักการเรียน', Resigned:'ลาออกจากสถาบัน', WithdrawnScholarship:'ถอนทุน',
@@ -589,7 +1081,7 @@ function statusLabel(key) {
           Suspended:'Suspended', Resigned:'Resign (Inst.)', WithdrawnScholarship:'Withdrawn (Sch.)',
           Incomplete:'Incomplete', Other:'Other' },
   };
-  return (MAP[LANG] || MAP.th)[key] || key;
+  return (MAP[lang] || MAP.th)[key] || key;
 }
 
 // ── Settings store (loaded once alongside student data) ──
@@ -626,12 +1118,27 @@ async function loadReportData() {
     // Show timestamp
     const ts = document.getElementById('rptDataTimestamp');
     if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + new Date(_CACHE.loadedAt).toLocaleString(getLocale());
+    renderScholarshipDataSource();
 
     showLoader(false);
   } catch(e) {
     showLoader(false);
     Swal.fire(t('error')||'Error', e.message||'Failed to load data', 'error');
   }
+}
+
+function renderScholarshipDataSource() {
+  const summary = document.getElementById('scholarshipDataSummary');
+  if (!summary) return;
+  const updated = _CACHE.loadedAt ? new Date(_CACHE.loadedAt).toLocaleString(getLocale()) : '—';
+  summary.textContent = t('rptLiveDataSummary')
+    .replace('{count}', String(_CACHE.raw.length))
+    .replace('{time}', updated);
+}
+
+async function reloadAllReports() {
+  API.clearReadCache();
+  await Promise.allSettled([loadReportData(), loadEmploymentReport()]);
 }
 
 // ── Populate year dropdown from data ──
@@ -677,6 +1184,8 @@ function applyFilters() {
   buildKPICards();
   buildAllCharts();
   buildSummaryTable();
+  markScholarshipReportDirty();
+  renderReportFilterContext();
 }
 
 function resetFilters() {
@@ -706,9 +1215,9 @@ function buildKPICards() {
 // CHART BUILDER — dispatches to individual chart builders
 // Destroy-before-rebuild prevents canvas context leaks
 // ═══════════════════════════════════════════════════════════
-function buildAllCharts() {
+function buildAllCharts(chartLang=LANG) {
   buildEnrollChart();
-  buildStatusChart();
+  buildStatusChart(chartLang);
   buildInstChart();
   buildWithdrawChart();
   buildLevelChart();
@@ -826,7 +1335,7 @@ function buildEnrollChart() {
 // 2. STATUS DISTRIBUTION — doughnut chart
 //    Shows proportion of each student status in filtered set
 // ═══════════════════════════════════════════════════════════
-function buildStatusChart() {
+function buildStatusChart(chartLang=LANG) {
   destroyChart('status');
   const d = _CACHE.filtered;
 
@@ -848,7 +1357,7 @@ function buildStatusChart() {
   _CHARTS.status = new Chart(document.getElementById('chartStatus'), {
     type: 'doughnut',
     data: {
-      labels: keys.map(statusLabel),
+      labels: keys.map(key => statusLabel(key,chartLang)),
       datasets:[{
         data: keys.map(k => statusMap[k]),
         backgroundColor: colors.map(c => c + 'cc'),
@@ -1203,6 +1712,715 @@ function buildSummaryTable() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// EMPLOYMENT STATUS REPORT
+// Identity stays in Students. The API joins it to repeatable employment
+// records by StipNo only when this report is read.
+// ═══════════════════════════════════════════════════════════
+function employmentStatusLabel(value) {
+  const keys = {
+    employed_full_time:'empStatusFullTime', employed_part_time:'empStatusPartTime',
+    self_employed:'empStatusSelfEmployed', freelance:'empStatusFreelance',
+    studying_and_working:'empStatusStudyingWorking', studying_only:'empStatusStudyingOnly',
+    unemployed_seeking:'empStatusSeeking', unemployed_not_seeking:'empStatusNotSeeking',
+    unavailable:'empStatusUnavailable', other:'empStatusOther', '':'empStatusUnreported',
+  };
+  return t(keys[value] || 'empStatusOther');
+}
+
+function employmentTypeLabel(value) {
+  const keys = {
+    full_time:'empTypeFullTime', part_time:'empTypePartTime', contract:'empTypeContract',
+    freelance:'empTypeFreelance', self_employed:'empTypeSelfEmployed', internship:'empTypeInternship',
+    seasonal:'empTypeSeasonal', other:'empTypeOther',
+  };
+  return value ? t(keys[value] || 'empTypeOther') : '';
+}
+
+function employmentVerificationLabel(value) {
+  const keys = { pending:'empVerifyPending', verified:'empVerifyVerified', needs_revision:'empVerifyRevision' };
+  return t(keys[value] || 'empVerifyPending');
+}
+
+function employmentSourceLabel(value) {
+  const keys = { self_reported:'empSourceSelf', staff_recorded:'empSourceStaff', mixed:'empSourceMixed' };
+  return t(keys[value] || 'empSourceStaff');
+}
+
+function employmentStatusTone(value) {
+  if (['employed_full_time','employed_part_time','self_employed','freelance','studying_and_working'].includes(value))
+    return 'background:#dcfce7;color:#166534';
+  if (value === 'studying_only') return 'background:#dbeafe;color:#1d4ed8';
+  if (['unemployed_seeking','unemployed_not_seeking'].includes(value)) return 'background:#ffedd5;color:#9a3412';
+  return 'background:#e2e8f0;color:#475569';
+}
+
+function verificationTone(value) {
+  if (value === 'verified') return 'background:#dcfce7;color:#166534';
+  if (value === 'needs_revision') return 'background:#fee2e2;color:#991b1b';
+  return 'background:#fef3c7;color:#92400e';
+}
+
+function formatEmploymentMonth(value) {
+  const match = String(value || '').match(/^(\d{4})-(0[1-9]|1[0-2])$/);
+  if (!match) return '';
+  return new Intl.DateTimeFormat(getLocale(), { year:'numeric', month:'short', timeZone:'UTC' })
+    .format(new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1)));
+}
+
+function formatEmploymentDuration(months) {
+  if (!Number.isFinite(months) || months < 0) return '—';
+  const years = Math.floor(months / 12);
+  const remaining = months % 12;
+  const parts = [];
+  if (years) parts.push(`${years} ${t(years === 1 ? 'dfDurationYear' : 'dfDurationYears')}`);
+  if (remaining || !years) parts.push(`${remaining} ${t(remaining === 1 ? 'dfDurationMonth' : 'dfDurationMonths')}`);
+  return parts.join(' ');
+}
+
+function employmentName(person) {
+  return LANG === 'en' ? (person.nameEN || person.nameTH || person.stipNo) : (person.nameTH || person.nameEN || person.stipNo);
+}
+
+function employmentCell(lines, className) {
+  const cell = document.createElement('td');
+  cell.className = `px-3 py-2 align-top ${className || ''}`;
+  lines.filter(line => line && line.text !== '').forEach((line, index) => {
+    const span = document.createElement('span');
+    span.className = `emp-cell-line ${line.muted ? 'emp-cell-muted' : ''} ${line.strong ? 'font-semibold text-gray-800' : ''}`;
+    span.textContent = line.text;
+    if (index > 0 && line.prefix) span.textContent = `${line.prefix}${line.text}`;
+    cell.appendChild(span);
+  });
+  return cell;
+}
+
+function employmentFollowUpActionCell(person, history) {
+  const cell = document.createElement('td');
+  cell.className = 'px-3 py-2 align-top text-center no-print';
+  const recordId = history?.recordId || '';
+  const related = (person.followUps || []).filter(item => !recordId || item.employmentRecordId === recordId);
+  const reportDate = _EMP_CACHE.response?.reportDate || new Date().toISOString().slice(0,10);
+  const overdue = related.filter(item => item.nextFollowUpDate && item.nextFollowUpDate < reportDate).length;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-secondary btn-sm whitespace-nowrap';
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide','messages-square');icon.className='w-3.5 h-3.5';
+  const label = document.createElement('span');
+  label.textContent = `${t('empFollowUpAction')} (${related.length})`;
+  button.append(icon,label);
+  button.addEventListener('click',()=>openEmploymentFollowUp(person.stipNo,recordId));
+  cell.appendChild(button);
+  if(overdue){const badge=document.createElement('span');badge.className='block text-[10px] text-red-600 mt-1';badge.textContent=t('empFollowUpOverdue').replace('{count}',overdue);cell.appendChild(badge);}
+  return cell;
+}
+
+function filteredEmploymentPeople() {
+  const response = _EMP_CACHE.response || {};
+  const institution = document.getElementById('empFltInst')?.value || '';
+  const status = document.getElementById('empFltStatus')?.value || '';
+  const query = (document.getElementById('empFltSearch')?.value || '').trim().toLocaleLowerCase(getLocale());
+  return (response.data || []).filter(person => {
+    if (institution && person.institution !== institution) return false;
+    if (status === '__unreported__' && (person.employmentStatus || (person.histories || []).length)) return false;
+    if (status && status !== '__unreported__' && person.employmentStatus !== status) return false;
+    return true;
+  }).map(person => {
+    if (!query) return person;
+    const personText = [person.stipNo,person.nameTH,person.nameEN,person.institution,statusLabel(person.studentStatus)]
+      .join(' ').toLocaleLowerCase(getLocale());
+    if (personText.includes(query)) return person;
+    const histories = (person.histories || []).filter(history => [
+      history.employerName,history.workplaceLocation,history.workplaceProvince,history.jobTitle,
+      history.employmentType,history.industry,history.startMonth,history.endMonth,
+    ].join(' ').toLocaleLowerCase(getLocale()).includes(query));
+    return histories.length ? { ...person, histories } : null;
+  }).filter(Boolean);
+}
+
+function renderEmploymentRows() {
+  const tbody = document.getElementById('employmentTableBody');
+  if (!tbody) return;
+  tbody.replaceChildren();
+  const people = filteredEmploymentPeople();
+  const recordCount = people.reduce((total, person) => total + (person.histories || []).length, 0);
+  const followUps = people.reduce((all,person)=>all.concat(person.followUps||[]),[]);
+  const reportDate = _EMP_CACHE.response?.reportDate || new Date().toISOString().slice(0,10);
+  const overdueCount = followUps.filter(item=>item.nextFollowUpDate&&item.nextFollowUpDate<reportDate).length;
+  const reportedCount = people.filter(person => person.employmentStatus || (person.histories || []).length).length;
+  document.getElementById('empKpiEligible').textContent = people.length;
+  document.getElementById('empKpiReported').textContent = reportedCount;
+  document.getElementById('empKpiRecords').textContent = recordCount;
+  document.getElementById('empKpiMissing').textContent = Math.max(0, people.length - reportedCount);
+  document.getElementById('empKpiFollowUps').textContent = followUps.length;
+  document.getElementById('empKpiOverdue').textContent = overdueCount;
+  const coverage = people.length ? Math.round((reportedCount / people.length) * 100) : 0;
+  const coverageValue = document.getElementById('empCoverageValue');
+  const coverageBar = document.getElementById('empCoverageBar');
+  const coverageProgress = document.getElementById('empCoverageProgress');
+  if (coverageValue) coverageValue.textContent = `${coverage}%`;
+  if (coverageBar) coverageBar.style.width = `${coverage}%`;
+  if (coverageProgress) coverageProgress.setAttribute('aria-valuenow', String(coverage));
+  document.getElementById('empResultCount').textContent = t('empResultCount')
+    .replace('{people}', people.length).replace('{records}', recordCount);
+
+  if (!people.length) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 8;
+    cell.className = 'text-center text-gray-400 py-8';
+    cell.textContent = t('empNoResults');
+    row.appendChild(cell);
+    tbody.appendChild(row);
+    return;
+  }
+
+  people.forEach(person => {
+    const histories = (person.histories || []).length ? person.histories : [null];
+    histories.forEach((history, index) => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50';
+      row.style.borderBottom = '1px solid #f1f5f9';
+      if (index === 0) {
+        const personCell = employmentCell([
+          { text:employmentName(person), strong:true },
+          { text:[person.stipNo, person.institution].filter(Boolean).join(' · '), muted:true },
+          { text:statusLabel(person.studentStatus), muted:true },
+        ]);
+        personCell.rowSpan = histories.length;
+        row.appendChild(personCell);
+
+        const statusCell = document.createElement('td');
+        statusCell.className = 'px-3 py-2 align-top';
+        statusCell.rowSpan = histories.length;
+        const statusPill = document.createElement('span');
+        statusPill.className = 'emp-status-pill';
+        statusPill.style.cssText = employmentStatusTone(person.employmentStatus || '');
+        statusPill.textContent = employmentStatusLabel(person.employmentStatus || '');
+        statusCell.appendChild(statusPill);
+        row.appendChild(statusCell);
+      }
+
+      if (!history) {
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 5;
+        emptyCell.className = 'px-3 py-4 text-center text-gray-400 italic';
+        emptyCell.textContent = t('empNoWorkHistory');
+        row.appendChild(emptyCell);
+        row.appendChild(employmentFollowUpActionCell(person,null));
+        tbody.appendChild(row);
+        return;
+      }
+
+      row.appendChild(employmentCell([
+        { text:history.employerName || t('empNotProvided'), strong:!!history.employerName },
+        { text:[history.workplaceLocation,history.workplaceProvince].filter(Boolean).join(' · '), muted:true },
+      ]));
+      row.appendChild(employmentCell([
+        { text:history.jobTitle || t('empNotProvided'), strong:!!history.jobTitle },
+        { text:[employmentTypeLabel(history.employmentType),history.industry].filter(Boolean).join(' · '), muted:true },
+      ]));
+      row.appendChild(employmentCell([
+        { text:formatEmploymentMonth(history.startMonth) || '—' },
+        { text:history.current ? t('empCurrentJob') : (formatEmploymentMonth(history.endMonth) || '—'), muted:true },
+      ], 'whitespace-nowrap'));
+      row.appendChild(employmentCell([{ text:formatEmploymentDuration(history.durationMonths) }], 'whitespace-nowrap'));
+
+      const verificationCell = document.createElement('td');
+      verificationCell.className = 'px-3 py-2 align-top';
+      const verification = document.createElement('span');
+      verification.className = 'emp-status-pill';
+      verification.style.cssText = verificationTone(history.verificationStatus);
+      verification.textContent = employmentVerificationLabel(history.verificationStatus);
+      const source = document.createElement('span');
+      source.className = 'emp-cell-line emp-cell-muted mt-1';
+      source.textContent = employmentSourceLabel(history.source);
+      verificationCell.append(verification,source);
+      row.appendChild(verificationCell);
+      row.appendChild(employmentFollowUpActionCell(person,history));
+      tbody.appendChild(row);
+    });
+  });
+  lucide.createIcons();
+}
+
+function applyEmploymentFilters() { renderEmploymentRows(); }
+
+function resetEmploymentFilters() {
+  document.getElementById('empFltInst').value = '';
+  document.getElementById('empFltStatus').value = '';
+  document.getElementById('empFltSearch').value = '';
+  renderEmploymentRows();
+}
+
+function renderEmploymentReport() {
+  const loading = document.getElementById('empReportLoading');
+  const error = document.getElementById('empReportError');
+  const setup = document.getElementById('empSetupRequired');
+  const content = document.getElementById('empReportContent');
+  const auditNotice = document.getElementById('empAuditNotice');
+  [loading,error,setup,content,auditNotice].forEach(element => element?.classList.add('hidden'));
+
+  if (!_EMP_CACHE.loaded) { loading?.classList.remove('hidden'); return; }
+  if (_EMP_CACHE.error) {
+    error.textContent = _EMP_CACHE.error;
+    error.classList.remove('hidden');
+    return;
+  }
+  const response = _EMP_CACHE.response;
+  if (!response) return;
+  auditNotice?.classList.toggle('hidden', response.launchMode === 'enabled');
+  if (response.setupRequired) {
+    setup.classList.remove('hidden');
+    document.getElementById('empSetupLink')?.classList.toggle('hidden', !RBAC.has('manageCustomFields'));
+    lucide.createIcons();
+    return;
+  }
+
+  content.classList.remove('hidden');
+  document.getElementById('empExportBtn')?.classList.remove('hidden');
+  const asOf = document.getElementById('empAsOf');
+  if (asOf) asOf.textContent = `${t('empAsOf')} ${formatEmploymentMonth(response.asOfMonth) || response.asOfMonth || '—'}`;
+  const legacy = Number(response.legacyRowsPendingMigration || 0);
+  const warning = document.getElementById('empLegacyWarning');
+  if (warning) {
+    warning.textContent = t('empLegacyRowsWarning').replace('{count}', legacy);
+    warning.classList.toggle('hidden', legacy === 0);
+  }
+  renderEmploymentRows();
+}
+
+async function loadEmploymentReport() {
+  _EMP_CACHE.loaded = false;
+  _EMP_CACHE.error = '';
+  renderEmploymentReport();
+  try {
+    const result = await API.getEmploymentReport();
+    if (result.status !== 'success') throw new Error(result.message || t('empReportError'));
+    _EMP_CACHE.response = result;
+  } catch (error) {
+    _EMP_CACHE.response = null;
+    _EMP_CACHE.error = localizeApiMessage(error.message || t('empReportError'));
+  } finally {
+    _EMP_CACHE.loaded = true;
+    renderEmploymentReport();
+  }
+}
+
+// ── Follow-up workflow ──────────────────────────────────────
+let _EMP_FOLLOWUP_CONTEXT = { stipNo:'', recordId:'' };
+
+function employmentMethodLabel(value){
+  return t({phone:'empMethodPhone',email:'empMethodEmail',line:'empMethodLine',social:'empMethodSocial',in_person:'empMethodInPerson',video_call:'empMethodVideo',other:'empMethodOther'}[value]||'empMethodOther');
+}
+
+function employmentOutcomeLabel(value){
+  return t({reached_no_change:'empOutcomeNoChange',employment_updated:'empOutcomeUpdated',verification_completed:'empOutcomeVerified',unreachable:'empOutcomeUnreachable',follow_up_needed:'empOutcomeFollowUp',declined:'empOutcomeDeclined',other:'empOutcomeOther'}[value]||'empOutcomeOther');
+}
+
+function formatEmploymentDate(value){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||'')))return value||'';
+  return new Intl.DateTimeFormat(getLocale(),{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));
+}
+
+function currentEmploymentPerson(){
+  return (_EMP_CACHE.response?.data||[]).find(person=>person.stipNo===_EMP_FOLLOWUP_CONTEXT.stipNo)||null;
+}
+
+function employmentRecordOptionLabel(history){
+  return [history.employerName||t('empNotProvided'),history.jobTitle,formatEmploymentMonth(history.startMonth)].filter(Boolean).join(' · ');
+}
+
+function populateEmploymentFollowUpRecords(person,preserveValue){
+  const select=document.getElementById('empFollowUpRecord');if(!select)return;
+  const selected=preserveValue===undefined?(_EMP_FOLLOWUP_CONTEXT.recordId||''):preserveValue;
+  select.replaceChildren(new Option(t('empFollowUpGeneral'),''));
+  (person?.histories||[]).forEach(history=>select.appendChild(new Option(employmentRecordOptionLabel(history),history.recordId)));
+  select.value=[...select.options].some(option=>option.value===selected)?selected:'';
+}
+
+function resetEmploymentFollowUpForm(){
+  const form=document.getElementById('empFollowUpForm');if(!form)return;
+  form.reset();
+  document.getElementById('empFollowUpId').value='';
+  populateEmploymentFollowUpRecords(currentEmploymentPerson(),_EMP_FOLLOWUP_CONTEXT.recordId);
+  document.getElementById('empFollowUpContactDate').value=_EMP_CACHE.response?.reportDate||new Date().toLocaleDateString('en-CA');
+  document.getElementById('empFollowUpMethod').value='phone';
+  document.getElementById('empFollowUpOutcome').value='reached_no_change';
+  const user=getUser()||{};
+  document.getElementById('empFollowUpAssigned').value=user.name||user.username||'';
+}
+
+function renderEmploymentFollowUpList(){
+  const person=currentEmploymentPerson(),list=document.getElementById('empFollowUpList'),count=document.getElementById('empFollowUpCount');
+  if(!list||!count)return;
+  list.replaceChildren();
+  const followUps=person?.followUps||[];
+  count.textContent=followUps.length;
+  if(!followUps.length){const empty=document.createElement('div');empty.className='text-xs text-gray-400 text-center py-8';empty.textContent=t('empFollowUpEmpty');list.appendChild(empty);return;}
+  const canManage=_EMP_CACHE.response?.canManageFollowUps===true;
+  followUps.forEach(item=>{
+    const box=document.createElement('article');box.className='emp-followup-item';
+    const head=document.createElement('div');head.className='flex items-start gap-2';
+    const text=document.createElement('div');text.className='min-w-0 flex-1';
+    const title=document.createElement('p');title.className='text-xs font-bold text-gray-800';title.textContent=`${formatEmploymentDate(item.contactDate)} · ${employmentMethodLabel(item.contactMethod)}`;
+    const outcome=document.createElement('p');outcome.className='text-[11px] text-gray-600 mt-0.5';outcome.textContent=employmentOutcomeLabel(item.outcome);
+    text.append(title,outcome);
+    if(item.employmentRecordId){const history=(person.histories||[]).find(record=>record.recordId===item.employmentRecordId);const linked=document.createElement('p');linked.className='text-[10px] text-blue-600 mt-1';linked.textContent=`${t('empFollowUpLinkedWork')}: ${history?employmentRecordOptionLabel(history):item.employmentRecordId}`;text.appendChild(linked);}
+    if(item.nextFollowUpDate){const next=document.createElement('p');next.className=`text-[10px] mt-1 ${item.nextFollowUpDate<(_EMP_CACHE.response?.reportDate||'')?'text-red-600 font-semibold':'text-amber-700'}`;next.textContent=`${t('empFollowUpNextDate')}: ${formatEmploymentDate(item.nextFollowUpDate)}`;text.appendChild(next);}
+    if(item.assignedTo){const assigned=document.createElement('p');assigned.className='text-[10px] text-gray-400';assigned.textContent=`${t('empFollowUpAssigned')}: ${item.assignedTo}`;text.appendChild(assigned);}
+    if(item.notes){const notes=document.createElement('p');notes.className='text-[11px] text-gray-500 mt-2 whitespace-pre-wrap break-words';notes.textContent=item.notes;text.appendChild(notes);}
+    head.appendChild(text);
+    if(canManage){
+      const actions=document.createElement('div');actions.className='flex gap-1';
+      const edit=document.createElement('button');edit.type='button';edit.className='icon-btn';edit.title=t('empFollowUpEdit');edit.innerHTML='<i data-lucide="pencil" class="w-3.5 h-3.5"></i>';edit.addEventListener('click',()=>editEmploymentFollowUp(item.followUpId));
+      const archive=document.createElement('button');archive.type='button';archive.className='icon-btn danger';archive.title=t('empFollowUpArchive');archive.innerHTML='<i data-lucide="archive" class="w-3.5 h-3.5"></i>';archive.addEventListener('click',()=>archiveEmploymentFollowUp(item.followUpId));
+      actions.append(edit,archive);head.appendChild(actions);
+    }
+    box.appendChild(head);list.appendChild(box);
+  });
+  lucide.createIcons();
+}
+
+function refreshEmploymentFollowUpModal(){
+  const person=currentEmploymentPerson();if(!person)return;
+  document.getElementById('empFollowUpPerson').textContent=`${employmentName(person)} · ${person.stipNo} · ${person.institution||'—'}`;
+  populateEmploymentFollowUpRecords(person,document.getElementById('empFollowUpRecord')?.value||_EMP_FOLLOWUP_CONTEXT.recordId);
+  renderEmploymentFollowUpList();
+}
+
+function openEmploymentFollowUp(stipNo,recordId){
+  _EMP_FOLLOWUP_CONTEXT={stipNo,recordId:recordId||''};
+  const person=currentEmploymentPerson();if(!person)return;
+  const modal=document.getElementById('empFollowUpModal');modal.classList.remove('hidden');document.body.style.overflow='hidden';
+  const form=document.getElementById('empFollowUpForm');form.classList.toggle('hidden',_EMP_CACHE.response?.canManageFollowUps!==true);
+  resetEmploymentFollowUpForm();refreshEmploymentFollowUpModal();lucide.createIcons();
+}
+
+function closeEmploymentFollowUp(){
+  document.getElementById('empFollowUpModal')?.classList.add('hidden');document.body.style.overflow='';
+  _EMP_FOLLOWUP_CONTEXT={stipNo:'',recordId:''};
+}
+
+function editEmploymentFollowUp(followUpId){
+  const item=(currentEmploymentPerson()?.followUps||[]).find(followUp=>followUp.followUpId===followUpId);if(!item)return;
+  document.getElementById('empFollowUpId').value=item.followUpId;
+  populateEmploymentFollowUpRecords(currentEmploymentPerson(),item.employmentRecordId||'');
+  document.getElementById('empFollowUpContactDate').value=item.contactDate||'';
+  document.getElementById('empFollowUpNextDate').value=item.nextFollowUpDate||'';
+  document.getElementById('empFollowUpMethod').value=item.contactMethod||'phone';
+  document.getElementById('empFollowUpOutcome').value=item.outcome||'other';
+  document.getElementById('empFollowUpAssigned').value=item.assignedTo||'';
+  document.getElementById('empFollowUpNotes').value=item.notes||'';
+  document.getElementById('empFollowUpForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function saveEmploymentFollowUp(event){
+  event.preventDefault();
+  const payload={
+    followUpId:document.getElementById('empFollowUpId').value,
+    stipNo:_EMP_FOLLOWUP_CONTEXT.stipNo,
+    employmentRecordId:document.getElementById('empFollowUpRecord').value,
+    contactDate:document.getElementById('empFollowUpContactDate').value,
+    contactMethod:document.getElementById('empFollowUpMethod').value,
+    outcome:document.getElementById('empFollowUpOutcome').value,
+    nextFollowUpDate:document.getElementById('empFollowUpNextDate').value,
+    assignedTo:document.getElementById('empFollowUpAssigned').value.trim(),
+    notes:document.getElementById('empFollowUpNotes').value.trim(),
+  };
+  if(payload.nextFollowUpDate&&payload.nextFollowUpDate<payload.contactDate){Swal.fire(t('error'),t('empFollowUpDateError'),'warning');return;}
+  showLoader(true,t('saving'));
+  try{
+    const result=await API.saveEmploymentFollowUp(payload);if(result.status!=='success')throw new Error(result.message||t('empFollowUpSaveError'));
+    await loadEmploymentReport();resetEmploymentFollowUpForm();refreshEmploymentFollowUpModal();
+    showLoader(false);Swal.fire({icon:'success',title:t('success'),text:t('empFollowUpSaved'),timer:1400,showConfirmButton:false});
+  }catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message||t('empFollowUpSaveError')),'error');}
+}
+
+async function archiveEmploymentFollowUp(followUpId){
+  const confirmation=await Swal.fire({icon:'warning',title:t('empFollowUpArchive'),text:t('empFollowUpArchiveConfirm'),showCancelButton:true,confirmButtonText:t('confirm'),cancelButtonText:t('cancel'),confirmButtonColor:'#b91c1c'});if(!confirmation.isConfirmed)return;
+  showLoader(true,t('saving'));
+  try{
+    const result=await API.archiveEmploymentFollowUp(followUpId);if(result.status!=='success')throw new Error(result.message||t('empFollowUpArchiveError'));
+    await loadEmploymentReport();refreshEmploymentFollowUpModal();showLoader(false);
+  }catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message||t('empFollowUpArchiveError')),'error');}
+}
+
+// ── Shared export safety helpers ─────────────────────────────
+function csvEmploymentCell(value){
+  let text=String(value??'');if(/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replace(/"/g,'""')}"`;
+}
+
+function escapeEmploymentHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+
+function legacyPrintEmploymentReport(){
+  const people=filteredEmploymentPeople(),rows=[];
+  people.forEach(person=>{
+    const histories=(person.histories||[]).length?person.histories:[null];const latest=(person.followUps||[])[0]||{};
+    histories.forEach(history=>rows.push(`<tr><td><strong>${escapeEmploymentHtml(employmentName(person))}</strong><small>${escapeEmploymentHtml(person.stipNo)} · ${escapeEmploymentHtml(person.institution||'')}</small></td><td>${escapeEmploymentHtml(employmentStatusLabel(person.employmentStatus||''))}</td><td>${escapeEmploymentHtml(history?.employerName||t('empNotProvided'))}<small>${escapeEmploymentHtml([history?.workplaceLocation,history?.workplaceProvince].filter(Boolean).join(' · '))}</small></td><td>${escapeEmploymentHtml(history?.jobTitle||t('empNotProvided'))}<small>${escapeEmploymentHtml([employmentTypeLabel(history?.employmentType||''),history?.industry].filter(Boolean).join(' · '))}</small></td><td>${escapeEmploymentHtml(history?`${formatEmploymentMonth(history.startMonth)||'—'} – ${history.current?t('empCurrentJob'):(formatEmploymentMonth(history.endMonth)||'—')}`:'—')}</td><td>${escapeEmploymentHtml(history?formatEmploymentDuration(history.durationMonths):'—')}</td><td>${escapeEmploymentHtml(latest.contactDate?formatEmploymentDate(latest.contactDate):'—')}<small>${escapeEmploymentHtml(latest.nextFollowUpDate?`${t('empFollowUpNextDate')}: ${formatEmploymentDate(latest.nextFollowUpDate)}`:'')}</small></td></tr>`));
+  });
+  const popup=window.open('','_blank');if(!popup){Swal.fire(t('error'),t('empPrintBlocked'),'error');return;}
+  const reported=people.filter(person=>person.employmentStatus||(person.histories||[]).length).length,records=people.reduce((sum,person)=>sum+(person.histories||[]).length,0),followUps=people.reduce((sum,person)=>sum+(person.followUps||[]).length,0);
+  popup.document.write(`<!doctype html><html lang="${escapeEmploymentHtml(LANG)}"><head><meta charset="utf-8"><title>${escapeEmploymentHtml(t('empReportTitle'))}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#1f2937;font-size:10px}h1{font-size:19px;margin:0;color:#065f46}.meta{color:#64748b;margin:4px 0 14px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.kpi{border:1px solid #d1d5db;border-radius:7px;padding:8px}.kpi b{display:block;font-size:18px}.kpi span{color:#64748b}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d1d5db;padding:6px;vertical-align:top;text-align:left}th{background:#ecfdf5;color:#065f46}small{display:block;color:#64748b;margin-top:2px}tr{break-inside:avoid}</style></head><body><h1>${escapeEmploymentHtml(t('empReportTitle'))}</h1><div class="meta">${escapeEmploymentHtml(t('empAsOf'))} ${escapeEmploymentHtml(formatEmploymentMonth(_EMP_CACHE.response?.asOfMonth)||'—')} · ${escapeEmploymentHtml(t('empPrintGenerated'))} ${escapeEmploymentHtml(new Date().toLocaleString(getLocale()))}</div><div class="kpis"><div class="kpi"><b>${people.length}</b><span>${escapeEmploymentHtml(t('empKpiEligible'))}</span></div><div class="kpi"><b>${reported}</b><span>${escapeEmploymentHtml(t('empKpiReported'))}</span></div><div class="kpi"><b>${records}</b><span>${escapeEmploymentHtml(t('empKpiRecords'))}</span></div><div class="kpi"><b>${followUps}</b><span>${escapeEmploymentHtml(t('empKpiFollowUps'))}</span></div></div><table><thead><tr><th>${escapeEmploymentHtml(t('empColAlumni'))}</th><th>${escapeEmploymentHtml(t('empColStatus'))}</th><th>${escapeEmploymentHtml(t('empColWorkplace'))}</th><th>${escapeEmploymentHtml(t('empColJob'))}</th><th>${escapeEmploymentHtml(t('empColPeriod'))}</th><th>${escapeEmploymentHtml(t('empColDuration'))}</th><th>${escapeEmploymentHtml(t('empCsvLastContact'))}</th></tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="7">${escapeEmploymentHtml(t('empNoResults'))}</td></tr>`}</tbody></table><script>window.addEventListener('load',()=>window.print())<\/script></body></html>`);popup.document.close();
+}
+
+// ── Employment report composer ─────────────────────────────
+// Preview, Excel and formal PDF/print all read the same filtered report. Signatures
+// reference the existing SIGNATURE_BLOCK setting and are never copied.
+const EMPLOYMENT_REPORT_FIELDS = [
+  {key:'alumni',label:'empColAlumni',recommended:true},
+  {key:'stipNo',label:'empCsvStipNo',recommended:true},
+  {key:'institution',label:'rptFilterInst',recommended:true},
+  {key:'studentStatus',label:'rptFilterStatus'},
+  {key:'employmentStatus',label:'empColStatus',recommended:true},
+  {key:'employer',label:'empCsvEmployer',recommended:true},
+  {key:'location',label:'empCsvLocation',recommended:true},
+  {key:'province',label:'empCsvProvince'},
+  {key:'jobTitle',label:'empCsvJobTitle',recommended:true},
+  {key:'employmentType',label:'empCsvEmploymentType'},
+  {key:'industry',label:'empCsvIndustry'},
+  {key:'startMonth',label:'empCsvStartMonth',recommended:true},
+  {key:'endMonth',label:'empCsvEndMonth',recommended:true},
+  {key:'durationMonths',label:'empCsvDurationMonths',recommended:true},
+  {key:'verification',label:'empCsvVerification'},
+  {key:'source',label:'empCsvSource'},
+  {key:'lastContact',label:'empCsvLastContact',recommended:true},
+  {key:'nextFollowUp',label:'empCsvNextFollowUp',recommended:true},
+  {key:'assignedTo',label:'empFollowUpAssigned'},
+];
+
+function employmentReportText(key,lang){return (T[lang]&&T[lang][key])||T.th[key]||key;}
+function employmentReportLang(){return document.querySelector('input[name="empComposerLang"]:checked')?.value||LANG;}
+function employmentReportRecords(){
+  const rows=[];
+  filteredEmploymentPeople().forEach(person=>{
+    const histories=(person.histories||[]).length?person.histories:[null];
+    const latest=(person.followUps||[])[0]||{};
+    histories.forEach(history=>rows.push({person,history,latest}));
+  });
+  return rows;
+}
+function employmentReportStatusLabel(value,lang){
+  const keys={employed_full_time:'empStatusFullTime',employed_part_time:'empStatusPartTime',self_employed:'empStatusSelfEmployed',freelance:'empStatusFreelance',studying_and_working:'empStatusStudyingWorking',studying_only:'empStatusStudyingOnly',unemployed_seeking:'empStatusSeeking',unemployed_not_seeking:'empStatusNotSeeking',unavailable:'empStatusUnavailable',other:'empStatusOther','':'empStatusUnreported'};
+  return employmentReportText(keys[value]||'empStatusOther',lang);
+}
+function employmentReportStudentStatus(value,lang){
+  const keys={Active:'statusActive',Graduated:'statusGraduated',University:'statusUniversity',Suspended:'statusSuspended',Resigned:'statusResigned',WithdrawnScholarship:'statusWithdrawnScholarship',Incomplete:'statusIncomplete'};
+  return keys[value]?employmentReportText(keys[value],lang):(value||'—');
+}
+function employmentReportTypeLabel(value,lang){
+  const keys={full_time:'empTypeFullTime',part_time:'empTypePartTime',contract:'empTypeContract',freelance:'empTypeFreelance',self_employed:'empTypeSelfEmployed',internship:'empTypeInternship',seasonal:'empTypeSeasonal',other:'empTypeOther'};
+  return value?employmentReportText(keys[value]||'empTypeOther',lang):'';
+}
+function employmentReportVerificationLabel(value,lang){return employmentReportText({pending_review:'empVerifyPending',verified:'empVerifyVerified',needs_revision:'empVerifyRevision'}[value]||'empVerifyPending',lang);}
+function employmentReportSourceLabel(value,lang){return employmentReportText({self_reported:'empSourceSelf',staff_recorded:'empSourceStaff',mixed:'empSourceMixed'}[value]||'empSourceStaff',lang);}
+function employmentReportFieldValue(row,key,lang){
+  const {person,history,latest}=row;
+  const values={
+    alumni:employmentName(person),stipNo:person.stipNo||'',institution:person.institution||'',studentStatus:employmentReportStudentStatus(person.studentStatus,lang),
+    employmentStatus:employmentReportStatusLabel(person.employmentStatus||'',lang),employer:history?.employerName||'',location:history?.workplaceLocation||'',province:history?.workplaceProvince||'',
+    jobTitle:history?.jobTitle||'',employmentType:employmentReportTypeLabel(history?.employmentType||'',lang),industry:history?.industry||'',startMonth:history?.startMonth||'',
+    endMonth:history?.current?employmentReportText('empCurrentJob',lang):(history?.endMonth||''),durationMonths:history?.durationMonths??'',verification:history?employmentReportVerificationLabel(history.verificationStatus,lang):'',
+    source:history?employmentReportSourceLabel(history.source,lang):'',lastContact:latest.contactDate||'',nextFollowUp:latest.nextFollowUpDate||'',assignedTo:latest.assignedTo||'',
+  };
+  return values[key]??'';
+}
+function selectedEmploymentReportFields(){return [...document.querySelectorAll('input[name="empReportField"]:checked')].map(input=>input.value);}
+function selectedEmploymentReportSignatures(){
+  const indexes=new Set([...document.querySelectorAll('input[name="empReportSignature"]:checked')].map(input=>Number(input.value)));
+  return (window._empReportSignatures||[]).filter((_,index)=>indexes.has(index));
+}
+function employmentExportHeaders(fieldKeys=EMPLOYMENT_REPORT_FIELDS.map(field=>field.key),lang=LANG){
+  const selected=new Set(fieldKeys);return EMPLOYMENT_REPORT_FIELDS.filter(field=>selected.has(field.key)).map(field=>employmentReportText(field.label,lang));
+}
+function employmentExportRows(fieldKeys=EMPLOYMENT_REPORT_FIELDS.map(field=>field.key),lang=LANG){
+  const selected=new Set(fieldKeys),fields=EMPLOYMENT_REPORT_FIELDS.filter(field=>selected.has(field.key));
+  return employmentReportRecords().map(row=>fields.map(field=>employmentReportFieldValue(row,field.key,lang)));
+}
+function renderEmploymentReportFieldSelector(preserve=true){
+  const holder=document.getElementById('empReportFieldList');if(!holder)return;
+  const current=new Set(preserve?selectedEmploymentReportFields():EMPLOYMENT_REPORT_FIELDS.filter(field=>field.recommended).map(field=>field.key));
+  const lang=employmentReportLang();holder.replaceChildren();
+  EMPLOYMENT_REPORT_FIELDS.forEach(field=>{
+    const label=document.createElement('label');label.className='report-field-option';
+    const input=document.createElement('input');input.type='checkbox';input.name='empReportField';input.value=field.key;input.checked=current.has(field.key);input.className='accent-emerald-600';input.addEventListener('change',()=>{markEmploymentReportDirty();renderEmploymentReportPreview();});
+    const text=document.createElement('span');text.className='truncate';text.textContent=employmentReportText(field.label,lang);
+    label.append(input,text);holder.appendChild(label);
+  });
+}
+function selectEmploymentReportFields(mode){
+  document.querySelectorAll('input[name="empReportField"]').forEach(input=>{const field=EMPLOYMENT_REPORT_FIELDS.find(item=>item.key===input.value);input.checked=mode==='all'||!!field?.recommended;});
+  markEmploymentReportDirty();
+  renderEmploymentReportPreview();
+}
+function employmentReportFilterContext(lang){
+  const parts=[],inst=document.getElementById('empFltInst')?.value,status=document.getElementById('empFltStatus')?.value,query=document.getElementById('empFltSearch')?.value.trim();
+  if(inst)parts.push(`${employmentReportText('rptFilterInst',lang)}: ${inst}`);
+  if(status)parts.push(`${employmentReportText('empReportStatus',lang)}: ${status==='__unreported__'?employmentReportText('empStatusUnreported',lang):employmentReportStatusLabel(status,lang)}`);
+  if(query)parts.push(`${employmentReportText('empSearchLabel',lang)}: ${query}`);
+  return parts.join(' · ')||employmentReportText('empComposerAllFiltered',lang);
+}
+function renderEmploymentReportSignatures(preserve=true){
+  const holder=document.getElementById('empReportSigList');if(!holder)return;
+  const lang=employmentReportLang(),previous=new Set(preserve?[...holder.querySelectorAll('input:checked')].map(input=>Number(input.value)):[]);
+  const slots=(Array.isArray(_SETTINGS['SIGNATURE_BLOCK'])&&_SETTINGS['SIGNATURE_BLOCK'].length)?_SETTINGS['SIGNATURE_BLOCK']:DEFAULT_SIG_SLOTS;
+  window._empReportSignatures=slots;holder.replaceChildren();
+  slots.forEach((signature,index)=>{
+    const label=document.createElement('label');label.className='flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer';
+    const input=document.createElement('input');input.type='checkbox';input.name='empReportSignature';input.value=String(index);input.checked=preserve?previous.has(index):true;input.className='accent-emerald-600 flex-shrink-0';input.addEventListener('change',()=>{markEmploymentReportDirty();renderEmploymentReportPreview();});
+    const text=document.createElement('div');text.className='min-w-0 text-xs';
+    const role=document.createElement('strong');role.className='block text-gray-700';role.textContent=formatSignatoryRole(signature.role,lang)||`${employmentReportText('signatory',lang)} ${index+1}`;
+    const name=document.createElement('span');name.className='text-gray-500';name.textContent=[signature.name,signature.position].filter(Boolean).join(' · ')||employmentReportText('unnamedSignatory',lang);
+    text.append(role,name);label.append(input,text);holder.appendChild(label);
+  });
+}
+let _EMP_REPORT_REGISTRATION = null;
+
+function employmentReportFormat(){return document.querySelector('input[name="empComposerFormat"]:checked')?.value||'pdf';}
+function employmentReportOrientation(){return document.querySelector('input[name="empComposerOrientation"]:checked')?.value==='portrait'?'portrait':'landscape';}
+function employmentReportColumnChunks(fields,orientation=employmentReportOrientation()){
+  const size=orientation==='portrait'?5:8,chunks=[];
+  for(let index=0;index<fields.length;index+=size)chunks.push(fields.slice(index,index+size));
+  return chunks;
+}
+function employmentReportSubjects(lang=employmentReportLang()){
+  const custom=document.getElementById('empComposerSubject')?.value.trim()||'';
+  return {subject:custom||employmentReportText('empReportTitle',lang),subjectTH:custom||employmentReportText('empReportTitle','th'),subjectEN:custom||employmentReportText('empReportTitle','en')};
+}
+function employmentReportScope(){
+  return {institution:document.getElementById('empFltInst')?.value||'',employmentStatus:document.getElementById('empFltStatus')?.value||'',search:document.getElementById('empFltSearch')?.value.trim()||'',asOfMonth:_EMP_CACHE.response?.asOfMonth||''};
+}
+function stableReportJson(value){
+  if(Array.isArray(value))return `[${value.map(stableReportJson).join(',')}]`;
+  if(value&&typeof value==='object')return `{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${stableReportJson(value[key])}`).join(',')}}`;
+  return JSON.stringify(value??null);
+}
+async function sha256ReportText(value){
+  const bytes=new TextEncoder().encode(String(value)),digest=await crypto.subtle.digest('SHA-256',bytes);
+  return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+async function employmentReportRegistrationPayload(){
+  const lang=employmentReportLang(),fieldKeys=selectedEmploymentReportFields(),subjects=employmentReportSubjects(lang),rows=employmentExportRows(fieldKeys,lang);
+  const signatures=selectedEmploymentReportSignatures().map(item=>({role:item.role||'',name:item.name||'',position:item.position||''}));
+  const canonical=stableReportJson({schema:'employment-report-v1',language:lang,subjects,scope:employmentReportScope(),fieldKeys,rows,signatures});
+  const contentHash=await sha256ReportText(canonical);
+  return {reportType:'employment_status',fingerprint:contentHash,contentHash,language:lang,subjectTH:subjects.subjectTH,subjectEN:subjects.subjectEN,scope:employmentReportScope(),fieldKeys,rowCount:rows.length};
+}
+function reportVerificationUrl(token,lang=LANG){
+  const url=new URL('report-verification.html',window.location.href);url.searchParams.set('token',token);url.searchParams.set('lang',lang);return url.href;
+}
+function employmentVerificationUrl(token,lang=employmentReportLang()){return reportVerificationUrl(token,lang);}
+function updateEmploymentReportQrUi(){
+  const panel=document.getElementById('empReportQrPanel'),status=document.getElementById('empReportQrStatus'),reference=document.getElementById('empReportReference'),button=document.getElementById('empRegenerateQrBtn');if(!panel||!status||!reference||!button)return;
+  const lang=LANG,state=_EMP_REPORT_REGISTRATION;
+  panel.classList.toggle('is-issued',!!state);reference.classList.toggle('hidden',!state);button.classList.toggle('hidden',!state||!RBAC.has('exportData'));
+  if(state){status.textContent=employmentReportText(state.reused?'empComposerQrReused':'empComposerQrIssued',lang);reference.textContent=`${employmentReportText('empComposerReference',lang)}: ${state.report.referenceNo} · QR v${state.report.qrVersion}`;}
+  else{status.textContent=employmentReportText('empComposerQrPending',lang);reference.textContent='';}
+}
+function markEmploymentReportDirty(){_EMP_REPORT_REGISTRATION=null;updateEmploymentReportQrUi();}
+function renderEmploymentQr(target,url,size=96){
+  if(!target||!url||typeof QRCode==='undefined')return false;
+  target.replaceChildren();new QRCode(target,{text:url,width:size,height:size,colorDark:'#0f172a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel?.M});return true;
+}
+async function employmentQrDataUrl(url){
+  if(typeof QRCode==='undefined')throw new Error(employmentReportText('empComposerQrLibraryError',employmentReportLang()));
+  const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-10000px;top:-10000px';document.body.appendChild(holder);
+  try{new QRCode(holder,{text:url,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel?.M});await new Promise(resolve=>requestAnimationFrame(resolve));const canvas=holder.querySelector('canvas'),image=holder.querySelector('img');return canvas?.toDataURL('image/png')||image?.src||'';}finally{holder.remove();}
+}
+function renderEmploymentReportPreview(){
+  const preview=document.getElementById('empReportPreview');if(!preview)return;
+  const lang=employmentReportLang(),fieldKeys=selectedEmploymentReportFields(),selected=new Set(fieldKeys),fields=EMPLOYMENT_REPORT_FIELDS.filter(field=>selected.has(field.key)),rows=employmentReportRecords(),sampleRows=rows.slice(0,4),signatures=selectedEmploymentReportSignatures(),orientation=employmentReportOrientation(),subjects=employmentReportSubjects(lang),user=getUser()||{},issued=_EMP_REPORT_REGISTRATION;
+  document.getElementById('empReportFieldError')?.classList.toggle('hidden',fields.length>0);
+  document.getElementById('empComposerFilterContext').textContent=employmentReportFilterContext(lang);
+  document.getElementById('empComposerPreviewCount').textContent=employmentReportText('empComposerCount',lang).replace('{count}',String(rows.length));
+  const chunks=employmentReportColumnChunks(fields,orientation),tables=chunks.map((chunk,index)=>{
+    const header=chunk.map(field=>`<th>${escapeEmploymentHtml(employmentReportText(field.label,lang))}</th>`).join('');
+    const body=sampleRows.map(row=>`<tr>${chunk.map(field=>`<td>${escapeEmploymentHtml(employmentReportFieldValue(row,field.key,lang)||'—')}</td>`).join('')}</tr>`).join('');
+    const part=chunks.length>1?`<div class="text-[8px] font-semibold text-gray-400 mb-1">${escapeEmploymentHtml(employmentReportText('empComposerTablePart',lang).replace('{current}',String(index+1)).replace('{total}',String(chunks.length)))}</div>`:'';
+    return `<section class="report-preview-table-section">${part}<table><thead><tr>${header}</tr></thead><tbody>${body||`<tr><td colspan="${chunk.length}">${escapeEmploymentHtml(employmentReportText('empNoResults',lang))}</td></tr>`}</tbody></table></section>`;
+  }).join('');
+  const signatureHtml=signatures.map(signature=>`<div class="preview-signature"><div>${escapeEmploymentHtml(formatSignatoryRole(signature.role,lang)||'')}</div><div class="preview-signature-line"></div><strong>${escapeEmploymentHtml(signature.name||'................................')}</strong><div>${escapeEmploymentHtml(signature.position||'')}</div></div>`).join('');
+  const tableContent=fields.length?tables:`<div class="text-center text-red-600 text-xs py-8">${escapeEmploymentHtml(employmentReportText('empComposerFieldRequired',lang))}</div>`;
+  const reference=issued?.report?.referenceNo||employmentReportText('empComposerReferencePending',lang),exportedAt=new Date().toLocaleString(lang==='en'?'en-US':'th-TH');
+  preview.dataset.orientation=orientation;
+  preview.innerHTML=`<div class="report-preview-header"><div id="empPreviewQr" class="report-preview-qr">${escapeEmploymentHtml(employmentReportText('empComposerQrShort',lang))}</div><div class="min-w-0"><div class="flex items-start gap-2"><img src="${escapeEmploymentHtml(RDF.LOGO_URL)}" alt="RDF" style="width:34px;height:34px;object-fit:contain"><div><div class="text-[10px] font-bold text-emerald-800">${escapeEmploymentHtml(lang==='en'?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH)}</div><h4 class="text-sm font-bold mt-1 break-words">${escapeEmploymentHtml(subjects.subject)}</h4></div></div><div class="text-[9px] text-gray-500 mt-1 break-words">${escapeEmploymentHtml(employmentReportFilterContext(lang))}</div></div><div class="text-right text-[8px] text-gray-500 break-all"><strong class="text-gray-700">${escapeEmploymentHtml(reference)}</strong><br>${escapeEmploymentHtml(employmentReportText('empComposerPageSetup',lang))}: ${escapeEmploymentHtml(employmentReportText(orientation==='portrait'?'empComposerPortraitShort':'empComposerLandscapeShort',lang))}</div></div>${tableContent}${rows.length>sampleRows.length?`<p class="text-[9px] text-gray-400 mt-2">${escapeEmploymentHtml(employmentReportText('empComposerPreviewLimited',lang).replace('{count}',String(rows.length-sampleRows.length)))}</p>`:''}<div class="preview-signatures">${signatureHtml}</div><div class="report-preview-footer"><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedBy',lang))}: ${escapeEmploymentHtml(user.name||user.username||'—')}</span><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedAt',lang))}: ${escapeEmploymentHtml(exportedAt)}</span></div>`;
+  if(issued)renderEmploymentQr(document.getElementById('empPreviewQr'),issued.verificationUrl,54);
+  updateEmploymentReportQrUi();
+}
+function refreshEmploymentReportComposer(){renderEmploymentReportFieldSelector(true);renderEmploymentReportSignatures(true);renderEmploymentReportPreview();}
+function openEmploymentReportComposer(){
+  _EMP_REPORT_REGISTRATION=null;
+  document.querySelectorAll('input[name="empComposerLang"]').forEach(input=>input.checked=input.value===LANG);
+  document.querySelectorAll('input[name="empComposerFormat"]').forEach(input=>input.checked=input.value==='pdf');
+  document.querySelectorAll('input[name="empComposerOrientation"]').forEach(input=>input.checked=input.value==='landscape');
+  document.getElementById('empComposerSubject').value='';renderEmploymentReportFieldSelector(false);renderEmploymentReportSignatures(false);
+  document.getElementById('empComposerExportBtn').classList.toggle('hidden',!RBAC.has('exportData'));
+  document.getElementById('empReportComposerModal').classList.remove('hidden');document.body.style.overflow='hidden';document.querySelector('.report-composer-config')?.scrollTo({top:0});renderEmploymentReportPreview();lucide.createIcons();
+}
+function closeEmploymentReportComposer(event){
+  if(event&&event.target!==document.getElementById('empReportComposerModal'))return;
+  document.getElementById('empReportComposerModal').classList.add('hidden');document.body.style.overflow='';
+}
+function validateEmploymentReportFields(){const valid=selectedEmploymentReportFields().length>0;document.getElementById('empReportFieldError')?.classList.toggle('hidden',valid);return valid;}
+
+async function issueEmploymentReportReference(){
+  const payload=await employmentReportRegistrationPayload(),result=await API.issueReportReference(payload);
+  if(result.status!=='success')throw new Error(result.message||employmentReportText('reportRegistryFailed',employmentReportLang()));
+  _EMP_REPORT_REGISTRATION={...result,verificationUrl:employmentVerificationUrl(result.verificationToken,payload.language),fingerprint:payload.fingerprint};
+  updateEmploymentReportQrUi();renderEmploymentReportPreview();return _EMP_REPORT_REGISTRATION;
+}
+function spreadsheetEmploymentCell(value){const text=String(value??'');return /^[=+\-@]/.test(text)?`'${text}`:text;}
+function employmentReportFilename(extension){
+  const base=employmentReportSubjects().subject.replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,'-').slice(0,70)||'employment-report';
+  return `${base}-${_EMP_CACHE.response?.reportDate||new Date().toISOString().slice(0,10)}.${extension}`;
+}
+function exportEmploymentExcel(registration){
+  if(typeof XLSX==='undefined'||typeof XLSX.utils?.aoa_to_sheet!=='function')throw new Error(employmentReportText('empComposerExcelLibraryError',employmentReportLang()));
+  const lang=employmentReportLang(),keys=selectedEmploymentReportFields(),subjects=employmentReportSubjects(lang),user=getUser()||{},exportedAt=new Date().toLocaleString(lang==='en'?'en-US':'th-TH');
+  const rows=employmentExportRows(keys,lang).map(row=>row.map(spreadsheetEmploymentCell)),headers=employmentExportHeaders(keys,lang),ref=registration.report.referenceNo,url=registration.verificationUrl;
+  const data=[[lang==='en'?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH],[subjects.subject],[`${employmentReportText('empComposerReference',lang)}: ${ref}`],[`${employmentReportText('empComposerVerificationUrl',lang)}: ${url}`],[`${employmentReportText('empComposerExportedBy',lang)}: ${user.name||user.username||'—'}`],[`${employmentReportText('empComposerExportedAt',lang)}: ${exportedAt}`],[],headers,...rows];
+  const workbook=XLSX.utils.book_new(),sheet=XLSX.utils.aoa_to_sheet(data),verify=XLSX.utils.aoa_to_sheet([[employmentReportText('empComposerReference',lang),ref],[employmentReportText('empComposerVerificationUrl',lang),url],[employmentReportText('empComposerQrVersion',lang),registration.report.qrVersion],[employmentReportText('empComposerContentHash',lang),registration.fingerprint]]);
+  sheet['!cols']=headers.map((header,index)=>({wch:Math.min(34,Math.max(12,String(header).length+2,...rows.slice(0,100).map(row=>String(row[index]||'').length+2)))}));
+  sheet['!pageSetup']={orientation:employmentReportOrientation()};XLSX.utils.book_append_sheet(workbook,sheet,lang==='en'?'Employment report':'รายงานภาวะการทำงาน');XLSX.utils.book_append_sheet(workbook,verify,lang==='en'?'Verification':'ตรวจสอบรายงาน');XLSX.writeFile(workbook,employmentReportFilename('xlsx'));
+}
+function employmentPrintTableSections(fields,records,lang,orientation){
+  const chunks=employmentReportColumnChunks(fields,orientation);
+  return chunks.map((chunk,index)=>{const rows=records.map(row=>`<tr>${chunk.map(field=>`<td>${escapeEmploymentHtml(employmentReportFieldValue(row,field.key,lang)||'—')}</td>`).join('')}</tr>`).join('');return `<section class="table-section${index?' next-section':''}">${chunks.length>1?`<div class="part-label">${escapeEmploymentHtml(employmentReportText('empComposerTablePart',lang).replace('{current}',String(index+1)).replace('{total}',String(chunks.length)))}</div>`:''}<table><thead><tr>${chunk.map(field=>`<th>${escapeEmploymentHtml(employmentReportText(field.label,lang))}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td class="empty" colspan="${chunk.length}">${escapeEmploymentHtml(employmentReportText('empNoResults',lang))}</td></tr>`}</tbody></table></section>`;}).join('');
+}
+async function buildEmploymentPrintHtml(registration,qrDataUrl){
+  const lang=employmentReportLang(),keys=selectedEmploymentReportFields(),selected=new Set(keys),fields=EMPLOYMENT_REPORT_FIELDS.filter(field=>selected.has(field.key)),orientation=employmentReportOrientation();
+  const records=employmentReportRecords(),people=filteredEmploymentPeople(),signatures=selectedEmploymentReportSignatures(),subjects=employmentReportSubjects(lang),user=getUser()||{},exportedAt=new Date().toLocaleString(lang==='en'?'en-US':'th-TH'),filterContext=employmentReportFilterContext(lang);
+  const reported=people.filter(person=>person.employmentStatus||(person.histories||[]).length).length,workRecords=people.reduce((sum,person)=>sum+(person.histories||[]).length,0),followUps=people.reduce((sum,person)=>sum+(person.followUps||[]).length,0);
+  const tables=employmentPrintTableSections(fields,records,lang,orientation),signatureHtml=signatures.length?`<div class="signatures">${signatures.map(signature=>`<div class="signature"><b>${escapeEmploymentHtml(formatSignatoryRole(signature.role,lang)||'')}</b><div class="sign-line"></div><strong>${escapeEmploymentHtml(signature.name||'........................................')}</strong><span>${escapeEmploymentHtml(signature.position||'')}</span><small>${escapeEmploymentHtml(employmentReportText('rptPrDate',lang))}: ........................</small></div>`).join('')}</div>`:'';
+  const reference=registration.report.referenceNo;
+  return `<!doctype html><html lang="${escapeEmploymentHtml(lang)}"><head><meta charset="utf-8"><title>${escapeEmploymentHtml(subjects.subject)}</title><style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');*{box-sizing:border-box;max-width:100%}html,body{margin:0;padding:0}body{font-family:'Sarabun',Arial,sans-serif;color:#1f2937;font-size:8pt;padding-bottom:8mm;overflow-wrap:anywhere;word-break:break-word}@page{size:A4 ${orientation};margin:12mm 10mm 18mm}.header{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:start;gap:10px;border-bottom:2.5px solid #047857;padding-bottom:9px;margin-bottom:10px}.qr{width:56px;height:56px}.brand{display:flex;align-items:flex-start;gap:9px;min-width:0}.logo{width:42px;height:42px;object-fit:contain;flex:0 0 auto}.org{font-weight:800;color:#065f46}.title{font-size:14pt;font-weight:800;margin-top:2px;overflow-wrap:anywhere}.meta{font-size:7.5pt;color:#64748b;margin-top:3px}.reference{text-align:right;font-size:7.5pt;color:#64748b;max-width:48mm}.reference strong{display:block;color:#0f172a;font-size:8pt}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}.kpi{border:1px solid #d1fae5;border-radius:6px;padding:6px 8px;background:#f0fdf4;min-width:0}.kpi b{display:block;font-size:13pt;color:#065f46}.kpi span{color:#64748b;font-size:7pt}.table-section{max-width:100%}.table-section.next-section{break-before:page;page-break-before:always}.part-label{font-size:7pt;color:#64748b;font-weight:700;margin:0 0 4px}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}th,td{min-width:0;max-width:0;border:1px solid #cbd5e1;padding:4px;vertical-align:top;text-align:left;overflow-wrap:anywhere;word-break:break-word;white-space:normal}th{background:#ecfdf5;color:#065f46;font-size:7pt}td{font-size:7pt}tr{break-inside:avoid;page-break-inside:avoid}.empty{text-align:center;color:#94a3b8}.signatures{display:flex;justify-content:flex-end;gap:20px;margin-top:28px;break-inside:avoid;page-break-inside:avoid}.signature{width:170px;text-align:center;font-size:8pt}.signature>*{display:block}.sign-line{border-top:1px solid #64748b;margin:25px 0 5px}.signature span,.signature small{color:#64748b;margin-top:2px}.print-footer{position:fixed;left:0;right:0;bottom:-13mm;border-top:1px solid #cbd5e1;padding-top:3mm;display:flex;justify-content:space-between;gap:8px;color:#64748b;font-size:7pt;background:#fff}.print-footer span{min-width:0;overflow-wrap:anywhere}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="header"><img class="qr" src="${escapeEmploymentHtml(qrDataUrl)}" alt="QR"><div class="brand"><img class="logo" src="${escapeEmploymentHtml(RDF.LOGO_URL)}" alt="RDF"><div><div class="org">${escapeEmploymentHtml(lang==='en'?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH)}</div><div class="title">${escapeEmploymentHtml(subjects.subject)}</div><div class="meta">${escapeEmploymentHtml(filterContext)}</div></div></div><div class="reference"><strong>${escapeEmploymentHtml(reference)}</strong>${escapeEmploymentHtml(employmentReportText('empComposerQrVersion',lang))}: ${registration.report.qrVersion}<br>${escapeEmploymentHtml(employmentReportText('empAsOf',lang))} ${escapeEmploymentHtml(_EMP_CACHE.response?.asOfMonth||'—')}</div></div><div class="kpis"><div class="kpi"><b>${people.length}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiEligible',lang))}</span></div><div class="kpi"><b>${reported}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiReported',lang))}</span></div><div class="kpi"><b>${workRecords}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiRecords',lang))}</span></div><div class="kpi"><b>${followUps}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiFollowUps',lang))}</span></div></div>${tables}${signatureHtml}<footer class="print-footer"><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedBy',lang))}: ${escapeEmploymentHtml(user.name||user.username||'—')}</span><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedAt',lang))}: ${escapeEmploymentHtml(exportedAt)}</span><span>${escapeEmploymentHtml(reference)}</span></footer><script>window.addEventListener('load',()=>window.print())<\/script></body></html>`;
+}
+async function exportEmploymentReport(){
+  if(!RBAC.has('exportData')||!validateEmploymentReportFields())return;
+  const format=employmentReportFormat(),lang=employmentReportLang();
+  if(format==='xlsx'&&(typeof XLSX==='undefined'||typeof XLSX.utils?.aoa_to_sheet!=='function')){Swal.fire(t('error'),employmentReportText('empComposerExcelLibraryError',lang),'error');return;}
+  if(format==='pdf'&&typeof QRCode==='undefined'){Swal.fire(t('error'),employmentReportText('empComposerQrLibraryError',lang),'error');return;}
+  const popup=format==='pdf'?window.open('','_blank','width=1200,height=850'):null;
+  if(format==='pdf'&&!popup){Swal.fire(t('error'),t('empPrintBlocked'),'error');return;}
+  if(popup){popup.document.write(`<p style="font-family:sans-serif;padding:24px">${escapeEmploymentHtml(employmentReportText('empComposerPreparing',employmentReportLang()))}</p>`);popup.document.close();}
+  try{
+    const registration=await issueEmploymentReportReference();
+    if(format==='xlsx')exportEmploymentExcel(registration);
+    else{const qrDataUrl=await employmentQrDataUrl(registration.verificationUrl),html=await buildEmploymentPrintHtml(registration,qrDataUrl);popup.document.open();popup.document.write(html);popup.document.close();}
+  }catch(error){if(popup&&!popup.closed)popup.close();Swal.fire(t('error'),localizeApiMessage(error.message||employmentReportText('reportRegistryFailed',employmentReportLang())),'error');}
+}
+async function regenerateEmploymentReportQr(){
+  const state=_EMP_REPORT_REGISTRATION;if(!state)return;
+  const lang=employmentReportLang(),result=await Swal.fire({icon:'warning',title:employmentReportText('empComposerQrRegenerateTitle',lang),html:`<p style="font-size:12px;color:#64748b;text-align:left;line-height:1.6">${escapeEmploymentHtml(employmentReportText('empComposerQrRegenerateWarning',lang))}</p><textarea id="empQrReason" class="swal2-textarea" maxlength="500" placeholder="${escapeEmploymentHtml(employmentReportText('empComposerQrReason',lang))}"></textarea><label style="display:flex;align-items:flex-start;gap:8px;text-align:left;font-size:12px;color:#475569"><input id="empQrAck" type="checkbox" style="margin-top:3px"><span>${escapeEmploymentHtml(employmentReportText('empComposerQrAcknowledge',lang))}</span></label>`,showCancelButton:true,confirmButtonText:employmentReportText('empComposerQrConfirm',lang),cancelButtonText:employmentReportText('cancel',lang),confirmButtonColor:'#b45309',focusConfirm:false,preConfirm:()=>{const reason=document.getElementById('empQrReason')?.value.trim()||'',ack=document.getElementById('empQrAck')?.checked===true;if(reason.length<10||!ack){Swal.showValidationMessage(employmentReportText('empComposerQrConditionsError',lang));return false;}return {reason,ack};}});
+  if(!result.isConfirmed)return;
+  const response=await API.regenerateReportQr(state.report.reportId,result.value.reason,result.value.ack);
+  if(response.status!=='success'){Swal.fire(t('error'),response.message||employmentReportText('reportRegistryFailed',lang),'error');return;}
+  _EMP_REPORT_REGISTRATION={...state,...response,reused:true,verificationUrl:employmentVerificationUrl(response.verificationToken,lang)};renderEmploymentReportPreview();Swal.fire({icon:'success',title:employmentReportText('empComposerQrRegenerated',lang),confirmButtonColor:'#047857'});
+}
+function exportEmploymentCsv(){return exportEmploymentReport();}
+function printEmploymentReport(){document.querySelectorAll('input[name="empComposerFormat"]').forEach(input=>input.checked=input.value==='pdf');return exportEmploymentReport();}
+
+// ═══════════════════════════════════════════════════════════
 // BILINGUAL — re-builds all charts + UI on language switch
 // ═══════════════════════════════════════════════════════════
 function rptToggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
@@ -1217,10 +2435,15 @@ document.addEventListener('rdf:languagechange', () => {
     const ts = document.getElementById('rptDataTimestamp');
     if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + new Date(_CACHE.loadedAt).toLocaleString(getLocale());
   }
+  renderScholarshipDataSource();
   // Rebuild all charts with new language labels
   buildAllCharts();
   buildSummaryTable();
+  renderEmploymentReport();
+  if(!document.getElementById('empFollowUpModal')?.classList.contains('hidden'))refreshEmploymentFollowUpModal();
+  if(!document.getElementById('empReportComposerModal')?.classList.contains('hidden'))refreshEmploymentReportComposer();
   renderReportFilterContext();
+  updateScholarshipReportQrUi();
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -1230,24 +2453,91 @@ document.addEventListener('rdf:languagechange', () => {
 // Signatures loaded from _SETTINGS['SIGNATURE_BLOCK'].
 // ═══════════════════════════════════════════════════════════
 
+let _SCH_REPORT_REGISTRATION = null;
+
+function scholarshipReportLang(){return document.querySelector('input[name="rptPrLang"]:checked')?.value||LANG;}
+function scholarshipReportFormat(){return document.querySelector('input[name="rptPrFormat"]:checked')?.value||'pdf';}
+function scholarshipReportOrientation(){return document.querySelector('input[name="rptPrOrientation"]:checked')?.value==='portrait'?'portrait':'landscape';}
+function selectedScholarshipCharts(){return [...document.querySelectorAll('input[name="rptPrChart"]:checked')].map(input=>input.value);}
+function selectedScholarshipSignatures(){
+  const indexes=new Set([...document.querySelectorAll('input[name="rptPrSig"]:checked')].map(input=>Number(input.value)));
+  return (window._rptSigSlots||DEFAULT_SIG_SLOTS).filter((_,index)=>indexes.has(index));
+}
+function scholarshipReportScope(){
+  return {
+    scholarshipYear:document.getElementById('fltYear')?.value||'', institution:document.getElementById('fltInst')?.value||'',
+    status:document.getElementById('fltStatus')?.value||'', academicYear:document.getElementById('rptPrAcad')?.value.trim()||'',
+    reportDate:document.getElementById('rptPrDate')?.value||''
+  };
+}
+function scholarshipReportFilterContext(lang=scholarshipReportLang()){
+  const scope=scholarshipReportScope(),parts=[];
+  if(scope.scholarshipYear)parts.push(`${lang==='en'?'Year':'ปีทุน'}: ${scope.scholarshipYear}`);
+  if(scope.institution)parts.push(`${lang==='en'?'Institution':'สถาบัน'}: ${scope.institution}`);
+  if(scope.status)parts.push(`${lang==='en'?'Status':'สถานะ'}: ${statusLabel(scope.status,lang)}`);
+  return parts.join(' • ')||(lang==='en'?'All data (no filters)':'ข้อมูลทั้งหมด (ไม่มีตัวกรอง)');
+}
+function scholarshipReportSubjects(lang=scholarshipReportLang()){
+  const custom=document.getElementById('rptPrSubject')?.value.trim()||'',acad=document.getElementById('rptPrAcad')?.value.trim()||'';
+  const make=target=>`${employmentReportText('reportTypeScholarship',target)}${acad?' '+acad:''} (${scholarshipReportFilterContext(target)})`;
+  return {subject:custom||make(lang),subjectTH:custom||make('th'),subjectEN:custom||make('en')};
+}
+function scholarshipReportCanonicalRows(){
+  return _CACHE.filtered.map(student=>({
+    stipNo:String(student.stipNo||student.StipNo||''),scholarshipYear:Number(student.scholarshipYear||0),
+    institution:String(student.institution||''),level:String(student.level||''),status:String(student.status||'')
+  })).sort((a,b)=>a.stipNo.localeCompare(b.stipNo));
+}
+function scholarshipAnnualSummary(){
+  const yearMap={};
+  _CACHE.filtered.forEach(student=>{
+    const year=parseInt(student.scholarshipYear);if(!year||year<2000||year>2100)return;
+    const be=String(year+543),row=yearMap[be]||(yearMap[be]={MBS:0,VC:0,UNI:0,grad:0,withdraw:0,active:0,total:0});
+    row.total++;
+    if(student.institution==='MBS')row.MBS++;else if(student.institution==='VC')row.VC++;else if(student.institution==='UNI')row.UNI++;
+    if(student.status==='Graduated'||student.status==='University')row.grad++;
+    if(WITHDRAW_STATUSES.has(student.status))row.withdraw++;
+    if(student.status==='Active')row.active++;
+  });
+  const years=Object.keys(yearMap).sort(),totals={MBS:0,VC:0,UNI:0,total:0,grad:0,withdraw:0,active:0};
+  years.forEach(year=>Object.keys(totals).forEach(key=>{totals[key]+=yearMap[year][key]||0;}));
+  return {years,yearMap,totals};
+}
+async function scholarshipReportRegistrationPayload(){
+  const lang=scholarshipReportLang(),subjects=scholarshipReportSubjects(lang),charts=selectedScholarshipCharts(),includeTable=document.querySelector('input[name="rptPrTable"]:checked')?.value==='summary';
+  const signatures=selectedScholarshipSignatures().map(item=>({role:item.role||'',name:item.name||'',position:item.position||''}));
+  const rows=scholarshipReportCanonicalRows(),scope=scholarshipReportScope();
+  const canonical=stableReportJson({schema:'scholarship-statistics-report-v1',language:lang,subjects,scope,charts,includeTable,rows,signatures});
+  const contentHash=await sha256ReportText(canonical),fieldKeys=['kpis',...charts.map(key=>`chart.${key}`),...(includeTable?['annual_summary']:[])];
+  return {reportType:'scholarship_statistics',fingerprint:contentHash,contentHash,language:lang,subjectTH:subjects.subjectTH,subjectEN:subjects.subjectEN,scope,fieldKeys,rowCount:rows.length};
+}
+function updateScholarshipReportQrUi(){
+  const panel=document.getElementById('rptPrQrPanel'),status=document.getElementById('rptPrQrStatus'),reference=document.getElementById('rptPrReference'),button=document.getElementById('rptPrRegenerateBtn');
+  if(!panel||!status||!reference||!button)return;
+  const lang=LANG,state=_SCH_REPORT_REGISTRATION;
+  panel.classList.toggle('is-issued',!!state);reference.classList.toggle('hidden',!state);button.classList.toggle('hidden',!state||!RBAC.has('exportData'));
+  if(state){status.textContent=employmentReportText(state.reused?'empComposerQrReused':'empComposerQrIssued',lang);reference.textContent=`${employmentReportText('empComposerReference',lang)}: ${state.report.referenceNo} · QR v${state.report.qrVersion}`;}
+  else{status.textContent=employmentReportText('empComposerQrPending',lang);reference.textContent='';}
+}
+function markScholarshipReportDirty(){_SCH_REPORT_REGISTRATION=null;updateScholarshipReportQrUi();}
+async function issueScholarshipReportReference(){
+  const payload=await scholarshipReportRegistrationPayload(),result=await API.issueReportReference(payload);
+  if(result.status!=='success')throw new Error(result.message||employmentReportText('reportRegistryFailed',payload.language));
+  _SCH_REPORT_REGISTRATION={...result,verificationUrl:reportVerificationUrl(result.verificationToken,payload.language),fingerprint:payload.fingerprint};
+  updateScholarshipReportQrUi();return _SCH_REPORT_REGISTRATION;
+}
+
 function renderReportFilterContext() {
   // Show active filter context
   const ctx = document.getElementById('rptPrFilterCtx');
   if (ctx) {
-    const year   = document.getElementById('fltYear').value;
-    const inst   = document.getElementById('fltInst').value;
-    const status = document.getElementById('fltStatus').value;
-    const parts  = [];
-    if (year)   parts.push((LANG==='th'?'ปีทุน: ':'Year: ') + year);
-    if (inst)   parts.push((LANG==='th'?'สถาบัน: ':'Inst: ') + inst);
-    if (status) parts.push((LANG==='th'?'สถานะ: ':'Status: ') + status);
-    ctx.textContent = parts.length ? parts.join('  •  ')
-      : (LANG==='th'?'ไม่มีตัวกรอง — แสดงข้อมูลทั้งหมด':'No filters — showing all data');
+    ctx.textContent=scholarshipReportFilterContext(scholarshipReportLang());
   }
 
 }
 
 function openRptPrintModal() {
+  _SCH_REPORT_REGISTRATION=null;
   // Pre-fill date
   const dateEl = document.getElementById('rptPrDate');
   if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
@@ -1261,6 +2551,8 @@ function openRptPrintModal() {
 
   // Sync language radio to current UI language
   document.querySelectorAll('input[name="rptPrLang"]').forEach(r => { r.checked = (r.value === LANG); });
+  document.querySelectorAll('input[name="rptPrFormat"]').forEach(r=>{r.checked=r.value==='pdf';});
+  document.querySelectorAll('input[name="rptPrOrientation"]').forEach(r=>{r.checked=r.value==='landscape';});
 
   renderReportFilterContext();
 
@@ -1277,7 +2569,7 @@ function openRptPrintModal() {
     } else {
       sigList.innerHTML = sigs.map((s, i) => `
         <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer">
-          <input type="checkbox" name="rptPrSig" value="${i}" checked class="rounded accent-blue-600 flex-shrink-0">
+          <input type="checkbox" name="rptPrSig" value="${i}" checked class="rounded accent-blue-600 flex-shrink-0" onchange="markScholarshipReportDirty()">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:#0d9488">${i+1}</span>
@@ -1291,6 +2583,8 @@ function openRptPrintModal() {
   }
 
   document.getElementById('rptPrintModal').classList.remove('hidden');
+  document.getElementById('rptPrExportBtn')?.classList.toggle('hidden',!RBAC.has('exportData'));
+  updateScholarshipReportQrUi();
   lucide.createIcons();
 }
 
@@ -1323,7 +2617,7 @@ function captureReportCharts(keys, lang) {
   const previousLang = LANG;
   const changed = normalizeLang(lang) !== previousLang;
   try {
-    if (changed) { LANG = normalizeLang(lang); buildAllCharts(); }
+    if (changed) { LANG = normalizeLang(lang); buildAllCharts(normalizeLang(lang)); }
     const images = {};
     const ids = { enroll:'chartEnroll', status:'chartStatus', inst:'chartInst',
                   withdraw:'chartWithdraw', compare:'chartCompare' };
@@ -1339,7 +2633,7 @@ function captureReportCharts(keys, lang) {
   }
 }
 
-function doRptPrint() {
+function collectScholarshipReportOptions(captureCharts=true) {
   const lang  = document.querySelector('input[name="rptPrLang"]:checked')?.value || LANG;
   const isEN  = lang === 'en';
   const acad  = document.getElementById('rptPrAcad').value.trim();
@@ -1347,50 +2641,72 @@ function doRptPrint() {
   const subjectInput = document.getElementById('rptPrSubject').value.trim();
 
   // Collect selected chart keys
-  const selectedCharts = [...document.querySelectorAll('input[name="rptPrChart"]:checked')]
-    .map(cb => cb.value);
-
-  const chartImgs = captureReportCharts(selectedCharts, lang);
+  const selectedCharts = selectedScholarshipCharts();
+  const chartImgs = captureCharts ? captureReportCharts(selectedCharts, lang) : {};
 
   // Collect signatures
-  const selIdxs = new Set([...document.querySelectorAll('input[name="rptPrSig"]:checked')].map(cb => +cb.value));
-  const selSigs = (window._rptSigSlots || DEFAULT_SIG_SLOTS).filter((_, i) => selIdxs.has(i));
+  const selSigs = selectedScholarshipSignatures();
 
-  // Active filter context string
-  const fltYear   = document.getElementById('fltYear').value;
-  const fltInst   = document.getElementById('fltInst').value;
-  const fltStatus = document.getElementById('fltStatus').value;
-  const filterParts = [];
-  if (fltYear)   filterParts.push((isEN?'Year: ':'ปีทุน: ') + fltYear);
-  if (fltInst)   filterParts.push((isEN?'Inst: ':'สถาบัน: ') + fltInst);
-  if (fltStatus) filterParts.push((isEN?'Status: ':'สถานะ: ') + fltStatus);
-  const filterCtx = filterParts.join(' • ') || (isEN ? 'All data (no filters)' : 'ข้อมูลทั้งหมด (ไม่มีตัวกรอง)');
+  const filterCtx = scholarshipReportFilterContext(lang);
 
   const includeTable = document.querySelector('input[name="rptPrTable"]:checked')?.value === 'summary';
 
-  const opts = {
+  return {
     lang, isEN, acad, pDate, subjectInput, filterCtx,
-    chartImgs, selectedCharts, includeTable, selSigs,
+    chartImgs, selectedCharts, includeTable, selSigs, orientation:scholarshipReportOrientation(),
   };
-
-  const html = generateRptPrintHTML(opts);
-  const win  = window.open('', '_blank', 'width=1200,height=850');
-  if (!win) {
-    Swal.fire(t('error')||'Error', isEN
-      ? 'Browser blocked popup. Please allow popups for this site.'
-      : 'เบราว์เซอร์บล็อก Popup — กรุณาอนุญาต popup สำหรับเว็บไซต์นี้', 'error');
-    return;
-  }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { try { win.print(); } catch(e) {} }, 900);
-  closeRptPrintModal();
 }
 
-function generateRptPrintHTML(opts) {
-  const { isEN, acad, pDate, subjectInput, filterCtx, chartImgs, selectedCharts, includeTable, selSigs } = opts;
+function scholarshipReportFilename(extension){
+  const base=scholarshipReportSubjects().subject.replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,'-').slice(0,70)||'scholarship-statistics';
+  return `${base}-${document.getElementById('rptPrDate')?.value||new Date().toISOString().slice(0,10)}.${extension}`;
+}
+
+function exportScholarshipExcel(registration){
+  if(typeof XLSX==='undefined'||typeof XLSX.utils?.aoa_to_sheet!=='function')throw new Error(employmentReportText('empComposerExcelLibraryError',scholarshipReportLang()));
+  const lang=scholarshipReportLang(),isEN=lang==='en',subjects=scholarshipReportSubjects(lang),user=getUser()||{},exportedAt=new Date().toLocaleString(isEN?'en-US':'th-TH');
+  const d=_CACHE.filtered,total=d.length,active=d.filter(item=>item.status==='Active').length,graduated=d.filter(item=>item.status==='Graduated'||item.status==='University').length,withdrawn=d.filter(item=>WITHDRAW_STATUSES.has(item.status)).length;
+  const summary=scholarshipAnnualSummary(),headers=isEN?['Scholarship Year (BE)','MBS','VC','University','Total','Graduated','Withdrawal','Active']:['ปีทุน (พ.ศ.)','MBS','VC','มหาวิทยาลัย','รวม','จบการศึกษา','ลาออก/ถอนทุน','กำลังศึกษา'];
+  const annualRows=summary.years.map(year=>{const row=summary.yearMap[year];return [year,row.MBS,row.VC,row.UNI,row.total,row.grad,row.withdraw,row.active];});
+  const data=[[isEN?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH],[subjects.subject],[`${employmentReportText('empComposerReference',lang)}: ${registration.report.referenceNo}`],[`${employmentReportText('empComposerVerificationUrl',lang)}: ${registration.verificationUrl}`],[`${employmentReportText('empComposerExportedBy',lang)}: ${user.name||user.username||'—'}`],[`${employmentReportText('empComposerExportedAt',lang)}: ${exportedAt}`],[],[isEN?'Indicator':'ตัวชี้วัด',isEN?'Value':'ค่า'],[isEN?'Total students':'นักเรียนทั้งหมด',total],[isEN?'Active':'กำลังศึกษา',active],[isEN?'Graduated':'จบการศึกษา',graduated],[isEN?'Withdrawal':'ลาออก/ถอนทุน',withdrawn]];
+  if(document.querySelector('input[name="rptPrTable"]:checked')?.value==='summary')data.push([],headers,...annualRows);
+  const verifyData=[[employmentReportText('reportVerifyType',lang),employmentReportText('reportTypeScholarship',lang)],[employmentReportText('empComposerReference',lang),registration.report.referenceNo],[employmentReportText('empComposerVerificationUrl',lang),registration.verificationUrl],[employmentReportText('empComposerQrVersion',lang),registration.report.qrVersion],[employmentReportText('empComposerContentHash',lang),registration.fingerprint]];
+  const workbook=XLSX.utils.book_new(),sheet=XLSX.utils.aoa_to_sheet(data.map(row=>row.map(spreadsheetEmploymentCell))),verify=XLSX.utils.aoa_to_sheet(verifyData.map(row=>row.map(spreadsheetEmploymentCell)));
+  sheet['!cols']=[{wch:28},{wch:14},{wch:14},{wch:16},{wch:12},{wch:14},{wch:18},{wch:14}];sheet['!pageSetup']={orientation:scholarshipReportOrientation()};
+  XLSX.utils.book_append_sheet(workbook,sheet,isEN?'Scholarship statistics':'สถิติทุนการศึกษา');XLSX.utils.book_append_sheet(workbook,verify,isEN?'Verification':'ตรวจสอบรายงาน');XLSX.writeFile(workbook,scholarshipReportFilename('xlsx'));
+}
+
+async function exportScholarshipReport(){
+  if(!RBAC.has('exportData'))return;
+  const format=scholarshipReportFormat(),lang=scholarshipReportLang();
+  if(format==='xlsx'&&(typeof XLSX==='undefined'||typeof XLSX.utils?.aoa_to_sheet!=='function')){Swal.fire(t('error'),employmentReportText('empComposerExcelLibraryError',lang),'error');return;}
+  if(format==='pdf'&&typeof QRCode==='undefined'){Swal.fire(t('error'),employmentReportText('empComposerQrLibraryError',lang),'error');return;}
+  const popup=format==='pdf'?window.open('','_blank','width=1200,height=850'):null;
+  if(format==='pdf'&&!popup){Swal.fire(t('error'),t('empPrintBlocked'),'error');return;}
+  if(popup){popup.document.write(`<p style="font-family:sans-serif;padding:24px">${escapeEmploymentHtml(employmentReportText('empComposerPreparing',lang))}</p>`);popup.document.close();}
+  try{
+    const registration=await issueScholarshipReportReference();
+    if(format==='xlsx')exportScholarshipExcel(registration);
+    else{
+      const opts=collectScholarshipReportOptions(true),qrDataUrl=await employmentQrDataUrl(registration.verificationUrl),html=generateRptPrintHTML(opts,registration,qrDataUrl);
+      popup.document.open();popup.document.write(html);popup.document.close();
+    }
+  }catch(error){if(popup&&!popup.closed)popup.close();Swal.fire(t('error'),localizeApiMessage(error.message||employmentReportText('reportRegistryFailed',lang)),'error');}
+}
+
+function doRptPrint(){document.querySelectorAll('input[name="rptPrFormat"]').forEach(input=>input.checked=input.value==='pdf');return exportScholarshipReport();}
+
+async function regenerateScholarshipReportQr(){
+  const state=_SCH_REPORT_REGISTRATION;if(!state)return;
+  const lang=scholarshipReportLang(),result=await Swal.fire({icon:'warning',title:employmentReportText('empComposerQrRegenerateTitle',lang),html:`<p style="font-size:12px;color:#64748b;text-align:left;line-height:1.6">${escapeEmploymentHtml(employmentReportText('empComposerQrRegenerateWarning',lang))}</p><textarea id="schQrReason" class="swal2-textarea" maxlength="500" placeholder="${escapeEmploymentHtml(employmentReportText('empComposerQrReason',lang))}"></textarea><label style="display:flex;align-items:flex-start;gap:8px;text-align:left;font-size:12px;color:#475569"><input id="schQrAck" type="checkbox" style="margin-top:3px"><span>${escapeEmploymentHtml(employmentReportText('empComposerQrAcknowledge',lang))}</span></label>`,showCancelButton:true,confirmButtonText:employmentReportText('empComposerQrConfirm',lang),cancelButtonText:employmentReportText('cancel',lang),confirmButtonColor:'#b45309',focusConfirm:false,preConfirm:()=>{const reason=document.getElementById('schQrReason')?.value.trim()||'',ack=document.getElementById('schQrAck')?.checked===true;if(reason.length<10||!ack){Swal.showValidationMessage(employmentReportText('empComposerQrConditionsError',lang));return false;}return {reason,ack};}});
+  if(!result.isConfirmed)return;
+  const response=await API.regenerateReportQr(state.report.reportId,result.value.reason,result.value.ack);
+  if(response.status!=='success'){Swal.fire(t('error'),response.message||employmentReportText('reportRegistryFailed',lang),'error');return;}
+  _SCH_REPORT_REGISTRATION={...state,...response,reused:true,verificationUrl:reportVerificationUrl(response.verificationToken,lang)};updateScholarshipReportQrUi();Swal.fire({icon:'success',title:employmentReportText('empComposerQrRegenerated',lang),confirmButtonColor:'#1d4ed8'});
+}
+
+function generateRptPrintHTML(opts,registration,qrDataUrl) {
+  const { isEN, acad, pDate, filterCtx, chartImgs, selectedCharts, includeTable, selSigs, orientation='landscape' } = opts;
 
   // KPI snapshot from _CACHE.filtered
   const d = _CACHE.filtered;
@@ -1432,7 +2748,9 @@ function generateRptPrintHTML(opts) {
   };
   const SL = S[isEN?'en':'th'];
 
-  const subject = subjectInput || `${SL.title}${acad?' '+acad:''}${filterCtx&&filterCtx!==''?' ('+filterCtx+')':''}`;
+  const subject = scholarshipReportSubjects(opts.lang).subject;
+  const reference=registration?.report?.referenceNo||employmentReportText('empComposerReferencePending',opts.lang);
+  const qrVersion=registration?.report?.qrVersion||1,user=getUser()||{},exportedAt=new Date().toLocaleString(isEN?'en-US':'th-TH');
 
   // ── KPI row HTML ──
   const kpiRow = `
@@ -1465,24 +2783,7 @@ function generateRptPrintHTML(opts) {
   // ── Summary table HTML ──
   let tableHTML = '';
   if (includeTable) {
-    const yearMap = {};
-    d.forEach(s => {
-      const y = parseInt(s.scholarshipYear);
-      if (!y || y < 2000 || y > 2100) return;
-      const be = String(y + 543);
-      if (!yearMap[be]) yearMap[be] = { MBS:0, VC:0, UNI:0, grad:0, withdraw:0, active:0, total:0 };
-      const row = yearMap[be];
-      row.total++;
-      if (s.institution === 'MBS') row.MBS++;
-      else if (s.institution === 'VC') row.VC++;
-      else if (s.institution === 'UNI') row.UNI++;
-      if (s.status === 'Graduated' || s.status === 'University') row.grad++;
-      if (WITHDRAW_STATUSES.has(s.status)) row.withdraw++;
-      if (s.status === 'Active') row.active++;
-    });
-    const years = Object.keys(yearMap).sort();
-    const totals = { MBS:0, VC:0, UNI:0, total:0, grad:0, withdraw:0, active:0 };
-    years.forEach(y => { const r = yearMap[y]; Object.keys(totals).forEach(k => { totals[k] += r[k]||0; }); });
+    const {years,yearMap,totals}=scholarshipAnnualSummary();
 
     const mkRow = (lbl, r, isTotal) => `<tr${isTotal?' class="tbl-total"':''}>
       <td>${lbl}</td>
@@ -1519,10 +2820,10 @@ function generateRptPrintHTML(opts) {
       <div class="sig-wrap">
         ${selSigs.map(s => `
         <div class="sig-blk">
-          <div class="sig-role">${formatSignatoryRole(s.role, isEN?'en':'th')}</div>
+          <div class="sig-role">${escapeEmploymentHtml(formatSignatoryRole(s.role, isEN?'en':'th'))}</div>
           <div class="sig-line"></div>
-          <div class="sig-name">${s.name||'.................................................'}</div>
-          ${s.position ? `<div class="sig-pos">${s.position}</div>` : ''}
+          <div class="sig-name">${escapeEmploymentHtml(s.name||'.................................................')}</div>
+          ${s.position ? `<div class="sig-pos">${escapeEmploymentHtml(s.position)}</div>` : ''}
           <div class="sig-date">${SL.signDate}: ............................…</div>
         </div>`).join('')}
       </div>
@@ -1532,19 +2833,20 @@ function generateRptPrintHTML(opts) {
   return `<!DOCTYPE html>
 <html lang="${opts.lang}">
 <head><meta charset="UTF-8">
-<title>${subject}</title>
+<title>${escapeEmploymentHtml(subject)}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color:#000;background:#fff}
-@page{size:A4 landscape;margin:1.3cm 1.2cm}
+*{margin:0;padding:0;box-sizing:border-box;max-width:100%}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color:#000;background:#fff;padding-bottom:8mm;overflow-wrap:anywhere;word-break:break-word}
+@page{size:A4 ${orientation};margin:12mm 10mm 18mm}
 /* Header */
-.rpt-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+.rpt-hdr{display:grid;grid-template-columns:56px 50px minmax(0,1fr) auto;align-items:flex-start;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+.rpt-qr{width:56px;height:56px;object-fit:contain}
 .rpt-logo{height:50px;width:50px;object-fit:contain;flex-shrink:0}
 .rpt-org{font-size:10pt;font-weight:800;color:#1e3a8a}
 .rpt-title{font-size:11pt;font-weight:700;margin-top:3px}
 .rpt-subj{font-size:8.5pt;color:#374151;margin-top:2px}
-.rpt-meta{margin-left:auto;text-align:right;font-size:8pt;color:#4b5563;line-height:1.7;flex-shrink:0}
+.rpt-meta{text-align:right;font-size:8pt;color:#4b5563;line-height:1.7;max-width:52mm;overflow-wrap:anywhere}
 /* KPI row */
 .kpi-row{display:flex;gap:10px;margin-bottom:14px}
 .kpi-box{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px 10px;text-align:center}
@@ -1559,17 +2861,17 @@ body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color
 /* Section title */
 .section-title{font-size:9pt;font-weight:800;color:#1e3a8a;border-left:3px solid #1e3a8a;padding-left:7px;margin-bottom:8px}
 /* Chart grid — 2-column */
-.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.chart-grid{display:grid;grid-template-columns:${orientation==='portrait'?'1fr':'1fr 1fr'};gap:12px;margin-bottom:14px}
 .chart-full{grid-column:1/-1}
 .chart-item{border:1px solid #e5e7eb;border-radius:8px;padding:8px;background:#fafafa}
 .chart-caption{font-size:8pt;font-weight:700;color:#374151;margin-bottom:5px}
 .chart-img{width:100%;height:auto;display:block;max-height:170px;object-fit:contain}
 .chart-full .chart-img{max-height:150px}
 /* Table */
-table{width:100%;border-collapse:collapse;font-size:8.5pt;page-break-inside:auto;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5pt;page-break-inside:auto;margin-bottom:14px}
 thead{display:table-header-group}
 th{background:#1e3a8a;color:#fff;padding:5px 6px;border:1px solid #1e3a8a;font-weight:700;text-align:center;font-size:8pt}
-td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle}
+td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
 tr:nth-child(even) td{background:#f8faff}
 .tc{text-align:center}
 .tbl-total td{font-weight:800;background:#eff6ff!important;color:#1e3a8a;border-top:2px solid #bfdbfe}
@@ -1582,20 +2884,24 @@ tr:nth-child(even) td{background:#f8faff}
 .sig-name{font-size:9pt;font-weight:700}
 .sig-pos{font-size:8pt;color:#6b7280;margin-top:2px}
 .sig-date{font-size:7.5pt;color:#9ca3af;margin-top:4px}
+.print-footer{position:fixed;left:0;right:0;bottom:-13mm;border-top:1px solid #cbd5e1;padding-top:3mm;display:flex;justify-content:space-between;gap:8px;color:#64748b;font-size:7pt;background:#fff}.print-footer span{min-width:0;overflow-wrap:anywhere}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head>
 <body>
 <!-- Header -->
 <div class="rpt-hdr">
-  <img class="rpt-logo" src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF">
-  <div style="flex:1">
+  <img class="rpt-qr" src="${escapeEmploymentHtml(qrDataUrl||'')}" alt="QR">
+  <img class="rpt-logo" src="${escapeEmploymentHtml(RDF.LOGO_URL)}" alt="RDF">
+  <div style="min-width:0">
     <div class="rpt-org">${SL.org}</div>
     <div class="rpt-title">${SL.title}</div>
-    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${subject}</div>
-    ${filterCtx ? `<div class="rpt-subj" style="color:#6b7280;margin-top:2px">${SL.filter}: ${filterCtx}</div>` : ''}
+    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${escapeEmploymentHtml(subject)}</div>
+    ${filterCtx ? `<div class="rpt-subj" style="color:#6b7280;margin-top:2px">${SL.filter}: ${escapeEmploymentHtml(filterCtx)}</div>` : ''}
   </div>
   <div class="rpt-meta">
+    <div><b>${escapeEmploymentHtml(reference)}</b></div>
+    <div>${escapeEmploymentHtml(employmentReportText('empComposerQrVersion',opts.lang))}: <b>${qrVersion}</b></div>
     <div>${SL.date}: <b>${pDate||''}</b></div>
     ${acad ? `<div>${SL.acad}: <b>${acad}</b></div>` : ''}
     <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${SL.total}: ${total} ${SL.person}</div>
@@ -1609,12 +2915,14 @@ ${chartsHTML}
 ${tableHTML}
 <!-- Signatures -->
 ${sigHTML}
+<footer class="print-footer"><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedBy',opts.lang))}: ${escapeEmploymentHtml(user.name||user.username||'—')}</span><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedAt',opts.lang))}: ${escapeEmploymentHtml(exportedAt)}</span><span>${escapeEmploymentHtml(reference)}</span></footer>
+<script>window.addEventListener('load',()=>window.print())<\/script>
 </body></html>`;
 }
 
 // ── ESC key closes print modal ──
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeRptPrintModal();
+  if (e.key === 'Escape') { closeRptPrintModal(); closeEmploymentFollowUp(); closeEmploymentReportComposer(); }
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -1639,8 +2947,9 @@ initDBStatus();
   const btn = document.getElementById('langBtn');
   if (btn) btn.textContent = (localStorage.getItem('rdfLang')||'th') === 'th' ? 'EN' : 'TH';
   setLang(readSavedLang());
+  switchReportView(applyReportEntryContext());
   lucide.createIcons();
-  loadReportData();
+  reloadAllReports();
 })();
 </script>
 </body>

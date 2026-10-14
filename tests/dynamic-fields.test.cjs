@@ -40,6 +40,7 @@ function loadBackendWithSheets() {
   }
   class Sheet {
     constructor(name, rows = []) { this.name = name; this.rows = rows.map(row => [...row]); }
+    getName() { return this.name; }
     getLastRow() { return this.rows.length; }
     getLastColumn() { return this.rows.reduce((max, row) => Math.max(max, row.length), 0); }
     getDataRange() { return new Range(this, 1, 1, Math.max(1, this.getLastRow()), Math.max(1, this.getLastColumn())); }
@@ -53,11 +54,17 @@ function loadBackendWithSheets() {
   }
   const spreadsheet = new Spreadsheet();
   const cache = new Map();
+  const scriptProperties = new Map([['EMPLOYMENT_LAUNCH_MODE', 'enabled']]);
   let uuidCounter = 0;
   const context = {
     SpreadsheetApp: { openById() { return spreadsheet; }, flush() {} },
     CacheService: { getScriptCache() { return { get(key) { return cache.get(key) || null; }, put(key, value) { cache.set(key, value); }, remove(key) { cache.delete(key); } }; } },
     LockService: { getScriptLock() { return { tryLock() { return true; }, releaseLock() {} }; } },
+    PropertiesService: { getScriptProperties() { return {
+      getProperty(key) { return scriptProperties.get(key) || null; },
+      setProperty(key, value) { scriptProperties.set(key, String(value)); return this; },
+      deleteProperty(key) { scriptProperties.delete(key); return this; },
+    }; } },
     Utilities: { getUuid() { uuidCounter += 1; return `${String(uuidCounter).padStart(8, '0')}-0000-0000-0000-000000000000`; } },
     console,
   };
@@ -120,8 +127,11 @@ test('student self-update is limited to the server-configured allowlist', () => 
 
 test('dynamic schema setup remains additive and defines stable value records', () => {
   const source = fs.readFileSync(path.join(root, 'databasesetup.gs'), 'utf8');
+  const backend = fs.readFileSync(path.join(root, 'Code.gs'), 'utf8');
   assert.match(source, /CustomFieldDefinitions/);
   assert.match(source, /CustomFieldAuditLog/);
+  assert.match(backend, /EmploymentFollowUps/);
+  assert.match(backend, /EmploymentMigrationLog/);
   assert.match(source, /'RecordID'/);
   assert.match(source, /'CalculationType'/);
   assert.match(source, /'CalculationConfig'/);
@@ -266,4 +276,308 @@ test('month fields and calculated employment duration are configured safely', ()
     { fieldId: duration.fieldId, recordId: 'rec_work_1', value: '12' },
   ], []);
   assert.equal(rejected.code, 'FIELD_ACCESS_DENIED');
+});
+
+test('employment schema installer is additive, stable, and idempotent', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  const originalStudentHeaders = [...spreadsheet.getSheetByName('Students').rows[0]];
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(spreadsheet.getSheetByName('EmploymentFollowUps'), null,
+    'base dynamic-field setup must remain independent from employment operations');
+  assert.equal(spreadsheet.getSheetByName('EmploymentMigrationLog'), null,
+    'base dynamic-field setup must remain independent from employment migration');
+
+  const preview = c.previewEmploymentHistorySetup(admin);
+  assert.equal(preview.status, 'success');
+  assert.equal(preview.ready, false);
+  assert.equal(preview.safeToInstall, true);
+
+  const installed = c.setupEmploymentHistorySchema(admin);
+  assert.equal(installed.status, 'success', JSON.stringify(installed));
+  assert.equal(installed.ready, true);
+  assert.equal(installed.changed.length, 16);
+  assert.deepEqual(spreadsheet.getSheetByName('Students').rows[0], originalStudentHeaders);
+  assert.ok(spreadsheet.getSheetByName('EmploymentFollowUps'));
+  assert.ok(spreadsheet.getSheetByName('EmploymentMigrationLog'));
+
+  const sections = spreadsheet.getSheetByName('FormSections').rows;
+  const sectionKeyIndex = sections[0].indexOf('SectionKey');
+  assert.equal(sections.filter(row => row[sectionKeyIndex] === 'alumni_employment_summary').length, 1);
+  assert.equal(sections.filter(row => row[sectionKeyIndex] === 'alumni_employment_history').length, 1);
+
+  const repeated = c.setupEmploymentHistorySchema(admin);
+  assert.equal(repeated.status, 'success');
+  assert.equal(repeated.alreadyReady, true);
+  assert.equal(repeated.changed.length, 0);
+});
+
+test('employment audit mode is enforced by the server while previews remain readable', () => {
+  const { context: c } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+  c.PropertiesService.getScriptProperties().deleteProperty('EMPLOYMENT_LAUNCH_MODE');
+
+  assert.equal(c.previewEmploymentHistorySetup(admin).launchMode, 'audit');
+  assert.equal(c.previewLegacyEmploymentMigration(admin).launchMode, 'audit');
+  assert.equal(c.getEmploymentReport(admin, {}).launchMode, 'audit');
+  assert.equal(c.getEmploymentReport(admin, {}).canManageFollowUps, false);
+  assert.equal(c.setupEmploymentHistorySchema(admin).code, 'EMPLOYMENT_AUDIT_MODE');
+  assert.equal(c.saveEmploymentFollowUp(admin, {}).code, 'EMPLOYMENT_AUDIT_MODE');
+  assert.equal(c.archiveEmploymentFollowUp(admin, 'fup_test').code, 'EMPLOYMENT_AUDIT_MODE');
+  assert.equal(c.migrateLegacyEmploymentData(admin, ['legacy']).code, 'EMPLOYMENT_AUDIT_MODE');
+});
+
+test('employment preview detects a changed duration formula before reporting', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+
+  const definitions = spreadsheet.getSheetByName('CustomFieldDefinitions').rows;
+  const fieldKeyIndex = definitions[0].indexOf('FieldKey');
+  const calculationIndex = definitions[0].indexOf('CalculationConfig');
+  const durationRow = definitions.find(row => row[fieldKeyIndex] === 'employment_duration');
+  durationRow[calculationIndex] = JSON.stringify({ startFieldId: 'wrong', endFieldId: 'wrong', useCurrentMonth: true });
+  c._dfInvalidateSchemaCache();
+
+  const preview = c.previewEmploymentHistorySetup(admin);
+  assert.equal(preview.ready, false);
+  assert.equal(preview.safeToInstall, false);
+  assert.ok(preview.conflicts.some(conflict => conflict.key === 'employment_duration' && conflict.reason === 'CALCULATION_CONFIG'));
+  assert.equal(c.getEmploymentReport(admin, {}).setupRequired, true);
+});
+
+test('employment setup stops when legacy work data or a similar custom section exists', () => {
+  const first = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(first.context.setupDynamicFieldSheets().ready, true);
+  const alumni = first.spreadsheet.insertSheet('Alumni');
+  alumni.rows = [
+    ['StipNo', 'Occupation', 'Workplace'],
+    ['MBS_001', 'Teacher', 'RDF School'],
+  ];
+  const legacyPreview = first.context.previewEmploymentHistorySetup(admin);
+  assert.equal(legacyPreview.legacy.rowsWithEmployment, 1);
+  assert.equal(legacyPreview.safeToInstall, false);
+  assert.equal(first.context.setupEmploymentHistorySchema(admin).code, 'EMPLOYMENT_REVIEW_REQUIRED');
+
+  const second = loadBackendWithSheets();
+  assert.equal(second.context.setupDynamicFieldSheets().ready, true);
+  const manual = second.context.saveDynamicSection(admin, {
+    sectionKey: 'existing_work_history', nameTH: 'ประวัติการทำงานเดิม', nameEN: 'Existing Employment History',
+    cardinality: 'repeatable', visibilityRules: { logic: 'AND', conditions: [] },
+  });
+  assert.equal(manual.status, 'success');
+  const candidatePreview = second.context.previewEmploymentHistorySetup(admin);
+  assert.equal(candidatePreview.candidateSections.length, 1);
+  assert.equal(candidatePreview.safeToInstall, false);
+  assert.equal(second.context.setupEmploymentHistorySchema(admin).code, 'EMPLOYMENT_REVIEW_REQUIRED');
+});
+
+test('employment report joins profile identity without copying it into work values', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+
+  const students = spreadsheet.getSheetByName('Students');
+  students.rows[0].push('Title', 'FirstName', 'LastName', 'Institution', 'ScholarshipYear');
+  students.rows[1][1] = 'Graduated';
+  students.rows[1].push('นางสาว', 'มะลิ', 'ใจดี', 'MBS', '2020');
+
+  const fields = c.DynamicFieldRepository.readTable('CustomFieldDefinitions').objects;
+  const byKey = Object.fromEntries(fields.map(field => [field.FieldKey, field.FieldID]));
+  const saved = c.saveStudentDynamicValues(admin, 'student', 'MBS_001', [
+    { fieldId: byKey.employment_current_status, recordId: 'single', value: 'employed_full_time' },
+    { fieldId: byKey.employment_employer_name, recordId: 'rec_work_1', value: 'RDF Foundation' },
+    { fieldId: byKey.employment_workplace_location, recordId: 'rec_work_1', value: 'Mae Sariang' },
+    { fieldId: byKey.employment_job_title, recordId: 'rec_work_1', value: 'Coordinator' },
+    { fieldId: byKey.employment_start_month, recordId: 'rec_work_1', value: '2025-01' },
+    { fieldId: byKey.employment_end_month, recordId: 'rec_work_1', value: '' },
+    { fieldId: byKey.employment_verification_status, recordId: 'rec_work_1', value: 'verified' },
+  ], []);
+  assert.equal(saved.status, 'success', JSON.stringify(saved));
+
+  const report = c.getEmploymentReport(
+    { username: 'manager', role: 'Manager' },
+    { institution: 'MBS', asOfMonth: '2026-03' },
+  );
+  assert.equal(report.status, 'success');
+  assert.equal(report.setupRequired, false);
+  assert.equal(report.summary.eligiblePeople, 1);
+  assert.equal(report.summary.reportedPeople, 1);
+  assert.equal(report.summary.employmentRecords, 1);
+  assert.equal(report.data[0].nameTH, 'นางสาวมะลิ ใจดี');
+  assert.equal(report.data[0].histories[0].employerName, 'RDF Foundation');
+  assert.equal(report.data[0].histories[0].durationMonths, 15);
+  assert.equal(report.data[0].histories[0].current, true);
+  assert.equal(report.data[0].histories[0].verificationStatus, 'verified');
+
+  const storedValues = c.DynamicFieldRepository.readTable('CustomFieldValues').objects.map(row => row.Value);
+  assert.equal(storedValues.includes('มะลิ'), false);
+  assert.equal(storedValues.includes('MBS'), false);
+  assert.equal(c.getEmploymentReport({ username: 'MBS_001', role: 'Student' }, {}).code, 'ACCESS_DENIED');
+});
+
+test('report registry reuses opaque QR tokens and invalidates the old token on controlled regeneration', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const originalStudentRows = spreadsheet.getSheetByName('Students').rows.map(row => [...row]);
+  const session = { username: 'admin', role: 'SuperAdmin' };
+  const report = {
+    reportType: 'employment_status', fingerprint: 'a'.repeat(64), contentHash: 'a'.repeat(64),
+    subjectTH: 'รายงานภาวะการทำงานของศิษย์เก่า', subjectEN: 'Alumni Employment Status Report',
+    language: 'th', scope: { institution: 'MBS' }, fieldKeys: ['alumni', 'employmentStatus'], rowCount: 1,
+  };
+
+  const first = c.issueReportReference(session, report);
+  assert.equal(first.status, 'success');
+  assert.equal(first.reused, false);
+  assert.match(first.verificationToken, /^[a-f0-9]{64}$/);
+  assert.match(first.report.referenceNo, /^RDF-EMP-/);
+
+  const second = c.issueReportReference(session, report);
+  assert.equal(second.status, 'success');
+  assert.equal(second.reused, true);
+  assert.equal(second.verificationToken, first.verificationToken, 'unchanged report content must reuse its QR token');
+  assert.equal(spreadsheet.getSheetByName('ReportRegistry').rows.length, 2, 'registry must contain one header and one report');
+
+  const scholarship = c.issueReportReference(session, {
+    reportType: 'scholarship_statistics', fingerprint: 'b'.repeat(64), contentHash: 'b'.repeat(64),
+    subjectTH: 'รายงานสถิติทุนการศึกษา', subjectEN: 'Scholarship Statistics Report', language: 'th',
+    scope: { scholarshipYear: '2568' }, fieldKeys: ['kpis', 'annual_summary'], rowCount: 1,
+  });
+  assert.equal(scholarship.status, 'success');
+  assert.equal(scholarship.report.reportType, 'scholarship_statistics');
+  assert.match(scholarship.report.referenceNo, /^RDF-SCH-/);
+  assert.notEqual(scholarship.verificationToken, first.verificationToken, 'each report type must receive an independent opaque token');
+  assert.equal(spreadsheet.getSheetByName('ReportRegistry').rows.length, 3, 'different report types share one registry without overwriting each other');
+
+  const publicView = c.getReportVerificationPublic(first.verificationToken);
+  assert.equal(publicView.status, 'success');
+  assert.equal(publicView.authenticationRequired, true);
+  assert.equal(Object.hasOwn(publicView.report, 'contentHash'), false, 'public QR view must not expose internal verification data');
+  assert.deepEqual(Object.keys(publicView.report).sort(), ['active', 'referenceNo', 'reportType', 'subjectEN', 'subjectTH'].sort(), 'public QR view must expose only the subject and reference summary');
+  const privateView = c.getReportVerificationDetails(session, first.verificationToken);
+  assert.equal(privateView.report.contentHash, 'a'.repeat(64));
+  assert.equal(privateView.report.exportCount, 2);
+
+  const rejected = c.regenerateReportQr(session, first.report.reportId, 'short', true);
+  assert.equal(rejected.code, 'REPORT_QR_REGENERATION_CONDITIONS');
+  const regenerated = c.regenerateReportQr(session, first.report.reportId, 'QR code was exposed and must be replaced', true);
+  assert.equal(regenerated.status, 'success');
+  assert.equal(regenerated.report.referenceNo, first.report.referenceNo, 'QR renewal must retain the document reference');
+  assert.equal(regenerated.report.qrVersion, 2);
+  assert.notEqual(regenerated.verificationToken, first.verificationToken);
+  assert.equal(c.getReportVerificationPublic(first.verificationToken).code, 'REPORT_VERIFICATION_NOT_FOUND', 'old QR must be revoked immediately');
+  assert.equal(c.getReportVerificationPublic(regenerated.verificationToken).status, 'success');
+  assert.deepEqual(spreadsheet.getSheetByName('Students').rows, originalStudentRows, 'report registration must not alter student data');
+});
+
+test('report registry database setup is additive and idempotent', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const originalStudentRows = spreadsheet.getSheetByName('Students').rows.map(row => [...row]);
+  const before = c.previewReportRegistrySetup();
+  assert.equal(before.exists, false);
+  assert.equal(before.ready, false);
+
+  const created = c.setupReportRegistrySheet();
+  assert.equal(created.status, 'success');
+  assert.equal(created.ready, true);
+  assert.equal(created.action, 'created');
+  assert.equal(created.rowCount, 0);
+
+  const repeated = c.setupReportRegistrySheet();
+  assert.equal(repeated.status, 'success');
+  assert.equal(repeated.action, 'none');
+  assert.equal(repeated.changed, false);
+  assert.deepEqual(spreadsheet.getSheetByName('Students').rows, originalStudentRows, 'registry setup must not alter student data');
+});
+
+test('employment follow-ups reference student and work record without copying workplace data', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  const manager = { username: 'manager', role: 'Manager' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+  spreadsheet.getSheetByName('Students').rows[1][1] = 'Graduated';
+
+  const fields = c.DynamicFieldRepository.readTable('CustomFieldDefinitions').objects;
+  const byKey = Object.fromEntries(fields.map(field => [field.FieldKey, field.FieldID]));
+  assert.equal(c.saveStudentDynamicValues(admin, 'student', 'MBS_001', [
+    { fieldId: byKey.employment_employer_name, recordId: 'rec_work_1', value: 'RDF Foundation' },
+    { fieldId: byKey.employment_start_month, recordId: 'rec_work_1', value: '2026-01' },
+  ], []).status, 'success');
+
+  const saved = c.saveEmploymentFollowUp(manager, {
+    stipNo: 'MBS_001', employmentRecordId: 'rec_work_1', contactDate: '2026-03-10',
+    contactMethod: 'phone', outcome: 'follow_up_needed', nextFollowUpDate: '2026-04-10',
+    assignedTo: 'Manager A', notes: 'Waiting for confirmation',
+  });
+  assert.equal(saved.status, 'success', JSON.stringify(saved));
+  assert.match(saved.data.followUpId, /^fup_/);
+  assert.equal(c.saveEmploymentFollowUp(manager, {
+    stipNo: 'MBS_001', employmentRecordId: 'rec_missing', contactDate: '2026-03-10',
+    contactMethod: 'phone', outcome: 'other',
+  }).code, 'FOLLOWUP_RECORD_NOT_FOUND');
+  assert.equal(c.saveEmploymentFollowUp(manager, {
+    stipNo: 'MBS_001', contactDate: '2026-03-10', nextFollowUpDate: '2026-03-01',
+    contactMethod: 'phone', outcome: 'other',
+  }).code, 'FOLLOWUP_VALIDATION_ERROR');
+  assert.equal(c.saveEmploymentFollowUp(manager, {
+    stipNo: 'MBS_001', contactDate: '2026-02-31',
+    contactMethod: 'phone', outcome: 'other',
+  }).code, 'FOLLOWUP_VALIDATION_ERROR');
+
+  const report = c.getEmploymentReport(manager, { asOfMonth: '2026-03' });
+  assert.equal(report.data[0].followUps.length, 1);
+  assert.equal(report.data[0].followUps[0].employmentRecordId, 'rec_work_1');
+  assert.equal(report.summary.followUpRecords, 1);
+  const stored = c.DynamicFieldRepository.readTable('EmploymentFollowUps').objects[0];
+  assert.equal(Object.hasOwn(stored, 'Workplace'), false);
+  assert.equal(Object.values(stored).includes('RDF Foundation'), false);
+
+  assert.equal(c.archiveEmploymentFollowUp(manager, saved.data.followUpId).status, 'success');
+  assert.equal(c.getEmploymentReport(manager, {}).summary.followUpRecords, 0);
+});
+
+test('legacy employment migration requires review, is idempotent, and preserves Alumni source rows', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  spreadsheet.getSheetByName('Students').rows[1][1] = 'Graduated';
+  const alumni = spreadsheet.insertSheet('Alumni');
+  alumni.rows = [
+    ['StipNo', 'Occupation', 'Workplace'],
+    ['MBS_001', 'Coordinator', 'RDF Foundation'],
+  ];
+  const originalSource = alumni.rows.map(row => [...row]);
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).code, 'EMPLOYMENT_REVIEW_REQUIRED');
+  const prepared = c.setupEmploymentHistorySchema(admin, { allowLegacyData: true });
+  assert.equal(prepared.status, 'success', JSON.stringify(prepared));
+  assert.equal(prepared.ready, true);
+
+  const preview = c.previewLegacyEmploymentMigration(admin);
+  assert.equal(preview.schemaReady, true);
+  assert.equal(preview.ready, 1);
+  assert.equal(preview.rows[0].status, 'ready');
+  const migrated = c.migrateLegacyEmploymentData(admin, [preview.rows[0].sourceKey]);
+  assert.equal(migrated.status, 'success', JSON.stringify(migrated));
+  assert.equal(migrated.migrated.length, 1);
+  assert.deepEqual(alumni.rows, originalSource);
+
+  const report = c.getEmploymentReport(admin, {});
+  assert.equal(report.data[0].histories.length, 1);
+  assert.equal(report.data[0].histories[0].employerName, 'RDF Foundation');
+  assert.equal(report.data[0].histories[0].jobTitle, 'Coordinator');
+  assert.equal(report.data[0].histories[0].verificationStatus, 'needs_revision');
+  assert.equal(report.data[0].histories[0].durationMonths, null);
+  assert.equal(report.legacyRowsPendingMigration, 0);
+  assert.equal(c.previewLegacyEmploymentMigration(admin).migrated, 1);
+
+  const repeated = c.migrateLegacyEmploymentData(admin, [preview.rows[0].sourceKey]);
+  assert.equal(repeated.status, 'success');
+  assert.equal(repeated.migrated.length, 0);
+  assert.equal(c.DynamicFieldRepository.readTable('EmploymentMigrationLog').objects.length, 1);
 });

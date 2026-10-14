@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-t="reportVerifyPageTitle">ตรวจสอบรายงาน — RDF</title>
+<link rel="stylesheet" href="assets/css/rdf.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(145deg,#ecfdf5 0%,#f8fafc 46%,#eff6ff 100%);color:#0f172a}
+.verify-shell{width:min(760px,calc(100% - 28px));margin:0 auto;padding:28px 0 48px}
+.verify-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.verify-brand{display:flex;align-items:center;gap:10px;min-width:0}.verify-brand img{width:46px;height:46px;object-fit:contain;background:#fff;border-radius:50%;padding:3px;box-shadow:0 4px 14px rgba(15,23,42,.12)}
+.verify-brand strong{display:block;color:#065f46;font-size:14px}.verify-brand span{display:block;color:#64748b;font-size:11px;margin-top:2px}
+.lang-btn{border:1px solid #94a3b8;background:#fff;color:#334155;border-radius:9px;padding:7px 11px;font-weight:800;cursor:pointer}
+.verify-card{background:rgba(255,255,255,.96);border:1px solid #dbe4ea;border-radius:20px;box-shadow:0 22px 60px rgba(15,23,42,.14);overflow:hidden}
+.verify-head{padding:22px 24px;background:#065f46;color:#fff}.verify-eyebrow{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#a7f3d0}.verify-head h1{font-size:22px;line-height:1.3;margin:6px 0 0}.verify-body{padding:24px}
+.state{padding:26px 16px;text-align:center;color:#64748b;font-size:13px}.state strong{display:block;color:#1e293b;font-size:17px;margin-bottom:6px}.state.error{color:#9f1239;background:#fff1f2;border:1px solid #fecdd3;border-radius:12px}
+.valid-badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 11px;background:#dcfce7;color:#166534;font-size:11px;font-weight:800;margin-bottom:16px}
+.public-subject{font-size:20px;line-height:1.45;margin:0;color:#0f172a;overflow-wrap:anywhere}.reference{font-size:13px;color:#047857;font-weight:800;margin-top:8px;overflow-wrap:anywhere}
+.notice{margin-top:18px;padding:12px 14px;border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.65}
+.login-box{margin-top:18px;padding:16px;border:1px solid #e2e8f0;border-radius:13px;background:#f8fafc}.login-box p{font-size:12px;line-height:1.6;color:#64748b;margin:0 0 12px}
+.primary-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:0;border-radius:9px;background:#1d4ed8;color:#fff;padding:9px 14px;font-size:12px;font-weight:800}
+.details{margin-top:22px;border-top:1px solid #e2e8f0;padding-top:20px}.details h2{font-size:15px;margin:0 0 12px}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.detail-item{min-width:0;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fff}.detail-item dt{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.03em}.detail-item dd{margin:4px 0 0;font-size:12px;color:#1e293b;overflow-wrap:anywhere}.detail-item.full{grid-column:1/-1}.hash{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px!important;color:#475569!important}
+.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}.secondary-action{display:inline-flex;align-items:center;justify-content:center;border:1px solid #f59e0b;border-radius:9px;background:#fffbeb;color:#92400e;padding:9px 14px;font-size:12px;font-weight:800;cursor:pointer}.hidden{display:none!important}
+@media(max-width:560px){.verify-shell{width:min(100% - 16px,760px);padding-top:10px}.verify-top{padding:0 4px}.verify-head,.verify-body{padding:18px}.verify-head h1{font-size:18px}.detail-grid{grid-template-columns:1fr}.detail-item.full{grid-column:auto}.primary-link{width:100%}}
+</style>
+</head>
+<body>
+<main class="verify-shell">
+  <div class="verify-top">
+    <div class="verify-brand"><img src="RDF original s (2).png" alt="ตราสัญลักษณ์ RDF" data-t-alt="rdfLogoAlt"><div><strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong><span data-t="reportVerifyEyebrow">ระบบตรวจสอบเอกสาร</span></div></div>
+    <button id="langBtn" type="button" class="lang-btn" onclick="setLang(LANG==='th'?'en':'th')">EN</button>
+  </div>
+  <article class="verify-card">
+    <header class="verify-head"><div class="verify-eyebrow" data-t="reportVerifyEyebrow">ระบบตรวจสอบเอกสาร</div><h1 data-t="reportVerifyTitle">ตรวจสอบรายงานจาก QR Code</h1></header>
+    <div class="verify-body">
+      <div id="verifyLoading" class="state" data-t="reportVerifyLoading">กำลังตรวจสอบลิงก์…</div>
+      <div id="verifyError" class="state error hidden"><strong data-t="reportVerifyInvalidTitle">ตรวจสอบ QR ไม่สำเร็จ</strong><span data-t="reportVerifyInvalidDesc">ลิงก์ไม่ถูกต้อง หมดอายุ หรือถูกแทนที่ด้วย QR รุ่นใหม่</span></div>
+      <section id="verifyResult" class="hidden">
+        <div class="valid-badge"><span>✓</span><span data-t="reportVerifyStatusValid">รายงานอยู่ในทะเบียนและ QR ใช้งานได้</span></div>
+        <h2 id="verifySubject" class="public-subject"></h2>
+        <div id="verifyReference" class="reference"></div>
+        <div class="notice"><strong data-t="reportVerifyPublicNotice">หน้านี้แสดงเฉพาะหัวข้อและเลขอ้างอิง ข้อมูลภายในรายงานต้องเข้าสู่ระบบก่อน</strong><br><span data-t="reportVerifyNoSensitive">เพื่อความปลอดภัย หน้าสาธารณะจะไม่แสดงรายชื่อนักเรียนหรือข้อมูลภายในรายงาน</span></div>
+        <div id="verifyLoginBox" class="login-box hidden"><p data-t="reportVerifyLoginPrompt">เข้าสู่ระบบเพื่อดูรายละเอียดการตรวจสอบ โดยระบบจะพากลับมายังหน้านี้อัตโนมัติ</p><a id="verifyLoginLink" class="primary-link" href="index.html" data-t="reportVerifyLogin">เข้าสู่ระบบเพื่อดูรายละเอียด</a></div>
+        <section id="verifyDetails" class="details hidden">
+          <h2 data-t="reportVerifyDetailsTitle">รายละเอียดสำหรับผู้ใช้ในระบบ</h2>
+          <dl class="detail-grid">
+            <div class="detail-item"><dt data-t="reportVerifyType">ประเภทรายงาน</dt><dd id="detailType"></dd></div>
+            <div class="detail-item"><dt data-t="reportVerifyCreatedAt">ลงทะเบียนครั้งแรก</dt><dd id="detailCreatedAt"></dd></div>
+            <div class="detail-item"><dt data-t="reportVerifyRows">จำนวนรายการ</dt><dd id="detailRows"></dd></div>
+            <div class="detail-item"><dt data-t="reportVerifyCreatedBy">สร้างโดยบัญชี</dt><dd id="detailCreatedBy"></dd></div>
+            <div class="detail-item"><dt data-t="reportVerifyLastExported">ส่งออกล่าสุด</dt><dd id="detailLastExported"></dd></div>
+            <div class="detail-item"><dt data-t="reportVerifyExportCount">จำนวนครั้งที่ส่งออก</dt><dd id="detailExportCount"></dd></div>
+            <div class="detail-item full"><dt data-t="reportVerifyContentHash">รหัสตรวจสอบเนื้อหา</dt><dd id="detailHash" class="hash"></dd></div>
+          </dl>
+          <div class="actions"><button id="verifyRegenerateBtn" type="button" class="secondary-action hidden" onclick="regenerateVerificationQr()" data-t="reportVerifyRegenerate">สร้าง QR ใหม่แบบมีเงื่อนไข</button><a href="reports.html" class="primary-link" data-t="reportVerifyOpenSystem">เปิดระบบรายงาน</a></div>
+        </section>
+      </section>
+    </div>
+  </article>
+</main>
+<script src="assets/js/config.js?v=2.3.0"></script>
+<script src="assets/js/i18n.js?v=2.3.0"></script>
+<script src="assets/js/api.js?v=2.3.0"></script>
+<script src="assets/js/auth.js?v=2.3.0"></script>
+<script src="assets/js/rbac.js?v=2.3.0"></script>
+<script src="assets/js/report-registry.js?v=2.3.0"></script>
+<script>
+let _verificationPublic=null,_verificationDetails=null;
+let _verificationToken=new URLSearchParams(location.search).get('token')||'';
+function verificationDate(value){if(!value)return '—';const date=new Date(value);return Number.isNaN(date.getTime())?value:date.toLocaleString(getLocale());}
+function verificationSubject(report){return LANG==='en'?(report.subjectEN||report.subjectTH):(report.subjectTH||report.subjectEN);}
+function verificationType(report){
+  const keys={employment_status:'reportTypeEmployment',scholarship_statistics:'reportTypeScholarship',promotion_results:'reportTypePromotion',academic_results:'reportTypeAcademicResults'};
+  return keys[report.reportType]?t(keys[report.reportType]):report.reportType;
+}
+function renderVerification(){
+  document.getElementById('langBtn').textContent=LANG==='th'?'EN':'TH';
+  if(!_verificationPublic)return;
+  document.getElementById('verifySubject').textContent=verificationSubject(_verificationPublic);
+  document.getElementById('verifyReference').textContent=`${t('reportVerifyReference')}: ${_verificationPublic.referenceNo}`;
+  if(_verificationDetails){
+    const report=_verificationDetails;document.getElementById('detailType').textContent=verificationType(report);document.getElementById('detailCreatedAt').textContent=verificationDate(report.createdAt);document.getElementById('detailRows').textContent=String(report.rowCount??0);document.getElementById('detailCreatedBy').textContent=report.createdBy||'—';document.getElementById('detailLastExported').textContent=verificationDate(report.lastExportedAt);document.getElementById('detailExportCount').textContent=String(report.exportCount??0);document.getElementById('detailHash').textContent=report.contentHash||'—';document.getElementById('verifyRegenerateBtn').classList.toggle('hidden',!RBAC.has('exportData'));
+  }
+}
+async function regenerateVerificationQr(){
+  if(!_verificationDetails)return;
+  try{
+    const registration={report:_verificationDetails,verificationToken:_verificationToken,contentHash:_verificationDetails.contentHash||'',verificationUrl:location.href};
+    const updated=await ReportRegistryClient.confirmRegeneration(registration,LANG);
+    if(updated===registration)return;
+    _verificationToken=updated.verificationToken;_verificationPublic={..._verificationPublic,...updated.report};_verificationDetails={..._verificationDetails,...updated.report};
+    const url=new URL(location.href);url.searchParams.set('token',_verificationToken);url.searchParams.set('lang',LANG);history.replaceState(null,'',url);
+    renderVerification();Swal.fire({icon:'success',title:t('empComposerQrRegenerated'),text:t('reportVerifyRegeneratedNext'),confirmButtonColor:'#047857'});
+  }catch(e){Swal.fire(t('error'),localizeApiMessage(e.message),'error');}
+}
+async function loadVerification(){
+  const loading=document.getElementById('verifyLoading'),error=document.getElementById('verifyError'),result=document.getElementById('verifyResult');
+  if(!/^[a-f0-9]{64}$/i.test(_verificationToken)){loading.classList.add('hidden');error.classList.remove('hidden');return;}
+  try{
+    const response=await API.getReportVerification(_verificationToken);if(response.status!=='success')throw new Error(response.message||'invalid');
+    _verificationPublic=response.report;loading.classList.add('hidden');result.classList.remove('hidden');
+    const user=getUser();
+    if(!user){const next=`report-verification.html?token=${encodeURIComponent(_verificationToken)}&lang=${encodeURIComponent(LANG)}`;document.getElementById('verifyLoginLink').href=`index.html?next=${encodeURIComponent(next)}`;document.getElementById('verifyLoginBox').classList.remove('hidden');}
+    else{const detail=await API.getReportVerificationDetails(_verificationToken);if(detail.status==='success'){_verificationDetails=detail.report;document.getElementById('verifyDetails').classList.remove('hidden');}}
+    renderVerification();
+  }catch(_){loading.classList.add('hidden');error.classList.remove('hidden');}
+}
+document.addEventListener('rdf:languagechange',renderVerification);
+(function(){const requested=new URLSearchParams(location.search).get('lang');setLang(requested==='en'||requested==='th'?requested:readSavedLang());loadVerification();})();
+</script>
+</body>
+</html>

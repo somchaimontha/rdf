@@ -90,6 +90,27 @@
     </div>
   </div>
 
+  <!-- Visible only while the alumni group is selected. Opens the matching report view directly. -->
+  <section id="alumniEmploymentShortcut" class="hidden mb-4 rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+           style="display:none;background:linear-gradient(120deg,#ecfdf5 0%,#f0fdfa 100%);border-color:#a7f3d0"
+           aria-labelledby="alumniEmploymentShortcutTitle">
+    <div class="flex items-start gap-3 min-w-0 flex-1">
+      <span class="flex items-center justify-center flex-shrink-0 rounded-xl" style="width:44px;height:44px;background:#d1fae5;color:#047857">
+        <i data-lucide="briefcase-business" class="w-5 h-5"></i>
+      </span>
+      <div class="min-w-0">
+        <h3 id="alumniEmploymentShortcutTitle" class="font-bold text-sm sm:text-base" style="color:#065f46" data-t="rptViewEmployment">ภาวะการทำงานของศิษย์เก่า</h3>
+        <p class="text-xs mt-1 leading-relaxed" style="color:#475569" data-t="rptViewEmploymentDesc">ตรวจสอบสถานะ สถานที่ทำงาน ระยะเวลา และงานติดตาม</p>
+      </div>
+    </div>
+    <a id="alumniEmploymentReportLink" href="reports.html?view=employment&amp;source=alumni"
+       class="btn btn-sm w-full sm:w-auto justify-center flex-shrink-0"
+       style="background:#047857;color:#fff;border-color:#047857">
+      <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+      <span data-t="alumniEmploymentShortcutOpen">เปิดรายงานภาวะการทำงาน</span>
+    </a>
+  </section>
+
   <!-- Search & Filter Card -->
   <div class="card mb-4">
     <div class="card-body">
@@ -601,12 +622,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.0.8"></script>
+<script src="assets/js/config.js?v=2.3.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.0.8"></script>
-<script src="assets/js/api.js?v=2.0.8"></script>
-<script src="assets/js/auth.js?v=2.0.8"></script>
-<script src="assets/js/rbac.js?v=2.0.8"></script>
+<script src="assets/js/i18n.js?v=2.3.0"></script>
+<script src="assets/js/api.js?v=2.3.0"></script>
+<script src="assets/js/auth.js?v=2.3.0"></script>
+<script src="assets/js/rbac.js?v=2.3.0"></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
@@ -690,6 +711,15 @@ const urlParams = new URLSearchParams(window.location.search);
 const initInst   = urlParams.get('inst')   || '';
 const initStatus = urlParams.get('status') || '';
 const incompleteFilter = urlParams.get('incomplete') === '1';
+updateAlumniWorkflowShortcut(initStatus);
+
+function updateAlumniWorkflowShortcut(status) {
+  const shortcut = document.getElementById('alumniEmploymentShortcut');
+  if (!shortcut) return;
+  const visible = status === 'Alumni';
+  shortcut.classList.toggle('hidden', !visible);
+  shortcut.style.display = visible ? 'flex' : 'none';
+}
 
 async function loadStudents() {
   showLoader(true, t('loading'));
@@ -753,6 +783,7 @@ function applyFilters() {
   const status = document.getElementById('filterStatus').value;
   const level  = document.getElementById('filterLevel').value;
   const year   = document.getElementById('filterYear').value;
+  updateAlumniWorkflowShortcut(status);
 
   filteredStudents = allStudents.filter(s => {
     // Text search

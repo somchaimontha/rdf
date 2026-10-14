@@ -74,6 +74,52 @@
     </div>
   </section>
 
+  <section id="employmentTemplatePanel" class="builder-card mb-5">
+    <div class="builder-head">
+      <i data-lucide="briefcase-business" class="w-4 h-4 text-violet-700"></i>
+      <h3 class="font-bold text-sm text-gray-800" data-t="empTemplateTitle">แม่แบบภาวะการทำงานและประวัติการทำงาน</h3>
+      <span id="employmentTemplateBadge" class="badge-mini ml-auto"></span>
+    </div>
+    <div class="builder-body grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="md:col-span-2">
+        <p class="text-xs text-gray-600 mb-3" data-t="empTemplateDesc">ใช้ข้อมูลบุคคลจากโปรไฟล์เดิม และเก็บเฉพาะสถานะกับประวัติการทำงานแบบหลายรายการ จึงไม่สร้างชื่อนักเรียนหรือข้อมูลติดต่อซ้ำ</p>
+        <div id="employmentTemplateDetails" class="space-y-1.5"></div>
+        <p class="text-[10px] text-emerald-700 mt-3" data-t="empTemplateSafeNote">ระบบจะไม่ย้าย ไม่เขียนทับ และไม่ลบข้อมูล Alumni เดิม หากพบข้อมูลเดิมจะหยุดเพื่อให้ตรวจและ Mapping ก่อน</p>
+      </div>
+      <div class="flex items-center md:justify-end">
+        <button id="employmentTemplateBtn" type="button" class="btn btn-primary" onclick="runEmploymentTemplateSetup()">
+          <i data-lucide="briefcase-business" class="w-4 h-4"></i>
+          <span id="employmentTemplateBtnText" data-t="empInstallTemplate">ติดตั้งแม่แบบการทำงาน</span>
+        </button>
+      </div>
+      <div id="employmentMigrationPanel" class="hidden md:col-span-3 border-t border-slate-200 pt-4 mt-1">
+        <div class="flex flex-col md:flex-row md:items-start gap-3 mb-3">
+          <div>
+            <h4 class="font-bold text-sm text-gray-800 flex items-center gap-2"><i data-lucide="git-compare-arrows" class="w-4 h-4 text-amber-600"></i><span data-t="empMigrationTitle">ตรวจสอบและย้ายข้อมูลอาชีพเดิม</span></h4>
+            <p class="text-[11px] text-gray-500 mt-1" data-t="empMigrationDesc">ระบบจะ Mapping Occupation ไปยังตำแหน่งงาน และ Workplace ไปยังนายจ้าง โดยคงข้อมูลต้นฉบับไว้และกำหนดสถานะ “ต้องแก้ไขเพิ่มเติม”</p>
+          </div>
+          <button id="employmentMigrationBtn" type="button" class="btn btn-sm md:ml-auto" style="background:#b45309;color:#fff;border:none" onclick="runLegacyEmploymentMigration()">
+            <i data-lucide="database-backup" class="w-4 h-4"></i><span data-t="empMigrationRun">ย้ายรายการที่พร้อม</span>
+          </button>
+        </div>
+        <div id="employmentMigrationSummary" class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3"></div>
+        <div class="overflow-x-auto border border-slate-200 rounded-lg" style="max-height:320px">
+          <table class="w-full text-[11px]">
+            <thead class="sticky top-0 bg-slate-50"><tr>
+              <th class="px-2 py-2 text-left"><span data-t="empMigrationSelect">เลือก</span></th>
+              <th class="px-2 py-2 text-left"><span data-t="empMigrationPerson">ศิษย์เก่า</span></th>
+              <th class="px-2 py-2 text-left"><span data-t="empMigrationOccupation">Occupation → ตำแหน่ง</span></th>
+              <th class="px-2 py-2 text-left"><span data-t="empMigrationWorkplace">Workplace → นายจ้าง</span></th>
+              <th class="px-2 py-2 text-left"><span data-t="empMigrationStatus">ผลตรวจสอบ</span></th>
+            </tr></thead>
+            <tbody id="employmentMigrationRows"></tbody>
+          </table>
+        </div>
+        <p class="text-[10px] text-amber-700 mt-2" data-t="empMigrationSafeNote">รายการที่อาจซ้ำหรือหาโปรไฟล์ไม่พบจะไม่ถูกเลือกและไม่ถูกย้ายอัตโนมัติ</p>
+      </div>
+    </div>
+  </section>
+
   <details id="usageGuide" class="builder-card guide-card mb-5" open>
     <summary class="guide-summary">
       <i data-lucide="book-open" class="w-4 h-4 text-blue-700"></i>
@@ -210,11 +256,11 @@
 
 <footer class="rdf-footer"><div class="footer-left"><strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong><span class="mx-2 hide-xs">•</span><span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span></div><div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" data-t-title="hintClickToCheckAgain"><span class="db-dot"></span><span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span></div></footer>
 
-<script src="assets/js/config.js?v=2.0.8"></script>
-<script src="assets/js/i18n.js?v=2.0.8"></script>
-<script src="assets/js/api.js?v=2.0.8"></script>
-<script src="assets/js/auth.js?v=2.0.8"></script>
-<script src="assets/js/rbac.js?v=2.0.8"></script>
+<script src="assets/js/config.js?v=2.3.0"></script>
+<script src="assets/js/i18n.js?v=2.3.0"></script>
+<script src="assets/js/api.js?v=2.3.0"></script>
+<script src="assets/js/auth.js?v=2.3.0"></script>
+<script src="assets/js/rbac.js?v=2.3.0"></script>
 <script>
 const user = requireAuth();
 if (user) renderNavUser(user);
@@ -236,6 +282,8 @@ const DF_PROVINCE_VALUES = [
   'กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี','กรุงเทพมหานคร'
 ];
 let adminData = { sections:[], fields:[], options:[], setupRequired:true };
+let employmentTemplatePlan = null;
+let employmentMigrationPlan = null;
 let sectionCustomRules = {logic:'AND',conditions:[]};
 
 const el = id => document.getElementById(id);
@@ -417,15 +465,171 @@ function setSetupStatus(setup) {
   const list=el('setupSheets');list.replaceChildren();(setup?.sheets||[]).forEach(sheet=>{const row=make('div','setup-sheet');const dot=make('span','badge-mini',sheet.exists&&!sheet.missingHeaders.length?'✓':'!');dot.style.cssText=sheet.exists&&!sheet.missingHeaders.length?'background:#dcfce7;color:#166534':'background:#fee2e2;color:#991b1b';const name=make('strong','text-gray-700',sheet.name);const detail=make('span','text-gray-400 ml-auto',`${t('dfRows')}: ${sheet.rowCount||0} · ${t('dfMissingHeaders')}: ${(sheet.missingHeaders||[]).length}`);row.append(dot,name,detail);list.appendChild(row);});
 }
 
+function employmentTemplateDetail(labelKey,count,tone) {
+  const row=make('div','setup-sheet');
+  const dot=make('span','badge-mini',String(count||0));
+  dot.style.cssText=tone==='danger'?'background:#fee2e2;color:#991b1b':tone==='warn'?'background:#fef3c7;color:#92400e':'background:#e0e7ff;color:#3730a3';
+  row.append(dot,make('span','text-gray-600',t(labelKey)));
+  return row;
+}
+
+function renderEmploymentTemplatePlan() {
+  const plan=employmentTemplatePlan;
+  const badge=el('employmentTemplateBadge'),button=el('employmentTemplateBtn'),buttonText=el('employmentTemplateBtnText'),details=el('employmentTemplateDetails');
+  if(!badge||!button||!buttonText||!details)return;
+  details.replaceChildren();
+  buttonText.textContent=t('empInstallTemplate');
+  if(!plan){badge.textContent=t('stChecking');badge.style.cssText='background:#e2e8f0;color:#475569';button.disabled=true;button.style.opacity='.5';return;}
+  if(plan.status==='error'){
+    badge.textContent=t('empPreviewError');badge.style.cssText='background:#fee2e2;color:#991b1b';
+    details.appendChild(make('p','text-[11px] text-red-700',plan.message||t('empPreviewError')));
+    button.disabled=true;button.style.opacity='.5';return;
+  }
+  const legacyRows=Number(plan.legacy?.rowsWithEmployment||0);
+  const auditMode=plan.launchMode!=='enabled';
+  const pendingLegacy=employmentMigrationPlan
+    ? Number(employmentMigrationPlan.ready||0)+Number(employmentMigrationPlan.possibleDuplicate||0)+Number(employmentMigrationPlan.missingStudent||0)
+    : legacyRows;
+  const reviewNeeded=(plan.conflicts||[]).length>0||(plan.candidateSections||[]).length>0||pendingLegacy>0;
+  const legacyOnlyReview=!plan.setupRequired&&!plan.ready&&(plan.conflicts||[]).length===0&&(plan.candidateSections||[]).length===0&&legacyRows>0;
+  if(auditMode){badge.textContent=t('empAuditModeBadge');badge.style.cssText='background:#ffedd5;color:#9a3412';}
+  else if(plan.setupRequired){badge.textContent=t('empTemplateSetupFirst');badge.style.cssText='background:#fef3c7;color:#92400e';}
+  else if(plan.ready){badge.textContent=t('empTemplateReady');badge.style.cssText='background:#dcfce7;color:#166534';}
+  else if(plan.safeToInstall){badge.textContent=t('empTemplateMissing');badge.style.cssText='background:#dbeafe;color:#1d4ed8';}
+  else{badge.textContent=t('empTemplateReview');badge.style.cssText='background:#fee2e2;color:#991b1b';}
+  details.append(
+    employmentTemplateDetail('empTemplateMissingSections',(plan.missingSections||[]).length,'info'),
+    employmentTemplateDetail('empTemplateMissingFields',(plan.missingFields||[]).length,'info'),
+    employmentTemplateDetail('empTemplateOperationalSheets',(plan.operational?.sheets||[]).filter(sheet=>!sheet.exists||(sheet.missingHeaders||[]).length).length,'info'),
+    employmentTemplateDetail('empTemplateLegacy',legacyRows,legacyRows>0?'danger':'info'),
+    employmentTemplateDetail('empTemplateCandidates',(plan.candidateSections||[]).length,(plan.candidateSections||[]).length?'warn':'info'),
+    employmentTemplateDetail('empTemplateConflicts',(plan.conflicts||[]).length,(plan.conflicts||[]).length?'danger':'info')
+  );
+  if(auditMode){const notice=make('p','text-[11px] font-semibold text-orange-800 mt-2',t('empAuditModeNotice'));notice.dataset.t='empAuditModeNotice';details.prepend(notice);}
+  (plan.candidateSections||[]).forEach(section=>{
+    const name=LANG==='en'?(section.nameEN||section.nameTH||section.sectionKey):(section.nameTH||section.nameEN||section.sectionKey);
+    details.appendChild(make('p','text-[10px] text-amber-700 ml-7',`${t('empTemplateCandidates')}: ${name} (${section.sectionKey})`));
+  });
+  (plan.conflicts||[]).forEach(conflict=>{
+    details.appendChild(make('p','text-[10px] text-red-700 ml-7',`${t('empTemplateConflicts')}: ${conflict.key} [${conflict.reason}]`));
+  });
+  if(reviewNeeded){const warningKey=plan.ready&&pendingLegacy>0?'empMigrationPendingReview':'empReviewRequired';const warning=make('p','text-[11px] text-red-700 mt-2',t(warningKey));warning.dataset.t=warningKey;details.appendChild(warning);}
+  if(legacyOnlyReview)buttonText.textContent=t('empPrepareMigration');
+  button.dataset.allowLegacy=legacyOnlyReview?'true':'false';
+  button.disabled=auditMode||plan.ready||plan.setupRequired||(!plan.safeToInstall&&!legacyOnlyReview);
+  button.style.opacity=button.disabled?'.5':'1';
+  lucide.createIcons();
+}
+
+function migrationSummaryItem(labelKey,count,tone){
+  const box=make('div','rounded-lg border px-3 py-2');
+  box.style.cssText=tone==='good'?'background:#f0fdf4;border-color:#bbf7d0':tone==='warn'?'background:#fffbeb;border-color:#fde68a':tone==='bad'?'background:#fef2f2;border-color:#fecaca':'background:#f8fafc;border-color:#e2e8f0';
+  box.append(make('strong','block text-base text-gray-800',count||0),make('span','text-[10px] text-gray-500',t(labelKey)));
+  return box;
+}
+
+function migrationStatusLabel(status){
+  return t({ready:'empMigrationReady',migrated:'empMigrationMigrated',possible_duplicate:'empMigrationDuplicate',missing_student:'empMigrationMissingStudent'}[status]||'empMigrationStatus');
+}
+
+function renderEmploymentMigrationPlan(){
+  const panel=el('employmentMigrationPanel'),summary=el('employmentMigrationSummary'),tbody=el('employmentMigrationRows'),button=el('employmentMigrationBtn');
+  if(!panel||!summary||!tbody||!button)return;
+  const show=employmentTemplatePlan?.ready&&Number(employmentTemplatePlan?.legacy?.rowsWithEmployment||0)>0;
+  const auditMode=employmentTemplatePlan?.launchMode!=='enabled'||employmentMigrationPlan?.launchMode!=='enabled';
+  panel.classList.toggle('hidden',!show);
+  if(!show)return;
+  summary.replaceChildren();tbody.replaceChildren();
+  const plan=employmentMigrationPlan;
+  if(!plan){tbody.appendChild(makeMigrationMessage(t('stLoading')));button.disabled=true;button.style.opacity='.5';return;}
+  if(plan.status==='error'){tbody.appendChild(makeMigrationMessage(plan.message||t('empMigrationPreviewError'),'text-red-700'));button.disabled=true;button.style.opacity='.5';return;}
+  summary.append(
+    migrationSummaryItem('empMigrationReadyCount',plan.ready,'good'),
+    migrationSummaryItem('empMigrationMigratedCount',plan.migrated,'info'),
+    migrationSummaryItem('empMigrationDuplicateCount',plan.possibleDuplicate,'warn'),
+    migrationSummaryItem('empMigrationMissingCount',plan.missingStudent,'bad')
+  );
+  (plan.rows||[]).forEach(item=>{
+    const row=document.createElement('tr');row.className='border-t border-slate-100';
+    const select=document.createElement('td');select.className='px-2 py-2';
+    const check=document.createElement('input');check.type='checkbox';check.className='employment-migration-check accent-amber-600';check.value=item.sourceKey;check.checked=item.status==='ready'&&!auditMode;check.disabled=item.status!=='ready'||auditMode;select.appendChild(check);
+    const person=make('td','px-2 py-2');person.append(make('strong','block text-gray-700',LANG==='en'?(item.nameEN||item.nameTH||item.stipNo):(item.nameTH||item.nameEN||item.stipNo)),make('span','text-[10px] text-gray-400',item.stipNo||t('empMigrationMissingStudent')));
+    const occupation=make('td','px-2 py-2 text-gray-600',item.occupation||'—');
+    const workplace=make('td','px-2 py-2 text-gray-600',item.workplace||'—');
+    const state=make('td','px-2 py-2');const pill=make('span','badge-mini',migrationStatusLabel(item.status));
+    pill.style.cssText=item.status==='ready'?'background:#dcfce7;color:#166534':item.status==='migrated'?'background:#dbeafe;color:#1d4ed8':item.status==='possible_duplicate'?'background:#fef3c7;color:#92400e':'background:#fee2e2;color:#991b1b';state.appendChild(pill);
+    row.append(select,person,occupation,workplace,state);tbody.appendChild(row);
+  });
+  if(!(plan.rows||[]).length)tbody.appendChild(makeMigrationMessage(t('empMigrationNone')));
+  button.disabled=auditMode||Number(plan.ready||0)===0;button.style.opacity=button.disabled?'.5':'1';lucide.createIcons();
+}
+
+function makeMigrationMessage(textValue,className){
+  const row=document.createElement('tr'),cell=make('td',`px-3 py-6 text-center text-gray-400 ${className||''}`,textValue);cell.colSpan=5;row.appendChild(cell);return row;
+}
+
+async function loadLegacyEmploymentMigration(){
+  employmentMigrationPlan=null;renderEmploymentMigrationPlan();
+  try{
+    const result=await API.previewLegacyEmploymentMigration();
+    employmentMigrationPlan=result.status==='success'?result:{status:'error',message:result.message||t('empMigrationPreviewError')};
+  }catch(error){employmentMigrationPlan={status:'error',message:localizeApiMessage(error.message||t('empMigrationPreviewError'))};}
+  renderEmploymentTemplatePlan();
+  renderEmploymentMigrationPlan();
+}
+
+async function loadEmploymentTemplatePlan() {
+  try {
+    const result=await API.previewEmploymentHistorySetup();
+    employmentTemplatePlan=result.status==='success'?result:{status:'error',message:result.message||t('empPreviewError'),setupRequired:true,ready:false,safeToInstall:false};
+  } catch(error) {
+    employmentTemplatePlan={status:'error',message:localizeApiMessage(error.message||t('empPreviewError')),setupRequired:true,ready:false,safeToInstall:false};
+  }
+  renderEmploymentTemplatePlan();
+  if(employmentTemplatePlan?.ready&&Number(employmentTemplatePlan?.legacy?.rowsWithEmployment||0)>0)await loadLegacyEmploymentMigration();
+  else{employmentMigrationPlan=null;renderEmploymentMigrationPlan();}
+}
+
 async function loadAdminData() {
   showLoader(true,t('loading'));
-  try { const result=await API.getDynamicFieldAdminData('student');showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfLoadError'));adminData=result;setSetupStatus(result.setup||result);renderSchemaList();populateSectionSelect(); }
+  try { const result=await API.getDynamicFieldAdminData('student');showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfLoadError'));adminData=result;setSetupStatus(result.setup||result);renderSchemaList();populateSectionSelect();await loadEmploymentTemplatePlan(); }
   catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}
 }
 
 async function runSetup() {
   const confirmation=await Swal.fire({icon:'question',title:t('dfRunSetup'),text:t('dfSetupConfirm'),showCancelButton:true,confirmButtonText:t('confirm'),cancelButtonText:t('cancel'),confirmButtonColor:'#1e3a8a'});if(!confirmation.isConfirmed)return;
   showLoader(true,t('dfInstalling'));try{const result=await API.setupDynamicFieldSchema();showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfSetupError'));await Swal.fire({icon:'success',title:t('success'),text:t('dfSetupComplete'),timer:1800,showConfirmButton:false});await loadAdminData();}catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}
+}
+
+async function runEmploymentTemplateSetup() {
+  if(employmentTemplatePlan?.launchMode!=='enabled'){Swal.fire(t('warning'),t('empAuditModeError'),'info');return;}
+  const allowLegacy=el('employmentTemplateBtn')?.dataset.allowLegacy==='true';
+  if(!employmentTemplatePlan?.safeToInstall&&!allowLegacy)return;
+  const confirmation=await Swal.fire({icon:'question',title:allowLegacy?t('empPrepareMigration'):t('empInstallTemplate'),text:allowLegacy?t('empPrepareMigrationConfirm'):t('empInstallConfirm'),showCancelButton:true,confirmButtonText:t('confirm'),cancelButtonText:t('cancel'),confirmButtonColor:'#1e3a8a'});
+  if(!confirmation.isConfirmed)return;
+  showLoader(true,t('dfInstalling'));
+  try{
+    const result=await API.setupEmploymentHistorySchema({allowLegacyData:allowLegacy});
+    showLoader(false);
+    if(result.status!=='success')throw new Error(result.message||t('dfSetupError'));
+    await Swal.fire({icon:'success',title:t('success'),text:t('empInstallComplete'),timer:1800,showConfirmButton:false});
+    await loadAdminData();
+  }catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}
+}
+
+async function runLegacyEmploymentMigration(){
+  if(employmentTemplatePlan?.launchMode!=='enabled'||employmentMigrationPlan?.launchMode!=='enabled'){Swal.fire(t('warning'),t('empAuditModeError'),'info');return;}
+  const sourceKeys=[...document.querySelectorAll('.employment-migration-check:checked')].map(input=>input.value);
+  if(!sourceKeys.length){Swal.fire(t('error'),t('empMigrationSelectionError'),'warning');return;}
+  const confirmation=await Swal.fire({icon:'warning',title:t('empMigrationRun'),text:t('empMigrationConfirm').replace('{count}',sourceKeys.length),showCancelButton:true,confirmButtonText:t('confirm'),cancelButtonText:t('cancel'),confirmButtonColor:'#b45309'});
+  if(!confirmation.isConfirmed)return;
+  showLoader(true,t('empMigrationRunning'));
+  try{
+    const result=await API.migrateLegacyEmploymentData(sourceKeys);showLoader(false);
+    if(result.status!=='success')throw new Error(result.message||t('empMigrationError'));
+    await Swal.fire({icon:'success',title:t('success'),text:t('empMigrationComplete').replace('{count}',(result.migrated||[]).length),timer:2000,showConfirmButton:false});
+    await loadAdminData();
+  }catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message||t('empMigrationError')),'error');}
 }
 
 function iconButton(icon,title,handler,danger) { const button=make('button',`icon-btn${danger?' danger':''}`);button.type='button';button.title=title;const i=document.createElement('i');i.setAttribute('data-lucide',icon);i.className='w-3.5 h-3.5';button.appendChild(i);button.addEventListener('click',handler);return button; }
@@ -561,7 +765,7 @@ document.addEventListener('rdf:languagechange',()=>{
   const fieldVisibleRoles=fieldOpen?selectedRoles('fld_visible_roles'):null;
   const fieldEditableRoles=fieldOpen?selectedRoles('fld_editable_roles'):null;
   const fieldRules=fieldOpen?readCondition('fld_condition'):null;
-  setSetupStatus(adminData.setup||adminData);renderSchemaList();populateSectionSelect();populateTypes(true);
+  setSetupStatus(adminData.setup||adminData);renderEmploymentTemplatePlan();renderEmploymentMigrationPlan();renderSchemaList();populateSectionSelect();populateTypes(true);
   if(sectionOpen){roleChecks('sec_visible_roles',sectionRoles);setSectionAudience(sectionAudience,sectionRules);}
   if(fieldOpen){roleChecks('fld_visible_roles',fieldVisibleRoles);roleChecks('fld_editable_roles',fieldEditableRoles);conditionEditor('fld_condition',fieldRules);toggleOptionsEditor();populateCalculationFields();renderFieldPreview();}
 });

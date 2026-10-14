@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Table ── */
@@ -618,6 +619,13 @@ img.student-avatar {
           <span id="expIncludeSkipLabel"><span data-t="uiIncludeNoChangeRows">รวมรายการ "ไม่เปลี่ยน"</span></span>
         </label>
       </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600 uppercase tracking-wide block mb-2" data-t="empComposerPageSetup">การตั้งค่าหน้ากระดาษ</label>
+        <div class="flex gap-4 flex-wrap text-sm">
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="exportOrientation" value="landscape" checked class="accent-blue-600"> <span data-t="empComposerLandscape">แนวนอน (ค่าเริ่มต้น)</span></label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="exportOrientation" value="portrait" class="accent-blue-600"> <span data-t="empComposerPortrait">แนวตั้ง</span></label>
+        </div>
+      </div>
     </div>
     <div class="flex justify-end gap-2 px-5 py-4 border-t bg-gray-50">
       <button onclick="closeExportModal()" class="btn btn-secondary btn-sm" data-t="exportCancel">ยกเลิก</button>
@@ -685,6 +693,13 @@ img.student-avatar {
         <div class="pr-radio-row" style="margin-top:8px">
           <label><input type="radio" name="prLang" value="th" checked class="accent-blue-600"> ไทย</label>
           <label><input type="radio" name="prLang" value="en" class="accent-blue-600"> English</label>
+        </div>
+      </div>
+      <div class="pr-section">
+        <span class="pr-label" data-t="empComposerPageSetup">การตั้งค่าหน้ากระดาษ</span>
+        <div class="pr-radio-row">
+          <label><input type="radio" name="prOrientation" value="landscape" checked class="accent-blue-600"> <span data-t="empComposerLandscape">แนวนอน (ค่าเริ่มต้น)</span></label>
+          <label><input type="radio" name="prOrientation" value="portrait" class="accent-blue-600"> <span data-t="empComposerPortrait">แนวตั้ง</span></label>
         </div>
       </div>
 
@@ -762,8 +777,7 @@ img.student-avatar {
 
       <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
         <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-        <span><span data-t="uiPreviewBeforePrintingInA4LandscapeWith">จะแสดงตัวอย่างรายงานก่อนพิมพ์ รูปแบบ A4 แนวนอน พร้อมส่วนหัวซ้ำทุกหน้า ลายเซ็นแสดงหน้าสุดท้าย</span><br>
-        A preview will appear before printing — A4 landscape, header repeats per page, signature on last page.</span>
+        <span data-t="arPrHint">รายงานจะเปิดในหน้าต่างใหม่ รูปแบบ A4 ตามแนวกระดาษที่เลือก พร้อมลายเซ็น เลขอ้างอิง และ QR ตรวจสอบ</span>
       </div>
     </div>
     <div class="flex justify-between items-center gap-2 px-5 py-4 border-t bg-gray-50">
@@ -910,12 +924,13 @@ img.student-avatar {
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.0.8"></script>
+<script src="assets/js/config.js?v=2.3.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.0.8"></script>
-<script src="assets/js/auth.js?v=2.0.8"></script>
-<script src="assets/js/rbac.js?v=2.0.8"></script>
-<script src="assets/js/api.js?v=2.0.8"></script>
+<script src="assets/js/i18n.js?v=2.3.0"></script>
+<script src="assets/js/auth.js?v=2.3.0"></script>
+<script src="assets/js/rbac.js?v=2.3.0"></script>
+<script src="assets/js/api.js?v=2.3.0"></script>
+<script src="assets/js/report-registry.js?v=2.3.0"></script>
 <script>
 // RBAC: only Manager+ can access promotion page
 RBAC.enforcePage(['viewPromotion']);
@@ -4296,11 +4311,31 @@ function exportSelectAll(val) {
   document.querySelectorAll('input[name="exportGroup"]').forEach(cb => cb.checked = val);
 }
 
-function doExport() {
+function promotionReportSubjects(customSubject = '') {
+  return {
+    subjectTH: customSubject || 'รายงานเลื่อนชั้นและผู้สำเร็จการศึกษา',
+    subjectEN: customSubject || 'Promotion and Graduation Report',
+  };
+}
+
+async function registerPromotionReport({ rows, lang, subject = '', scope = {}, reportTypes = ['promotion'], signatures = [] }) {
+  const subjects = promotionReportSubjects(subject);
+  return ReportRegistryClient.issue({
+    reportType:'promotion_results', language:lang,
+    subjectTH:subjects.subjectTH, subjectEN:subjects.subjectEN,
+    scope:{ ...scope, reportTypes },
+    fieldKeys:['stipNo','name','institution','level','action','nextLevel','scholarship','notes'],
+    rowCount:rows.length,
+    content:{ schema:'promotion-results-v1', language:lang, subjects, scope, reportTypes, rows, signatures },
+  });
+}
+
+async function doExport() {
   const fmt    = document.querySelector('input[name="exportFmt"]:checked').value;
   const lang   = document.querySelector('input[name="exportLangOpt"]:checked').value;
   const onlyChg  = document.getElementById('expOnlyChanged').checked;
   const inclSkip = document.getElementById('expIncludeSkip').checked;
+  const orientation = document.querySelector('input[name="exportOrientation"]:checked')?.value === 'portrait' ? 'portrait' : 'landscape';
 
   const selGroups = new Set(
     [...document.querySelectorAll('input[name="exportGroup"]:checked')].map(cb => cb.value)
@@ -4372,15 +4407,25 @@ function doExport() {
   }
 
   closeExportModal();
-
-  if (fmt === 'excel') {
-    generateExcel(rows, lang, tL);
-  } else {
-    generatePDF(rows, lang, tL);
+  showLoader(true, lang==='en'?'Registering and creating report…':'กำลังลงทะเบียนและสร้างรายงาน…');
+  try {
+    const acad = document.getElementById('academicYear').value || '';
+    const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
+    const registration = await registerPromotionReport({
+      rows, lang, reportTypes:['promotion'],
+      scope:{ academicYear:acad, reportDate:pDate, groups:[...selGroups].sort(), onlyChanged:onlyChg, includeSkip:inclSkip },
+    });
+    if (fmt === 'excel') await generateExcel(rows, lang, tL, registration);
+    else await generatePDF(rows, lang, tL, registration, orientation);
+  } catch(e) {
+    RDF.logError('promotion.html', 'doExport()', e.message);
+    Swal.fire(tL('error') || 'Error', localizeApiMessage(e.message), 'error');
+  } finally {
+    showLoader(false);
   }
 }
 
-function generateExcel(rows, lang, tL) {
+async function generateExcel(rows, lang, tL, registration) {
   try {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -4394,6 +4439,11 @@ function generateExcel(rows, lang, tL) {
     const sheetTitle = (lang === 'en' ? 'Promotion Report' : 'รายงานเลื่อนชั้น')
       .replace(/[\\/?*[\]:]/g, '').substring(0, 31);
     XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
+    if (registration) {
+      const verify = XLSX.utils.aoa_to_sheet(ReportRegistryClient.verificationRows(registration, lang));
+      verify['!cols'] = [{wch:28},{wch:90}];
+      XLSX.utils.book_append_sheet(wb, verify, lang==='en'?'Verification':'ตรวจสอบรายงาน');
+    }
 
     const acad  = document.getElementById('academicYear').value || '';
     const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
@@ -4405,18 +4455,22 @@ function generateExcel(rows, lang, tL) {
   }
 }
 
-function generatePDF(rows, lang, tL) {
+async function generatePDF(rows, lang, tL, registration, orientation = 'landscape') {
   try {
     const acad  = document.getElementById('academicYear').value || '';
     const pDate = document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
     const user  = (getUser()||{}).name || (getUser()||{}).username || '';
     const org   = lang === 'th' ? RDF.FOUNDATION_TH : RDF.FOUNDATION_EN;
     const title = tL('exportReportTitle') || (lang === 'th' ? 'รายงานเลื่อนชั้น' : 'Promotion Report');
+    const reference = registration?.report?.referenceNo || '—';
+    const qrVersion = registration?.report?.qrVersion || 1;
+    const qrDataUrl = registration ? await ReportRegistryClient.qrDataUrl(registration.verificationUrl) : '';
+    const exportedAt = new Date().toLocaleString(lang==='en'?'en-US':'th-TH');
 
     // Build table HTML
     const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
     const thead = `<tr>${cols.map(c =>
-      `<th style="padding:5px 8px;border:1px solid #1e3a8a;background:#1e3a8a;color:#fff;font-size:8.5pt;white-space:nowrap;text-align:left">${c}</th>`
+      `<th style="padding:5px 8px;border:1px solid #1e3a8a;background:#1e3a8a;color:#fff;font-size:8.5pt;white-space:normal;overflow-wrap:anywhere;text-align:left">${c}</th>`
     ).join('')}</tr>`;
     const tbody = rows.map((r, i) =>
       `<tr style="background:${i%2===0?'#fff':'#f8faff'}">${cols.map(c =>
@@ -4430,33 +4484,40 @@ function generatePDF(rows, lang, tL) {
 <head><meta charset="UTF-8"><title>${title}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding:1.2cm}
-@page{size:A4 landscape;margin:1.2cm 1cm}
-.rpt-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+*{margin:0;padding:0;box-sizing:border-box;max-width:100%}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding-bottom:8mm}
+@page{size:A4 ${orientation};margin:1.2cm 1cm 1.8cm}
+.rpt-hdr{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:flex-start;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+.rpt-qr{height:54px;width:54px;object-fit:contain}
 .rpt-logo{height:50px;width:50px;object-fit:contain;flex-shrink:0}
 .rpt-org{font-size:10.5pt;font-weight:800;color:#1e3a8a}
 .rpt-title{font-size:11pt;font-weight:700;margin-top:3px}
 .rpt-meta{margin-left:auto;text-align:right;font-size:8pt;color:#4b5563;line-height:1.7;flex-shrink:0}
-table{width:100%;border-collapse:collapse;font-size:8pt}
+table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt}th,td{min-width:0;max-width:0;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
 thead{display:table-header-group}
+.rpt-footer{position:fixed;left:0;right:0;bottom:-13mm;border-top:1px solid #cbd5e1;padding-top:3mm;display:flex;justify-content:space-between;gap:8px;color:#64748b;font-size:7pt;background:#fff}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head>
 <body>
 <div class="rpt-hdr">
-  <img class="rpt-logo" src="${RDF.LOGO_URL}" alt="RDF">
-  <div style="flex:1">
-    <div class="rpt-org">${org}</div>
+  <img class="rpt-qr" src="${qrDataUrl}" alt="QR">
+  <div style="display:flex;gap:10px;min-width:0">
+    <img class="rpt-logo" src="${RDF.LOGO_URL}" alt="RDF">
+    <div><div class="rpt-org">${org}</div>
     <div class="rpt-title">${title}</div>
     ${acad ? `<div style="font-size:9pt;color:#1e3a8a;margin-top:2px">${tL('exportAcadYear')||'ปีการศึกษา'}: <b>${acad}</b></div>` : ''}
+    </div>
   </div>
   <div class="rpt-meta">
+    <div style="font-weight:700;color:#111827">${reference}</div>
+    <div>${lang==='en'?'QR version':'รุ่น QR'}: <b>${qrVersion}</b></div>
     <div>${tL('exportDate')||'วันที่'}: <b>${pDate}</b></div>
     ${user ? `<div>${tL('exportGeneratedBy')||'จัดทำโดย'}: ${user}</div>` : ''}
     <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${lang==='th'?'รวม':'Total'}: ${rows.length} ${lang==='th'?'รายการ':'rows'}</div>
   </div>
 </div>
 <table><thead>${thead}</thead><tbody>${tbody}</tbody></table>
+<footer class="rpt-footer"><span>${lang==='en'?'Exported by':'ออกรายงานโดย'}: ${user||'—'}</span><span>${lang==='en'?'Report date/time':'วันเวลาออกรายงาน'}: ${exportedAt}</span><span>${reference}</span></footer>
 </body></html>`;
 
     closeExportModal();
@@ -4879,6 +4940,7 @@ async function doPrintReport() {
     sortByLevel:    document.getElementById('prSortLevel')?.checked ?? true,
     sortByPriority: document.getElementById('prSortPriority')?.checked ?? false,
     sortByName:     document.getElementById('prSortName')?.checked ?? false,
+    orientation:    document.querySelector('input[name="prOrientation"]:checked')?.value === 'portrait' ? 'portrait' : 'landscape',
     graduatedStudents: [],
   };
 
@@ -5030,14 +5092,48 @@ async function doPrintReport() {
     Object.entries(_snapDecisions).forEach(([sno, item]) => { ROW_DECISIONS[sno] = { ...item }; });
   }
 
-  const html = generateFormalReportHTML(opts);
-
-  // Restore globals
-  ALL_GROUPS = _origGroups;
-  ROW_DECISIONS = _origDecs;
-
-  showLoader(false);
-  showPrintPreview(html, (isEN ? 'Preview — ' : 'ตัวอย่าง — ') + typeLabel);
+  try {
+    const registryRows = [];
+    ALL_GROUPS.forEach(group => {
+      if (opts.insts?.size && !opts.insts.has(group.institution)) return;
+      if (opts.levels?.size && !opts.levels.has(group.level)) return;
+      group.students.forEach(student => {
+        const decision = ROW_DECISIONS[student.StipNo] || {};
+        registryRows.push({
+          stipNo:student.StipNo||'', title:student.Title||'', firstName:student.FirstName||'', lastName:student.LastName||'',
+          engFirstName:student.EngFirstName||'', engLastName:student.EngLastName||'', institution:group.institution||'', level:group.level||'',
+          action:decision.action||'promote', nextLevel:decision.nextLevel||'', scholarship:decision.uniScholarship||'',
+          scholarshipPriority:decision.schPriority??'', university:decision.uniName||'', notes:decision.notes||'',
+        });
+      });
+    });
+    (opts.graduatedStudents||[]).forEach(student => registryRows.push({
+      stipNo:student.StipNo||student.stipNo||'', title:student.Title||student.title||'', firstName:student.FirstName||student.firstName||'', lastName:student.LastName||student.lastName||'',
+      engFirstName:student.EngFirstName||student.engFirstName||'', engLastName:student.EngLastName||student.engLastName||'',
+      institution:student.Institution||student.institution||'', level:student.Level||student.level||'', action:student.status||student.Status||'graduate',
+      nextLevel:'', scholarship:student.uniScholarship||'', scholarshipPriority:student.schPriority??'', university:student.uniName||'', notes:student.promotionNotes||student.notes||'',
+    }));
+    registryRows.sort((a,b) => `${a.institution}|${a.level}|${a.stipNo}`.localeCompare(`${b.institution}|${b.level}|${b.stipNo}`,'th'));
+    const signatures = (opts.sigs||[]).map(s => ({role:s.role||'',name:s.name||'',position:s.position||''}));
+    const registration = await registerPromotionReport({
+      rows:registryRows, lang:opts.lang, subject:opts.subject,
+      reportTypes:opts.reportTypes,
+      signatures,
+      scope:{ academicYear:opts.acad||'', reportDate:opts.pDate||'', batch:selectedBatch, institutions:[...(opts.insts||[])].sort(), levels:[...(opts.levels||[])].sort(), school:opts.school||'' },
+    });
+    const qrDataUrl = await ReportRegistryClient.qrDataUrl(registration.verificationUrl);
+    const html = generateFormalReportHTML(opts, registration, qrDataUrl);
+    showPrintPreview(html, (isEN ? 'Preview — ' : 'ตัวอย่าง — ') + typeLabel);
+  } catch(e) {
+    RDF.logError('promotion.html', 'doPrintReport()', e.message);
+    Swal.fire(t('error'), localizeApiMessage(e.message), 'error');
+    return;
+  } finally {
+    // Always restore the working view after a historical snapshot report.
+    ALL_GROUPS = _origGroups;
+    ROW_DECISIONS = _origDecs;
+    showLoader(false);
+  }
 
   // "บังคับพิมพ์" — nomination report auto-triggers the print dialog
   if (_selTypes.includes('nomination')) {
@@ -5052,7 +5148,7 @@ async function doPrintReport() {
   }
 }
 
-function generateFormalReportHTML(opts) {
+function generateFormalReportHTML(opts, registration, qrDataUrl) {
   const isEN = opts.lang === 'en';
   opts._lvl  = l => { const sv = LANG; LANG = opts.lang; const r = abbrevLevel(l); LANG = sv; return r; };
   const gradActions       = new Set(['graduate','uni','uni_own','continue_inst']);
@@ -5092,6 +5188,10 @@ function generateFormalReportHTML(opts) {
   const levelLbl     = opts.levels?.size ? [...opts.levels].map(l => opts._lvl(l)||l).join(' + ') : '';
   const schoolDisplay = opts.school || instLbl;
   const _instO       = { MBS:0, VC:1, UNI:2, OTHER:3 };
+  const reference    = registration?.report?.referenceNo || '—';
+  const qrVersion    = registration?.report?.qrVersion || 1;
+  const reportUser   = (getUser()||{}).name || (getUser()||{}).username || '—';
+  const exportedAt   = new Date().toLocaleString(isEN?'en-US':'th-TH');
 
   // Collect and sort dataRows for a specific report type
   const _collectRows = reportType => {
@@ -5202,13 +5302,16 @@ function generateFormalReportHTML(opts) {
     const pageBreak     = idx > 0 ? '<div style="page-break-before:always;margin:0"></div>' : '';
     return `${pageBreak}
 <div class="rpt-hdr">
-  <img class="rpt-logo" src="https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png" alt="RDF">
-  <div style="flex:1">
-    <div class="rpt-org">${org}</div>
+  <img class="rpt-qr" src="${qrDataUrl||''}" alt="QR">
+  <div style="display:flex;gap:10px;min-width:0">
+    <img class="rpt-logo" src="${RDF.LOGO_URL}" alt="RDF">
+    <div><div class="rpt-org">${org}</div>
     <div class="rpt-title">${rptTitle}</div>
-    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${subject}</div>
+    <div class="rpt-subj" style="color:#1e3a8a;font-weight:600">${subject}</div></div>
   </div>
   <div class="rpt-meta">
+    <div style="font-weight:700;color:#111827">${reference}</div>
+    <div>${isEN?'QR version':'รุ่น QR'}: <b>${qrVersion}</b></div>
     <div>${S.date}: <b>${opts.pDate||''}</b></div>
     ${opts.acad?`<div>${S.acad}: <b>${opts.acad}</b></div>`:''}
     <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${S.total}: ${dataRows.length} ${S.person}</div>
@@ -5224,22 +5327,23 @@ ${signatureHTML}`;
 <head><meta charset="UTF-8"><title>${opts.subject||(schoolDisplay+(opts.acad?' '+opts.acad:''))}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color:#000;background:#fff}
-@page{size:A4 landscape;margin:1.4cm 1.2cm}
-.rpt-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+*{margin:0;padding:0;box-sizing:border-box;max-width:100%}
+body{font-family:'Sarabun','TH Sarabun New',Arial,sans-serif;font-size:9pt;color:#000;background:#fff;padding-bottom:10mm}
+@page{size:A4 ${opts.orientation==='portrait'?'portrait':'landscape'};margin:1.4cm 1.2cm 1.9cm}
+.rpt-hdr{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:flex-start;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:2.5px solid #1e3a8a}
+.rpt-qr{height:54px;width:54px;object-fit:contain}
 .rpt-logo{height:52px;width:52px;object-fit:contain;flex-shrink:0}
 .rpt-org{font-size:10.5pt;font-weight:800;color:#1e3a8a}
 .rpt-title{font-size:11.5pt;font-weight:700;margin-top:3px}
 .rpt-subj{font-size:9pt;color:#374151;margin-top:3px}
 .rpt-meta{margin-left:auto;text-align:right;font-size:8pt;color:#4b5563;line-height:1.7;flex-shrink:0}
-table{width:100%;border-collapse:collapse;font-size:8.5pt;page-break-inside:auto}
+table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5pt;page-break-inside:auto}
 thead{display:table-header-group}
 tbody{display:table-row-group}
 tr{page-break-inside:avoid}
-th{background:#1e3a8a;color:#fff;padding:5px 6px;border:1px solid #1e3a8a;font-weight:700;text-align:center;font-size:8pt;line-height:1.3;vertical-align:middle}
+th{background:#1e3a8a;color:#fff;padding:5px 6px;border:1px solid #1e3a8a;font-weight:700;text-align:center;font-size:8pt;line-height:1.3;vertical-align:middle;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
 th.sub-h{background:#2d4faa;font-size:7.5pt}
-td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle;line-height:1.35}
+td{min-width:0;max-width:0;padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle;line-height:1.35;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
 tr:nth-child(even) td{background:#f8faff}
 .tc{text-align:center}
 .seq{font-size:8pt;color:#9ca3af;text-align:center}
@@ -5266,10 +5370,12 @@ tr:nth-child(even) td{background:#f8faff}
 .sig-name{font-size:9pt;font-weight:700}
 .sig-pos{font-size:8pt;color:#6b7280;margin-top:2px}
 .sig-date{font-size:7.5pt;color:#9ca3af;margin-top:4px}
+.rpt-footer{position:fixed;left:0;right:0;bottom:-14mm;border-top:1px solid #cbd5e1;padding-top:3mm;display:flex;justify-content:space-between;gap:8px;color:#64748b;font-size:7pt;background:#fff}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head>
 <body>
 ${bodySections}
+<footer class="rpt-footer"><span>${isEN?'Exported by':'ออกรายงานโดย'}: ${reportUser}</span><span>${isEN?'Report date/time':'วันเวลาออกรายงาน'}: ${exportedAt}</span><span>${reference}</span></footer>
 </body></html>`;
 }
 

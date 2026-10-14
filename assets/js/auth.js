@@ -11,6 +11,18 @@ function getSessionToken() {
   try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
 }
 
+// Preserve only the report-verification return path after login. Keeping this
+// allowlist narrow prevents the `next` parameter from becoming an open redirect.
+function authLoginDestination(fallback = 'dashboard.html') {
+  try {
+    const raw = new URLSearchParams(window.location.search).get('next');
+    if (!raw) return fallback;
+    const target = new URL(raw, window.location.href);
+    if (target.origin !== window.location.origin || !target.pathname.endsWith('/report-verification.html')) return fallback;
+    return 'report-verification.html' + target.search;
+  } catch (_) { return fallback; }
+}
+
 function requireAuth(redirectTo = 'index.html') {
   const user = getUser();
   if (!user) { window.location.href = redirectTo; return null; }
@@ -527,7 +539,10 @@ async function handleLogin() {
     try {
       res = await fetch(RDF.GAS_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'login', id, pass, role }),
+        body: JSON.stringify({
+          action: 'login', id, pass, role,
+          auditMode: typeof RDF !== 'undefined' && RDF.LOCAL_AUDIT_MODE === true
+        }),
         headers: { 'Content-Type': 'text/plain' },
         signal: _ctrl.signal
       });
@@ -553,7 +568,7 @@ async function handleLogin() {
           text: t('duplicateLogin'), confirmButtonText: t('confirm')
         });
       }
-      window.location.href = 'dashboard.html';
+      window.location.href = authLoginDestination();
     } else {
       Swal.fire(t('error'), result.message || t('loginFailed'), 'error');
     }
@@ -590,7 +605,7 @@ async function handleGoogleLogin(idToken) {
           confirmButtonText: t('confirm')
         });
       }
-      window.location.href = 'dashboard.html';
+      window.location.href = authLoginDestination();
     } else {
       Swal.fire(t('error'), result.message || t('loginFailed'), 'error');
     }

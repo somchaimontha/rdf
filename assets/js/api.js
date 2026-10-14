@@ -31,7 +31,18 @@ const _API_CODE_I18N_KEYS = {
   INVALID_DEFAULT_VALUE: 'dfErrorInvalidDefault', FIELD_NOT_FOUND: 'dfErrorFieldNotFound', ENTITY_NOT_FOUND: 'dfErrorEntityNotFound',
   FIELD_NOT_AVAILABLE: 'dfErrorFieldUnavailable', FIELD_ACCESS_DENIED: 'dfErrorAccessDenied', FIELD_NOT_VISIBLE: 'dfErrorFieldUnavailable',
   INVALID_RECORD_ID: 'dfErrorInvalidRecord', FIELD_VALIDATION_ERROR: 'dfErrorFieldValidation', DUPLICATE_VALUE: 'dfErrorDuplicateValue',
-  INVALID_CALCULATION_CONFIG: 'dfErrorInvalidCalculation'
+  INVALID_CALCULATION_CONFIG: 'dfErrorInvalidCalculation',
+  EMPLOYMENT_REVIEW_REQUIRED: 'empReviewRequired', EMPLOYMENT_SCHEMA_CONFLICT: 'empSchemaConflict',
+  EMPLOYMENT_SETUP_PREVIEW_FAILED: 'empPreviewError', EMPLOYMENT_SETUP_FAILED: 'empSetupError',
+  EMPLOYMENT_REPORT_FAILED: 'empReportError', EMPLOYMENT_MIGRATION_PREVIEW_FAILED: 'empMigrationPreviewError',
+  EMPLOYMENT_MIGRATION_SELECTION_INVALID: 'empMigrationSelectionError', EMPLOYMENT_MIGRATION_FAILED: 'empMigrationError',
+  FOLLOWUP_VALIDATION_ERROR: 'empFollowUpValidationError', FOLLOWUP_RECORD_NOT_FOUND: 'empFollowUpRecordError',
+  FOLLOWUP_NOT_FOUND: 'empFollowUpNotFound', FOLLOWUP_SAVE_FAILED: 'empFollowUpSaveError',
+  FOLLOWUP_ARCHIVE_FAILED: 'empFollowUpArchiveError', EMPLOYMENT_AUDIT_MODE: 'empAuditModeError',
+  LOCAL_AUDIT_MODE: 'localAuditModeError', REPORT_REGISTRY_VALIDATION_ERROR: 'reportRegistryValidationError',
+  REPORT_REGISTRY_BUSY: 'reportRegistryBusy', REPORT_REGISTRY_FAILED: 'reportRegistryFailed',
+  REPORT_VERIFICATION_NOT_FOUND: 'reportVerificationNotFound',
+  REPORT_QR_REGENERATION_CONDITIONS: 'reportQrRegenerationConditions'
 };
 
 function _localizeStructuredApiData(data) {
@@ -50,7 +61,8 @@ const _API_GET_CACHE_MS = 20000;
 const _API_CACHEABLE_GET_ACTIONS = new Set([
   'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPublicSettings', 'getPendingScholarshipRequests',
   'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents',
-  'getDynamicFormSchema', 'getDynamicFieldAdminData', 'previewDynamicFieldSetup'
+  'getDynamicFormSchema', 'getDynamicFieldAdminData', 'previewDynamicFieldSetup',
+  'previewEmploymentHistorySetup', 'previewLegacyEmploymentMigration', 'getEmploymentReport'
 ]);
 let _apiGetCacheGeneration = 0;
 
@@ -65,7 +77,26 @@ function _invalidateApiGetCache() {
   _apiGetCache.clear();
 }
 
+const _API_LOCAL_AUDIT_ALLOWED_POSTS = new Set(['login', 'loginWithGoogle', 'logoutToken']);
+const _API_LOCAL_AUDIT_BLOCKED_GETS = new Set([
+  'deleteStudent', 'setupEmailColumns', 'setupMissingColumns', 'backfillCurrentAcademicYear'
+]);
+
+function _apiLocalAuditEnabled() {
+  return typeof RDF !== 'undefined' && RDF.LOCAL_AUDIT_MODE === true;
+}
+
+function _apiLocalAuditError() {
+  return _localizeStructuredApiData({
+    status:'error', code:'LOCAL_AUDIT_MODE',
+    message:'Localhost is in read-only audit mode.'
+  });
+}
+
 async function _apiGetNetwork(params, timeoutMs) {
+  if (_apiLocalAuditEnabled() && _API_LOCAL_AUDIT_BLOCKED_GETS.has(params.action)) {
+    return _apiLocalAuditError();
+  }
   const token = _getToken();
   const p = token ? { ...params, token } : { ...params };
   const url = RDF.GAS_URL + '?' + new URLSearchParams(p).toString();
@@ -124,8 +155,14 @@ async function apiGet(params, timeoutMs) {
 }
 
 async function apiPost(body, timeoutMs) {
+  const fixtureReportWrite = typeof window !== 'undefined' && window.__RDF_LOCAL_FIXTURE__ === true &&
+    ['issueReportReference','regenerateReportQr'].includes(body.action);
+  if (_apiLocalAuditEnabled() && !_API_LOCAL_AUDIT_ALLOWED_POSTS.has(body.action) && !fixtureReportWrite) {
+    return _apiLocalAuditError();
+  }
   const token = _getToken();
-  const b = token ? { ...body, token } : { ...body };
+  const requestBody = _apiLocalAuditEnabled() ? { ...body, auditMode:true } : { ...body };
+  const b = token ? { ...requestBody, token } : requestBody;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs || 45000);
   let res;
@@ -163,6 +200,7 @@ async function apiPost(body, timeoutMs) {
 }
 
 const API = {
+  clearReadCache()             { _invalidateApiGetCache(); },
   async getDashboardStats()     { return apiGet({ action: 'getDashboardStats' }); },
   async getStudents()          { return apiGet({ action: 'getStudents' }); },
   async getStudent(stipNo)     { return apiGet({ action: 'getStudent', stipNo }); },
@@ -183,6 +221,19 @@ const API = {
   },
   async previewDynamicFieldSetup() { return apiGet({ action: 'previewDynamicFieldSetup' }); },
   async setupDynamicFieldSchema() { return apiPost({ action: 'setupDynamicFieldSchema' }, 90000); },
+  async previewEmploymentHistorySetup() { return apiGet({ action: 'previewEmploymentHistorySetup' }); },
+  async setupEmploymentHistorySchema(options) { return apiPost({ action: 'setupEmploymentHistorySchema', options: options || {} }, 90000); },
+  async previewLegacyEmploymentMigration() { return apiGet({ action: 'previewLegacyEmploymentMigration' }); },
+  async migrateLegacyEmploymentData(sourceKeys) { return apiPost({ action: 'migrateLegacyEmploymentData', sourceKeys: sourceKeys || [] }, 90000); },
+  async getEmploymentReport(filters) { return apiGet({ action: 'getEmploymentReport', ...(filters || {}) }); },
+  async issueReportReference(report) { return apiPost({ action: 'issueReportReference', report: report || {} }); },
+  async regenerateReportQr(reportId, reason, acknowledgeInvalidation) {
+    return apiPost({ action: 'regenerateReportQr', reportId, reason, acknowledgeInvalidation: acknowledgeInvalidation === true });
+  },
+  async getReportVerification(verificationToken) { return apiGet({ action: 'getReportVerification', verificationToken }); },
+  async getReportVerificationDetails(verificationToken) { return apiGet({ action: 'getReportVerificationDetails', verificationToken }); },
+  async saveEmploymentFollowUp(followUp) { return apiPost({ action: 'saveEmploymentFollowUp', followUp }); },
+  async archiveEmploymentFollowUp(followUpId) { return apiPost({ action: 'archiveEmploymentFollowUp', followUpId }); },
   async saveDynamicSection(section) { return apiPost({ action: 'saveDynamicSection', section }); },
   async saveDynamicField(field, options) { return apiPost({ action: 'saveDynamicField', field, options: options || [] }); },
   async archiveDynamicField(fieldId) { return apiPost({ action: 'archiveDynamicField', fieldId }); },
@@ -253,6 +304,28 @@ const API = {
     apiPost({ action: 'clientLog', userId, action, details }).catch(() => {});
   },
 };
+
+function renderLocalAuditBanner() {
+  if (!_apiLocalAuditEnabled() || typeof document === 'undefined' || !document.body) return;
+  let banner = document.getElementById('rdfLocalAuditBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'rdfLocalAuditBanner';
+    banner.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99999;background:#7c2d12;color:#fff;border:1px solid #fdba74;border-radius:999px;padding:8px 14px;font:700 12px/1.2 system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.22);pointer-events:none;max-width:calc(100vw - 24px);text-align:center';
+    const text = document.createElement('span');
+    text.setAttribute('data-t', 'localAuditBanner');
+    banner.appendChild(text);
+    document.body.appendChild(banner);
+  }
+  const text = banner.querySelector('[data-t="localAuditBanner"]');
+  if (text && typeof t === 'function') text.textContent = t('localAuditBanner');
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderLocalAuditBanner);
+  else renderLocalAuditBanner();
+  document.addEventListener('rdf:languagechange', renderLocalAuditBanner);
+}
 
 // ── RDF Client Logger ─────────────────────────────────────────────────────
 // Lightweight, async, non-blocking. Dedup is enforced both client-side

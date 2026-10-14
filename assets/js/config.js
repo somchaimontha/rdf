@@ -1,4 +1,9 @@
 /* ── RDF Config ── */
+const RDF_LOCAL_AUDIT_MODE = (() => {
+  try { return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname); }
+  catch (_) { return false; }
+})();
+
 const RDF = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyJwHM-vyqSddDfqSu1puLc86E42O6Pxjg4PHRfhuCSvc4fcmuNp1YS85OvYMWdAlc2/exec",
   // OAuth Client IDs are public identifiers. Keep this bootstrap value so
@@ -7,8 +12,12 @@ const RDF = {
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.0.8",
+  VERSION: "2.3.0",
   DEFAULT_LANG: "th",
+  // Localhost may read the configured API, but shared API helpers reject data
+  // mutations before making a network request. The server independently locks
+  // employment writes until EMPLOYMENT_LAUNCH_MODE=enabled is configured.
+  LOCAL_AUDIT_MODE: RDF_LOCAL_AUDIT_MODE,
   INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"Other" },
   INSTITUTION_LABELS_TH: { MBS:'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"', VC:'วิทยาลัยการอาชีพแม่สะเรียง', UNI:'มหาวิทยาลัย', OTHER:'อื่นๆ' },
   INSTITUTION_DATA: {

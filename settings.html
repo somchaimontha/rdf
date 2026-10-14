@@ -263,21 +263,41 @@
 .modal-overlay {
   position: fixed; inset: 0; z-index: 200;
   background: rgba(15,23,42,0.55); backdrop-filter: blur(3px);
-  display: flex; align-items: center; justify-content: center; padding: 20px;
+  display: flex; align-items: center; justify-content: center; padding: 20px; overflow:hidden;
   animation: fadeIn 0.15s ease;
 }
 .modal-box {
-  background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
+  background: #fff; border-radius: 16px; width: 100%; max-width: 480px; min-width:0;
+  max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px);
+  display:flex; flex-direction:column; min-height:0;
   box-shadow: 0 25px 60px rgba(0,0,0,0.25); animation: fadeInUp 0.2s ease; overflow: hidden;
 }
 .modal-header {
+  flex:0 0 auto;
   padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid #f1f5f9;
 }
-.modal-body { padding: 20px; }
+.modal-body { flex:1 1 auto; min-width:0; min-height:0; padding:20px; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
 .modal-footer {
+  flex:0 0 auto;
   padding: 14px 20px; border-top: 1px solid #f1f5f9;
   display: flex; justify-content: flex-end; gap: 10px;
+}
+@media(max-width:640px){
+  .modal-overlay { align-items:stretch; padding:8px; }
+  .modal-box { max-height:calc(100vh - 16px); max-height:calc(100dvh - 16px); border-radius:12px; }
+  .modal-header { padding:12px 14px; }
+  .modal-body { padding:14px; }
+  .modal-footer { width:100%; min-width:0; padding:10px 14px; flex-wrap:nowrap; }
+  .modal-footer .btn { min-width:0; flex:1 1 0; }
+  #adminModal .modal-header h3 { min-width:0; }
+  #adminModal .modal-header button { flex-shrink:0; }
+  #adminModal .admin-photo-row { align-items:stretch; flex-direction:column; }
+  #adminModal .admin-photo-row > div { min-width:0; }
+  #adminModal .admin-photo-row > div:first-child { display:flex; align-items:center; gap:10px; text-align:left; }
+  #adminModal .admin-name-grid,#adminModal .admin-password-grid,#adminModal .admin-role-grid { width:100%; min-width:0; grid-template-columns:minmax(0,1fr) !important; }
+  #adminModal .admin-name-grid > div,#adminModal .admin-password-grid > div,#adminModal .admin-role-grid > div { min-width:0; grid-column:1/-1 !important; }
+  #adminModal .field-input,#adminModal .field-select { width:100%; min-width:0; max-width:100%; }
 }
 
 /* ── Settings — sticky panel section headers (level 1, below navbar) ── */
@@ -1950,7 +1970,7 @@
         <i data-lucide="user-plus" class="w-4 h-4" style="color:#1e3a8a"></i>
         <span><span data-t="stAdminModalAdd">เพิ่มผู้ดูแลระบบ</span></span>
       </h3>
-      <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none font-light">&times;</button>
+      <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none font-light" data-t-aria-label="cancel">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="m_editMode" value="new">
@@ -1958,7 +1978,7 @@
       <input type="hidden" id="m_picUrl" value="">
 
       <!-- Photo row -->
-      <div class="flex items-center gap-4 bg-gray-50 rounded-xl p-3 border border-gray-200 mb-4">
+      <div class="admin-photo-row flex items-center gap-4 bg-gray-50 rounded-xl p-3 border border-gray-200 mb-4">
         <div class="flex-shrink-0 text-center">
           <img id="m_picPreview" src="" alt=""
                class="w-20 h-20 rounded-full object-cover border-2 border-gray-300 shadow-sm bg-gray-100">
@@ -1983,7 +2003,7 @@
       </div>
 
       <!-- Row 1: Title + FirstName + LastName -->
-      <div class="grid grid-cols-12 gap-2 mb-3">
+      <div class="admin-name-grid grid grid-cols-12 gap-2 mb-3">
         <div class="col-span-3">
           <label class="field-label" data-t="stAdminTitle">คำนำหน้า</label>
           <select id="m_title" class="field-select">
@@ -2028,7 +2048,7 @@
       </div>
 
       <!-- Row 3: Password -->
-      <div class="grid grid-cols-2 gap-3 mb-1">
+      <div class="admin-password-grid grid grid-cols-2 gap-3 mb-1">
         <div>
           <label class="field-label" id="m_passLabel"><span data-t="stAdminPassword">รหัสผ่าน</span> <span class="text-red-500">*</span></label>
           <input type="password" id="m_password" class="field-input" data-t="stAdminPassword" data-t-attr="placeholder" placeholder="รหัสผ่าน" autocomplete="new-password">
@@ -2044,7 +2064,7 @@
       </p>
 
       <!-- Row 4: Role + SubRole + Status -->
-      <div class="grid grid-cols-3 gap-2 mb-1">
+      <div class="admin-role-grid grid grid-cols-3 gap-2 mb-1">
         <div>
           <label class="field-label"><span data-t="stAdminRole">สิทธิ์</span> <span class="text-red-500">*</span></label>
           <select id="m_role" class="field-select">
@@ -2100,12 +2120,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.0.8"></script>
+<script src="assets/js/config.js?v=2.3.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.0.8"></script>
-<script src="assets/js/api.js?v=2.0.8"></script>
-<script src="assets/js/auth.js?v=2.0.8"></script>
-<script src="assets/js/rbac.js?v=2.0.8"></script>
+<script src="assets/js/i18n.js?v=2.3.0"></script>
+<script src="assets/js/api.js?v=2.3.0"></script>
+<script src="assets/js/auth.js?v=2.3.0"></script>
+<script src="assets/js/rbac.js?v=2.3.0"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -2497,6 +2517,8 @@ function openAdminModal(adminData) {
   renderAdminModalLabels(isEdit);
   document.getElementById('m_editHint').classList.toggle('hidden', !isEdit);
   document.getElementById('adminModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  document.querySelector('#adminModal .modal-body')?.scrollTo({ top:0 });
   lucide.createIcons();
 }
 
@@ -2512,6 +2534,7 @@ function renderAdminModalLabels(isEdit) {
 function closeAdminModal(e) {
   if (e && e.target !== document.getElementById('adminModal')) return;
   document.getElementById('adminModal').classList.add('hidden');
+  document.body.style.overflow = '';
   _adminPhotoFile = null;
 }
 
@@ -2613,7 +2636,7 @@ async function submitAdminForm() {
     const r = await Promise.race([API.saveAdmin(payload), _t]);
     btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> ${t('stSave')}`;
     if (r.status === 'success') {
-      document.getElementById('adminModal').classList.add('hidden');
+      closeAdminModal();
       Swal.fire({ icon:'success', title: t('stSaveSuccess'), timer:1500, showConfirmButton:false });
       loadAdmins();
     } else { Swal.fire(t('error'), r.message||t('error'), 'error'); }

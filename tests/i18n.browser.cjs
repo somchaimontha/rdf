@@ -7,7 +7,7 @@ const http = require('node:http');
 const root = path.resolve(__dirname, '..');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const fixture = `
-window.__calls = []; window.__errors = [];
+window.__calls = []; window.__errors = []; window.__RDF_LOCAL_FIXTURE__ = true;
 addEventListener('error', e => __errors.push(e.message));
 addEventListener('unhandledrejection', e => __errors.push(String(e.reason)));
 localStorage.setItem('rdfLang', new URLSearchParams(location.search).get('testLang') || 'th');
@@ -21,8 +21,12 @@ window.Chart = class { static register(){}; constructor(el, cfg){this.data=cfg.d
 window.Chart.defaults = {font:{},plugins:{legend:{labels:{}}}};
 window.Swal = {fire:async(...args)=>({isConfirmed:false}),mixin(){return this;},showLoading(){},close(){}};
 window.XLSX = {utils:{}};
+window.QRCode = class { constructor(element){const canvas=document.createElement('canvas');canvas.width=96;canvas.height=96;element.appendChild(canvas);} };
+window.QRCode.CorrectLevel = {M:0};
 window.fetch = async (url, options) => {
- const action = options?.body ? JSON.parse(options.body).action : new URL(url, location.href).searchParams.get('action');
+ const requestBody = options?.body ? JSON.parse(options.body) : null;
+ const requestUrl = new URL(url, location.href);
+ const action = requestBody ? requestBody.action : requestUrl.searchParams.get('action');
  __calls.push(action);
  if (action==='getStudents' && location.pathname.endsWith('/dashboard.html')) await new Promise(resolve=>setTimeout(resolve,3000));
  const student = {stipNo:'MBS_001',fname:'ทดสอบ',lname:'นักเรียน',engFname:'Test',engLname:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active',scholarshipYear:2025,entryYear:2025,phone:'0800000000',idCard:'1234567890123'};
@@ -46,6 +50,30 @@ window.fetch = async (url, options) => {
  if (action==='getDynamicFormSchema') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'ข้อมูลที่กำหนดจากระบบ',descriptionEN:'System-configured information',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true},{sectionId:'sec_work',sectionKey:'employment_history',nameTH:'ประวัติการทำงาน',nameEN:'Employment History',descriptionTH:'',descriptionEN:'',displayOrder:2,visibilityRules:{logic:'AND',conditions:[]},cardinality:'repeatable',active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_start',fieldKey:'start_month',labelTH:'เดือนเริ่มต้น',labelEN:'Start month',fieldType:'month',sectionId:'sec_work',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_end',fieldKey:'end_month',labelTH:'เดือนสิ้นสุด',labelEN:'End month',fieldType:'month',sectionId:'sec_work',displayOrder:2,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_duration',fieldKey:'employment_duration',labelTH:'ระยะเวลาทำงาน',labelEN:'Employment duration',fieldType:'calculated_duration',sectionId:'sec_work',displayOrder:3,required:false,visible:true,editable:false,canEdit:false,calculationType:'month_range_duration',calculationConfig:{startFieldId:'fld_start',endFieldId:'fld_end',useCurrentMonth:true},visibilityRules:{logic:'AND',conditions:[]}}],options:[],values:location.pathname.endsWith('/student-profile.html')?[{valueId:'val_1',fieldId:'fld_note',recordId:'single',value:'Fixture value'},{valueId:'val_2',fieldId:'fld_start',recordId:'rec_work_1',value:'2025-01'},{valueId:'val_3',fieldId:'fld_end',recordId:'rec_work_1',value:'2025-12'}]:[]};
  if (action==='getDynamicFieldAdminData') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',setup:{status:'success',ready:true,schemaVersion:'1.1.0',sheets:[{name:'FormSections',exists:true,missingHeaders:[],rowCount:1}]},sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'',descriptionEN:'',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},visibleRoles:['SuperAdmin'],cardinality:'single',collapsible:true,active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,active:true,archived:false,valueCount:1,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_start',fieldKey:'start_month',labelTH:'เดือนเริ่มต้น',labelEN:'Start month',fieldType:'month',sectionId:'sec_profile',displayOrder:2,active:true,archived:false,valueCount:0,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_end',fieldKey:'end_month',labelTH:'เดือนสิ้นสุด',labelEN:'End month',fieldType:'month',sectionId:'sec_profile',displayOrder:3,active:true,archived:false,valueCount:0,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_duration',fieldKey:'employment_duration',labelTH:'ระยะเวลาทำงาน',labelEN:'Employment duration',fieldType:'calculated_duration',sectionId:'sec_profile',displayOrder:4,editable:false,active:true,archived:false,valueCount:0,calculationType:'month_range_duration',calculationConfig:{startFieldId:'fld_start',endFieldId:'fld_end',useCurrentMonth:true},visibilityRules:{logic:'AND',conditions:[]}}],options:[]};
  if (action==='previewDynamicFieldSetup') data={status:'success',ready:true,schemaVersion:'1.1.0',sheets:[]};
+ if (action==='previewEmploymentHistorySetup') data={status:'success',launchMode:'enabled',ready:true,safeToInstall:false,setupRequired:false,schemaVersion:'1.1.0',missingSections:[],missingFields:[],conflicts:[],candidateSections:[],legacy:{rowsWithEmployment:1,rowsMissingStipNo:0}};
+ if (action==='previewLegacyEmploymentMigration') data={status:'success',launchMode:'enabled',schemaReady:true,total:1,ready:1,migrated:0,possibleDuplicate:0,missingStudent:0,rows:[{sourceRow:2,sourceKey:'Alumni:v1:fixture',stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',occupation:'Coordinator',workplace:'RDF Foundation',status:'ready',existingRecordId:''}]};
+ if (action==='getEmploymentReport') data={status:'success',launchMode:'enabled',setupRequired:false,schemaVersion:'1.1.0',asOfMonth:'2026-03',reportDate:'2026-03-20',canManageFollowUps:true,legacyRowsPendingMigration:0,summary:{eligiblePeople:1,reportedPeople:1,employmentRecords:1,followUpRecords:1,dueFollowUps:1,overdueFollowUps:0,byStatus:{employed_full_time:1}},data:[{stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',institution:'MBS',studentStatus:'Graduated',employmentStatus:'employed_full_time',histories:[{recordId:'rec_work_1',employerName:'RDF Foundation',workplaceLocation:'Mae Sariang',workplaceProvince:'Mae Hong Son',jobTitle:'Coordinator',employmentType:'full_time',industry:'Education',startMonth:'2025-01',endMonth:'',durationMonths:15,current:true,verificationStatus:'verified',source:'self_reported'}],followUps:[{followUpId:'fup_fixture',employmentRecordId:'rec_work_1',contactDate:'2026-03-10',contactMethod:'phone',outcome:'follow_up_needed',nextFollowUpDate:'2026-03-20',assignedTo:'Test Admin',notes:'Fixture follow-up'}]}]};
+ const reportDefs={employment_status:['a','b','1','RDF-EMP-20260320-11111111','รายงานภาวะการทำงานของศิษย์เก่า','Alumni Employment Status Report'],scholarship_statistics:['d','e','2','RDF-SCH-20260320-22222222','รายงานสถิติทุนการศึกษา','Scholarship Statistics Report'],promotion_results:['f','g','3','RDF-PRO-20260320-33333333','รายงานเลื่อนชั้นและผู้สำเร็จการศึกษา','Promotion and Graduation Report'],academic_results:['h','i','4','RDF-ACA-20260320-44444444','รายงานผลการศึกษา','Academic Results Report']};
+ const reportDef=(type)=>reportDefs[type]||reportDefs.employment_status;
+ const reportTypeByToken=(token)=>Object.keys(reportDefs).find(type=>reportDefs[type][0]===token[0]||reportDefs[type][1]===token[0])||'employment_status';
+ if (action==='issueReportReference') {
+   const type=requestBody?.report?.reportType||'employment_status';
+   const d=reportDef(type);
+   data={status:'success',reused:false,verificationToken:d[0].repeat(64),report:{reportId:'rpt_'+d[2].repeat(32),referenceNo:d[3],reportType:type,subjectTH:d[4],subjectEN:d[5],createdAt:'2026-03-20T10:00:00Z',qrVersion:1,active:true}};
+ }
+ if (action==='regenerateReportQr') {
+   const type=Object.keys(reportDefs).find(key=>requestBody?.reportId==='rpt_'+reportDefs[key][2].repeat(32))||'employment_status';
+   const d=reportDef(type);
+   data={status:'success',verificationToken:d[1].repeat(64),report:{reportId:'rpt_'+d[2].repeat(32),referenceNo:d[3],reportType:type,subjectTH:d[4],subjectEN:d[5],createdAt:'2026-03-20T10:00:00Z',qrVersion:2,active:true}};
+ }
+ if (action==='getReportVerification') {
+   const type=reportTypeByToken(requestUrl.searchParams.get('verificationToken')||'');const d=reportDef(type);
+   data={status:'success',authenticationRequired:true,report:{referenceNo:d[3],reportType:type,subjectTH:d[4],subjectEN:d[5],active:true}};
+ }
+ if (action==='getReportVerificationDetails') {
+   const token=requestUrl.searchParams.get('verificationToken')||'',type=reportTypeByToken(token),d=reportDef(type);
+   data={status:'success',report:{reportId:'rpt_'+d[2].repeat(32),referenceNo:d[3],reportType:type,subjectTH:d[4],subjectEN:d[5],createdAt:'2026-03-20T10:00:00Z',qrVersion:token[0]===d[1]?2:1,active:true,rowCount:1,createdBy:'test',lastExportedAt:'2026-03-20T10:00:00Z',exportCount:1,contentHash:'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'}};
+ }
  return {ok:true,json:async()=>data};
 };
 `;
@@ -77,8 +105,8 @@ const server = http.createServer((req,res)=>{
  try {
   await send('Network.enable');
   await send('Network.setBlockedURLs',{urls:['https://*']});
-  for (const initialLang of ['th','en']) for (const file of ['index.html','dashboard.html','students.html','student-form.html','student-profile.html','reports.html','academic-results.html','academic-terms.html','promotion.html','settings.html','custom-fields.html']) {
-   const pageUrl=base+'/'+file+'?testLang='+initialLang+(file==='student-profile.html'?'&stipNo=MBS_001':'');
+  for (const initialLang of ['th','en']) for (const file of ['index.html','dashboard.html','students.html','student-form.html','student-profile.html','reports.html','academic-results.html','academic-terms.html','promotion.html','settings.html','custom-fields.html','report-verification.html']) {
+   const pageUrl=base+'/'+file+'?testLang='+initialLang+(file==='student-profile.html'?'&stipNo=MBS_001':'')+(file==='report-verification.html'?'&token='+'a'.repeat(64):'');
    await send('Page.navigate',{url:pageUrl});
    const deadline=Date.now()+10000;
    while (true) {
@@ -94,7 +122,7 @@ const server = http.createServer((req,res)=>{
    const quickCounts = file === 'dashboard.html'
      ? await evaluate(`['statMBS','statVC','statUNI','statAlumni'].map(id=>document.getElementById(id).textContent)`)
      : null;
-   if (file !== 'index.html') {
+   if (file !== 'index.html' && file !== 'report-verification.html') {
      const notificationDom=await evaluate(`({panels:document.querySelectorAll('#notifPanel').length,badges:document.querySelectorAll('#notifBadge').length,bells:document.querySelectorAll('#notifBellBtn').length,legacy:document.querySelectorAll('#notifBell').length})`);
      assert.deepEqual(notificationDom,{panels:1,badges:1,bells:1,legacy:0},file+' must use one shared notification center');
      await evaluate(`_refreshNotifBell()`);
@@ -130,6 +158,20 @@ const server = http.createServer((req,res)=>{
    assert.equal(result.calls,before.calls,file+' must not refetch on switch');
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
+   if(file==='settings.html') {
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:520,deviceScaleFactor:1,mobile:true});
+     const adminModal=await evaluate(`(()=>{const box=document.querySelector('#adminModal .modal-box'),body=document.querySelector('#adminModal .modal-body'),footer=document.querySelector('#adminModal .modal-footer'),boxRect=box.getBoundingClientRect(),footerRect=footer.getBoundingClientRect(),buttons=[...footer.querySelectorAll('button')].map(button=>button.getBoundingClientRect());return {open:!document.getElementById('adminModal').classList.contains('hidden'),boxTop:boxRect.top,boxBottom:boxRect.bottom,footerBottom:footerRect.bottom,viewport:innerHeight,viewportWidth:innerWidth,overflow:getComputedStyle(body).overflowY,scrollable:body.scrollHeight>body.clientHeight,horizontalOverflow:body.scrollWidth>body.clientWidth+1,buttonsVisible:buttons.every(rect=>rect.left>=0&&rect.right<=innerWidth+1&&rect.top>=0&&rect.bottom<=innerHeight+1)};})()`);
+     assert.equal(adminModal.open,true,'admin modal remains open for responsive validation');
+     assert.equal(adminModal.viewportWidth,360,'responsive admin test must use the mobile viewport');
+     assert.ok(adminModal.boxTop>=0&&adminModal.boxBottom<=adminModal.viewport+1,'admin modal must fit inside a small viewport');
+     assert.ok(adminModal.footerBottom<=adminModal.viewport+1,'admin modal actions must stay visible');
+     assert.equal(adminModal.overflow,'auto','admin modal body must own vertical scrolling');
+     assert.equal(adminModal.scrollable,true,'long admin form must scroll inside the modal');
+     assert.equal(adminModal.horizontalOverflow,false,'admin modal must not require horizontal scrolling');
+     assert.equal(adminModal.buttonsVisible,true,'admin modal cancel and save actions must remain visible');
+     await send('Emulation.clearDeviceMetricsOverride');
+     await evaluate('closeAdminModal()');
+   }
    if(file==='dashboard.html') {
      const customFieldsShortcut=await evaluate(`!![...document.querySelectorAll('.menu-card')].find(card=>card.getAttribute('onclick')?.includes('custom-fields.html'))`);
      assert.equal(customFieldsShortcut,false,'advanced custom-field builder must live under settings instead of the dashboard');
@@ -194,6 +236,10 @@ const server = http.createServer((req,res)=>{
      assert.equal(googleLogin.configured,true,'Google Client ID bootstrap');
      assert.notEqual(googleLogin.button,'none','Google login remains available while settings load');
      assert.equal(googleLogin.warning,'none','configured Google login must not show missing-ID warning');
+     const loginReturn=await evaluate(`(()=>{const original=location.href;history.replaceState({},'',
+       'index.html?next='+encodeURIComponent('report-verification.html?token='+'a'.repeat(64)));const valid=authLoginDestination();history.replaceState({},'','index.html?next='+encodeURIComponent('https://attacker.example/'));const blocked=authLoginDestination();history.replaceState({},'',original);return {valid,blocked};})()`);
+     assert.match(loginReturn.valid,/^report-verification\.html\?token=/,'login may return to the same-origin verification page');
+     assert.equal(loginReturn.blocked,'dashboard.html','login return must reject external redirects');
      const dynamic=await evaluate(`(async()=>{
        const holder=document.createElement('div');
        holder.innerHTML='<button><i id="test-icon"></i><span data-t="save">initial</span></button><input value="Keep ไทย" data-t-placeholder="searchPlaceholder" data-t-title="save">';
@@ -205,6 +251,60 @@ const server = http.createServer((req,res)=>{
      assert.equal(dynamic,true,'async labels, attributes, and icons');
    }
    if(file==='reports.html') {
+     await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+     const primaryView=await evaluate(`(()=>{const tabs=[...document.querySelectorAll('.report-view-tab')];return {view:document.getElementById('reportsWorkspace').dataset.reportView,employment:getComputedStyle(document.getElementById('employmentReportSection')).display,scholarship:getComputedStyle(document.getElementById('scholarshipReports')).display,print:getComputedStyle(document.querySelector('[data-report-action="scholarship"]')).display,widths:tabs.map(tab=>tab.getBoundingClientRect().width),heights:tabs.map(tab=>tab.getBoundingClientRect().height),labels:tabs.map(tab=>tab.textContent),source:document.getElementById('scholarshipDataSummary').textContent};})()`);
+     assert.equal(primaryView.view,'scholarship','scholarship statistics must be the default primary view');
+     assert.equal(primaryView.employment,'none','secondary employment report must not obscure scholarship statistics');
+     assert.notEqual(primaryView.scholarship,'none','scholarship statistics must be visible first');
+     assert.notEqual(primaryView.print,'none','scholarship report action must be available in the primary workflow');
+     assert.ok(Math.abs(primaryView.widths[0]-primaryView.widths[1])<=1,'report menu buttons must have equal width');
+     assert.ok(Math.abs(primaryView.heights[0]-primaryView.heights[1])<=1,'report menu buttons must have equal height');
+     assert.match(primaryView.labels[0],/สถิติทุนการศึกษา|Scholarship statistics/,'scholarship statistics must be the first report menu');
+     assert.equal(primaryView.labels.some(label=>/งานหลัก|Primary task/.test(label)),false,'employment tab must not be labelled as the primary task');
+     assert.match(primaryView.source,/1/,'scholarship statistics must show their live student-record count');
+     const secondaryView=await evaluate(`(()=>{switchReportView('employment');return {view:document.getElementById('reportsWorkspace').dataset.reportView,employment:getComputedStyle(document.getElementById('employmentReportSection')).display,scholarship:getComputedStyle(document.getElementById('scholarshipReports')).display,print:getComputedStyle(document.querySelector('[data-report-action="scholarship"]')).display,selected:document.getElementById('reportTabEmployment').getAttribute('aria-selected')};})()`);
+     assert.equal(secondaryView.view,'employment','employment report must remain available as a secondary view');
+     assert.notEqual(secondaryView.employment,'none','employment report must show on demand');
+     assert.equal(secondaryView.scholarship,'none','views must not overlap');
+     assert.equal(secondaryView.print,'none','scholarship-only action must stay out of the employment workflow');
+     assert.equal(secondaryView.selected,'true','selected report tab must be exposed accessibly');
+     const alumniEntry=await evaluate(`(()=>{history.replaceState({},'',${JSON.stringify('reports.html?view=employment&source=alumni')});const view=applyReportEntryContext();switchReportView(view);return {view:document.getElementById('reportsWorkspace').dataset.reportView,employment:getComputedStyle(document.getElementById('employmentReportSection')).display,backHref:document.getElementById('reportsBackLink').getAttribute('href'),backText:document.getElementById('reportsBackLinkText').textContent.trim(),expectedBack:t('backToAlumniList')};})()`);
+     assert.equal(alumniEntry.view,'employment','alumni source link must open the employment report directly');
+     assert.notEqual(alumniEntry.employment,'none','deep-linked employment report must be visible');
+     assert.equal(alumniEntry.backHref,'students.html?status=Alumni','employment report must link back to the alumni list');
+     assert.equal(alumniEntry.backText,alumniEntry.expectedBack,'alumni return link must be localized');
+     await evaluate(`history.replaceState({},'',${JSON.stringify('reports.html?testLang='+initialLang)});switchReportView(applyReportEntryContext())`);
+     const scholarshipComposer=await evaluate(`(()=>{openRptPrintModal();const scroll=document.querySelector('#rptPrintModal .flex-1.min-h-0');return {open:!document.getElementById('rptPrintModal').classList.contains('hidden'),formats:document.querySelectorAll('input[name="rptPrFormat"]').length,format:scholarshipReportFormat(),orientation:scholarshipReportOrientation(),signatures:document.querySelectorAll('input[name="rptPrSig"]').length,exportVisible:getComputedStyle(document.getElementById('rptPrExportBtn')).display,scrollOverflow:getComputedStyle(scroll).overflowY,scrollable:scroll.scrollHeight>scroll.clientHeight};})()`);
+     assert.equal(scholarshipComposer.open,true,'scholarship formal report composer must open');
+     assert.equal(scholarshipComposer.formats,2,'scholarship reports must support Excel and PDF');
+     assert.equal(scholarshipComposer.format,'pdf','scholarship PDF must be the initial export choice');
+     assert.equal(scholarshipComposer.orientation,'landscape','scholarship formal reports default to A4 landscape');
+     assert.equal(scholarshipComposer.signatures,2,'scholarship reports must reuse the shared signatory settings');
+     assert.notEqual(scholarshipComposer.exportVisible,'none','authorized users can export scholarship reports');
+     assert.equal(scholarshipComposer.scrollOverflow,'auto','long scholarship report settings must scroll inside the modal');
+     assert.equal(scholarshipComposer.scrollable,true,'scholarship report controls must be scrollable without browser zoom');
+     const scholarshipRegistry=await evaluate(`(async()=>{const first=await scholarshipReportRegistrationPayload();document.querySelector('input[name="rptPrOrientation"][value="portrait"]').checked=true;document.querySelector('input[name="rptPrFormat"][value="xlsx"]').checked=true;const second=await scholarshipReportRegistrationPayload(),issued=await issueScholarshipReportReference(),opts=collectScholarshipReportOptions(false);opts.chartImgs=Object.fromEntries(opts.selectedCharts.map(key=>[key,'data:image/png;base64,AA==']));const html=generateRptPrintHTML(opts,issued,'data:image/png;base64,AA==');return {sameFingerprint:first.fingerprint===second.fingerprint,reference:issued.report.referenceNo,type:issued.report.reportType,url:issued.verificationUrl,qrVisible:getComputedStyle(document.getElementById('rptPrRegenerateBtn')).display,pageSetup:html.includes('@page{size:A4 portrait'),fixedTable:html.includes('table-layout:fixed'),qrHeader:html.includes('class="rpt-qr"'),footerUser:html.includes('Test Admin'),footerReference:html.includes('RDF-SCH-20260320-22222222')};})()`);
+     assert.equal(scholarshipRegistry.sameFingerprint,true,'file type and page orientation must reuse the same scholarship QR');
+     assert.equal(scholarshipRegistry.reference,'RDF-SCH-20260320-22222222','scholarship export must receive a central report reference');
+     assert.equal(scholarshipRegistry.type,'scholarship_statistics','scholarship export must use its own report type');
+     assert.match(scholarshipRegistry.url,/report-verification\.html\?token=/,'scholarship QR must target the protected verification page');
+     assert.notEqual(scholarshipRegistry.qrVisible,'none','scholarship reports support conditional QR regeneration');
+     assert.equal(scholarshipRegistry.pageSetup,true,'scholarship PDF must apply the selected A4 orientation');
+     assert.equal(scholarshipRegistry.fixedTable,true,'scholarship tables must stay within page margins');
+     assert.equal(scholarshipRegistry.qrHeader,true,'scholarship PDF must place a QR in the left header');
+     assert.equal(scholarshipRegistry.footerUser,true,'scholarship PDF footer must stamp the exporting user');
+     assert.equal(scholarshipRegistry.footerReference,true,'scholarship PDF footer must include the reference number');
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:520,deviceScaleFactor:1,mobile:true});
+     const scholarshipMobile=await evaluate(`(()=>{const modal=document.getElementById('rptPrintModal'),shell=modal.firstElementChild,footer=document.getElementById('rptPrExportBtn').closest('.border-t'),banner=document.getElementById('rdfLocalAuditBanner'),shellRect=shell.getBoundingClientRect(),footerRect=footer.getBoundingClientRect(),bannerRect=banner?.getBoundingClientRect(),buttonRect=document.getElementById('rptPrExportBtn').getBoundingClientRect(),tabs=[...document.querySelectorAll('.report-view-tab')],tabWidths=tabs.map(tab=>tab.getBoundingClientRect().width),tabHeights=tabs.map(tab=>tab.getBoundingClientRect().height);return {shellTop:shellRect.top,shellBottom:shellRect.bottom,footerBottom:footerRect.bottom,viewport:innerHeight,horizontalOverflow:shell.scrollWidth>shell.clientWidth+1,buttonVisible:buttonRect.left>=0&&buttonRect.right<=innerWidth+1&&buttonRect.top>=0&&buttonRect.bottom<=innerHeight+1&&(!bannerRect||buttonRect.bottom<=bannerRect.top),tabWidths,tabHeights};})()`);
+     assert.ok(scholarshipMobile.shellTop>=0&&scholarshipMobile.shellBottom<=scholarshipMobile.viewport+1,'scholarship modal must fit a small viewport');
+     assert.ok(scholarshipMobile.footerBottom<=scholarshipMobile.viewport+1,'scholarship modal footer must remain visible');
+     assert.equal(scholarshipMobile.horizontalOverflow,false,'scholarship modal must not require horizontal scrolling');
+     assert.equal(scholarshipMobile.buttonVisible,true,'scholarship export action must stay above the local audit banner');
+     assert.ok(Math.abs(scholarshipMobile.tabWidths[0]-scholarshipMobile.tabWidths[1])<=1,'mobile report menu buttons must have equal width');
+     assert.ok(Math.abs(scholarshipMobile.tabHeights[0]-scholarshipMobile.tabHeights[1])<=1,'mobile report menu buttons must have equal height');
+     await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+     await evaluate(`closeRptPrintModal()`);
+     await evaluate(`switchReportView('employment')`);
      const capture=await evaluate(`(()=>{
        const original=_captureChart; const previous=LANG;const saved=localStorage.getItem('rdfLang');let labels=[];
        _captureChart=()=>{labels=_CHARTS.status.data.labels.slice();return 'fixture-image';};
@@ -213,13 +313,122 @@ const server = http.createServer((req,res)=>{
        return {labels,image:images.status,lang:LANG,saved:localStorage.getItem('rdfLang'),previous,previousSaved:saved};
      })()`);
      assert.equal(capture.image,'fixture-image');
-     assert.ok(capture.labels.includes(initialLang==='th'?'Active':'กำลังศึกษา'),'chart must use report language');
+     assert.ok(capture.labels.includes(initialLang==='th'?'Active':'กำลังศึกษา'),'chart must use report language '+JSON.stringify(capture));
      assert.equal(capture.lang,capture.previous);assert.equal(capture.saved,capture.previousSaved);
+     const employment=await evaluate(`({rows:document.querySelectorAll('#employmentTableBody tr').length,text:document.getElementById('employmentTableBody').textContent,duration:document.querySelector('#employmentTableBody tr td:nth-last-child(3)')?.textContent||''})`);
+     assert.equal(employment.rows,1,'employment report must render repeatable work records');
+     assert.match(employment.text,/RDF Foundation/,'employment report workplace');
+     assert.match(employment.duration,initialLang==='th'?/1 ปี 3 เดือน/:/1 year 3 months/,'employment duration must localize from cached data');
+     const followUp=await evaluate(`(()=>{openEmploymentFollowUp('MBS_001','rec_work_1');return {open:!document.getElementById('empFollowUpModal').classList.contains('hidden'),records:document.getElementById('empFollowUpRecord').options.length,history:document.getElementById('empFollowUpList').textContent,formVisible:!document.getElementById('empFollowUpForm').classList.contains('hidden')};})()`);
+     assert.equal(followUp.open,true,'follow-up modal must open');
+     assert.equal(followUp.records,2,'follow-up must reference existing work records');
+     assert.match(followUp.history,/Fixture follow-up/,'follow-up history must render');
+     assert.equal(followUp.formVisible,true,'authorized staff can add follow-ups');
+     await evaluate(`closeEmploymentFollowUp()`);
+     const exportView=await evaluate(`({button:getComputedStyle(document.getElementById('empExportBtn')).display,rows:employmentExportRows().length,headers:employmentExportHeaders().length,safe:csvEmploymentCell('=SUM(1,1)')})`);
+     assert.notEqual(exportView.button,'none','authorized users must see employment CSV export');
+     assert.equal(exportView.rows,1,'employment export must follow the rendered report data');
+     assert.equal(exportView.headers,19,'employment export must include follow-up reference columns');
+     assert.equal(exportView.safe,'"\'=SUM(1,1)"','employment CSV must neutralize spreadsheet formulas');
+     const composer=await evaluate(`(()=>{closeRptPrintModal();openEmploymentReportComposer();const config=document.querySelector('.report-composer-config');return {open:!document.getElementById('empReportComposerModal').classList.contains('hidden'),fields:document.querySelectorAll('input[name="empReportField"]').length,selected:document.querySelectorAll('input[name="empReportField"]:checked').length,signatures:document.querySelectorAll('input[name="empReportSignature"]').length,formats:document.querySelectorAll('input[name="empComposerFormat"]').length,format:employmentReportFormat(),orientation:employmentReportOrientation(),preview:document.getElementById('empReportPreview').textContent,exportVisible:getComputedStyle(document.getElementById('empComposerExportBtn')).display,configOverflow:getComputedStyle(config).overflowY,configScrollable:config.scrollHeight>config.clientHeight};})()`);
+     assert.equal(composer.open,true,'employment report composer must open');
+     assert.equal(composer.fields,19,'report composer must offer all export fields');
+     assert.ok(composer.selected>0&&composer.selected<composer.fields,'report composer must start with a usable recommended field set');
+     assert.equal(composer.signatures,2,'report composer must reuse the system signatory slots');
+     assert.match(composer.preview,/RDF Foundation|Dr\. Robert Dyckerhoff/,'report composer must render a document preview');
+     assert.equal(composer.formats,2,'report composer must offer Excel and PDF');
+     assert.equal(composer.format,'pdf','formal PDF must be the initial export choice');
+     assert.equal(composer.orientation,'landscape','A4 landscape must be the default');
+     assert.notEqual(composer.exportVisible,'none','export permission must expose the export action');
+     assert.equal(composer.configOverflow,'scroll','the left configuration pane must own a visible scrollbar');
+     assert.equal(composer.configScrollable,true,'the left configuration pane must scroll through all controls');
+     const selectedExport=await evaluate(`(()=>{document.querySelectorAll('input[name="empReportField"]').forEach((input,index)=>input.checked=index<2);renderEmploymentReportPreview();const keys=selectedEmploymentReportFields();return {keys,headers:employmentExportHeaders(keys,employmentReportLang()).length,rowWidth:employmentExportRows(keys,employmentReportLang())[0].length,previewHeaders:document.querySelectorAll('#empReportPreview th').length};})()`);
+     assert.equal(selectedExport.headers,2,'selected fields must control CSV headers');
+     assert.equal(selectedExport.rowWidth,2,'selected fields must control CSV rows');
+     assert.equal(selectedExport.previewHeaders,2,'selected fields must control the preview');
+     const registry=await evaluate(`(async()=>{const issued=await issueEmploymentReportReference();return {reference:issued.report.referenceNo,url:issued.verificationUrl,qrVersion:issued.report.qrVersion,previewReference:document.getElementById('empReportPreview').textContent,regenerateVisible:getComputedStyle(document.getElementById('empRegenerateQrBtn')).display};})()`);
+     assert.equal(registry.reference,'RDF-EMP-20260320-11111111','first export must receive a report reference');
+     assert.match(registry.url,/report-verification\.html\?token=/,'QR must target the protected verification page');
+     assert.equal(registry.qrVersion,1,'new report QR starts at version 1');
+     assert.match(registry.previewReference,/RDF-EMP-20260320-11111111/,'issued reference must appear in the preview');
+     assert.notEqual(registry.regenerateVisible,'none','authorized users can request conditional QR regeneration');
+     const printLayout=await evaluate(`(async()=>{document.querySelectorAll('input[name="empReportField"]').forEach(input=>input.checked=true);renderEmploymentReportPreview();const fields=EMPLOYMENT_REPORT_FIELDS.slice(),landscape=employmentReportColumnChunks(fields,'landscape'),portrait=employmentReportColumnChunks(fields,'portrait'),html=await buildEmploymentPrintHtml(_EMP_REPORT_REGISTRATION,'data:image/png;base64,AA=='),preview=document.getElementById('empReportPreview');return {landscapeMax:Math.max(...landscape.map(chunk=>chunk.length)),portraitMax:Math.max(...portrait.map(chunk=>chunk.length)),landscapeParts:landscape.length,portraitParts:portrait.length,fixedTable:html.includes('table-layout:fixed'),pageSetup:html.includes('@page{size:A4 landscape'),footerUser:html.includes('Test Admin'),footerReference:html.includes('RDF-EMP-20260320-11111111'),previewOverflow:preview.scrollWidth>preview.clientWidth+1};})()`);
+     assert.ok(printLayout.landscapeParts>1&&printLayout.landscapeMax<=8,'landscape PDF must split wide reports into bounded column sets');
+     assert.ok(printLayout.portraitParts>printLayout.landscapeParts&&printLayout.portraitMax<=5,'portrait PDF must use narrower column sets');
+     assert.equal(printLayout.fixedTable,true,'print tables must use fixed layout inside page margins');
+     assert.equal(printLayout.pageSetup,true,'formal report must apply the selected A4 orientation');
+     assert.equal(printLayout.footerUser,true,'formal report footer must stamp the exporting user');
+     assert.equal(printLayout.footerReference,true,'formal report footer must include the reference number');
+     assert.equal(printLayout.previewOverflow,false,'document preview must not overflow horizontally');
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:520,deviceScaleFactor:1,mobile:true});
+     const composerMobile=await evaluate(`(()=>{const shell=document.querySelector('.report-composer-shell'),body=document.querySelector('.report-composer-body'),footer=document.querySelector('.report-composer-footer'),banner=document.getElementById('rdfLocalAuditBanner'),shellRect=shell.getBoundingClientRect(),footerRect=footer.getBoundingClientRect(),bannerRect=banner?.getBoundingClientRect();return {width:innerWidth,shellTop:shellRect.top,shellBottom:shellRect.bottom,footerBottom:footerRect.bottom,viewport:innerHeight,bodyOverflow:getComputedStyle(body).overflowY,horizontalOverflow:shell.scrollWidth>shell.clientWidth+1,exportVisible:(()=>{const r=document.getElementById('empComposerExportBtn').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&(!bannerRect||r.bottom<=bannerRect.top);})()};})()`);
+     assert.equal(composerMobile.width,360,'report composer mobile test must use a small viewport');
+     assert.ok(composerMobile.shellTop>=0&&composerMobile.shellBottom<=composerMobile.viewport+1,'report composer shell must fit inside a small viewport');
+     assert.ok(composerMobile.footerBottom<=composerMobile.viewport+1,'report composer footer must remain visible');
+     assert.equal(composerMobile.bodyOverflow,'auto','the composer body must own mobile scrolling');
+     assert.equal(composerMobile.horizontalOverflow,false,'report composer must not require horizontal scrolling');
+     assert.equal(composerMobile.exportVisible,true,'mobile export action must remain visible');
+     await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+     await evaluate(`closeEmploymentReportComposer()`);
+     const localAudit=await evaluate(`(async()=>{const blocked=await API.saveEmploymentFollowUp({});return {mode:RDF.LOCAL_AUDIT_MODE,banner:document.getElementById('rdfLocalAuditBanner')?.textContent||'',code:blocked.code};})()`);
+     assert.equal(localAudit.mode,true,'localhost must enter audit mode automatically');
+     assert.match(localAudit.banner,/LOCALHOST/,'localhost audit banner must be visible');
+     assert.equal(localAudit.code,'LOCAL_AUDIT_MODE','localhost must reject mutation requests before fetch');
+     await send('Emulation.clearDeviceMetricsOverride');
+   }
+   if(file==='report-verification.html') {
+     await delay(50);
+     const verification=await evaluate(`({publicVisible:!document.getElementById('verifyResult').classList.contains('hidden'),subject:document.getElementById('verifySubject').textContent,reference:document.getElementById('verifyReference').textContent,detailsVisible:!document.getElementById('verifyDetails').classList.contains('hidden'),hash:document.getElementById('detailHash').textContent,publicNotice:document.querySelector('.notice').textContent,scholarshipType:verificationType({reportType:'scholarship_statistics'}),promotionType:verificationType({reportType:'promotion_results'}),academicType:verificationType({reportType:'academic_results'}),regenerateVisible:getComputedStyle(document.getElementById('verifyRegenerateBtn')).display})`);
+     assert.equal(verification.publicVisible,true,'valid QR must show the public verification summary');
+     assert.match(verification.subject,/รายงานภาวะ|Alumni Employment/,'public QR view must expose the report subject');
+     assert.match(verification.reference,/RDF-EMP-20260320-11111111/,'public QR view must expose the reference number');
+     assert.equal(verification.detailsVisible,true,'an authenticated report viewer can see verification metadata');
+     assert.match(verification.hash,/^c{64}$/,'authenticated details must expose the content fingerprint');
+     assert.doesNotMatch(verification.publicNotice,/MBS_001|Test Student/,'public verification notice must not expose report rows');
+     assert.equal(verification.scholarshipType,initialLang==='th'?'รายงานสถิติทุนการศึกษา':'Scholarship statistics report','verification page must localize the scholarship report type');
+     assert.equal(verification.promotionType,initialLang==='th'?'รายงานเลื่อนชั้นและผู้สำเร็จการศึกษา':'Promotion and graduation report','verification page must localize the promotion report type');
+     assert.equal(verification.academicType,initialLang==='th'?'รายงานผลการศึกษา':'Academic results report','verification page must localize the academic report type');
+     assert.notEqual(verification.regenerateVisible,'none','authorized report viewers with export permission can conditionally regenerate any report QR');
+   }
+   if(file==='academic-results.html') {
+     const academicReport=await evaluate(`(async()=>{const lang=LANG,isEN=lang==='en',rows=collectAcademicReportRows({acad:'2568',sem:'1',inst:'',isEN,sortBy:'inst'}),registration=await registerAcademicReport({rows,lang,acad:'2568',sem:'1',inst:'',sortBy:'inst'}),html=generateGradeReportHTML({lang,isEN,acad:'2568',pDate:'2026-03-20',sem:'1',inst:'',subject:'',sortBy:'inst',orientation:'portrait',selSigs:[],rows,registration,qrDataUrl:'data:image/png;base64,AA=='});return {rows:rows.length,type:registration.report.reportType,reference:registration.report.referenceNo,url:registration.verificationUrl,page:html.includes('@page{size:A4 portrait'),fixed:html.includes('table-layout:fixed'),qr:html.includes('class="rpt-qr"'),footerUser:html.includes('Test Admin'),footerReference:html.includes('RDF-ACA-20260320-44444444'),orientations:document.querySelectorAll('input[name="arPrOrientation"]').length,defaultOrientation:document.querySelector('input[name="arPrOrientation"]:checked')?.value};})()`);
+     assert.equal(academicReport.rows,1,'academic report must use the selected source records without copying them into a second database');
+     assert.equal(academicReport.type,'academic_results','academic results must use the central report registry');
+     assert.equal(academicReport.reference,'RDF-ACA-20260320-44444444','academic report must receive a central reference');
+     assert.match(academicReport.url,/report-verification\.html\?token=/,'academic report QR must target the protected verification page');
+     assert.equal(academicReport.page,true,'academic report must apply selected A4 orientation');
+     assert.equal(academicReport.fixed,true,'academic table must stay within page margins');
+     assert.equal(academicReport.qr,true,'academic report must place QR in the left header');
+     assert.equal(academicReport.footerUser,true,'academic report footer must stamp the exporting user');
+     assert.equal(academicReport.footerReference,true,'academic report footer must contain its reference');
+     assert.equal(academicReport.orientations,2,'academic formal report must offer landscape and portrait');
+     assert.equal(academicReport.defaultOrientation,'landscape','academic formal report must default to landscape');
+   }
+   if(file==='promotion.html') {
+     const promotionReport=await evaluate(`(async()=>{const lang=LANG,isEN=lang==='en',rows=[{stipNo:'MBS_001',name:'Fixture',institution:'MBS',level:'Grade 10',action:'promote'}],registration=await registerPromotionReport({rows,lang,reportTypes:['promotion'],scope:{academicYear:'2568'}}),opts={lang,reportTypes:['promotion'],insts:new Set(),levels:new Set(),school:'',subject:'',acad:'2568',pDate:'2026-03-20',sigs:[],sortByLevel:true,sortByPriority:false,sortByName:false,orientation:'portrait',graduatedStudents:[]},html=generateFormalReportHTML(opts,registration,'data:image/png;base64,AA==');return {type:registration.report.reportType,reference:registration.report.referenceNo,url:registration.verificationUrl,page:html.includes('@page{size:A4 portrait'),fixed:html.includes('table-layout:fixed'),qr:html.includes('class="rpt-qr"'),footerUser:html.includes('Test Admin'),footerReference:html.includes('RDF-PRO-20260320-33333333'),orientations:document.querySelectorAll('input[name="prOrientation"]').length,defaultOrientation:document.querySelector('input[name="prOrientation"]:checked')?.value};})()`);
+     assert.equal(promotionReport.type,'promotion_results','promotion and graduation reports must use the central report registry');
+     assert.equal(promotionReport.reference,'RDF-PRO-20260320-33333333','promotion report must receive a central reference');
+     assert.match(promotionReport.url,/report-verification\.html\?token=/,'promotion report QR must target the protected verification page');
+     assert.equal(promotionReport.page,true,'promotion report must apply selected A4 orientation');
+     assert.equal(promotionReport.fixed,true,'promotion table must stay within page margins');
+     assert.equal(promotionReport.qr,true,'promotion report must place QR in the left header');
+     assert.equal(promotionReport.footerUser,true,'promotion report footer must stamp the exporting user');
+     assert.equal(promotionReport.footerReference,true,'promotion report footer must contain its reference');
+     assert.equal(promotionReport.orientations,2,'promotion formal report must offer landscape and portrait');
+     assert.equal(promotionReport.defaultOrientation,'landscape','promotion formal report must default to landscape');
    }
    if(initialLang==='en' && file==='students.html') {
      const dynamic=await evaluate(`({institutionLevel:document.querySelector('#studentTableBody tr td:nth-child(3)')?.textContent||'',scholarshipYear:document.querySelector('#studentTableBody tr td:nth-child(4)')?.textContent||''})`);
      assert.equal(/[ก-๙]/.test(dynamic.institutionLevel),false,'student level must be English');
      assert.equal(/[ก-๙]/.test(dynamic.scholarshipYear),false,'academic year must be English');
+   }
+   if(file==='students.html') {
+     const alumniShortcut=await evaluate(`(()=>{const shortcut=document.getElementById('alumniEmploymentShortcut'),initialHidden=getComputedStyle(shortcut).display==='none';document.getElementById('filterStatus').value='Alumni';applyFilters();const link=document.getElementById('alumniEmploymentReportLink');const result={initialHidden,shown:getComputedStyle(shortcut).display!=='none',href:link.getAttribute('href'),title:document.getElementById('alumniEmploymentShortcutTitle').textContent.trim(),button:link.textContent.trim(),expectedTitle:t('rptViewEmployment'),expectedButton:t('alumniEmploymentShortcutOpen')};document.getElementById('filterStatus').value='';applyFilters();return result;})()`);
+     assert.equal(alumniShortcut.initialHidden,true,'employment shortcut must stay out of the general student list');
+     assert.equal(alumniShortcut.shown,true,'employment shortcut must be visible in the alumni view');
+     assert.equal(alumniShortcut.href,'reports.html?view=employment&source=alumni','alumni shortcut must deep-link to the employment report');
+     assert.equal(alumniShortcut.title,alumniShortcut.expectedTitle,'alumni shortcut title must match the destination');
+     assert.equal(alumniShortcut.button,alumniShortcut.expectedButton,'alumni shortcut action must be explicit');
    }
    if(initialLang==='en' && file==='academic-results.html') {
      const dynamic=await evaluate(`(()=>{document.getElementById('fltYear').value='2568';document.getElementById('fltSem').value='1';applyFilters();return document.getElementById('entryGroupsContainer').textContent;})()`);
@@ -275,8 +484,35 @@ const server = http.createServer((req,res)=>{
      assert.deepEqual(audienceUx.initial,{audience:'all',advanced:false},'unconditional sections must use the friendly All students choice');
      assert.equal(audienceUx.audience,'alumni');assert.equal(audienceUx.advanced,false,'alumni preset should not expose advanced conditions');
      assert.deepEqual(audienceUx.statuses,['Graduated','Resigned','WithdrawnScholarship','Incomplete','University'],'alumni choice must map to stored status codes');
+     const migration=await evaluate(`({visible:!document.getElementById('employmentMigrationPanel').classList.contains('hidden'),rows:document.querySelectorAll('#employmentMigrationRows tr').length,selected:document.querySelectorAll('.employment-migration-check:checked').length,text:document.getElementById('employmentMigrationPanel').textContent})`);
+     assert.equal(migration.visible,true,'legacy migration preview must be visible after schema preparation');
+     assert.equal(migration.rows,1,'legacy migration preview rows');
+     assert.equal(migration.selected,1,'only ready legacy rows are selected');
+     assert.match(migration.text,/RDF Foundation/,'legacy workplace mapping preview');
    }
    console.log('PASS '+file+' (initial '+initialLang+')');
   }
+  const navigateAndWait=async url=>{
+    await send('Page.navigate',{url});
+    const deadline=Date.now()+10000;
+    while(true){
+      let ready=false;
+      try{ready=await evaluate(`location.href===${JSON.stringify(url)}&&document.readyState==='complete'&&typeof setLang==='function'`);}catch(_){}
+      if(ready)break;
+      assert.ok(Date.now()<deadline,url+' did not finish loading');
+      await delay(50);
+    }
+    await delay(50);
+  };
+  const alumniUrl=base+'/students.html?status=Alumni&testLang=th';
+  await navigateAndWait(alumniUrl);
+  const alumniRoute=await evaluate(`({shown:getComputedStyle(document.getElementById('alumniEmploymentShortcut')).display!=='none',status:document.getElementById('filterStatus').value,href:document.getElementById('alumniEmploymentReportLink').getAttribute('href')})`);
+  assert.deepEqual(alumniRoute,{shown:true,status:'Alumni',href:'reports.html?view=employment&source=alumni'},'alumni URL must show the employment-report shortcut');
+  console.log('PASS alumni employment shortcut route');
+  const employmentUrl=base+'/reports.html?view=employment&source=alumni&testLang=th';
+  await navigateAndWait(employmentUrl);
+  const employmentRoute=await evaluate(`({view:document.getElementById('reportsWorkspace').dataset.reportView,visible:getComputedStyle(document.getElementById('employmentReportSection')).display!=='none',back:document.getElementById('reportsBackLink').getAttribute('href')})`);
+  assert.deepEqual(employmentRoute,{view:'employment',visible:true,back:'students.html?status=Alumni'},'employment report URL must open the target view and preserve its alumni return path');
+  console.log('PASS alumni employment report route');
  } finally {await send('Page.close');ws.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});
