@@ -1,5 +1,7 @@
 # Dynamic Custom Fields
 
+> แนวทางกลางสำหรับการขยายชีต คอลัมน์ ฟิลด์ และการย้ายข้อมูลในอนาคตอยู่ที่ `SAFE_SCHEMA_EVOLUTION.md` และให้ถือเป็นข้อกำหนดบังคับร่วมกับเอกสารนี้
+
 ## การวิเคราะห์ระบบเดิม
 
 Frontend เป็น GitHub Pages แบบ HTML/Vanilla JavaScript และเรียก Google Apps Script Web App ผ่าน `fetch` ใน `assets/js/api.js` ส่วน backend ใช้ `doGet`/`doPost` ใน `Code.gs` และเก็บข้อมูลหลักใน Google Sheets ตาราง `Students` โดยใช้ `StipNo` เป็นรหัสอ้างอิงนักเรียน
