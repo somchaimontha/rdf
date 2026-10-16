@@ -1,0 +1,33 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const reports = fs.readFileSync(path.join(root, 'reports.html'), 'utf8');
+const settings = fs.readFileSync(path.join(root, 'settings.html'), 'utf8');
+const auth = fs.readFileSync(path.join(root, 'assets/js/auth.js'), 'utf8');
+
+test('employment report keeps grouped columns compact and follow-up notes last', () => {
+  const fields = reports.slice(reports.indexOf('const EMPLOYMENT_REPORT_FIELDS'), reports.indexOf('function employmentReportText'));
+  assert.match(fields, /identitySummary[\s\S]*educationFunding[\s\S]*employmentSummary[\s\S]*workplaceSummary[\s\S]*periodSummary[\s\S]*followUpSummary/);
+  assert.match(fields, /followUpNotes[^\n]*recommended:true/);
+  assert.ok(fields.lastIndexOf("key:'followUpNotes'") > fields.lastIndexOf("key:'assignedTo'"));
+});
+
+test('employment preview changes paper shape and places QR beside the reference on the right', () => {
+  assert.match(reports, /report-preview-page\[data-orientation="portrait"\][^{]*\{[^}]*width:min\(82%,520px\)[^}]*min-height:735px/);
+  assert.match(reports, /report-preview-verification[\s\S]*empPreviewQr/);
+  assert.doesNotMatch(reports, /empComposerPageSetup',lang\)\)}:\s*\$\{escapeEmploymentHtml\(employmentReportText\(orientation/);
+  assert.match(reports, /<div class="verification"><div class="reference">[\s\S]*<img class="qr"/);
+});
+
+test('shared signature settings support drawing, clearing, and signed-in recorder names', () => {
+  assert.match(settings, /signature-pad-canvas/);
+  assert.match(settings, /clearSignaturePad\(\$\{i\}\)/);
+  assert.match(settings, /clearSignaturePad\(\$\{i\},true\)/);
+  assert.match(settings, /output\.toDataURL\('image\/png'\)/);
+  assert.match(auth, /reportIsDataRecorderRole/);
+  assert.match(auth, /resolved\.name = String\(user\.name\)\.trim\(\)/);
+  assert.match(auth, /reportSignatureMarkHtml/);
+});

@@ -924,13 +924,13 @@ img.student-avatar {
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.3.2"></script>
+<script src="assets/js/config.js?v=2.4.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.3.2"></script>
-<script src="assets/js/auth.js?v=2.3.2"></script>
-<script src="assets/js/rbac.js?v=2.3.2"></script>
-<script src="assets/js/api.js?v=2.3.2"></script>
-<script src="assets/js/report-registry.js?v=2.3.2"></script>
+<script src="assets/js/i18n.js?v=2.4.0"></script>
+<script src="assets/js/auth.js?v=2.4.0"></script>
+<script src="assets/js/rbac.js?v=2.4.0"></script>
+<script src="assets/js/api.js?v=2.4.0"></script>
+<script src="assets/js/report-registry.js?v=2.4.0"></script>
 <script>
 // RBAC: only Manager+ can access promotion page
 RBAC.enforcePage(['viewPromotion']);
@@ -2160,6 +2160,9 @@ async function reviewScholarshipRequest(stipNo, approvalStatus) {
       : (LANG==='th' ? '✕ ยืนยันการไม่อนุมัติ' : '✕ Confirm Rejection'),
     input: 'text',
     inputLabel: t('schApprovalNotes'),
+    text: approvalStatus === 'Rejected'
+      ? bi('ระบบจะบันทึกเป็น “กำลังศึกษาต่อ (ทุนตนเอง)” และเชื่อมกับรายงานภาวะการทำงานโดยอัตโนมัติ','The student will be recorded as continuing university study without RDF funding and linked to employment reporting automatically.')
+      : '',
     inputPlaceholder: LANG==='th' ? 'หมายเหตุ (ไม่บังคับ)...' : 'Notes (optional)...',
     showCancelButton: true,
     confirmButtonText: approvalStatus === 'Approved'
@@ -2191,12 +2194,13 @@ async function reviewScholarshipRequest(stipNo, approvalStatus) {
         icon: approvalStatus === 'Approved' ? 'success' : 'info',
         title: approvalStatus === 'Approved'
           ? (LANG==='th' ? '✔ อนุมัติทุนแล้ว — ย้ายไปกลุ่มมหาวิทยาลัยแล้ว' : '✔ Approved — moved to University group')
-          : (LANG==='th' ? 'ไม่อนุมัติ — บันทึกแล้ว' : 'Rejected — saved'),
+          : bi('ไม่อนุมัติทุน — บันทึกเป็นกำลังศึกษาต่อ (ทุนตนเอง) แล้ว','Funding rejected — recorded as continuing study without RDF funding'),
         timer: 2500, showConfirmButton: false,
       });
 
-      if (approvalStatus === 'Approved') {
-        // Reload student groups from DB so the student appears in UNI group immediately
+      {
+        // Reload after either decision because rejection now moves the canonical
+        // student status to University (self-funded).
         try {
           const studRes = await API.get('getStudentsForPromotion');
           if (studRes.status === 'success') {
@@ -2478,12 +2482,12 @@ async function approveUniFromPanel(stipNo) {
 }
 
 // Reject a Graduated+pending-uni student from the approval panel.
-// Marks rejection notes but keeps Status='Graduated' (remains alumni).
+// The student is still continuing university study, but without RDF funding.
 async function rejectUniFromPanel(stipNo) {
   const { isConfirmed, value: notes } = await Swal.fire({
     icon: 'warning',
     title: LANG==='th' ? '✕ ไม่อนุมัติทุน' : '✕ Reject University Scholarship',
-    html: `<div style="font-size:13px;text-align:left"><b>${stipNo}</b> — ${LANG==='th'?'นักเรียนจะยังคงอยู่ในกลุ่มศิษย์เก่า':'Student will remain in the Alumni group'}</div>`,
+    html: `<div style="font-size:13px;text-align:left;line-height:1.7"><b>${stipNo}</b><br>${bi('ระบบจะบันทึกเป็น <b>กำลังศึกษาต่อมหาวิทยาลัย (ทุนตนเอง)</b> และเชื่อมกับรายงานภาวะการทำงาน','The student will be recorded as <b>continuing university study without RDF funding</b> and linked to employment reporting.')}</div>`,
     input: 'text',
     inputLabel: LANG==='th' ? 'เหตุผล (แนะนำให้ระบุ)' : 'Reason (recommended)',
     inputPlaceholder: '...',
@@ -2498,13 +2502,13 @@ async function rejectUniFromPanel(stipNo) {
   try {
     const today = new Date().toISOString().slice(0,10);
     const reqUser = (getUser()||{}).username || 'Admin';
-    const payload = [{ StipNo: stipNo, SchApprovalStatus: 'Rejected', SchApprovalBy: reqUser,
+    const payload = [{ StipNo: stipNo, NewStatus: 'University', UniScholarship: 'No', SchApprovalStatus: 'Rejected', SchApprovalBy: reqUser,
                         SchApprovalDate: today, SchApprovalNotes: notes || '' }];
-    // Just record the rejection — no status change (remains Graduated/Alumni)
-    await API.promoteStudents(payload, reqUser, today);
+    const res = await API.promoteStudents(payload, reqUser, today);
+    if (res.status !== 'success') throw new Error(res.message || bi('ไม่สามารถบันทึกผลการพิจารณาทุนได้','Unable to save the scholarship decision'));
     showLoader(false);
     await Swal.fire({ icon:'info', title: LANG==='th' ? 'บันทึกแล้ว' : 'Saved',
-      text: LANG==='th' ? `บันทึกการไม่อนุมัติสำหรับ ${stipNo} แล้ว` : `Rejection recorded for ${stipNo}`,
+      text: bi(`${stipNo} อยู่ในสถานะกำลังศึกษาต่อ (ทุนตนเอง)`,`${stipNo} is now continuing study without RDF funding`),
       timer: 2000, showConfirmButton: false });
     _PENDING_UNI_GRADUATED = _PENDING_UNI_GRADUATED.filter(s => s.stipNo !== stipNo);
     renderApprovalPanel();
@@ -4616,9 +4620,9 @@ async function openPrintReportModal() {
   document.querySelectorAll('input[name="prLang"]').forEach(r => { r.checked = (r.value === LANG); });
 
   // Load signature slots from settings
-  const sigs = (SETTINGS && Array.isArray(SETTINGS['SIGNATURE_BLOCK']) && SETTINGS['SIGNATURE_BLOCK'].length > 0)
+  const sigs = reportResolveSignatories((SETTINGS && Array.isArray(SETTINGS['SIGNATURE_BLOCK']) && SETTINGS['SIGNATURE_BLOCK'].length > 0)
     ? SETTINGS['SIGNATURE_BLOCK']
-    : DEFAULT_SIG_SLOTS;
+    : DEFAULT_SIG_SLOTS);
   window._prSigSlots = sigs;
 
   const sigList = document.getElementById('prModalSigList');
@@ -5114,7 +5118,7 @@ async function doPrintReport() {
       nextLevel:'', scholarship:student.uniScholarship||'', scholarshipPriority:student.schPriority??'', university:student.uniName||'', notes:student.promotionNotes||student.notes||'',
     }));
     registryRows.sort((a,b) => `${a.institution}|${a.level}|${a.stipNo}`.localeCompare(`${b.institution}|${b.level}|${b.stipNo}`,'th'));
-    const signatures = (opts.sigs||[]).map(s => ({role:s.role||'',name:s.name||'',position:s.position||''}));
+    const signatures = (opts.sigs||[]).map(s => ({role:s.role||'',name:s.name||'',position:s.position||'',signatureDataUrl:reportSignatureDataUrl(s)}));
     const registration = await registerPromotionReport({
       rows:registryRows, lang:opts.lang, subject:opts.subject,
       reportTypes:opts.reportTypes,
@@ -5712,7 +5716,7 @@ function buildSignatureHTML(sigs, dateStr, S, isEN) {
     const nameDisplay = s.name ? `(${s.name})` : `(${'&nbsp;'.repeat(26)})`;
     return `<div class="sig-blk">
       <div class="sig-role">${s.role || S.signedBy}</div>
-      <div class="sig-line"></div>
+      ${reportSignatureMarkHtml(s,40)}
       <div class="sig-name">${nameDisplay}</div>
       ${s.position ? `<div class="sig-pos">${s.position}</div>` : `<div class="sig-pos">&nbsp;</div>`}
       <div class="sig-date">${S.signDate}&nbsp;&nbsp;${date}</div>
@@ -5792,8 +5796,8 @@ async function openWithdrawalFormModal() {
     document.getElementById('promotionDate').value || new Date().toISOString().split('T')[0];
 
   // Load signatories
-  const sigs = (SETTINGS && Array.isArray(SETTINGS['SIGNATURE_BLOCK']) && SETTINGS['SIGNATURE_BLOCK'].length)
-    ? SETTINGS['SIGNATURE_BLOCK'] : DEFAULT_SIG_SLOTS;
+  const sigs = reportResolveSignatories((SETTINGS && Array.isArray(SETTINGS['SIGNATURE_BLOCK']) && SETTINGS['SIGNATURE_BLOCK'].length)
+    ? SETTINGS['SIGNATURE_BLOCK'] : DEFAULT_SIG_SLOTS);
   window._wfSigSlots = sigs;
   const sigEl = document.getElementById('wfSigList');
   sigEl.innerHTML = sigs.length === 0
@@ -5990,7 +5994,7 @@ function generateWithdrawalFormHTML({ rows, docDate, filterYear, sigs, isEN, org
   const sigBlocks = sigs.map(s => `
     <div style="flex:1;min-width:160px;max-width:220px;text-align:center">
       <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px">${s.role||''}</div>
-      <div style="border-top:1px solid #374151;margin:40px 12px 6px"></div>
+      ${reportSignatureMarkHtml(s,42)}
       <div style="font-size:9pt;font-weight:700">${s.name ? `(${s.name})` : '(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)'}</div>
       ${s.position ? `<div style="font-size:8pt;color:#6b7280">${s.position}</div>` : ''}
       <div style="font-size:7.5pt;color:#9ca3af;margin-top:4px">${isEN?'Date':'วันที่'} ${thDate(docDate)}</div>

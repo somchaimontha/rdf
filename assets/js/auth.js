@@ -11,6 +11,46 @@ function getSessionToken() {
   try { return (JSON.parse(localStorage.getItem('rdfUser')) || {}).sessionToken || ''; } catch { return ''; }
 }
 
+// ── Shared report signatory helpers ─────────────────────────────────────────
+// A configured "data recorder" slot always resolves to the signed-in person's
+// full display name. The account username remains the audit identity in APIs;
+// it is not printed in place of the person's name.
+function reportIsDataRecorderRole(role) {
+  const normalized = String(role || '').toLocaleLowerCase().replace(/[\s._\-/]+/g, '');
+  return normalized.includes('ผู้บันทึกข้อมูล') || normalized.includes('ผู้จัดทำ') ||
+    normalized.includes('datarecorder') || normalized.includes('recordedby') ||
+    normalized.includes('preparedby');
+}
+
+function reportResolveSignatory(slot) {
+  const resolved = { ...(slot || {}) };
+  const user = getUser() || {};
+  if (reportIsDataRecorderRole(resolved.role) && String(user.name || '').trim()) {
+    resolved.name = String(user.name).trim();
+    resolved.recorderUsername = String(user.username || '').trim();
+    resolved.nameSource = 'signed_in_user';
+  }
+  return resolved;
+}
+
+function reportResolveSignatories(slots) {
+  return (Array.isArray(slots) ? slots : []).map(reportResolveSignatory);
+}
+
+function reportSignatureDataUrl(slot) {
+  const value = String(slot?.signatureDataUrl || '');
+  return /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(value) ? value : '';
+}
+
+function reportSignatureMarkHtml(slot, height = 38) {
+  const safeHeight = Math.max(28, Math.min(64, Number(height) || 38));
+  const source = reportSignatureDataUrl(slot);
+  if (source) {
+    return `<div style="height:${safeHeight}px;display:flex;align-items:flex-end;justify-content:center;margin:2px 10px 5px"><img src="${source}" alt="" aria-hidden="true" style="display:block;max-width:150px;max-height:${safeHeight}px;object-fit:contain"></div>`;
+  }
+  return `<div style="height:${safeHeight}px;border-bottom:1px solid #374151;margin:2px 10px 5px"></div>`;
+}
+
 // Preserve only the report-verification return path after login. Keeping this
 // allowlist narrow prevents the `next` parameter from becoming an open redirect.
 function authLoginDestination(fallback = 'dashboard.html') {

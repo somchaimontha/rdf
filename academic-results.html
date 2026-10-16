@@ -444,12 +444,12 @@
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.3.2"></script>
-<script src="assets/js/i18n.js?v=2.3.2"></script>
-<script src="assets/js/auth.js?v=2.3.2"></script>
-<script src="assets/js/rbac.js?v=2.3.2"></script>
-<script src="assets/js/api.js?v=2.3.2"></script>
-<script src="assets/js/report-registry.js?v=2.3.2"></script>
+<script src="assets/js/config.js?v=2.4.0"></script>
+<script src="assets/js/i18n.js?v=2.4.0"></script>
+<script src="assets/js/auth.js?v=2.4.0"></script>
+<script src="assets/js/rbac.js?v=2.4.0"></script>
+<script src="assets/js/api.js?v=2.4.0"></script>
+<script src="assets/js/report-registry.js?v=2.4.0"></script>
 <script>
 RBAC.enforcePage(['viewStudents']);
 
@@ -1096,8 +1096,8 @@ function openPrintModal() {
 
   document.querySelectorAll('input[name="arPrLang"]').forEach(r => { r.checked = (r.value === LANG); });
 
-  const sigs = (Array.isArray(_SETTINGS['SIGNATURE_BLOCK']) && _SETTINGS['SIGNATURE_BLOCK'].length)
-    ? _SETTINGS['SIGNATURE_BLOCK'] : DEFAULT_SIG_SLOTS;
+  const sigs = reportResolveSignatories((Array.isArray(_SETTINGS['SIGNATURE_BLOCK']) && _SETTINGS['SIGNATURE_BLOCK'].length)
+    ? _SETTINGS['SIGNATURE_BLOCK'] : DEFAULT_SIG_SLOTS);
   window._arSigSlots = sigs;
 
   const sigList = document.getElementById('arPrSigList');
@@ -1150,7 +1150,7 @@ async function doPrint() {
     const rows = collectAcademicReportRows({ acad, sem, inst, isEN, sortBy });
     if (!rows.length) throw new Error(isEN ? 'No academic results match the selected filters.' : 'ไม่พบผลการศึกษาตามเงื่อนไขที่เลือก');
     showLoader(true, isEN ? 'Registering report…' : 'กำลังลงทะเบียนรายงาน…');
-    const signatures = selSigs.map(s => ({ role:s.role||'', name:s.name||'', position:s.position||'' }));
+    const signatures = selSigs.map(s => ({ role:s.role||'', name:s.name||'', position:s.position||'', signatureDataUrl:reportSignatureDataUrl(s) }));
     const registration = await registerAcademicReport({ rows, lang, acad, sem, inst, subject, sortBy, signatures });
     _ACADEMIC_REPORT_REGISTRATION = registration;
     updateAcademicReportQrUi();
@@ -1253,7 +1253,7 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
         ${selSigs.map(s => `
         <div style="text-align:center;min-width:160px;flex:1;max-width:220px">
           <div style="font-size:8.5pt;font-weight:700;color:#374151;margin-bottom:2px">${formatSignatoryRole(s.role,lang)}</div>
-          <div style="border-top:1px solid #374151;margin:38px 12px 6px"></div>
+          ${reportSignatureMarkHtml(s,40)}
           <div style="font-size:9pt;font-weight:700">${s.name||'.................................................'}</div>
           ${s.position?`<div style="font-size:8pt;color:#6b7280;margin-top:2px">${s.position}</div>`:''}
           <div style="font-size:7.5pt;color:#9ca3af;margin-top:4px">${SL.signDate}: ............................…</div>

@@ -326,6 +326,12 @@
   flex: 1;
   min-width: 0;
 }
+.signature-pad-shell { border:1.5px solid #cbd5e1; border-radius:10px; background:#fff; overflow:hidden; }
+.signature-pad-shell:focus-within { border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.10); }
+.signature-pad-canvas { display:block; width:100%; height:132px; background:#fff; touch-action:none; cursor:crosshair; }
+.signature-pad-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; border-top:1px solid #e2e8f0; background:#f8fafc; }
+.signature-pad-actions button { font-size:11px; font-weight:700; color:#0f766e; }
+.signature-pad-actions button:hover { text-decoration:underline; }
 </style>
 </head>
 <body class="bg-gray-50">
@@ -1313,6 +1319,7 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-4" data-t="stGenSigDesc">กำหนดชื่อและตำแหน่งของผู้ลงนามในแบบฟอร์มทะเบียนประวัตินักเรียน • สามารถเพิ่ม/ลบช่องลงนามได้</p>
+        <div class="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-900 mb-4" data-t="stSigStandardNote">ลายเซ็นที่บันทึกจะใช้ร่วมกันในรายงานของระบบ ช่องผู้บันทึกข้อมูลจะแสดงชื่อ–นามสกุลของผู้ใช้งานที่ออกรายงานโดยอัตโนมัติ</div>
         <div id="sigBlockEditor" class="space-y-3 mb-4">
           <div class="text-center text-gray-400 py-4 text-sm" data-t="stLoading">กำลังโหลด...</div>
         </div>
@@ -2120,12 +2127,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.3.2"></script>
+<script src="assets/js/config.js?v=2.4.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.3.2"></script>
-<script src="assets/js/api.js?v=2.3.2"></script>
-<script src="assets/js/auth.js?v=2.3.2"></script>
-<script src="assets/js/rbac.js?v=2.3.2"></script>
+<script src="assets/js/i18n.js?v=2.4.0"></script>
+<script src="assets/js/api.js?v=2.4.0"></script>
+<script src="assets/js/auth.js?v=2.4.0"></script>
+<script src="assets/js/rbac.js?v=2.4.0"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -4273,9 +4280,9 @@ let printTitleState = {
   titleEn:  'SCHOLARSHIP STUDENT REGISTRATION RECORD',
 };
 let sigBlockState = [
-  { role: 'ผู้บันทึกข้อมูล',  name: '', position: '' },
-  { role: 'ผู้ตรวจสอบข้อมูล', name: '', position: '' },
-  { role: 'ผู้อนุมัติ',        name: '', position: '' },
+  { role: 'ผู้บันทึกข้อมูล',  name: '', position: '', signatureDataUrl:'' },
+  { role: 'ผู้ตรวจสอบข้อมูล', name: '', position: '', signatureDataUrl:'' },
+  { role: 'ผู้อนุมัติ',        name: '', position: '', signatureDataUrl:'' },
 ];
 let generalLoaded = false;
 
@@ -4801,38 +4808,142 @@ async function savePrintTitle() {
 // ─────────────────────────────────────────────
 // SIGNATURE BLOCK
 // ─────────────────────────────────────────────
+const _signaturePads = new Map();
+
+function _sigEscape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+
+function _updateSignaturePadStatus(index) {
+  const status = document.getElementById(`sigPadStatus_${index}`);
+  if (!status) return;
+  const captured = !!reportSignatureDataUrl(sigBlockState[index]);
+  status.textContent = t(captured ? 'stSigCaptured' : 'stSigNotCaptured');
+  status.style.color = captured ? '#047857' : '#94a3b8';
+}
+
+function _initSignaturePad(index) {
+  const canvas = document.getElementById(`sigCanvas_${index}`);
+  if (!canvas || !sigBlockState[index]) return;
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.max(320, Math.round(rect.width * ratio));
+  canvas.height = Math.round(132 * ratio);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width / ratio, canvas.height / ratio);
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  let drawing = false;
+  let moved = false;
+  const point = event => {
+    const box = canvas.getBoundingClientRect();
+    return { x:event.clientX - box.left, y:event.clientY - box.top };
+  };
+  const save = () => {
+    if (!moved) return;
+    const output = document.createElement('canvas');
+    output.width = 360; output.height = 108;
+    const outputCtx = output.getContext('2d');
+    outputCtx.fillStyle = '#fff'; outputCtx.fillRect(0, 0, output.width, output.height);
+    outputCtx.drawImage(canvas, 0, 0, output.width, output.height);
+    sigBlockState[index].signatureDataUrl = output.toDataURL('image/png');
+    sigBlockState[index].signatureUpdatedAt = new Date().toISOString();
+    _updateSignaturePadStatus(index);
+  };
+  canvas.addEventListener('pointerdown', event => {
+    event.preventDefault(); drawing = true; moved = false;
+    canvas.setPointerCapture?.(event.pointerId);
+    const p = point(event); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  });
+  canvas.addEventListener('pointermove', event => {
+    if (!drawing) return;
+    event.preventDefault(); const p = point(event); ctx.lineTo(p.x, p.y); ctx.stroke(); moved = true;
+  });
+  const finish = event => {
+    if (!drawing) return;
+    drawing = false; canvas.releasePointerCapture?.(event.pointerId); save();
+  };
+  canvas.addEventListener('pointerup', finish);
+  canvas.addEventListener('pointercancel', finish);
+  const clear = () => {
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.restore();
+  };
+  _signaturePads.set(index, { canvas, clear });
+  const existing = reportSignatureDataUrl(sigBlockState[index]);
+  if (existing) {
+    const image = new Image();
+    image.onload = () => ctx.drawImage(image, 0, 0, canvas.width / ratio, canvas.height / ratio);
+    image.src = existing;
+  }
+  _updateSignaturePadStatus(index);
+}
+
+function clearSignaturePad(index, focusAfter = false) {
+  if (!sigBlockState[index]) return;
+  sigBlockState[index].signatureDataUrl = '';
+  sigBlockState[index].signatureUpdatedAt = '';
+  _signaturePads.get(index)?.clear();
+  _updateSignaturePadStatus(index);
+  if (focusAfter) {
+    const canvas = _signaturePads.get(index)?.canvas;
+    canvas?.focus(); canvas?.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+}
+
 function renderSigEditor() {
   const container = document.getElementById('sigBlockEditor');
   if (!container) return;
+  _signaturePads.clear();
   container.innerHTML = sigBlockState.map((slot, i) => `
     <div class="flex gap-2 items-start p-3 rounded-lg border border-gray-200 bg-gray-50" id="sigSlot_${i}">
       <div style="width:22px;height:22px;border-radius:50%;background:#0d9488;color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:2px">${i+1}</div>
-      <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+      <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 min-w-0">
         <div>
           <label class="text-xs font-semibold text-gray-500 block mb-1" data-t="stSigRoleLabel">${t('stSigRoleLabel')}</label>
           <input type="text" class="field-input text-sm" placeholder="${bi('เช่น ผู้บันทึกข้อมูล','e.g. Data recorder')}"
-            value="${slot.role || ''}" oninput="sigBlockState[${i}].role=this.value">
+            value="${_sigEscape(slot.role || '')}" oninput="sigBlockState[${i}].role=this.value">
         </div>
         <div>
           <label class="text-xs font-semibold text-gray-500 block mb-1" data-t="stSigNameLabel">${t('stSigNameLabel')}</label>
           <input type="text" class="field-input text-sm" placeholder="${bi('เว้นว่างให้พิมพ์ขีดเส้น','Leave blank for a signature line')}"
-            value="${slot.name || ''}" oninput="sigBlockState[${i}].name=this.value">
+            value="${_sigEscape(slot.name || '')}" oninput="sigBlockState[${i}].name=this.value">
         </div>
         <div>
           <label class="text-xs font-semibold text-gray-500 block mb-1" data-t="stSigPosLabel">${t('stSigPosLabel')}</label>
           <input type="text" class="field-input text-sm" placeholder="${bi('เช่น ผู้อำนวยการฝ่าย...','e.g. Department Director')}"
-            value="${slot.position || ''}" oninput="sigBlockState[${i}].position=this.value">
+            value="${_sigEscape(slot.position || '')}" oninput="sigBlockState[${i}].position=this.value">
+        </div>
+        <div class="md:col-span-3 mt-1">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <label class="text-xs font-semibold text-gray-500" for="sigCanvas_${i}">${t('stSigDigitalLabel')}</label>
+            <span id="sigPadStatus_${i}" class="text-[10px] font-semibold"></span>
+          </div>
+          <div class="signature-pad-shell">
+            <canvas id="sigCanvas_${i}" class="signature-pad-canvas" tabindex="0" aria-label="${_sigEscape(t('stSigCanvasAria'))}"></canvas>
+            <div class="signature-pad-actions">
+              <span class="text-[10px] text-gray-400">${t('stSigDrawHelp')}</span>
+              <span class="flex gap-3 flex-shrink-0">
+                <button type="button" onclick="clearSignaturePad(${i})">${t('stSigClear')}</button>
+                <button type="button" onclick="clearSignaturePad(${i},true)">${t('stSigRetry')}</button>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-      <button onclick="removeSigSlot(${i})" class="text-gray-300 hover:text-red-400 transition flex-shrink-0 mt-1" title="${bi('ลบช่องนี้','Remove this slot')}">
+      <button type="button" onclick="removeSigSlot(${i})" class="text-gray-300 hover:text-red-400 transition flex-shrink-0 mt-1" title="${_sigEscape(t('stSigRemoveSlot'))}">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>`).join('');
   lucide.createIcons();
+  requestAnimationFrame(() => sigBlockState.forEach((_, index) => _initSignaturePad(index)));
 }
 
 function addSigSlot() {
-  sigBlockState.push({ role: '', name: '', position: '' });
+  sigBlockState.push({ role: '', name: '', position: '', signatureDataUrl:'' });
   renderSigEditor();
 }
 
@@ -4845,8 +4956,7 @@ function removeSigSlot(i) {
 async function saveSignatureBlock() {
   try {
     showLoader(true, t('saving'));
-    const _t = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 30000));
-    const res = await Promise.race([API.saveSetting('SIGNATURE_BLOCK', sigBlockState), _t]);
+    const res = await API.saveSetting('SIGNATURE_BLOCK', sigBlockState);
     showLoader(false);
     if (res.status === 'success') {
       Swal.fire({ icon:'success', title: t('stSaveSuccess'), text: t('stSigSaved'), timer:2000, showConfirmButton:false });

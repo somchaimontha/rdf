@@ -458,6 +458,47 @@ test('employment report joins profile identity without copying it into work valu
   assert.equal(c.getEmploymentReport({ username: 'MBS_001', role: 'Student' }, {}).code, 'ACCESS_DENIED');
 });
 
+test('rejected continuation funding becomes self-funded study and is derived once in employment reporting', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+
+  const students = spreadsheet.getSheetByName('Students');
+  students.rows = [
+    ['StipNo','Status','Institution','Title','FirstName','LastName','CurrentAcademicYear','SchApprovalStatus','SchApprovalBy','SchApprovalDate','SchApprovalNotes','UniScholarship','UniName','UniNameEN','UpdatedAt'],
+    ['MBS_001','Graduated','MBS','นางสาว','มะลิ','ใจดี','2568','Pending','','','','Yes','มหาวิทยาลัยเชียงใหม่','Chiang Mai University',''],
+  ];
+
+  const reviewed = c.reviewScholarshipRequest('MBS_001', 'Rejected', 'Foundation funding not continued', 'manager', '2026-03-20', '2569');
+  assert.equal(reviewed.status, 'success');
+  const headers = students.rows[0];
+  const value = key => students.rows[1][headers.indexOf(key)];
+  assert.equal(value('Status'), 'University');
+  assert.equal(value('UniScholarship'), 'No');
+  assert.equal(value('SchApprovalStatus'), 'Rejected');
+  assert.equal(value('CurrentAcademicYear'), '2569');
+
+  const report = c.getEmploymentReport({ username:'manager', role:'Manager' }, { asOfMonth:'2026-03' });
+  assert.equal(report.status, 'success');
+  assert.equal(report.data[0].employmentStatus, 'studying_only');
+  assert.equal(report.data[0].employmentStatusSource, 'scholarship_continuation');
+  assert.equal(report.data[0].continuingEducationWithoutRdf, true);
+  assert.equal(report.data[0].universityName, 'มหาวิทยาลัยเชียงใหม่');
+  assert.equal(report.summary.reportedPeople, 1);
+  assert.equal(c.DynamicFieldRepository.readTable('CustomFieldValues').objects.length, 0, 'derived scholarship status must not be copied to employment values');
+});
+
+test('signature settings accept compact PNG marks and reject unsafe or oversized payloads', () => {
+  const c = loadBackend();
+  const png = 'data:image/png;base64,' + Buffer.from('compact-signature').toString('base64');
+  const valid = c._validateSignatureBlock([{ role:'ผู้ตรวจสอบข้อมูล', name:'Test User', position:'Manager', signatureDataUrl:png }]);
+  assert.equal(valid.ok, true);
+  assert.equal(valid.values[0].signatureDataUrl, png);
+  assert.equal(c._validateSignatureBlock([{ role:'x', signatureDataUrl:'data:image/svg+xml,<svg onload=alert(1)>' }]).ok, false);
+  assert.equal(c._validateSignatureBlock([{ role:'x', signatureDataUrl:'data:image/png;base64,' + 'A'.repeat(26000) }]).ok, false);
+});
+
 test('report registry reuses opaque QR tokens and invalidates the old token on controlled regeneration', () => {
   const { context: c, spreadsheet } = loadBackendWithSheets();
   const originalStudentRows = spreadsheet.getSheetByName('Students').rows.map(row => [...row]);
