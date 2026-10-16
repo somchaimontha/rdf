@@ -58,6 +58,10 @@ function _localizeStructuredApiData(data) {
 const _apiGetInFlight = new Map();
 const _apiGetCache = new Map();
 const _API_GET_CACHE_MS = 20000;
+const _API_TIMEOUT_DEFAULT_MS = 45000;
+const _API_TIMEOUT_SETTINGS_MS = 120000;
+const _API_TIMEOUT_SETUP_MS = 300000;
+const _API_TIMEOUT_MIGRATION_MS = 300000;
 const _API_CACHEABLE_GET_ACTIONS = new Set([
   'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPublicSettings', 'getPendingScholarshipRequests',
   'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents',
@@ -101,7 +105,7 @@ async function _apiGetNetwork(params, timeoutMs) {
   const p = token ? { ...params, token } : { ...params };
   const url = RDF.GAS_URL + '?' + new URLSearchParams(p).toString();
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs || 45000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || _API_TIMEOUT_DEFAULT_MS);
   let res;
   try {
     res = await fetch(url, { signal: ctrl.signal });
@@ -164,7 +168,7 @@ async function apiPost(body, timeoutMs) {
   const requestBody = _apiLocalAuditEnabled() ? { ...body, auditMode:true } : { ...body };
   const b = token ? { ...requestBody, token } : requestBody;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs || 45000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || _API_TIMEOUT_DEFAULT_MS);
   let res;
   try {
     res = await fetch(RDF.GAS_URL, {
@@ -217,14 +221,14 @@ const API = {
     return apiGet({ action: 'getDynamicFormSchema', entityType: entityType || 'student', entityId: entityId || '' });
   },
   async getDynamicFieldAdminData(entityType) {
-    return apiGet({ action: 'getDynamicFieldAdminData', entityType: entityType || 'student' });
+    return apiGet({ action: 'getDynamicFieldAdminData', entityType: entityType || 'student' }, _API_TIMEOUT_SETTINGS_MS);
   },
-  async previewDynamicFieldSetup() { return apiGet({ action: 'previewDynamicFieldSetup' }); },
-  async setupDynamicFieldSchema() { return apiPost({ action: 'setupDynamicFieldSchema' }, 90000); },
-  async previewEmploymentHistorySetup() { return apiGet({ action: 'previewEmploymentHistorySetup' }); },
-  async setupEmploymentHistorySchema(options) { return apiPost({ action: 'setupEmploymentHistorySchema', options: options || {} }, 90000); },
-  async previewLegacyEmploymentMigration() { return apiGet({ action: 'previewLegacyEmploymentMigration' }); },
-  async migrateLegacyEmploymentData(sourceKeys) { return apiPost({ action: 'migrateLegacyEmploymentData', sourceKeys: sourceKeys || [] }, 90000); },
+  async previewDynamicFieldSetup() { return apiGet({ action: 'previewDynamicFieldSetup' }, _API_TIMEOUT_SETTINGS_MS); },
+  async setupDynamicFieldSchema() { return apiPost({ action: 'setupDynamicFieldSchema' }, _API_TIMEOUT_SETUP_MS); },
+  async previewEmploymentHistorySetup() { return apiGet({ action: 'previewEmploymentHistorySetup' }, _API_TIMEOUT_SETTINGS_MS); },
+  async setupEmploymentHistorySchema(options) { return apiPost({ action: 'setupEmploymentHistorySchema', options: options || {} }, _API_TIMEOUT_SETUP_MS); },
+  async previewLegacyEmploymentMigration() { return apiGet({ action: 'previewLegacyEmploymentMigration' }, _API_TIMEOUT_SETTINGS_MS); },
+  async migrateLegacyEmploymentData(sourceKeys) { return apiPost({ action: 'migrateLegacyEmploymentData', sourceKeys: sourceKeys || [] }, _API_TIMEOUT_MIGRATION_MS); },
   async getEmploymentReport(filters) { return apiGet({ action: 'getEmploymentReport', ...(filters || {}) }); },
   async issueReportReference(report) { return apiPost({ action: 'issueReportReference', report: report || {} }); },
   async regenerateReportQr(reportId, reason, acknowledgeInvalidation) {
@@ -240,20 +244,20 @@ const API = {
   async saveStudentDynamicValues(entityType, entityId, changes, removeRecords) {
     return apiPost({ action: 'saveStudentDynamicValues', entityType: entityType || 'student', entityId, changes: changes || [], removeRecords: removeRecords || [] });
   },
-  async getAdmins()               { return apiGet({ action: 'getAdmins' }); },
-  async saveAdmin(data)            { return apiPost({ action: 'saveAdmin',   admin: data,   reqUser: (getUser()||{}).username||'' }); },
+  async getAdmins()               { return apiGet({ action: 'getAdmins' }, _API_TIMEOUT_SETTINGS_MS); },
+  async saveAdmin(data)            { return apiPost({ action: 'saveAdmin',   admin: data,   reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
   async loginWithGoogle(idToken)   { return apiPost({ action: 'loginWithGoogle', idToken }); },
-  async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }); },
-  async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }); },
+  async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
+  async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }, _API_TIMEOUT_SETTINGS_MS); },
   async getPublicSettings()        { return apiGet({ action: 'getPublicSettings' }); },
-  async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }); },
-  async getLogs(limit)             { return apiGet({ action: 'getLogs', limit: limit || 200 }); },
+  async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
+  async getLogs(limit)             { return apiGet({ action: 'getLogs', limit: limit || 200 }, _API_TIMEOUT_SETTINGS_MS); },
   async parseOCRText(text)                    { return apiPost({ action: 'parseOCRText', ocrText: text }); },
   async parseDocumentAI(base64, mimeType)     { return apiPost({ action: 'parseDocumentAI', base64, mimeType }); },
-  async getApiKeyStatus()          { return apiGet({ action: 'getApiKeyStatus' }); },
-  async saveApiKey(key)            { return apiPost({ action: 'saveApiKey', key, reqUser: (getUser()||{}).username||'' }); },
-  async getActiveSessions()        { return apiGet({ action: 'getActiveSessions' }); },
-  async clearSession(username)     { return apiPost({ action: 'clearSession', username }); },
+  async getApiKeyStatus()          { return apiGet({ action: 'getApiKeyStatus' }, _API_TIMEOUT_SETTINGS_MS); },
+  async saveApiKey(key)            { return apiPost({ action: 'saveApiKey', key, reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
+  async getActiveSessions()        { return apiGet({ action: 'getActiveSessions' }, _API_TIMEOUT_SETTINGS_MS); },
+  async clearSession(username)     { return apiPost({ action: 'clearSession', username }, _API_TIMEOUT_SETTINGS_MS); },
   async uploadPhoto(base64, mimeType, filename, institution)              { return apiPost({ action: 'uploadPhoto',    base64, mimeType, filename, institution }); },
   async uploadDocument(base64, mimeType, filename, institution, stipNo)  { return apiPost({ action: 'uploadDocument', base64, mimeType, filename, institution, stipNo }); },
   async getStudentDocs(stipNo)                                           { return apiGet({ action: 'getStudentDocs', stipNo }); },
