@@ -12,3 +12,11 @@
 - เมื่อเพิ่ม key ให้ตรวจว่าพจนานุกรมไทยและอังกฤษมี key ตรงกัน และเพิ่มหรือปรับการทดสอบเมื่อเกิดพฤติกรรมใหม่
 - ก่อน commit ให้รัน `node --test tests/i18n.test.cjs` และ `git diff --check` หากแก้การสลับภาษาหรือ DOM แบบ dynamic ให้รัน `node tests/i18n.browser.cjs 9222` ตามขั้นตอนใน `tests/README.md` ด้วย
 
+## การแยกบัญชี Google Apps Script
+
+เครื่องนี้ใช้ `clasp` กับหลายโครงการ ห้ามใช้คำสั่ง `clasp` แบบไม่ระบุผู้ใช้กับ repository นี้
+
+- ทุกคำสั่ง Apps Script ของ RDF ต้องใช้ named credential `rdf` เช่น `clasp -u rdf status`, `clasp -u rdf push` และ `clasp -u rdf redeploy ...`
+- ก่อน `push`, `version` หรือ `redeploy` ต้องรัน `clasp -u rdf show-authorized-user` และยืนยันว่าเป็นบัญชีเจ้าของโครงการ RDF
+- ห้าม `clasp logout` หรือเขียนทับ credential `default` เพราะเป็นบัญชีของโครงการอื่นบนเครื่องเดียวกัน
+- ต้อง deploy backend และตรวจ staging/production ให้ผ่านก่อน push frontend เพื่อป้องกัน frontend และ API คนละเวอร์ชัน
