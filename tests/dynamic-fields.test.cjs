@@ -543,6 +543,15 @@ test('operational notification feed aggregates live follow-up data without copyi
   assert.deepEqual([...feed.data.map(item => item.count)], [1,1,1,1]);
   assert.match(feed.data[0].eventId, /^employment\.followup_overdue\.[a-f0-9]{8}$/);
   assert.equal(c.getNotificationFeed({ username:'finance', role:'Finance' }, true).data.length, 0, 'default audience excludes Finance');
+  const studentConfig = c._defaultNotificationRules();
+  studentConfig.modules[0].audienceRoles.push('Student');
+  assert.equal(c._validateNotificationRules(studentConfig).ok, true, 'Student is a supported notification recipient');
+  c._notificationRulesConfig = () => studentConfig;
+  const studentFeed = c.getNotificationFeed({ username:'MBS_001', role:'Student' }, true);
+  assert.equal(studentFeed.status, 'success');
+  assert.deepEqual([...studentFeed.data.map(item => item.eventType)], ['followup_overdue','followup_due_soon','data_missing','data_updated']);
+  assert.deepEqual([...studentFeed.data.map(item => item.count)], [1,1,1,1], 'student feed is limited to the signed-in record');
+  assert.equal(c.getEmploymentReport({ username:'MBS_001', role:'Student' }, {}).code, 'ACCESS_DENIED', 'students cannot open the aggregate employment report');
   const stored = c.DynamicFieldRepository.readTable('EmploymentFollowUps').objects;
   assert.equal(stored.length, 2);
   assert.equal(Object.hasOwn(stored[0], 'StudentName'), false, 'notification feed must not copy profile identity into follow-up storage');

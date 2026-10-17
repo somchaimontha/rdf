@@ -288,6 +288,10 @@ function _buildBroadcastNotifications(user, broadcasts, ownStudent) {
 }
 
 function _notifOperationalHref(event) {
+  const user = typeof getUser === 'function' ? getUser() : null;
+  if (user?.role === 'Student' && user.stipNo) {
+    return `student-form.html?stipNo=${encodeURIComponent(user.stipNo)}#dynamicFieldsForm`;
+  }
   const routes = {
     followup_overdue:'reports.html?view=employment&source=notification&followUp=overdue',
     followup_due_soon:'reports.html?view=employment&source=notification&followUp=due_soon',
@@ -570,7 +574,9 @@ async function _refreshNotifBell(force = false) {
     const isStudent = user.role === 'Student' && !!user.stipNo;
     const canApprove = _notifHas('viewPromotion') && _notifHas('viewSchApprovalPanel');
     const needsStudents = !isStudent && (_notifHas('viewStudents') || _notifHas('editStudents') || canApprove);
-    const needsOperationalFeed = !isStudent && _notifHas('viewReports') && _notifHas('viewStudents');
+    // Students may receive employment reminders, but the server limits their
+    // feed to their own StipNo and never returns the aggregate staff report.
+    const needsOperationalFeed = isStudent || (_notifHas('viewReports') && _notifHas('viewStudents'));
     const requests = [];
     const slots = [];
     slots.push('settings'); requests.push(API.getSystemSettings());

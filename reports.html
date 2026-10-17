@@ -62,7 +62,8 @@
 .emp-settings-btn { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:7px 10px; border:1px solid rgba(255,255,255,.38); border-radius:9px; background:rgba(255,255,255,.12); color:#fff; font-size:11px; font-weight:700; white-space:nowrap; }
 .emp-settings-btn:hover,.emp-settings-btn:focus-visible { background:rgba(255,255,255,.22); outline:2px solid rgba(255,255,255,.35); outline-offset:2px; }
 .emp-notif-shell { width:min(720px,100%); max-height:calc(100dvh - 92px); display:flex; flex-direction:column; overflow:hidden; border-radius:16px; background:#fff; box-shadow:0 24px 70px rgba(15,23,42,.3); }
-#empFollowUpSettingsForm { min-height:0; flex:1 1 auto; display:flex; flex-direction:column; }
+.emp-notif-header { flex:0 0 auto; }
+#empFollowUpSettingsForm { display:contents; }
 .emp-notif-body { min-height:0; flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding:18px; }
 .emp-notif-footer { flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #e5e7eb; background:#f8fafc; padding:12px 16px; }
 .emp-notif-rule { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; border:1px solid #e2e8f0; border-radius:11px; background:#fff; }
@@ -125,6 +126,8 @@
   .emp-header-actions { width:100%; margin-left:28px; justify-content:space-between; flex-wrap:wrap; }
   #empAsOf { margin-left:0; }
   .emp-settings-btn { flex:1 1 auto; justify-content:center; }
+  .emp-notif-shell { height:calc(100dvh - 144px); max-height:calc(100dvh - 144px); transform:translateY(-4px); }
+  .emp-notif-body { flex:1 1 0%; }
 }
 /* ── Filters bar ── */
 .filters-bar {
@@ -598,7 +601,7 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
       <span class="emp-header-actions ml-auto">
         <span id="empAsOf" class="text-emerald-100 text-xs font-normal"></span>
         <button id="empFollowUpSettingsBtn" type="button" class="hidden emp-settings-btn no-print" onclick="openEmploymentFollowUpSettings()" data-t-title="empNotifSettingsTitle">
-          <i data-lucide="bell-cog" class="w-4 h-4"></i><span data-t="empNotifSettingsButton">ตั้งค่าการติดตาม</span>
+          <svg class="emp-settings-icon w-4 h-4" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg><span data-t="empNotifSettingsButton">ตั้งค่าการติดตาม</span>
         </button>
       </span>
     </div>
@@ -765,8 +768,8 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 <!-- Shared follow-up notification settings. Rules reference live employment data; no rows are copied. -->
 <div id="empFollowUpSettingsModal" class="hidden fixed inset-0 z-[75] flex items-center justify-center p-2 sm:p-4" style="background:rgba(15,23,42,.58);backdrop-filter:blur(3px)" onclick="closeEmploymentFollowUpSettings(event)">
   <div class="emp-notif-shell" role="dialog" aria-modal="true" aria-labelledby="empNotifSettingsTitle" onclick="event.stopPropagation()">
-    <div class="flex items-center gap-3 px-5 py-4" style="background:#065f46">
-      <span class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,.14)"><i data-lucide="bell-cog" class="w-5 h-5 text-white"></i></span>
+    <div class="emp-notif-header flex items-center gap-3 px-5 py-4" style="background:#065f46">
+      <span class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,.14)"><svg class="w-5 h-5 text-white" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg></span>
       <div class="min-w-0"><h3 id="empNotifSettingsTitle" class="font-bold text-white" data-t="empNotifSettingsTitle">ตั้งค่าการติดตามและแจ้งเตือน</h3><p class="text-xs text-emerald-100 mt-0.5" data-t="empNotifSettingsDesc">กำหนดการแจ้งเตือนจากข้อมูลจริงชุดเดียวกันผ่านกระดิ่งส่วนกลาง</p></div>
       <button type="button" onclick="closeEmploymentFollowUpSettings()" class="ml-auto text-white opacity-70 hover:opacity-100" data-t-aria-label="cancel"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
@@ -818,8 +821,9 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Finance" class="accent-emerald-600"><span data-t="roleFinance">Finance</span></label>
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Committee" class="accent-emerald-600"><span data-t="roleCommittee">Committee</span></label>
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="DormTeacher" class="accent-emerald-600"><span data-t="roleDormTeacher">Dorm Teacher</span></label>
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Student" class="accent-emerald-600"><span data-t="roleStudent">นักเรียนทุน</span></label>
           </div>
-          <p class="mt-2 text-[11px] leading-relaxed text-gray-500" data-t="empNotifAudienceNote">ระบบยังตรวจสิทธิ์ดูรายงานและข้อมูลนักเรียนอีกชั้น ผู้ไม่มีสิทธิ์จะไม่ได้รับข้อมูลแม้เลือกบทบาทไว้</p>
+          <p class="mt-2 text-[11px] leading-relaxed text-gray-500" data-t="empNotifAudienceNote">เจ้าหน้าที่ต้องมีสิทธิ์ดูรายงานและข้อมูลนักเรียน ส่วนนักเรียนจะเห็นเฉพาะการแจ้งเตือนภาวะการทำงานของตนเองเท่านั้น</p>
         </fieldset>
 
         <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800" data-t="empNotifExtensibleNote">โครงสร้างนี้เป็นศูนย์แจ้งเตือนร่วม ระบบทุน ผลการเรียน และโมดูลอื่นสามารถเพิ่มกฎของตนเองได้โดยใช้กระดิ่งและสิทธิ์ชุดเดิม</div>
@@ -1102,12 +1106,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.0"></script>
+<script src="assets/js/config.js?v=2.6.1"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.0"></script>
-<script src="assets/js/auth.js?v=2.6.0"></script>
-<script src="assets/js/rbac.js?v=2.6.0"></script>
-<script src="assets/js/api.js?v=2.6.0"></script>
+<script src="assets/js/i18n.js?v=2.6.1"></script>
+<script src="assets/js/auth.js?v=2.6.1"></script>
+<script src="assets/js/rbac.js?v=2.6.1"></script>
+<script src="assets/js/api.js?v=2.6.1"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
