@@ -204,13 +204,14 @@
 .report-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
 .report-field-option { display:flex; align-items:center; gap:7px; min-width:0; padding:7px 9px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; font-size:11px; color:#475569; cursor:pointer; }
 .report-field-option:has(input:checked) { border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
-.report-preview-page { width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:18px; background:#fff; color:#1f2937; box-shadow:0 8px 24px rgba(15,23,42,.10); overflow:hidden; transition:width .2s ease,min-height .2s ease; }
-.report-preview-page[data-orientation="landscape"] { min-height:420px; }
-.report-preview-page[data-orientation="portrait"] { width:min(82%,520px); min-height:735px; margin-inline:auto; }
+.report-preview-page { width:100%; min-height:0; border:1px solid #cbd5e1; border-radius:8px; padding:18px; background:#fff; color:#1f2937; box-shadow:0 8px 24px rgba(15,23,42,.10); overflow:hidden; display:flex; flex-direction:column; transition:width .2s ease,aspect-ratio .2s ease; }
+.report-preview-page[data-orientation="landscape"] { aspect-ratio:297 / 210; }
+.report-preview-page[data-orientation="portrait"] { width:min(70.7%,520px); aspect-ratio:210 / 297; margin-inline:auto; }
+.report-preview-content { width:100%; min-height:100%; display:flex; flex-direction:column; transform-origin:top left; }
 .report-preview-page table { width:100%; border-collapse:collapse; font-size:9px; }
 .report-preview-page th,.report-preview-page td { min-width:0; padding:5px; border:1px solid #dbe3e8; text-align:left; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; white-space:pre-line; }
 .report-preview-page th { background:#ecfdf5; color:#065f46; }
-.report-preview-page .preview-signatures { display:flex; gap:20px; justify-content:flex-end; margin-top:28px; }
+.report-preview-page .preview-signatures { display:flex; gap:20px; justify-content:flex-end; margin-top:auto; padding-top:18px; }
 .report-preview-page .preview-signature { width:150px; text-align:center; font-size:9px; color:#475569; }
 .report-preview-page .preview-signature-line { margin:24px 0 5px; border-top:1px solid #64748b; }
 .report-format-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
@@ -222,7 +223,7 @@
 .report-preview-verification { display:flex; align-items:flex-start; justify-content:flex-end; gap:8px; }
 .report-preview-qr { width:54px; height:54px; display:flex; align-items:center; justify-content:center; border:1px dashed #94a3b8; border-radius:6px; color:#94a3b8; font-size:8px; text-align:center; overflow:hidden; }
 .report-preview-qr img,.report-preview-qr canvas { width:100%!important; height:100%!important; }
-.report-preview-footer { margin-top:16px; padding-top:7px; border-top:1px solid #cbd5e1; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; color:#64748b; font-size:8px; overflow-wrap:anywhere; }
+.report-preview-footer { margin-top:12px; padding-top:7px; border-top:1px solid #cbd5e1; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; color:#64748b; font-size:8px; overflow-wrap:anywhere; }
 .report-preview-table-section + .report-preview-table-section { margin-top:14px; padding-top:12px; border-top:1px dashed #cbd5e1; }
 @media(max-width:800px){
   .report-composer-overlay { align-items:stretch; padding:8px; }
@@ -230,7 +231,7 @@
   .report-composer-body { display:block; overflow-y:auto; }
   .report-composer-config,.report-composer-preview-wrap { overflow:visible; padding:13px; scrollbar-gutter:auto; }
   .report-composer-config { border-right:0; border-bottom:1px solid #e2e8f0; }
-  .report-preview-page[data-orientation="portrait"] { width:min(100%,520px); }
+  .report-preview-page[data-orientation="portrait"] { width:min(70.7%,520px); }
   .report-composer-footer { flex-wrap:wrap; }
   .report-composer-footer .composer-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; }
 }
@@ -982,12 +983,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.4.0"></script>
+<script src="assets/js/config.js?v=2.4.1"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.4.0"></script>
-<script src="assets/js/auth.js?v=2.4.0"></script>
-<script src="assets/js/rbac.js?v=2.4.0"></script>
-<script src="assets/js/api.js?v=2.4.0"></script>
+<script src="assets/js/i18n.js?v=2.4.1"></script>
+<script src="assets/js/auth.js?v=2.4.1"></script>
+<script src="assets/js/rbac.js?v=2.4.1"></script>
+<script src="assets/js/api.js?v=2.4.1"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
@@ -2377,9 +2378,28 @@ function renderEmploymentReportPreview(){
   const tableContent=fields.length?tables:`<div class="text-center text-red-600 text-xs py-8">${escapeEmploymentHtml(employmentReportText('empComposerFieldRequired',lang))}</div>`;
   const reference=issued?.report?.referenceNo||employmentReportText('empComposerReferencePending',lang),exportedAt=new Date().toLocaleString(lang==='en'?'en-US':'th-TH');
   preview.dataset.orientation=orientation;
-  preview.innerHTML=`<div class="report-preview-header"><div class="min-w-0"><div class="flex items-start gap-2"><img src="${escapeEmploymentHtml(RDF.LOGO_URL)}" alt="RDF" style="width:34px;height:34px;object-fit:contain"><div><div class="text-[10px] font-bold text-emerald-800">${escapeEmploymentHtml(lang==='en'?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH)}</div><h4 class="text-sm font-bold mt-1 break-words">${escapeEmploymentHtml(subjects.subject)}</h4></div></div><div class="text-[9px] text-gray-500 mt-1 break-words">${escapeEmploymentHtml(employmentReportFilterContext(lang))}</div></div><div class="report-preview-verification"><div class="text-right text-[8px] text-gray-500 break-all"><strong class="text-gray-700">${escapeEmploymentHtml(reference)}</strong></div><div id="empPreviewQr" class="report-preview-qr">${escapeEmploymentHtml(employmentReportText('empComposerQrShort',lang))}</div></div></div>${tableContent}${rows.length>sampleRows.length?`<p class="text-[9px] text-gray-400 mt-2">${escapeEmploymentHtml(employmentReportText('empComposerPreviewLimited',lang).replace('{count}',String(rows.length-sampleRows.length)))}</p>`:''}<div class="preview-signatures">${signatureHtml}</div><div class="report-preview-footer"><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedBy',lang))}: ${escapeEmploymentHtml(user.name||user.username||'—')}</span><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedAt',lang))}: ${escapeEmploymentHtml(exportedAt)}</span></div>`;
+  preview.innerHTML=`<div class="report-preview-content"><div class="report-preview-header"><div class="min-w-0"><div class="flex items-start gap-2"><img src="${escapeEmploymentHtml(RDF.LOGO_URL)}" alt="RDF" style="width:34px;height:34px;object-fit:contain"><div><div class="text-[10px] font-bold text-emerald-800">${escapeEmploymentHtml(lang==='en'?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH)}</div><h4 class="text-sm font-bold mt-1 break-words">${escapeEmploymentHtml(subjects.subject)}</h4></div></div><div class="text-[9px] text-gray-500 mt-1 break-words">${escapeEmploymentHtml(employmentReportFilterContext(lang))}</div></div><div class="report-preview-verification"><div class="text-right text-[8px] text-gray-500 break-all"><strong class="text-gray-700">${escapeEmploymentHtml(reference)}</strong></div><div id="empPreviewQr" class="report-preview-qr">${escapeEmploymentHtml(employmentReportText('empComposerQrShort',lang))}</div></div></div>${tableContent}${rows.length>sampleRows.length?`<p class="text-[9px] text-gray-400 mt-2">${escapeEmploymentHtml(employmentReportText('empComposerPreviewLimited',lang).replace('{count}',String(rows.length-sampleRows.length)))}</p>`:''}<div class="preview-signatures">${signatureHtml}</div><div class="report-preview-footer"><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedBy',lang))}: ${escapeEmploymentHtml(user.name||user.username||'—')}</span><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedAt',lang))}: ${escapeEmploymentHtml(exportedAt)}</span></div></div>`;
   if(issued)renderEmploymentQr(document.getElementById('empPreviewQr'),issued.verificationUrl,54);
+  observeEmploymentReportPreview(preview);requestAnimationFrame(()=>fitEmploymentReportPreview(preview));
   updateEmploymentReportQrUi();
+}
+let _EMP_PREVIEW_RESIZE_OBSERVER=null,_EMP_PREVIEW_FIT_FRAME=0;
+function observeEmploymentReportPreview(preview){
+  if(!preview||typeof ResizeObserver==='undefined')return;
+  if(!_EMP_PREVIEW_RESIZE_OBSERVER)_EMP_PREVIEW_RESIZE_OBSERVER=new ResizeObserver(()=>{cancelAnimationFrame(_EMP_PREVIEW_FIT_FRAME);_EMP_PREVIEW_FIT_FRAME=requestAnimationFrame(()=>fitEmploymentReportPreview());});
+  _EMP_PREVIEW_RESIZE_OBSERVER.disconnect();_EMP_PREVIEW_RESIZE_OBSERVER.observe(preview);
+}
+function fitEmploymentReportPreview(preview=document.getElementById('empReportPreview')){
+  const content=preview?.querySelector('.report-preview-content');if(!preview||!content)return;
+  const style=getComputedStyle(preview),availableWidth=Math.max(1,preview.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)),availableHeight=Math.max(1,preview.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom));
+  content.style.transform='none';content.style.width=`${availableWidth}px`;content.style.minHeight='0';
+  let scale=Math.min(1,availableHeight/Math.max(1,content.scrollHeight));
+  for(let index=0;index<3;index++){
+    content.style.width=`${availableWidth/scale}px`;content.style.minHeight=`${availableHeight/scale}px`;
+    scale=Math.min(scale,availableHeight/Math.max(1,content.scrollHeight));
+  }
+  content.style.width=`${availableWidth/scale}px`;content.style.minHeight=`${availableHeight/scale}px`;content.style.transform=`scale(${scale})`;
+  preview.dataset.previewScale=scale.toFixed(4);
 }
 function refreshEmploymentReportComposer(){renderEmploymentReportFieldSelector(true);renderEmploymentReportSignatures(true);renderEmploymentReportPreview();}
 function openEmploymentReportComposer(){

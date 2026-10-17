@@ -16,7 +16,8 @@ test('employment report keeps grouped columns compact and follow-up notes last',
 });
 
 test('employment preview changes paper shape and places QR beside the reference on the right', () => {
-  assert.match(reports, /report-preview-page\[data-orientation="portrait"\][^{]*\{[^}]*width:min\(82%,520px\)[^}]*min-height:735px/);
+  assert.match(reports, /report-preview-page\[data-orientation="landscape"\][^{]*\{[^}]*aspect-ratio:297 \/ 210/);
+  assert.match(reports, /report-preview-page\[data-orientation="portrait"\][^{]*\{[^}]*width:min\(70\.7%,520px\)[^}]*aspect-ratio:210 \/ 297/);
   assert.match(reports, /report-preview-verification[\s\S]*empPreviewQr/);
   assert.doesNotMatch(reports, /empComposerPageSetup',lang\)\)}:\s*\$\{escapeEmploymentHtml\(employmentReportText\(orientation/);
   assert.match(reports, /<div class="verification"><div class="reference">[\s\S]*<img class="qr"/);

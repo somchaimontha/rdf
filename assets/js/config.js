@@ -12,7 +12,7 @@ const RDF = {
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.4.0",
+  VERSION: "2.4.1",
   DEFAULT_LANG: "th",
   // Localhost may read the configured API, but shared API helpers reject data
   // mutations before making a network request. The server independently locks
