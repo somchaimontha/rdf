@@ -499,6 +499,55 @@ test('signature settings accept compact PNG marks and reject unsafe or oversized
   assert.equal(c._validateSignatureBlock([{ role:'x', signatureDataUrl:'data:image/png;base64,' + 'A'.repeat(26000) }]).ok, false);
 });
 
+test('shared notification rules validate once and preserve an extensible module schema', () => {
+  const c = loadBackend();
+  const defaults = c._defaultNotificationRules();
+  const valid = c._validateNotificationRules(defaults);
+  assert.equal(valid.ok, true);
+  assert.equal(valid.values.modules[0].moduleId, 'employment');
+  assert.deepEqual([...valid.values.modules[0].audienceRoles], ['SuperAdmin','Manager']);
+  assert.equal(c._validateNotificationRules({ modules:[] }).ok, false);
+  const duplicate = JSON.parse(JSON.stringify(defaults));
+  duplicate.modules[0].rules.push({ ...duplicate.modules[0].rules[0] });
+  assert.equal(c._validateNotificationRules(duplicate).ok, false);
+  const future = JSON.parse(JSON.stringify(defaults));
+  future.modules.push({
+    moduleId:'academic_results', enabled:true, audienceRoles:['Manager'],
+    rules:[{ruleId:'academic_results.update_due',eventType:'update_due',enabled:true,leadDays:14}],
+  });
+  assert.equal(c._validateNotificationRules(future).ok, true, 'future modules reuse the same validated notification schema');
+});
+
+test('operational notification feed aggregates live follow-up data without copying it', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username:'admin', role:'SuperAdmin' };
+  const manager = { username:'manager', role:'Manager' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+  spreadsheet.getSheetByName('Students').rows[1][1] = 'Graduated';
+  c._employmentCurrentDate = () => '2026-03-20';
+  c._dfNow = () => '2026-03-20T10:00:00.000Z';
+  const overdue = c.saveEmploymentFollowUp(manager, {
+    stipNo:'MBS_001', contactDate:'2026-03-01', contactMethod:'phone', outcome:'follow_up_needed',
+    nextFollowUpDate:'2026-03-19', assignedTo:'Manager A', notes:'Overdue source record',
+  });
+  const upcoming = c.saveEmploymentFollowUp(manager, {
+    stipNo:'MBS_001', contactDate:'2026-03-10', contactMethod:'email', outcome:'follow_up_needed',
+    nextFollowUpDate:'2026-03-24', assignedTo:'Manager A', notes:'Upcoming source record',
+  });
+  assert.equal(overdue.status, 'success');
+  assert.equal(upcoming.status, 'success');
+  const feed = c.getNotificationFeed(manager, true);
+  assert.equal(feed.status, 'success');
+  assert.deepEqual([...feed.data.map(item => item.eventType)], ['followup_overdue','followup_due_soon','data_missing','data_updated']);
+  assert.deepEqual([...feed.data.map(item => item.count)], [1,1,1,1]);
+  assert.match(feed.data[0].eventId, /^employment\.followup_overdue\.[a-f0-9]{8}$/);
+  assert.equal(c.getNotificationFeed({ username:'finance', role:'Finance' }, true).data.length, 0, 'default audience excludes Finance');
+  const stored = c.DynamicFieldRepository.readTable('EmploymentFollowUps').objects;
+  assert.equal(stored.length, 2);
+  assert.equal(Object.hasOwn(stored[0], 'StudentName'), false, 'notification feed must not copy profile identity into follow-up storage');
+});
+
 test('report registry reuses opaque QR tokens and invalidates the old token on controlled regeneration', () => {
   const { context: c, spreadsheet } = loadBackendWithSheets();
   const originalStudentRows = spreadsheet.getSheetByName('Students').rows.map(row => [...row]);

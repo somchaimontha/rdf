@@ -58,6 +58,18 @@
 .emp-followup-item .icon-btn { border:0; background:transparent; border-radius:6px; padding:4px; color:#64748b; cursor:pointer; }
 .emp-followup-item .icon-btn:hover { background:#e2e8f0; color:#1d4ed8; }
 .emp-followup-item .icon-btn.danger:hover { background:#fee2e2; color:#dc2626; }
+.emp-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width:0; }
+.emp-settings-btn { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:7px 10px; border:1px solid rgba(255,255,255,.38); border-radius:9px; background:rgba(255,255,255,.12); color:#fff; font-size:11px; font-weight:700; white-space:nowrap; }
+.emp-settings-btn:hover,.emp-settings-btn:focus-visible { background:rgba(255,255,255,.22); outline:2px solid rgba(255,255,255,.35); outline-offset:2px; }
+.emp-notif-shell { width:min(720px,100%); max-height:calc(100dvh - 92px); display:flex; flex-direction:column; overflow:hidden; border-radius:16px; background:#fff; box-shadow:0 24px 70px rgba(15,23,42,.3); }
+#empFollowUpSettingsForm { min-height:0; flex:1 1 auto; display:flex; flex-direction:column; }
+.emp-notif-body { min-height:0; flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding:18px; }
+.emp-notif-footer { flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #e5e7eb; background:#f8fafc; padding:12px 16px; }
+.emp-notif-rule { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; border:1px solid #e2e8f0; border-radius:11px; background:#fff; }
+.emp-notif-rule + .emp-notif-rule { margin-top:8px; }
+.emp-notif-role-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.emp-notif-role { display:flex; align-items:center; gap:7px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:9px; color:#475569; font-size:12px; cursor:pointer; }
+.emp-notif-role:has(input:checked) { border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
 /* ── Report workspace: scholarship statistics are the primary task ── */
 .report-view-switcher {
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:1fr; gap:10px;
@@ -110,7 +122,9 @@
   .report-view-tab { padding:10px 12px; }
   .report-view-desc { white-space:normal; }
   #employmentReportSection > .rpt-card-header { align-items:flex-start; flex-wrap:wrap; }
-  #empAsOf { width:100%; margin-left:28px; }
+  .emp-header-actions { width:100%; margin-left:28px; justify-content:space-between; flex-wrap:wrap; }
+  #empAsOf { margin-left:0; }
+  .emp-settings-btn { flex:1 1 auto; justify-content:center; }
 }
 /* ── Filters bar ── */
 .filters-bar {
@@ -244,9 +258,12 @@
   .report-composer-footer .composer-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; }
 }
 body:has(#rdfLocalAuditBanner) .report-composer-overlay { bottom:30px; }
+body:has(#rdfLocalAuditBanner) #empFollowUpSettingsModal { bottom:30px; }
 #rptPrintModal { position:fixed; left:0; right:0; bottom:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:8px; }
 #rptPrintModal.hidden { display:none!important; }
-#rptPrintModal,#empFollowUpModal { top:60px; }
+#empFollowUpSettingsModal { position:fixed; left:0; right:0; bottom:0; z-index:75; display:flex; align-items:center; justify-content:center; padding:8px; }
+#empFollowUpSettingsModal.hidden { display:none!important; }
+#rptPrintModal,#empFollowUpModal,#empFollowUpSettingsModal { top:60px; }
 #rptPrintModal>div { width:100%; max-width:680px; max-height:calc(100dvh - 92px)!important; overflow:hidden; display:flex; flex-direction:column; }
 #rptPrintModal .rpt-modal-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
 body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
@@ -255,11 +272,15 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
   body:has(#rdfLocalAuditBanner) .report-composer-shell { height:calc(100dvh - 144px); max-height:calc(100dvh - 144px); }
   body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:68px; }
   body:has(#rdfLocalAuditBanner) #rptPrintModal>div { max-height:calc(100dvh - 144px)!important; }
+  body:has(#rdfLocalAuditBanner) #empFollowUpSettingsModal { bottom:68px; }
+  body:has(#rdfLocalAuditBanner) #empFollowUpSettingsModal .emp-notif-shell { max-height:calc(100dvh - 144px); }
   .report-field-grid { grid-template-columns:1fr; }
   .report-format-grid { grid-template-columns:1fr; }
   .rpt-meta-grid { grid-template-columns:1fr; }
   .report-composer-header { padding:12px 14px; }
   .report-composer-footer .composer-actions { grid-template-columns:1fr; }
+  .emp-notif-role-grid { grid-template-columns:1fr; }
+  .emp-notif-rule { grid-template-columns:1fr; }
 }
 /* ── Print (browser print — fallback) ── */
 @media print {
@@ -574,7 +595,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
     <div class="rpt-card-header">
       <i data-lucide="briefcase-business" class="w-4 h-4"></i>
       <span class="emp-header-copy"><span data-t="empReportTitle">รายงานภาวะการทำงานของศิษย์เก่า</span><span class="emp-header-subtitle" data-t="empReportHeaderDesc">สรุปข้อมูลการทำงานและงานติดตามที่ต้องดำเนินการ</span></span>
-      <span id="empAsOf" class="ml-auto text-emerald-100 text-xs font-normal"></span>
+      <span class="emp-header-actions ml-auto">
+        <span id="empAsOf" class="text-emerald-100 text-xs font-normal"></span>
+        <button id="empFollowUpSettingsBtn" type="button" class="hidden emp-settings-btn no-print" onclick="openEmploymentFollowUpSettings()" data-t-title="empNotifSettingsTitle">
+          <i data-lucide="bell-cog" class="w-4 h-4"></i><span data-t="empNotifSettingsButton">ตั้งค่าการติดตาม</span>
+        </button>
+      </span>
     </div>
     <div class="rpt-card-body">
       <p class="text-xs text-gray-500 mb-3" data-t="empReportDescription">ข้อมูลบุคคลและสถาบันอ้างจากโปรไฟล์เดิม ส่วนประวัติการทำงานเก็บแยกเป็นหลายรายการโดยไม่คัดลอกข้อมูลบุคคล</p>
@@ -652,6 +678,15 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
             <span class="filter-label" data-t="empSearchLabel">ค้นหา</span>
             <input id="empFltSearch" type="search" class="filter-input w-full" oninput="applyEmploymentFilters()" placeholder="ค้นหาชื่อ รหัสทุน สถานที่ทำงาน หรือตำแหน่ง" data-t-placeholder="empSearchPlaceholder">
           </div>
+          <div class="filter-group">
+            <span class="filter-label" data-t="empFollowUpFilterLabel">กำหนดติดตาม</span>
+            <select id="empFltFollowUp" class="filter-select" onchange="applyEmploymentFilters()">
+              <option value="" data-t="empFollowUpFilterAll">ทุกกำหนดติดตาม</option>
+              <option value="overdue" data-t="empFollowUpFilterOverdue">เลยกำหนด</option>
+              <option value="due_soon" data-t="empFollowUpFilterDueSoon">ใกล้ถึงกำหนด</option>
+              <option value="updated_recent" data-t="empFollowUpFilterUpdated">อัปเดตข้อมูลล่าสุด</option>
+            </select>
+          </div>
           <button type="button" onclick="resetEmploymentFilters()" class="btn btn-secondary btn-sm mt-auto" style="height:32px">
             <i data-lucide="x" class="w-3.5 h-3.5"></i>
             <span data-t="rptReset">ล้างตัวกรอง</span>
@@ -724,6 +759,79 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Shared follow-up notification settings. Rules reference live employment data; no rows are copied. -->
+<div id="empFollowUpSettingsModal" class="hidden fixed inset-0 z-[75] flex items-center justify-center p-2 sm:p-4" style="background:rgba(15,23,42,.58);backdrop-filter:blur(3px)" onclick="closeEmploymentFollowUpSettings(event)">
+  <div class="emp-notif-shell" role="dialog" aria-modal="true" aria-labelledby="empNotifSettingsTitle" onclick="event.stopPropagation()">
+    <div class="flex items-center gap-3 px-5 py-4" style="background:#065f46">
+      <span class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,.14)"><i data-lucide="bell-cog" class="w-5 h-5 text-white"></i></span>
+      <div class="min-w-0"><h3 id="empNotifSettingsTitle" class="font-bold text-white" data-t="empNotifSettingsTitle">ตั้งค่าการติดตามและแจ้งเตือน</h3><p class="text-xs text-emerald-100 mt-0.5" data-t="empNotifSettingsDesc">กำหนดการแจ้งเตือนจากข้อมูลจริงชุดเดียวกันผ่านกระดิ่งส่วนกลาง</p></div>
+      <button type="button" onclick="closeEmploymentFollowUpSettings()" class="ml-auto text-white opacity-70 hover:opacity-100" data-t-aria-label="cancel"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="empFollowUpSettingsForm" class="min-h-0 flex flex-col" onsubmit="saveEmploymentFollowUpSettings(event)">
+      <div class="emp-notif-body space-y-4">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-900">
+          <strong class="block mb-1" data-t="empNotifSingleSourceTitle">ไม่สร้างข้อมูลแจ้งเตือนซ้ำ</strong>
+          <span data-t="empNotifSingleSourceDesc">ระบบคำนวณจากวันติดตามและสถานะในรายงานปัจจุบัน เมื่อข้อมูลต้นทางเปลี่ยน การแจ้งเตือนจะอัปเดตตามโดยอัตโนมัติ</span>
+        </div>
+
+        <label class="emp-notif-rule cursor-pointer">
+          <span><strong class="block text-sm text-gray-800" data-t="empNotifMaster">เปิดการแจ้งเตือนภาวะการทำงาน</strong><small class="block mt-1 text-[11px] leading-relaxed text-gray-500" data-t="empNotifMasterDesc">แสดงผ่านศูนย์แจ้งเตือนส่วนกลางและตรวจข้อมูลใหม่ทุก 5 นาที</small></span>
+          <input id="empNotifEnabled" type="checkbox" class="w-5 h-5 accent-emerald-600" onchange="syncEmploymentNotificationFormState()">
+        </label>
+
+        <fieldset id="empNotifRuleFields">
+          <legend class="pr-label" data-t="empNotifRuleLegend">เงื่อนไขที่ต้องแจ้งเตือน</legend>
+          <label class="emp-notif-rule cursor-pointer">
+            <span><strong class="block text-sm text-gray-800" data-t="empNotifOverdue">เลยกำหนดติดตาม</strong><small class="block mt-1 text-[11px] text-gray-500" data-t="empNotifOverdueDesc">แจ้งเมื่อวันติดตามครั้งถัดไปผ่านไปแล้ว</small></span>
+            <input id="empNotifOverdue" type="checkbox" class="w-5 h-5 accent-emerald-600">
+          </label>
+          <div class="emp-notif-rule">
+            <label for="empNotifDueSoon" class="cursor-pointer"><strong class="block text-sm text-gray-800" data-t="empNotifDueSoon">ใกล้ถึงกำหนดติดตาม</strong><small class="block mt-1 text-[11px] text-gray-500" data-t="empNotifDueSoonDesc">แจ้งล่วงหน้าตามจำนวนวันที่กำหนด</small></label>
+            <span class="flex items-center gap-2">
+              <input id="empNotifDueSoon" type="checkbox" class="w-5 h-5 accent-emerald-600" data-t-aria-label="empNotifDueSoon">
+              <input id="empNotifLeadDays" type="number" min="1" max="90" inputmode="numeric" class="pr-field" style="width:78px" data-t-aria-label="empNotifLeadDays">
+              <span class="text-xs text-gray-500" data-t="empNotifDays">วัน</span>
+            </span>
+          </div>
+          <label class="emp-notif-rule cursor-pointer">
+            <span><strong class="block text-sm text-gray-800" data-t="empNotifMissing">ข้อมูลภาวะการทำงานยังไม่ครบ</strong><small class="block mt-1 text-[11px] text-gray-500" data-t="empNotifMissingDesc">แจ้งเป็นยอดรวมเมื่อยังไม่มีทั้งสถานะและประวัติการทำงาน</small></span>
+            <input id="empNotifMissing" type="checkbox" class="w-5 h-5 accent-emerald-600">
+          </label>
+          <div class="emp-notif-rule">
+            <label for="empNotifUpdated" class="cursor-pointer"><strong class="block text-sm text-gray-800" data-t="empNotifUpdated">มีการอัปเดตข้อมูลใหม่</strong><small class="block mt-1 text-[11px] text-gray-500" data-t="empNotifUpdatedDesc">แจ้งเมื่อสถานะ ประวัติการทำงาน หรือบันทึกติดตามถูกปรับปรุง</small></label>
+            <span class="flex items-center gap-2">
+              <input id="empNotifUpdated" type="checkbox" class="w-5 h-5 accent-emerald-600" data-t-aria-label="empNotifUpdated">
+              <input id="empNotifUpdatedDays" type="number" min="1" max="90" inputmode="numeric" class="pr-field" style="width:78px" data-t-aria-label="empNotifUpdatedDays">
+              <span class="text-xs text-gray-500" data-t="empNotifRecentDays">วันล่าสุด</span>
+            </span>
+          </div>
+        </fieldset>
+
+        <fieldset id="empNotifAudienceFields">
+          <legend class="pr-label" data-t="empNotifAudience">ผู้รับการแจ้งเตือน</legend>
+          <div class="emp-notif-role-grid">
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="SuperAdmin" class="accent-emerald-600"><span data-t="roleSuperAdmin">Super Admin</span></label>
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Manager" class="accent-emerald-600"><span data-t="roleManager">Manager</span></label>
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Finance" class="accent-emerald-600"><span data-t="roleFinance">Finance</span></label>
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Committee" class="accent-emerald-600"><span data-t="roleCommittee">Committee</span></label>
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="DormTeacher" class="accent-emerald-600"><span data-t="roleDormTeacher">Dorm Teacher</span></label>
+          </div>
+          <p class="mt-2 text-[11px] leading-relaxed text-gray-500" data-t="empNotifAudienceNote">ระบบยังตรวจสิทธิ์ดูรายงานและข้อมูลนักเรียนอีกชั้น ผู้ไม่มีสิทธิ์จะไม่ได้รับข้อมูลแม้เลือกบทบาทไว้</p>
+        </fieldset>
+
+        <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800" data-t="empNotifExtensibleNote">โครงสร้างนี้เป็นศูนย์แจ้งเตือนร่วม ระบบทุน ผลการเรียน และโมดูลอื่นสามารถเพิ่มกฎของตนเองได้โดยใช้กระดิ่งและสิทธิ์ชุดเดิม</div>
+      </div>
+      <div class="emp-notif-footer">
+        <span id="empNotifSettingsStatus" class="text-[11px] text-gray-500"></span>
+        <div class="ml-auto flex gap-2">
+          <button type="button" onclick="closeEmploymentFollowUpSettings()" class="btn btn-secondary btn-sm"><span data-t="cancel">ยกเลิก</span></button>
+          <button id="empNotifSaveBtn" type="submit" class="btn btn-sm" style="background:#047857;color:#fff;border:none"><i data-lucide="save" class="w-4 h-4"></i><span data-t="empNotifSave">บันทึกการตั้งค่า</span></button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -994,12 +1102,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.4.3"></script>
+<script src="assets/js/config.js?v=2.5.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.4.3"></script>
-<script src="assets/js/auth.js?v=2.4.3"></script>
-<script src="assets/js/rbac.js?v=2.4.3"></script>
-<script src="assets/js/api.js?v=2.4.3"></script>
+<script src="assets/js/i18n.js?v=2.5.0"></script>
+<script src="assets/js/auth.js?v=2.5.0"></script>
+<script src="assets/js/rbac.js?v=2.5.0"></script>
+<script src="assets/js/api.js?v=2.5.0"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
@@ -1104,6 +1212,61 @@ function statusLabel(key, lang=LANG) {
 // ── Settings store (loaded once alongside student data) ──
 let _SETTINGS = {};
 
+const EMP_NOTIFICATION_DEFAULTS = {
+  schemaVersion:'1.0.0',
+  modules:[{
+    moduleId:'employment', enabled:true, audienceRoles:['SuperAdmin','Manager'],
+    rules:[
+      {ruleId:'employment.followup_overdue',eventType:'followup_overdue',enabled:true,leadDays:0},
+      {ruleId:'employment.followup_due_soon',eventType:'followup_due_soon',enabled:true,leadDays:7},
+      {ruleId:'employment.data_missing',eventType:'data_missing',enabled:true,leadDays:0},
+      {ruleId:'employment.data_updated',eventType:'data_updated',enabled:true,leadDays:7},
+    ],
+  }],
+};
+
+function employmentNotificationConfig(){
+  const stored=_SETTINGS.NOTIFICATION_RULES;
+  const config=stored&&Array.isArray(stored.modules)
+    ? JSON.parse(JSON.stringify(stored))
+    : JSON.parse(JSON.stringify(EMP_NOTIFICATION_DEFAULTS));
+  if(!config.modules.some(module=>module.moduleId==='employment')){
+    config.modules.push(JSON.parse(JSON.stringify(EMP_NOTIFICATION_DEFAULTS.modules[0])));
+  }
+  config.schemaVersion='1.0.0';
+  return config;
+}
+
+function employmentNotificationModule(config=employmentNotificationConfig()){
+  return config.modules.find(module=>module.moduleId==='employment')||EMP_NOTIFICATION_DEFAULTS.modules[0];
+}
+
+function employmentNotificationRule(eventType,config=employmentNotificationConfig()){
+  const module=employmentNotificationModule(config);
+  return (module.rules||[]).find(rule=>rule.eventType===eventType) ||
+    EMP_NOTIFICATION_DEFAULTS.modules[0].rules.find(rule=>rule.eventType===eventType);
+}
+
+function employmentNotificationLeadDays(){
+  return Math.max(1,Math.min(90,Number(employmentNotificationRule('followup_due_soon')?.leadDays)||7));
+}
+
+function employmentNotificationUpdatedDays(){
+  return Math.max(1,Math.min(90,Number(employmentNotificationRule('data_updated')?.leadDays)||7));
+}
+
+function employmentUpdateDate(value){
+  return String(value||'').match(/^(\d{4}-\d{2}-\d{2})/)?.[1]||'';
+}
+
+function employmentLatestUpdateDate(person){
+  const dates=[employmentUpdateDate(person.statusUpdatedAt)]
+    .concat((person.histories||[]).map(item=>employmentUpdateDate(item.updatedAt)))
+    .concat((person.followUps||[]).map(item=>employmentUpdateDate(item.updatedAt||item.createdAt)))
+    .filter(Boolean).sort();
+  return dates.pop()||'';
+}
+
 // ── Default signature slots if none configured in settings ──
 const DEFAULT_SIG_SLOTS = [
   { role: 'ผู้บันทึกข้อมูล',   name: '', position: '' },
@@ -1125,6 +1288,7 @@ async function loadReportData() {
     _CACHE.raw = studRes.data || [];
     _SETTINGS  = settRes.data || {};
     _CACHE.loadedAt = new Date().toISOString();
+    if (_EMP_CACHE.loaded && _EMP_CACHE.response && !_EMP_CACHE.response.setupRequired) renderEmploymentRows();
 
     // Populate year filter dropdown (unique scholarship years, sorted)
     populateYearFilter();
@@ -1836,24 +2000,42 @@ function filteredEmploymentPeople() {
   const response = _EMP_CACHE.response || {};
   const institution = document.getElementById('empFltInst')?.value || '';
   const status = document.getElementById('empFltStatus')?.value || '';
+  const followUpState = document.getElementById('empFltFollowUp')?.value || '';
+  const reportDate = response.reportDate || new Date().toISOString().slice(0,10);
+  const dueThrough = (()=>{const date=new Date(`${reportDate}T00:00:00Z`);date.setUTCDate(date.getUTCDate()+employmentNotificationLeadDays());return date.toISOString().slice(0,10);})();
+  const updatedFrom = (()=>{const date=new Date(`${reportDate}T00:00:00Z`);date.setUTCDate(date.getUTCDate()-employmentNotificationUpdatedDays());return date.toISOString().slice(0,10);})();
   const query = (document.getElementById('empFltSearch')?.value || '').trim().toLocaleLowerCase(getLocale());
   return (response.data || []).filter(person => {
     if (institution && person.institution !== institution) return false;
     if (status === '__unreported__' && (person.employmentStatus || (person.histories || []).length)) return false;
     if (status && status !== '__unreported__' && person.employmentStatus !== status) return false;
+    if (followUpState) {
+      const dates=(person.followUps||[]).map(item=>item.nextFollowUpDate).filter(Boolean);
+      if (followUpState==='overdue'&&!dates.some(date=>date<reportDate)) return false;
+      if (followUpState==='due_soon'&&!dates.some(date=>date>=reportDate&&date<=dueThrough)) return false;
+      if (followUpState==='updated_recent') {
+        const updated=employmentLatestUpdateDate(person);
+        if(!updated||updated<updatedFrom||updated>reportDate)return false;
+      }
+    }
     return true;
   }).map(person => {
-    if (!query) return person;
-    const personText = [person.stipNo,person.nameTH,person.nameEN,person.institution,statusLabel(person.studentStatus),person.universityName,person.universityNameEN,employmentReportFundingLabel(person,LANG)]
+    const scopeFollowUps=followUpState==='overdue'||followUpState==='due_soon';
+    const scopedPerson=scopeFollowUps?{...person,followUps:(person.followUps||[]).filter(item=>{
+      const date=item.nextFollowUpDate||'';
+      return followUpState==='overdue'?date&&date<reportDate:date&&date>=reportDate&&date<=dueThrough;
+    })}:person;
+    if (!query) return scopedPerson;
+    const personText = [scopedPerson.stipNo,scopedPerson.nameTH,scopedPerson.nameEN,scopedPerson.institution,statusLabel(scopedPerson.studentStatus),scopedPerson.universityName,scopedPerson.universityNameEN,employmentReportFundingLabel(scopedPerson,LANG)]
       .join(' ').toLocaleLowerCase(getLocale());
-    if (personText.includes(query)) return person;
-    const followUpMatch=(person.followUps||[]).some(item=>[item.contactDate,item.nextFollowUpDate,item.assignedTo,item.notes].join(' ').toLocaleLowerCase(getLocale()).includes(query));
-    if(followUpMatch)return person;
-    const histories = (person.histories || []).filter(history => [
+    if (personText.includes(query)) return scopedPerson;
+    const followUpMatch=(scopedPerson.followUps||[]).some(item=>[item.contactDate,item.nextFollowUpDate,item.assignedTo,item.notes].join(' ').toLocaleLowerCase(getLocale()).includes(query));
+    if(followUpMatch)return scopedPerson;
+    const histories = (scopedPerson.histories || []).filter(history => [
       history.employerName,history.workplaceLocation,history.workplaceProvince,history.jobTitle,
       history.employmentType,history.industry,history.startMonth,history.endMonth,
     ].join(' ').toLocaleLowerCase(getLocale()).includes(query));
-    return histories.length ? { ...person, histories } : null;
+    return histories.length ? { ...scopedPerson, histories } : null;
   }).filter(Boolean);
 }
 
@@ -1971,8 +2153,20 @@ function applyEmploymentFilters() { renderEmploymentRows(); }
 function resetEmploymentFilters() {
   document.getElementById('empFltInst').value = '';
   document.getElementById('empFltStatus').value = '';
+  document.getElementById('empFltFollowUp').value = '';
   document.getElementById('empFltSearch').value = '';
   renderEmploymentRows();
+}
+
+let _EMP_ENTRY_FILTERS_APPLIED=false;
+function applyEmploymentEntryFilters(){
+  if(_EMP_ENTRY_FILTERS_APPLIED)return;
+  _EMP_ENTRY_FILTERS_APPLIED=true;
+  const params=new URLSearchParams(window.location.search);
+  const status=params.get('employmentStatus');
+  const followUp=params.get('followUp');
+  if(status&&[...document.getElementById('empFltStatus').options].some(option=>option.value===status))document.getElementById('empFltStatus').value=status;
+  if(followUp&&[...document.getElementById('empFltFollowUp').options].some(option=>option.value===followUp))document.getElementById('empFltFollowUp').value=followUp;
 }
 
 function renderEmploymentReport() {
@@ -2001,6 +2195,7 @@ function renderEmploymentReport() {
 
   content.classList.remove('hidden');
   document.getElementById('empExportBtn')?.classList.toggle('hidden',!RBAC.has('exportData'));
+  document.getElementById('empFollowUpSettingsBtn')?.classList.toggle('hidden',!RBAC.has('manageNotifications'));
   const asOf = document.getElementById('empAsOf');
   if (asOf) asOf.textContent = `${t('empAsOf')} ${formatEmploymentMonth(response.asOfMonth) || response.asOfMonth || '—'}`;
   const legacy = Number(response.legacyRowsPendingMigration || 0);
@@ -2009,6 +2204,7 @@ function renderEmploymentReport() {
     warning.textContent = t('empLegacyRowsWarning').replace('{count}', legacy);
     warning.classList.toggle('hidden', legacy === 0);
   }
+  applyEmploymentEntryFilters();
   renderEmploymentRows();
 }
 
@@ -2029,6 +2225,76 @@ async function loadEmploymentReport() {
     _EMP_CACHE.loaded = true;
     renderEmploymentReport();
   }
+}
+
+// ── Follow-up notification settings ────────────────────────
+function renderEmploymentFollowUpSettings(){
+  const config=employmentNotificationConfig(),module=employmentNotificationModule(config);
+  document.getElementById('empNotifEnabled').checked=module.enabled!==false;
+  document.getElementById('empNotifOverdue').checked=employmentNotificationRule('followup_overdue',config)?.enabled!==false;
+  document.getElementById('empNotifDueSoon').checked=employmentNotificationRule('followup_due_soon',config)?.enabled!==false;
+  document.getElementById('empNotifLeadDays').value=String(Math.max(1,Math.min(90,Number(employmentNotificationRule('followup_due_soon',config)?.leadDays)||7)));
+  document.getElementById('empNotifMissing').checked=employmentNotificationRule('data_missing',config)?.enabled!==false;
+  document.getElementById('empNotifUpdated').checked=employmentNotificationRule('data_updated',config)?.enabled!==false;
+  document.getElementById('empNotifUpdatedDays').value=String(Math.max(1,Math.min(90,Number(employmentNotificationRule('data_updated',config)?.leadDays)||7)));
+  const audiences=new Set(module.audienceRoles||[]);
+  document.querySelectorAll('input[name="empNotifRole"]').forEach(input=>{input.checked=audiences.has(input.value);});
+  document.getElementById('empNotifSettingsStatus').textContent=_SETTINGS.NOTIFICATION_RULES?t('empNotifUsingSaved'):t('empNotifUsingDefaults');
+  syncEmploymentNotificationFormState();
+}
+
+function syncEmploymentNotificationFormState(){
+  const enabled=document.getElementById('empNotifEnabled')?.checked===true;
+  ['empNotifRuleFields','empNotifAudienceFields'].forEach(id=>{
+    const fieldset=document.getElementById(id);if(!fieldset)return;
+    fieldset.disabled=!enabled;fieldset.style.opacity=enabled?'1':'.55';
+  });
+}
+
+function openEmploymentFollowUpSettings(){
+  if(!RBAC.has('manageNotifications'))return;
+  renderEmploymentFollowUpSettings();
+  const modal=document.getElementById('empFollowUpSettingsModal');
+  modal.classList.remove('hidden');document.body.style.overflow='hidden';
+  lucide.createIcons();
+  requestAnimationFrame(()=>document.getElementById('empNotifEnabled')?.focus());
+}
+
+function closeEmploymentFollowUpSettings(event){
+  if(event&&event.target!==event.currentTarget)return;
+  document.getElementById('empFollowUpSettingsModal')?.classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+async function saveEmploymentFollowUpSettings(event){
+  event.preventDefault();
+  if(!RBAC.has('manageNotifications'))return;
+  const leadDays=Number(document.getElementById('empNotifLeadDays').value);
+  const updatedDays=Number(document.getElementById('empNotifUpdatedDays').value);
+  const audienceRoles=[...document.querySelectorAll('input[name="empNotifRole"]:checked')].map(input=>input.value);
+  if(!Number.isInteger(leadDays)||leadDays<1||leadDays>90){Swal.fire(t('warning'),t('empNotifLeadDaysError'),'warning');return;}
+  if(!Number.isInteger(updatedDays)||updatedDays<1||updatedDays>90){Swal.fire(t('warning'),t('empNotifUpdatedDaysError'),'warning');return;}
+  if(!audienceRoles.length){Swal.fire(t('warning'),t('empNotifAudienceError'),'warning');return;}
+  const config=employmentNotificationConfig(),module=employmentNotificationModule(config);
+  const knownEvents=new Set(['followup_overdue','followup_due_soon','data_missing','data_updated']);
+  const otherRules=(module.rules||[]).filter(rule=>!knownEvents.has(rule.eventType));
+  module.enabled=document.getElementById('empNotifEnabled').checked;
+  module.audienceRoles=audienceRoles;
+  module.rules=[...otherRules,
+    {ruleId:'employment.followup_overdue',eventType:'followup_overdue',enabled:document.getElementById('empNotifOverdue').checked,leadDays:0},
+    {ruleId:'employment.followup_due_soon',eventType:'followup_due_soon',enabled:document.getElementById('empNotifDueSoon').checked,leadDays},
+    {ruleId:'employment.data_missing',eventType:'data_missing',enabled:document.getElementById('empNotifMissing').checked,leadDays:0},
+    {ruleId:'employment.data_updated',eventType:'data_updated',enabled:document.getElementById('empNotifUpdated').checked,leadDays:updatedDays},
+  ];
+  showLoader(true,t('saving'));
+  try{
+    const result=await API.saveSetting('NOTIFICATION_RULES',config);
+    if(result.status!=='success')throw new Error(result.message||t('empNotifSaveError'));
+    _SETTINGS.NOTIFICATION_RULES=config;
+    if(typeof _refreshNotifBell==='function')await _refreshNotifBell(true);
+    renderEmploymentRows();closeEmploymentFollowUpSettings();showLoader(false);
+    Swal.fire({icon:'success',title:t('success'),text:t('empNotifSaved'),timer:1600,showConfirmButton:false});
+  }catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message||t('empNotifSaveError')),'error');}
 }
 
 // ── Follow-up workflow ──────────────────────────────────────
@@ -2573,6 +2839,7 @@ document.addEventListener('rdf:languagechange', () => {
   buildSummaryTable();
   renderEmploymentReport();
   if(!document.getElementById('empFollowUpModal')?.classList.contains('hidden'))refreshEmploymentFollowUpModal();
+  if(!document.getElementById('empFollowUpSettingsModal')?.classList.contains('hidden'))document.getElementById('empNotifSettingsStatus').textContent=_SETTINGS.NOTIFICATION_RULES?t('empNotifUsingSaved'):t('empNotifUsingDefaults');
   if(!document.getElementById('empReportComposerModal')?.classList.contains('hidden'))refreshEmploymentReportComposer();
   renderReportFilterContext();
   updateScholarshipReportQrUi();
@@ -3054,7 +3321,7 @@ ${sigHTML}
 
 // ── ESC key closes print modal ──
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeRptPrintModal(); closeEmploymentFollowUp(); closeEmploymentReportComposer(); }
+  if (e.key === 'Escape') { closeRptPrintModal(); closeEmploymentFollowUp(); closeEmploymentFollowUpSettings(); closeEmploymentReportComposer(); }
 });
 
 // ═══════════════════════════════════════════════════════════

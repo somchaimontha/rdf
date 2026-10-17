@@ -48,6 +48,7 @@ window.fetch = async (url, options) => {
      {role:'Data Reviewer',name:'Review Officer',position:'Reviewer',signatureDataUrl:''}
    ]
  };
+ if (action==='getNotificationFeed') data={status:'success',schemaVersion:'1.0.0',data:[{eventId:'employment.followup_due_soon.fixture',moduleId:'employment',eventType:'followup_due_soon',count:1,sampleTH:'นายทดสอบ นักเรียน',sampleEN:'Mr Test Student',dateFrom:'2026-03-20',dateTo:'2026-03-27',href:'reports.html?view=employment&source=notification&followUp=due_soon'}]};
  if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
@@ -56,7 +57,7 @@ window.fetch = async (url, options) => {
  if (action==='previewDynamicFieldSetup') data={status:'success',ready:true,schemaVersion:'1.1.0',sheets:[]};
  if (action==='previewEmploymentHistorySetup') data={status:'success',launchMode:'enabled',ready:true,safeToInstall:false,setupRequired:false,schemaVersion:'1.1.0',missingSections:[],missingFields:[],conflicts:[],candidateSections:[],legacy:{rowsWithEmployment:1,rowsMissingStipNo:0}};
  if (action==='previewLegacyEmploymentMigration') data={status:'success',launchMode:'enabled',schemaReady:true,total:1,ready:1,migrated:0,possibleDuplicate:0,missingStudent:0,rows:[{sourceRow:2,sourceKey:'Alumni:v1:fixture',stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',occupation:'Coordinator',workplace:'RDF Foundation',status:'ready',existingRecordId:''}]};
- if (action==='getEmploymentReport') data={status:'success',launchMode:'enabled',setupRequired:false,schemaVersion:'1.1.0',asOfMonth:'2026-03',reportDate:'2026-03-20',canManageFollowUps:true,legacyRowsPendingMigration:0,summary:{eligiblePeople:1,reportedPeople:1,employmentRecords:1,followUpRecords:1,dueFollowUps:1,overdueFollowUps:0,byStatus:{employed_full_time:1}},data:[{stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',institution:'MBS',studentStatus:'University',currentAcademicYear:'2569',scholarshipApprovalStatus:'Rejected',universityScholarship:'No',universityName:'มหาวิทยาลัยเชียงใหม่',universityNameEN:'Chiang Mai University',continuingEducationWithoutRdf:true,employmentStatus:'employed_full_time',histories:[{recordId:'rec_work_1',employerName:'RDF Foundation',workplaceLocation:'Mae Sariang',workplaceProvince:'Mae Hong Son',jobTitle:'Coordinator',employmentType:'full_time',industry:'Education',startMonth:'2025-01',endMonth:'',durationMonths:15,current:true,verificationStatus:'verified',source:'self_reported'}],followUps:[{followUpId:'fup_fixture',employmentRecordId:'rec_work_1',contactDate:'2026-03-10',contactMethod:'phone',outcome:'follow_up_needed',nextFollowUpDate:'2026-03-20',assignedTo:'Test Admin',notes:'Fixture follow-up'}]}]};
+ if (action==='getEmploymentReport') data={status:'success',launchMode:'enabled',setupRequired:false,schemaVersion:'1.1.0',asOfMonth:'2026-03',reportDate:'2026-03-20',canManageFollowUps:true,legacyRowsPendingMigration:0,summary:{eligiblePeople:1,reportedPeople:1,employmentRecords:1,followUpRecords:1,dueFollowUps:1,overdueFollowUps:0,byStatus:{employed_full_time:1}},data:[{stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',institution:'MBS',studentStatus:'University',currentAcademicYear:'2569',scholarshipApprovalStatus:'Rejected',universityScholarship:'No',universityName:'มหาวิทยาลัยเชียงใหม่',universityNameEN:'Chiang Mai University',continuingEducationWithoutRdf:true,employmentStatus:'employed_full_time',histories:[{recordId:'rec_work_1',employerName:'RDF Foundation',workplaceLocation:'Mae Sariang',workplaceProvince:'Mae Hong Son',jobTitle:'Coordinator',employmentType:'full_time',industry:'Education',startMonth:'2025-01',endMonth:'',durationMonths:15,current:true,verificationStatus:'verified',source:'self_reported',updatedAt:'2026-03-18T08:00:00Z'}],followUps:[{followUpId:'fup_fixture',employmentRecordId:'rec_work_1',contactDate:'2026-03-10',contactMethod:'phone',outcome:'follow_up_needed',nextFollowUpDate:'2026-03-20',assignedTo:'Test Admin',notes:'Fixture follow-up',updatedAt:'2026-03-20T09:00:00Z'}]}]};
  const reportDefs={employment_status:['a','b','1','RDF-EMP-20260320-11111111','รายงานภาวะการทำงานของศิษย์เก่า','Alumni Employment Status Report'],scholarship_statistics:['d','e','2','RDF-SCH-20260320-22222222','รายงานสถิติทุนการศึกษา','Scholarship Statistics Report'],promotion_results:['f','g','3','RDF-PRO-20260320-33333333','รายงานเลื่อนชั้นและผู้สำเร็จการศึกษา','Promotion and Graduation Report'],academic_results:['h','i','4','RDF-ACA-20260320-44444444','รายงานผลการศึกษา','Academic Results Report']};
  const reportDef=(type)=>reportDefs[type]||reportDefs.employment_status;
  const reportTypeByToken=(token)=>Object.keys(reportDefs).find(type=>reportDefs[type][0]===token[0]||reportDefs[type][1]===token[0])||'employment_status';
@@ -219,6 +220,7 @@ const server = http.createServer((req,res)=>{
            {id:'uni',audienceKey:'UNI',titleEN:'UNI',link:'academic-terms.html'}
          ];
          const studentBroadcasts=_buildBroadcastNotifications(getUser(),broadcasts,{Institution:'MBS'}).map(item=>({id:item.id,href:item.href}));
+         const operational=_buildOperationalNotifications([{eventId:'employment.followup_overdue.test',eventType:'followup_overdue',count:2,sampleTH:'ตัวอย่าง',sampleEN:'Example',dateFrom:'2026-03-18',dateTo:'2026-03-20'}]).map(item=>({id:item.id,href:item.href,title:item.title}));
          setUser(original);_notifCurrentUser=original;
          localStorage.removeItem(_notifReadKey());
          _notifSource={user:original,isStudent:false,pending,students,ownStudent:null};_notifLoaded=true;_notifLoadFailed=false;_rebuildNotifItems();_renderNotifPanel();
@@ -228,7 +230,7 @@ const server = http.createServer((req,res)=>{
          const beforeUnread=document.querySelectorAll('.notif-item.unread').length;
          document.getElementById('notifMarkAllBtn').click();
          const afterUnread=document.querySelectorAll('.notif-item.unread').length;
-         return {superAdmin,managerCanManage,finance,financeCanManage,dormTeacher,own,studentBroadcasts,open,details,beforeUnread,afterUnread};
+         return {superAdmin,managerCanManage,finance,financeCanManage,dormTeacher,own,studentBroadcasts,operational,open,details,beforeUnread,afterUnread};
        })()`);
        assert.deepEqual(notifications.superAdmin,['approval','incomplete','suspended','university'],'SuperAdmin notification permissions');
        assert.equal(notifications.managerCanManage,true,'Manager can manage system notifications by default');
@@ -237,6 +239,8 @@ const server = http.createServer((req,res)=>{
        assert.deepEqual(notifications.dormTeacher,['incomplete','suspended'],'DormTeacher notification permissions');
        assert.deepEqual(notifications.own,['own-profile'],'Student must only receive their own profile notification');
        assert.deepEqual(notifications.studentBroadcasts,[{id:'broadcast:all',href:'dashboard.html'},{id:'broadcast:mbs',href:'dashboard.html'}],'Student broadcasts must match their institution and safe destinations');
+       assert.deepEqual(notifications.operational.map(item=>({id:item.id,href:item.href})),[{id:'operational:employment.followup_overdue.test',href:'reports.html?view=employment&source=notification&followUp=overdue'}],'operational alerts must use the shared bell and safe report routes');
+       assert.match(notifications.operational[0].title,/2/,'operational alert title must include the aggregate count');
        assert.equal(notifications.open,true,'bell must open the notification list');
        assert.equal(notifications.details,true,'each notification must show details and a destination');
        assert.ok(notifications.beforeUnread>0,'new notifications must be unread');
@@ -331,12 +335,32 @@ const server = http.createServer((req,res)=>{
      assert.equal(employment.rows,1,'employment report must render repeatable work records');
      assert.match(employment.text,/RDF Foundation/,'employment report workplace');
      assert.match(employment.duration,initialLang==='th'?/1 ปี 3 เดือน/:/1 year 3 months/,'employment duration must localize from cached data');
+     const updatedFilter=await evaluate(`(()=>{document.getElementById('empFltFollowUp').value='updated_recent';applyEmploymentFilters();const result={options:document.getElementById('empFltFollowUp').options.length,rows:filteredEmploymentPeople().length};resetEmploymentFilters();return result;})()`);
+     assert.equal(updatedFilter.options,4,'follow-up filter must include recently updated data');
+     assert.equal(updatedFilter.rows,1,'recent-update alerts must link to a matching report filter');
      const followUp=await evaluate(`(()=>{openEmploymentFollowUp('MBS_001','rec_work_1');return {open:!document.getElementById('empFollowUpModal').classList.contains('hidden'),records:document.getElementById('empFollowUpRecord').options.length,history:document.getElementById('empFollowUpList').textContent,formVisible:!document.getElementById('empFollowUpForm').classList.contains('hidden')};})()`);
      assert.equal(followUp.open,true,'follow-up modal must open');
      assert.equal(followUp.records,2,'follow-up must reference existing work records');
      assert.match(followUp.history,/Fixture follow-up/,'follow-up history must render');
      assert.equal(followUp.formVisible,true,'authorized staff can add follow-ups');
      await evaluate(`closeEmploymentFollowUp()`);
+     const notificationSettings=await evaluate(`(()=>{openEmploymentFollowUpSettings();document.getElementById('empNotifLeadDays').value='21';document.getElementById('empNotifUpdatedDays').value='14';document.getElementById('empNotifMissing').checked=false;const target=LANG==='th'?'en':'th';setLang(target);const result={open:!document.getElementById('empFollowUpSettingsModal').classList.contains('hidden'),buttonVisible:getComputedStyle(document.getElementById('empFollowUpSettingsBtn')).display!=='none',leadDays:document.getElementById('empNotifLeadDays').value,updatedDays:document.getElementById('empNotifUpdatedDays').value,missing:document.getElementById('empNotifMissing').checked,roles:document.querySelectorAll('input[name="empNotifRole"]').length,title:document.getElementById('empNotifSettingsTitle').textContent.trim(),expectedTitle:t('empNotifSettingsTitle')};setLang(${JSON.stringify(initialLang)});return result;})()`);
+     assert.equal(notificationSettings.open,true,'authorized staff can open follow-up notification settings');
+     assert.equal(notificationSettings.buttonVisible,true,'follow-up settings must be visible in the employment report header');
+     assert.equal(notificationSettings.leadDays,'21','language switching must preserve an unsaved advance-notice value');
+     assert.equal(notificationSettings.updatedDays,'14','language switching must preserve the unsaved data-update window');
+     assert.equal(notificationSettings.missing,false,'language switching must preserve unsaved notification choices');
+     assert.equal(notificationSettings.roles,5,'notification audience must support the staff role model');
+     assert.equal(notificationSettings.title,notificationSettings.expectedTitle,'follow-up settings title must localize dynamically');
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:520,deviceScaleFactor:1,mobile:true});
+     const notificationMobile=await evaluate(`(()=>{const shell=document.querySelector('.emp-notif-shell'),body=document.querySelector('.emp-notif-body'),footer=document.getElementById('empNotifSaveBtn').closest('.emp-notif-footer'),banner=document.getElementById('rdfLocalAuditBanner'),shellRect=shell.getBoundingClientRect(),footerRect=footer.getBoundingClientRect(),bannerRect=banner?.getBoundingClientRect();body.scrollTop=body.scrollHeight;return {shellTop:shellRect.top,shellBottom:shellRect.bottom,footerBottom:footerRect.bottom,bannerTop:bannerRect?.top||innerHeight,viewport:innerHeight,horizontalOverflow:shell.scrollWidth>shell.clientWidth+1,bodyOverflow:getComputedStyle(body).overflowY,atBottom:Math.abs(body.scrollHeight-body.clientHeight-body.scrollTop)<2};})()`);
+     assert.ok(notificationMobile.shellTop>=0&&notificationMobile.shellBottom<=notificationMobile.viewport+1,'notification settings must fit a small viewport');
+     assert.ok(notificationMobile.footerBottom<=notificationMobile.bannerTop+1,'notification settings actions must remain above the local audit banner '+JSON.stringify(notificationMobile));
+     assert.equal(notificationMobile.horizontalOverflow,false,'notification settings must not require horizontal scrolling');
+     assert.equal(notificationMobile.bodyOverflow,'auto','long notification settings must scroll inside the modal');
+     assert.equal(notificationMobile.atBottom,true,'notification settings scroll must reach the final controls');
+     await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+     await evaluate(`closeEmploymentFollowUpSettings()`);
      const exportView=await evaluate(`({button:getComputedStyle(document.getElementById('empExportBtn')).display,rows:employmentExportRows().length,headers:employmentExportHeaders().length,safe:csvEmploymentCell('=SUM(1,1)')})`);
      assert.notEqual(exportView.button,'none','authorized users must see employment CSV export');
      assert.equal(exportView.rows,1,'employment export must follow the rendered report data');

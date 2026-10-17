@@ -42,7 +42,8 @@ const _API_CODE_I18N_KEYS = {
   LOCAL_AUDIT_MODE: 'localAuditModeError', REPORT_REGISTRY_VALIDATION_ERROR: 'reportRegistryValidationError',
   REPORT_REGISTRY_BUSY: 'reportRegistryBusy', REPORT_REGISTRY_FAILED: 'reportRegistryFailed',
   REPORT_VERIFICATION_NOT_FOUND: 'reportVerificationNotFound',
-  REPORT_QR_REGENERATION_CONDITIONS: 'reportQrRegenerationConditions'
+  REPORT_QR_REGENERATION_CONDITIONS: 'reportQrRegenerationConditions',
+  NOTIFICATION_RULES_INVALID: 'empNotifValidationError'
 };
 
 function _localizeStructuredApiData(data) {
@@ -64,7 +65,7 @@ const _API_TIMEOUT_SETUP_MS = 300000;
 const _API_TIMEOUT_MIGRATION_MS = 300000;
 const _API_UNEXPECTED_RESPONSE_CODE = 'API_UNEXPECTED_RESPONSE';
 const _API_CACHEABLE_GET_ACTIONS = new Set([
-  'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPublicSettings', 'getPendingScholarshipRequests',
+  'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPublicSettings', 'getNotificationFeed', 'getPendingScholarshipRequests',
   'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents',
   'getDynamicFormSchema', 'getDynamicFieldAdminData', 'previewDynamicFieldSetup',
   'previewEmploymentHistorySetup', 'previewLegacyEmploymentMigration', 'getEmploymentReport'
@@ -276,6 +277,7 @@ const API = {
   async loginWithGoogle(idToken)   { return apiPost({ action: 'loginWithGoogle', idToken }); },
   async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
   async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }, _API_TIMEOUT_SETTINGS_MS); },
+  async getNotificationFeed(force) { return apiGet({ action: 'getNotificationFeed', ...(force ? { force:'1' } : {}) }, _API_TIMEOUT_SETTINGS_MS); },
   async getPublicSettings()        { return apiGet({ action: 'getPublicSettings' }); },
   async saveSetting(key, values)   { return apiPost({ action: 'saveSetting', key, values,   reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
   async getLogs(limit)             { return apiGet({ action: 'getLogs', limit: limit || 200 }, _API_TIMEOUT_SETTINGS_MS); },

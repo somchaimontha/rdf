@@ -41,3 +41,14 @@ test('employment report composer supports report-specific on-screen signatures',
   assert.match(reports, /_EMP_REPORT_SIGNATURE_DRAFTS/);
   assert.match(reports, /resetEmploymentReportSignatureDrafts\(\);[\s\S]*renderEmploymentReportSignatures\(false\)/);
 });
+
+test('employment follow-up settings reuse the central notification system', () => {
+  assert.match(reports, /id="empFollowUpSettingsBtn"/);
+  assert.match(reports, /id="empFollowUpSettingsModal"/);
+  assert.match(reports, /API\.saveSetting\('NOTIFICATION_RULES',config\)/);
+  assert.match(reports, /employmentNotificationConfig/);
+  assert.match(reports, /empFltFollowUp/);
+  assert.match(auth, /function _buildOperationalNotifications/);
+  assert.match(auth, /API\.getNotificationFeed\(force\)/);
+  assert.match(auth, /operationalEvents/);
+});

@@ -287,6 +287,48 @@ function _buildBroadcastNotifications(user, broadcasts, ownStudent) {
     });
 }
 
+function _notifOperationalHref(event) {
+  const routes = {
+    followup_overdue:'reports.html?view=employment&source=notification&followUp=overdue',
+    followup_due_soon:'reports.html?view=employment&source=notification&followUp=due_soon',
+    data_missing:'reports.html?view=employment&source=notification&employmentStatus=__unreported__',
+    data_updated:'reports.html?view=employment&source=notification&followUp=updated_recent'
+  };
+  return routes[event?.eventType] || 'reports.html?view=employment&source=notification';
+}
+
+function _notifShortDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
+  return new Intl.DateTimeFormat(typeof getLocale === 'function' ? getLocale() : undefined, {
+    year:'numeric', month:'short', day:'numeric', timeZone:'UTC'
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function _buildOperationalNotifications(events) {
+  const definitions = {
+    followup_overdue:{ titleKey:'navNotifEmploymentOverdueTitle', emptyKey:'navNotifEmploymentOverdueDesc', icon:'calendar-x', color:'#b91c1c', bg:'#fef2f2' },
+    followup_due_soon:{ titleKey:'navNotifEmploymentDueSoonTitle', emptyKey:'navNotifEmploymentDueSoonDesc', icon:'calendar-clock', color:'#b45309', bg:'#fffbeb' },
+    data_missing:{ titleKey:'navNotifEmploymentMissingTitle', emptyKey:'navNotifEmploymentMissingDesc', icon:'user-round-pen', color:'#047857', bg:'#ecfdf5' },
+    data_updated:{ titleKey:'navNotifEmploymentUpdatedTitle', emptyKey:'navNotifEmploymentUpdatedDesc', icon:'refresh-cw', color:'#0369a1', bg:'#eff6ff' }
+  };
+  return (Array.isArray(events) ? events : []).map(event => {
+    const definition = definitions[event?.eventType];
+    if (!definition || !event.eventId || Number(event.count || 0) < 1) return null;
+    const sample = LANG === 'en' ? (event.sampleEN || event.sampleTH) : (event.sampleTH || event.sampleEN);
+    const from = _notifShortDate(event.dateFrom);
+    const to = _notifShortDate(event.dateTo);
+    const meta = from && to
+      ? t('navNotifEmploymentDateRange').replace('{from}', from).replace('{to}', to)
+      : '';
+    return _notifItem({
+      id:_notifStableId('operational',[event.eventId]), kindKey:'navNotifEmploymentKind',
+      title:t(definition.titleKey).replace('{count}', String(event.count)),
+      description:sample || t(definition.emptyKey), meta,
+      href:_notifOperationalHref(event), icon:definition.icon, color:definition.color, bg:definition.bg
+    });
+  }).filter(Boolean);
+}
+
 function _buildStaffNotifications(user, pending, students) {
   const items = [];
   const canApprove = _notifHas('viewPromotion') && _notifHas('viewSchApprovalPanel');
@@ -394,6 +436,7 @@ function _rebuildNotifItems() {
     : _buildStaffNotifications(_notifSource.user, _notifSource.pending, _notifSource.students);
   _notifItems = [
     ..._buildBroadcastNotifications(_notifSource.user, _notifSource.broadcasts || [], _notifSource.ownStudent),
+    ..._buildOperationalNotifications(_notifSource.operationalEvents || []),
     ...taskItems,
   ];
 }
@@ -527,14 +570,16 @@ async function _refreshNotifBell(force = false) {
     const isStudent = user.role === 'Student' && !!user.stipNo;
     const canApprove = _notifHas('viewPromotion') && _notifHas('viewSchApprovalPanel');
     const needsStudents = !isStudent && (_notifHas('viewStudents') || _notifHas('editStudents') || canApprove);
+    const needsOperationalFeed = !isStudent && _notifHas('viewReports') && _notifHas('viewStudents');
     const requests = [];
     const slots = [];
     slots.push('settings'); requests.push(API.getSystemSettings());
+    if (needsOperationalFeed) { slots.push('operational'); requests.push(API.getNotificationFeed(force)); }
     if (canApprove) { slots.push('pending'); requests.push(API.get('getPendingScholarshipRequests')); }
     if (needsStudents) { slots.push('students'); requests.push(API.getStudents()); }
     if (isStudent) { slots.push('student'); requests.push(API.getStudent(user.stipNo)); }
     const results = await Promise.allSettled(requests);
-    let pending = [], students = [], ownStudent = null, broadcasts = [], successes = 0;
+    let pending = [], students = [], ownStudent = null, broadcasts = [], operationalEvents = [], successes = 0;
     results.forEach((result, index) => {
       if (result.status !== 'fulfilled' || !result.value || result.value.status !== 'success') return;
       successes++;
@@ -542,12 +587,13 @@ async function _refreshNotifBell(force = false) {
       if (slot === 'pending') pending = result.value.pending || result.value.students || result.value.data || [];
       if (slot === 'students') students = result.value.data || result.value.students || [];
       if (slot === 'student') ownStudent = result.value.data || result.value.student || null;
+      if (slot === 'operational') operationalEvents = Array.isArray(result.value.data) ? result.value.data : [];
       if (slot === 'settings') {
         const settings = result.value.data || {};
         broadcasts = Array.isArray(settings.NOTIFICATIONS) ? settings.NOTIFICATIONS : [];
       }
     });
-    _notifSource = { user, isStudent, pending, students, ownStudent, broadcasts };
+    _notifSource = { user, isStudent, pending, students, ownStudent, broadcasts, operationalEvents };
     _rebuildNotifItems();
     _notifLoadFailed = requests.length > 0 && successes === 0;
     _notifLoaded = true;
