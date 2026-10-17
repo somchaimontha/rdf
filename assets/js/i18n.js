@@ -31,6 +31,8 @@ const T = {
     signatory: "ผู้ลงนาม",
 
     connectionTimeout: "การเชื่อมต่อหมดเวลา ระบบอาจยังประมวลผลอยู่ กรุณารีเฟรชเพื่อตรวจสถานะก่อนลองใหม่",
+    apiUnexpectedResponse: "บริการข้อมูลตอบกลับผิดรูปแบบ ระบบจะลองเชื่อมต่อให้อัตโนมัติ หากยังพบปัญหาให้กดโหลดใหม่หรือเข้าสู่ระบบอีกครั้ง",
+    apiRetryLoad: "ลองโหลดอีกครั้ง",
     googleChecking: "กำลังตรวจสอบบัญชี Google...",
     googleLoadFailed: "โหลด Google Sign-In ไม่สำเร็จ กรุณารีเฟรชหน้า",
     googleLoginFailed: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ",
@@ -1406,6 +1408,8 @@ const T = {
     signatory: "Signatory",
 
     connectionTimeout: "The connection timed out. Processing may still be running; refresh and check the status before trying again.",
+    apiUnexpectedResponse: "The data service returned an invalid response. The system retries automatically; if the problem continues, reload or sign in again.",
+    apiRetryLoad: "Try loading again",
     googleChecking: "Verifying Google account...",
     googleLoadFailed: "Unable to load Google Sign-In. Please refresh the page.",
     googleLoginFailed: "Google sign-in failed",

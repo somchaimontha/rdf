@@ -62,6 +62,7 @@ const _API_TIMEOUT_DEFAULT_MS = 45000;
 const _API_TIMEOUT_SETTINGS_MS = 120000;
 const _API_TIMEOUT_SETUP_MS = 300000;
 const _API_TIMEOUT_MIGRATION_MS = 300000;
+const _API_UNEXPECTED_RESPONSE_CODE = 'API_UNEXPECTED_RESPONSE';
 const _API_CACHEABLE_GET_ACTIONS = new Set([
   'getDashboardStats', 'getStudents', 'getAdmins', 'getSystemSettings', 'getPublicSettings', 'getPendingScholarshipRequests',
   'getUniNames', 'getStudentsForPromotion', 'getWithdrawalStudents',
@@ -69,6 +70,24 @@ const _API_CACHEABLE_GET_ACTIONS = new Set([
   'previewEmploymentHistorySetup', 'previewLegacyEmploymentMigration', 'getEmploymentReport'
 ]);
 let _apiGetCacheGeneration = 0;
+
+async function _apiReadJsonResponse(response) {
+  // Browser fixtures and older mocks may expose only json(). Production uses
+  // text() first so an HTML gateway/login page never leaks a JSON parser error
+  // such as "Unexpected token '<'" into the interface.
+  if (typeof response?.text !== 'function' && typeof response?.json === 'function') return response.json();
+  const body = await response.text();
+  try {
+    return JSON.parse(body);
+  } catch (_) {
+    const error = new Error(typeof t === 'function'
+      ? t('apiUnexpectedResponse')
+      : 'The data service returned an invalid response. Please reload and try again.');
+    error.code = _API_UNEXPECTED_RESPONSE_CODE;
+    error.httpStatus = Number(response?.status || 0);
+    throw error;
+  }
+}
 
 function _apiGetCacheKey(params, token) {
   const entries = Object.entries(token ? { ...params, token } : { ...params })
@@ -106,16 +125,24 @@ async function _apiGetNetwork(params, timeoutMs) {
   const url = RDF.GAS_URL + '?' + new URLSearchParams(p).toString();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs || _API_TIMEOUT_DEFAULT_MS);
-  let res;
+  let data;
   try {
-    res = await fetch(url, { signal: ctrl.signal });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await fetch(url, { signal: ctrl.signal });
+      try {
+        data = await _apiReadJsonResponse(response);
+        break;
+      } catch (error) {
+        if (error.code !== _API_UNEXPECTED_RESPONSE_CODE || attempt > 0 || !_API_CACHEABLE_GET_ACTIONS.has(params.action)) throw error;
+        await new Promise(resolve => setTimeout(resolve, 400));
+      }
+    }
   } catch(e) {
     clearTimeout(timer);
     if (e.name === 'AbortError') throw new Error(t('connectionTimeout'));
     throw e;
   }
   clearTimeout(timer);
-  const data = await res.json();
   if (data && typeof data.message === 'string') {
     data.rawMessage = data.message;
     data.message = localizeApiMessage(data.message, data.status === 'success' ? 'success' : 'error');
@@ -183,7 +210,7 @@ async function apiPost(body, timeoutMs) {
     throw e;
   }
   clearTimeout(timer);
-  const data = await res.json();
+  const data = await _apiReadJsonResponse(res);
   if (data && typeof data.message === 'string') {
     data.rawMessage = data.message;
     data.message = localizeApiMessage(data.message, data.status === 'success' ? 'success' : 'error');
@@ -427,7 +454,7 @@ async function checkDBConnection() {
     const timer = setTimeout(() => ctrl.abort(), 8000);
     const res   = await fetch(RDF.GAS_URL + '?action=ping', { signal: ctrl.signal });
     clearTimeout(timer);
-    const data  = await res.json();
+    const data  = await _apiReadJsonResponse(res);
     const ms    = Date.now() - t0;
     if (data.status === 'ok') {
       el.className = 'db-status online';

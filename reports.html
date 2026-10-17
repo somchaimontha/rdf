@@ -581,7 +581,10 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
       <div id="empAuditNotice" class="hidden rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 mb-3 text-xs font-semibold text-orange-900" data-t="empAuditModeNotice">ระบบติดตามอยู่ในโหมดตรวจสอบแบบอ่านอย่างเดียว สามารถดูรายงานและ Preview ได้ แต่ยังติดตั้ง ย้ายข้อมูล หรือบันทึกการติดตามไม่ได้</div>
 
       <div id="empReportLoading" class="text-center text-gray-400 py-8 text-xs" data-t="stLoading">กำลังโหลด...</div>
-      <div id="empReportError" class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700"></div>
+      <div id="empReportError" class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700" role="alert">
+        <p id="empReportErrorMessage"></p>
+        <button type="button" onclick="loadEmploymentReport()" class="mt-3 rounded-lg border border-red-300 bg-white px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100" data-t="apiRetryLoad">ลองโหลดอีกครั้ง</button>
+      </div>
       <div id="empSetupRequired" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-4">
         <div class="flex items-start gap-3">
           <i data-lucide="triangle-alert" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
@@ -991,12 +994,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.4.2"></script>
+<script src="assets/js/config.js?v=2.4.3"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.4.2"></script>
-<script src="assets/js/auth.js?v=2.4.2"></script>
-<script src="assets/js/rbac.js?v=2.4.2"></script>
-<script src="assets/js/api.js?v=2.4.2"></script>
+<script src="assets/js/i18n.js?v=2.4.3"></script>
+<script src="assets/js/auth.js?v=2.4.3"></script>
+<script src="assets/js/rbac.js?v=2.4.3"></script>
+<script src="assets/js/api.js?v=2.4.3"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
@@ -1016,6 +1019,7 @@ const _CACHE = {
 const _EMP_CACHE = {
   response: null,    // Employment response joined to Students by StipNo
   error: '',
+  errorCode: '',
   loaded: false,
 };
 
@@ -1981,7 +1985,7 @@ function renderEmploymentReport() {
 
   if (!_EMP_CACHE.loaded) { loading?.classList.remove('hidden'); return; }
   if (_EMP_CACHE.error) {
-    error.textContent = _EMP_CACHE.error;
+    const message=document.getElementById('empReportErrorMessage');if(message)message.textContent=_EMP_CACHE.errorCode==='API_UNEXPECTED_RESPONSE'?t('apiUnexpectedResponse'):_EMP_CACHE.error;
     error.classList.remove('hidden');
     return;
   }
@@ -2011,6 +2015,7 @@ function renderEmploymentReport() {
 async function loadEmploymentReport() {
   _EMP_CACHE.loaded = false;
   _EMP_CACHE.error = '';
+  _EMP_CACHE.errorCode = '';
   renderEmploymentReport();
   try {
     const result = await API.getEmploymentReport();
@@ -2018,6 +2023,7 @@ async function loadEmploymentReport() {
     _EMP_CACHE.response = result;
   } catch (error) {
     _EMP_CACHE.response = null;
+    _EMP_CACHE.errorCode = error.code || '';
     _EMP_CACHE.error = localizeApiMessage(error.message || t('empReportError'));
   } finally {
     _EMP_CACHE.loaded = true;
