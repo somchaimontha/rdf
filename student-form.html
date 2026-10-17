@@ -314,6 +314,12 @@
             </select>
           </div>
           <div>
+            <label class="field-label"><span data-t="uniEntryAcademicYear">ปีการศึกษาที่เข้ามหาวิทยาลัย (พ.ศ.)</span></label>
+            <input type="number" id="f_uniEntryYear" class="field-input" min="2500" max="2700"
+              placeholder="เช่น 2568" data-t-placeholder="hintEG2568BE">
+            <p class="text-xs text-purple-500 mt-1" data-t="uniEntryAcademicYearHint">ใช้คำนวณปีการศึกษาสุดท้ายตามระยะเวลาหลักสูตร</p>
+          </div>
+          <div>
             <label class="field-label"><span data-t="uniProvince">จังหวัดที่ตั้งมหาวิทยาลัย</span></label>
             <input type="text" id="f_uniProvince" class="field-input" placeholder="จังหวัด" data-t-placeholder="promoProvince">
           </div>
@@ -1252,12 +1258,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.5.0"></script>
-<script src="assets/js/i18n.js?v=2.5.0"></script>
-<script src="assets/js/api.js?v=2.5.0"></script>
-<script src="assets/js/auth.js?v=2.5.0"></script>
-<script src="assets/js/rbac.js?v=2.5.0"></script>
-<script src="assets/js/dynamic-fields.js?v=2.5.0"></script>
+<script src="assets/js/config.js?v=2.6.0"></script>
+<script src="assets/js/i18n.js?v=2.6.0"></script>
+<script src="assets/js/api.js?v=2.6.0"></script>
+<script src="assets/js/auth.js?v=2.6.0"></script>
+<script src="assets/js/rbac.js?v=2.6.0"></script>
+<script src="assets/js/dynamic-fields.js?v=2.6.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
@@ -1503,7 +1509,8 @@ function getDynamicCoreContext() {
     StipNo: value('f_stipNo'), Status: value('f_status'), Institution: value('f_institution'),
     CurrentLevel: value('f_level'), ScholarshipYear: value('f_scholarshipYear'), EntryYear: value('f_entryYear'),
     Sex: value('f_gender'), Province: value('f_province'), Nationality: value('f_nationality'),
-    UniName: value('f_uniName'), UniProvince: value('f_uniProvince'), BankName: value('f_bankName')
+    UniName: value('f_uniName'), UniEntryYear: value('f_uniEntryYear'),
+    UniProvince: value('f_uniProvince'), BankName: value('f_bankName')
   };
 }
 
@@ -1792,7 +1799,7 @@ function fillForm(d) {
   sv('f_department', d.Department); sv('f_oldSchool', d.OldSchool);
   sv('f_lastEducation', d.LastEducation);
   sv('f_otherInst', d.OtherInstitution);
-  sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration);
+  sv('f_uniName', d.UniName); sv('f_uniDuration', d.UniDuration); sv('f_uniEntryYear', d.UniEntryYear);
   sv('f_uniProvince', d.UniProvince); sv('f_uniFaculty', d.UniFaculty); sv('f_uniMajor', d.UniMajor);
   sv('f_uniNameEN', d.UniNameEN); sv('f_uniFacultyEN', d.UniFacultyEN);
   sv('f_uniMajorEN', d.UniMajorEN); sv('f_uniProvinceEN', d.UniProvinceEN);
@@ -2582,7 +2589,7 @@ async function collectForm() {
     EntryTerm: get('f_entryTerm'), Major: get('f_major'),
     Department: get('f_department'), OldSchool: get('f_oldSchool'),
     LastEducation: get('f_lastEducation'),
-    UniName: get('f_uniName'), UniDuration: get('f_uniDuration'),
+    UniName: get('f_uniName'), UniDuration: get('f_uniDuration'), UniEntryYear: get('f_uniEntryYear'),
     UniProvince: get('f_uniProvince'), UniFaculty: get('f_uniFaculty'), UniMajor: get('f_uniMajor'),
     UniNameEN: get('f_uniNameEN'), UniFacultyEN: get('f_uniFacultyEN'),
     UniMajorEN: get('f_uniMajorEN'), UniProvinceEN: get('f_uniProvinceEN'),

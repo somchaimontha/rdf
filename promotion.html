@@ -924,13 +924,13 @@ img.student-avatar {
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.5.0"></script>
+<script src="assets/js/config.js?v=2.6.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.5.0"></script>
-<script src="assets/js/auth.js?v=2.5.0"></script>
-<script src="assets/js/rbac.js?v=2.5.0"></script>
-<script src="assets/js/api.js?v=2.5.0"></script>
-<script src="assets/js/report-registry.js?v=2.5.0"></script>
+<script src="assets/js/i18n.js?v=2.6.0"></script>
+<script src="assets/js/auth.js?v=2.6.0"></script>
+<script src="assets/js/rbac.js?v=2.6.0"></script>
+<script src="assets/js/api.js?v=2.6.0"></script>
+<script src="assets/js/report-registry.js?v=2.6.0"></script>
 <script>
 // RBAC: only Manager+ can access promotion page
 RBAC.enforcePage(['viewPromotion']);
@@ -1106,6 +1106,7 @@ function _highlightStipNo(stipNo) {
   if (banner) {
     const actionLabels = {
       graduate: LANG==='en'?'Graduate':'🎓 จบการศึกษา',
+      additional: t('promoActAdditional'),
       suspend:  LANG==='en'?'Suspend':'⏸ พักการเรียน',
       hold:     LANG==='en'?'Hold back':'⏸ ซ้ำชั้น',
       resign:   LANG==='en'?'Resign':'✕ ลาออก',
@@ -1417,6 +1418,7 @@ async function loadPage() {
             nextAcademicYear:   _nextYearBE,
             uniName:            s.UniName || '', uniNameEN: s.UniNameEN || '',
             uniDuration:        s.UniDuration || '',
+            uniEntryYear:       s.UniEntryYear || '',
             uniFaculty:         s.UniFaculty || '', uniFacultyEN: s.UniFacultyEN || '',
             uniMajor:           s.UniMajor || '', uniMajorEN: s.UniMajorEN || '',
             uniProvince:        s.UniProvince || '', uniProvinceEN: s.UniProvinceEN || '',
@@ -1425,6 +1427,7 @@ async function loadPage() {
             schApprovalBy:      s.SchApprovalBy || '',
             schApprovalDate:    s.SchApprovalDate || '',
             schApprovalNotes:   s.SchApprovalNotes || '',
+            additionalProgress: 'stay',
           };
         }
       });
@@ -1712,6 +1715,7 @@ function renderStudentRow(s, inst, level, nextDefault, isGradLevel, showUniSchCo
           onchange="onActionChange('${s.StipNo}','${inst}','${level}',this.value)">
           ${showContinueInst ? `<option value="continue_inst" ${act==='continue_inst'?'selected':''}>🎓 ${LANG==='th'?'จบ + ศึกษาต่อ ปวส.':'Grad + Continue ปวส.'}</option>` : ''}
           ${!showContinueInst ? `<option value="promote" ${act==='promote'?'selected':''}>⬆ ${t('promoActPromote')}</option>` : ''}
+          ${inst === 'UNI' ? `<option value="additional" ${act==='additional'?'selected':''}>➕ ${t('promoActAdditional')}</option>` : ''}
           <option value="graduate" ${act==='graduate'?'selected':''}>🎓 ${t('promoActGraduate')}</option>
           ${showUniOpts ? `<option value="uni"     ${act==='uni'    ?'selected':''}>🏛 ${t('promoActUni')}</option>` : ''}
           ${showUniOpts ? `<option value="uni_own" ${act==='uni_own'?'selected':''}>🏛 ${t('promoActUniOwn')}</option>` : ''}
@@ -1867,6 +1871,10 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
   };
   switch (dec.action) {
     case 'promote':   p.NewLevel = dec.nextLevel; break;
+    case 'additional':
+      p.NewStatus = 'Active';
+      if (dec.additionalProgress === 'promote') p.NewLevel = dec.nextLevel;
+      break;
     case 'graduate':  p.NewStatus = 'Graduated'; break;
     case 'uni':
       // Status='Graduated' first — scholarship hasn't been approved yet.
@@ -1881,6 +1889,7 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
       if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
       if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
       if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
+      if (dec.uniEntryYear || dec.nextAcademicYear) p.UniEntryYear = dec.uniEntryYear || dec.nextAcademicYear;
       { const og = ALL_GROUPS.find(g => g.institution === inst);
         if (og?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
         else if (og?.institution === 'VC') p.LastEducation = level.includes('ปวส.')
@@ -1898,6 +1907,7 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
       if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
       if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
       if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
+      if (dec.uniEntryYear || dec.nextAcademicYear) p.UniEntryYear = dec.uniEntryYear || dec.nextAcademicYear;
       break;
     case 'suspend':      p.NewStatus = 'Suspended';            break;
     case 'resign':       p.NewStatus = 'Resigned';             break;
@@ -1914,7 +1924,7 @@ function _buildStudentPayload(stipNo, dec, inst, level) {
   if (dec.notes !== undefined) p.PromotionNotes = dec.notes;
   if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
     p.UniScholarship = dec.uniScholarship;
-  const _canAdvYear = ['promote', 'uni', 'continue_inst'].includes(dec.action);
+  const _canAdvYear = ['promote', 'additional', 'uni', 'continue_inst'].includes(dec.action);
   p.NextAcademicYear = (_canAdvYear && dec.nextAcademicYear) ? dec.nextAcademicYear : 'FREEZE';
   if (dec.schPriority !== undefined && dec.schPriority !== null) p.SchPriority = dec.schPriority;
 
@@ -2105,6 +2115,7 @@ async function submitScholarshipRequest(stipNo) {
     UniMajor:       dec.uniMajor      || '',
     UniMajorEN:     dec.uniMajorEN    || '',
     UniDuration:    dec.uniDuration   || '',
+    UniEntryYear:   dec.uniEntryYear || dec.nextAcademicYear || '',
     UniProvince:    dec.uniProvince   || '',
     UniProvinceEN:  dec.uniProvinceEN || '',
     uniScholarship: dec.uniScholarship || 'Yes',
@@ -2216,7 +2227,10 @@ async function reviewScholarshipRequest(stipNo, approvalStatus) {
         } catch(e) { /* reload failed — groups stale until page refresh */ }
       }
 
-      renderApprovalPanel();
+      _PENDING_APPROVALS = _PENDING_APPROVALS.filter(item => String(item.StipNo || item.stipNo) !== String(stipNo));
+      if (typeof API.clearReadCache === 'function') API.clearReadCache();
+      await loadApprovalPanel();
+      if (typeof _refreshNotifBell === 'function') _refreshNotifBell(true);
       renderGroups();
     } else {
       Swal.fire(t('error'), res.message || t('promoLoadError'), 'error');
@@ -2251,6 +2265,7 @@ async function loadApprovalPanel() {
       _PENDING_UNI_GRADUATED = (stuRes.value.data || []).filter(s =>
         s.status === 'Graduated' &&
         s.uniName &&
+        !String(s.schApprovalStatus || '').trim() &&
         (s.uniScholarship || '').toLowerCase() !== 'no' &&
         !existingStipNos.has(s.stipNo)  // avoid duplicates with SchApprovalStatus='Pending' entries
       );
@@ -2450,7 +2465,7 @@ async function approveUniFromPanel(stipNo) {
     const today = new Date().toISOString().slice(0,10);
     const reqUser = (getUser()||{}).username || 'Admin';
     const payload = [{ StipNo: stipNo, NewStatus: 'Active', NewInstitution: 'UNI', NewLevel: 'ชั้นปีที่ 1',
-                        NextAcademicYear: entryYear,
+                        NextAcademicYear: entryYear, UniEntryYear: String(parseInt(entryYear, 10) || ''),
                         SchApprovalStatus: 'Approved', SchApprovalBy: reqUser,
                         SchApprovalDate: today, SchApprovalNotes: notes }];
     const res = await API.promoteStudents(payload, reqUser, today);
@@ -2461,7 +2476,9 @@ async function approveUniFromPanel(stipNo) {
         timer: 2000, showConfirmButton: false });
       // Remove from local cache and re-render panel
       _PENDING_UNI_GRADUATED = _PENDING_UNI_GRADUATED.filter(s => s.stipNo !== stipNo);
-      renderApprovalPanel();
+      if (typeof API.clearReadCache === 'function') API.clearReadCache();
+      await loadApprovalPanel();
+      if (typeof _refreshNotifBell === 'function') _refreshNotifBell(true);
       // Reload groups so the student appears in UNI group
       try {
         const studRes = await API.get('getStudentsForPromotion');
@@ -2502,7 +2519,9 @@ async function rejectUniFromPanel(stipNo) {
   try {
     const today = new Date().toISOString().slice(0,10);
     const reqUser = (getUser()||{}).username || 'Admin';
-    const payload = [{ StipNo: stipNo, NewStatus: 'University', UniScholarship: 'No', SchApprovalStatus: 'Rejected', SchApprovalBy: reqUser,
+    const entryYear = document.getElementById('academicYear')?.value || '';
+    const payload = [{ StipNo: stipNo, NewStatus: 'University', UniScholarship: 'No', UniEntryYear: String(parseInt(entryYear, 10) || ''),
+                        SchApprovalStatus: 'Rejected', SchApprovalBy: reqUser,
                         SchApprovalDate: today, SchApprovalNotes: notes || '' }];
     const res = await API.promoteStudents(payload, reqUser, today);
     if (res.status !== 'success') throw new Error(res.message || bi('ไม่สามารถบันทึกผลการพิจารณาทุนได้','Unable to save the scholarship decision'));
@@ -2510,8 +2529,10 @@ async function rejectUniFromPanel(stipNo) {
     await Swal.fire({ icon:'info', title: LANG==='th' ? 'บันทึกแล้ว' : 'Saved',
       text: bi(`${stipNo} อยู่ในสถานะกำลังศึกษาต่อ (ทุนตนเอง)`,`${stipNo} is now continuing study without RDF funding`),
       timer: 2000, showConfirmButton: false });
-    _PENDING_UNI_GRADUATED = _PENDING_UNI_GRADUATED.filter(s => s.stipNo !== stipNo);
-    renderApprovalPanel();
+    _PENDING_UNI_GRADUATED = _PENDING_UNI_GRADUATED.filter(s => String(s.stipNo || s.StipNo) !== String(stipNo));
+    if (typeof API.clearReadCache === 'function') API.clearReadCache();
+    await loadApprovalPanel();
+    if (typeof _refreshNotifBell === 'function') _refreshNotifBell(true);
   } catch(e) {
     showLoader(false);
     Swal.fire(t('error'), e.message || 'Network error', 'error');
@@ -2842,6 +2863,16 @@ function renderDetailCell(stipNo, inst, level, act, dec, levelOpts) {
     : '';
 
   if (act === 'promote')   return `<select class="promo-action-select w-full text-xs" onchange="setDec('${stipNo}','nextLevel',this.value)">${levelOpts}</select>`;
+  if (act === 'additional') {
+    const progress = dec.additionalProgress === 'promote' ? 'promote' : 'stay';
+    return `<div class="flex flex-col gap-1">
+      <span style="font-size:10px;font-weight:700;color:#0369a1">➕ ${t('promoActAdditional')}</span>
+      <select class="promo-action-select text-xs" onchange="onAdditionalProgressChange('${stipNo}','${inst}','${level}',this.value)">
+        <option value="stay" ${progress==='stay'?'selected':''}>${t('promoAdditionalStay')}</option>
+        <option value="promote" ${progress==='promote'?'selected':''}>${t('promoAdditionalPromote')}</option>
+      </select>
+    </div>`;
+  }
   if (act === 'continue_inst') {
     const _vcHsOpts = ['ปวส. ชั้นปีที่ 1','ปวส. ชั้นปีที่ 2'].map(l =>
       `<option value="${l}" ${(dec.nextLevel||'ปวส. ชั้นปีที่ 1')===l?'selected':''}>${abbrevLevel(l)}</option>`
@@ -3373,6 +3404,7 @@ function _actionDoneLabel(act) {
   const map = {
     promote:        { emoji:'⬆', th:'เลื่อนชั้นแล้ว',              en:'Promoted',                      bg:'#dcfce7', border:'#86efac', color:'#16a34a' },
     continue_inst:  { emoji:'🎓', th:'จบ ปวช. + ต่อ ปวส. แล้ว',   en:'Graduated ปวช. + Continuing ปวส.', bg:'#d1fae5', border:'#34d399', color:'#059669' },
+    additional:     { emoji:'➕', th:t('promoAdditionalSaved'), en:t('promoAdditionalSaved'), bg:'#e0f2fe', border:'#7dd3fc', color:'#0369a1' },
     graduate:     { emoji:'🎓', th:'จบการศึกษาแล้ว',          en:'Graduated',             bg:'#dcfce7', border:'#86efac', color:'#16a34a' },
     uni:          { emoji:'🏛', th:'รอผลอนุมัติทุน ม.',        en:'Pending UNI Approval',  bg:'#faf5ff', border:'#c4b5fd', color:'#6d28d9' },
     uni_own:      { emoji:'🏛', th:'ต่อ ม. (ทุนตนเอง) — ศิษย์เก่า', en:'Alumni (own funding)', bg:'#f0fdf4', border:'#86efac', color:'#16a34a' },
@@ -3403,6 +3435,16 @@ function _shrinkNotes(el) {
   el.style.height = (lines > 1 ? Math.min(lines, 3) * 20 : 24) + 'px';
 }
 
+function onAdditionalProgressChange(stipNo, inst, level, progress) {
+  const dec = ROW_DECISIONS[stipNo];
+  if (!dec || inst !== 'UNI') return;
+  dec.additionalProgress = progress === 'promote' ? 'promote' : 'stay';
+  const match = String(level || '').match(/ชั้นปีที่\s*(\d+)/);
+  dec.nextLevel = match ? `ชั้นปีที่ ${parseInt(match[1], 10) + 1}` : '';
+  const detail = document.getElementById('detail_' + stipNo);
+  if (detail) detail.innerHTML = renderDetailCell(stipNo, inst, level, 'additional', dec, buildLevelOpts(inst, dec.nextLevel));
+}
+
 function onActionChange(stipNo, inst, level, newAct) {
   if (!ROW_DECISIONS[stipNo]) ROW_DECISIONS[stipNo] = {};
   const dec = ROW_DECISIONS[stipNo];
@@ -3411,6 +3453,7 @@ function onActionChange(stipNo, inst, level, newAct) {
   if (['uni','uni_own'].includes(newAct) && !isUniTransferLevel(inst, level)) {
     newAct = 'graduate';
   }
+  if (newAct === 'additional' && inst !== 'UNI') newAct = 'promote';
   // Guard: 'promote' is not valid for VC ปวช.3 — use continue_inst instead.
   if (newAct === 'promote' && inst === 'VC' && level === 'ปวช. ชั้นปีที่ 3') {
     newAct = 'continue_inst';
@@ -3432,6 +3475,10 @@ function onActionChange(stipNo, inst, level, newAct) {
       const sel = detCell?.querySelector('select');
       if (sel && sel.value) dec.nextLevel = sel.value;
     }
+  } else if (newAct === 'additional') {
+    dec.additionalProgress = dec.additionalProgress === 'promote' ? 'promote' : 'stay';
+    const match = level.match(/ชั้นปีที่\s*(\d+)/);
+    dec.nextLevel = match ? `ชั้นปีที่ ${parseInt(match[1], 10) + 1}` : '';
   } else if (newAct === 'continue_inst') {
     dec.nextLevel = dec.nextLevel || 'ปวส. ชั้นปีที่ 1';
     dec.newMajor  = dec.newMajor  || '';
@@ -3487,10 +3534,10 @@ function onActionChange(stipNo, inst, level, newAct) {
     if (chk) chk.checked = newAct !== 'skip';
   }
 
-  // Toggle next year cell: only show for 'promote' and 'continue_inst' actions
+  // Toggle next year cell for actions that continue into another academic year.
   const nextYearCell = document.getElementById('nextYearCell_' + stipNo);
   if (nextYearCell) {
-    if (newAct === 'promote' || newAct === 'continue_inst') {
+    if (newAct === 'promote' || newAct === 'additional' || newAct === 'continue_inst') {
       const acadBase = SETTINGS.promotionSettings?.academicYear ||
         document.getElementById('academicYear')?.value || '';
       const yOpts = buildYearOpts(dec.nextAcademicYear || '', acadBase);
@@ -3653,6 +3700,7 @@ async function promoteAllInGroup(inst, level, curYear, btn) {
   });
   const _actLabel = a => ({
     promote:'⬆ ' + (LANG==='th'?'เลื่อนชั้น':'Promote'),
+    additional:'➕ ' + t('promoActAdditional'),
     continue_inst:'🎓 ' + (LANG==='th'?'จบ+ต่อ ปวส.':'Grad+Cont.ปวส.'),
     graduate:'🎓 ' + (LANG==='th'?'จบการศึกษา':'Graduate'),
     uni:'🏛 ' + (LANG==='th'?'ต่อ ม. (ขอรับทุน RDF)':'Cont. Uni (RDF)'),
@@ -3789,6 +3837,7 @@ function renderActionFilterOptions() {
   const opts = [
     { v:'',             th:'ทุกการดำเนินการ',         en:'All Actions' },
     { v:'promote',       th:'⬆ เลื่อนชั้น',              en:'⬆ Promote' },
+    { v:'additional',    th:'➕ ลงเรียนเพิ่มเติม',       en:'➕ Additional enrollment' },
     { v:'continue_inst', th:'🎓 จบ + ศึกษาต่อ ปวส.', en:'🎓 Grad + Continue ปวส.' },
     { v:'graduate',     th:'🎓 จบการศึกษา',            en:'🎓 Graduate' },
     { v:'uni',          th:'🏛 ต่อ ม. (ขอรับทุน RDF)', en:'🏛 Uni (RDF Scholarship)' },
@@ -3909,8 +3958,8 @@ async function resetAllDecisions() {
         action: 'skip',
         nextLevel: '', newMajor: '', newDept: '', uniName:'', uniNameEN:'', uniFaculty:'', uniFacultyEN:'',
         uniMajor:'', uniMajorEN:'', uniProvince:'', uniProvinceEN:'',
-        uniDuration:'', uniScholarship: s.UniScholarship || (ps.uniDefaultStatus||'Pending'),
-        notes:'', alreadyPromoted: false, nextAcademicYear:'',
+        uniDuration:'', uniEntryYear:s.UniEntryYear||'', uniScholarship: s.UniScholarship || (ps.uniDefaultStatus||'Pending'),
+        notes:'', alreadyPromoted: false, nextAcademicYear:'', additionalProgress:'stay',
         currentYear: s.CurrentAcademicYear || '',
         schApprovalStatus: s.SchApprovalStatus || '',
         schPriority: s.SchPriority ?? null,
@@ -3977,6 +4026,7 @@ async function applyAllChanges() {
           UniFaculty: dec.uniFaculty||'', UniFacultyEN: dec.uniFacultyEN||'',
           UniMajor: dec.uniMajor||'', UniMajorEN: dec.uniMajorEN||'',
           UniDuration: dec.uniDuration||'', UniProvince: dec.uniProvince||'', UniProvinceEN: dec.uniProvinceEN||'',
+          UniEntryYear: dec.uniEntryYear||dec.nextAcademicYear||'',
           uniScholarship: dec.uniScholarship||'Yes', notes: dec.notes||'',
         };
         try {
@@ -4001,6 +4051,7 @@ async function applyAllChanges() {
   active.forEach(([, d]) => counts[d.action] = (counts[d.action]||0) + 1);
   const lines = [
     counts.promote       ? `<b>${counts.promote}</b> ${LANG==='th'?'นักเรียนจะถูกเลื่อนชั้น':'students will be promoted'}` : '',
+    counts.additional    ? `<b>${counts.additional}</b> ${t('promoActAdditional')}` : '',
     counts.continue_inst ? `<b>${counts.continue_inst}</b> ${LANG==='th'?'นักเรียนจะจบ ปวช. และศึกษาต่อ ปวส.':'students graduating ปวช. + continuing ปวส.'}` : '',
     counts.graduate ? `<b>${counts.graduate}</b> ${LANG==='th'?'นักเรียนจะจบการศึกษา':'students will graduate'}` : '',
     counts.uni_own ? `<b>${counts.uni_own}</b> ${LANG==='th'?'นักเรียนต่อมหาวิทยาลัย (ทุนตนเอง)':'students continuing to university (own)'}` : '',
@@ -4122,6 +4173,10 @@ async function applyAllChanges() {
     };
     switch (dec.action) {
       case 'promote':   p.NewLevel = dec.nextLevel; break;
+      case 'additional':
+        p.NewStatus = 'Active';
+        if (dec.additionalProgress === 'promote') p.NewLevel = dec.nextLevel;
+        break;
       case 'graduate':  p.NewStatus = 'Graduated'; break;
       case 'uni':
         p.NewStatus = 'Graduated'; p.UniScholarship = dec.uniScholarship || 'Yes';
@@ -4134,6 +4189,7 @@ async function applyAllChanges() {
         if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
         if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
         if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
+        if (dec.uniEntryYear || dec.nextAcademicYear) p.UniEntryYear = dec.uniEntryYear || dec.nextAcademicYear;
         { if (_grp?.institution === 'MBS') p.LastEducation = 'มัธยมศึกษาตอนปลาย';
           else if (_grp?.institution === 'VC') p.LastEducation = (_grp.level||'').includes('ปวส.')
             ? 'ประกาศนียบัตรวิชาชีพ ชั้นสูง (ปวส.)' : 'ประกาศนียบัตรวิชาชีพ (ปวช.)'; }
@@ -4149,6 +4205,7 @@ async function applyAllChanges() {
         if (dec.uniProvince)   p.UniProvince   = dec.uniProvince;
         if (dec.uniProvinceEN) p.UniProvinceEN = dec.uniProvinceEN;
         if (dec.uniDuration)   p.UniDuration   = dec.uniDuration;
+        if (dec.uniEntryYear || dec.nextAcademicYear) p.UniEntryYear = dec.uniEntryYear || dec.nextAcademicYear;
         break;
       case 'continue_inst':
         p.NewStatus     = 'Active';
@@ -4166,7 +4223,7 @@ async function applyAllChanges() {
     if (dec.uniScholarship !== undefined && !['uni','uni_own'].includes(dec.action))
       p.UniScholarship = dec.uniScholarship;
     // Next academic year — FREEZE = do not touch CurrentAcademicYear in DB
-    const _canAdv = ['promote', 'uni', 'continue_inst'].includes(dec.action);
+    const _canAdv = ['promote', 'additional', 'uni', 'continue_inst'].includes(dec.action);
     p.NextAcademicYear = (_canAdv && dec.nextAcademicYear) ? dec.nextAcademicYear : 'FREEZE';
     if (dec.schPriority !== undefined && dec.schPriority !== null) p.SchPriority = dec.schPriority;
     // Mark this student as processed in this promotion cycle (prevents double-promotion)
@@ -4372,6 +4429,7 @@ async function doExport() {
 
       const actionLabel = {
         promote:'promoActPromote', graduate:'promoActGraduate',
+        additional:'promoActAdditional',
         continue_inst: null,
         uni:'promoActUni', uni_own:'promoActUniOwn',
         hold:'promoActHold', suspend:'promoActSuspend',
@@ -4379,6 +4437,9 @@ async function doExport() {
       };
       const nextLabel = (() => {
         if (act==='promote')       return dec.nextLevel || '';
+        if (act==='additional')    return dec.additionalProgress === 'promote'
+          ? `${tL('promoActAdditional')} — ${tL('promoAdditionalPromote')}`
+          : `${tL('promoActAdditional')} — ${tL('promoAdditionalStay')}`;
         if (act==='continue_inst') return dec.nextLevel || (lang==='en'?'ปวส. Year 1':'ปวส. ชั้นปีที่ 1');
         if (act==='graduate') return tL('promoStatusGraduated');
         if (act==='uni')      return tL('promoUniRDF');
@@ -4981,6 +5042,7 @@ async function doPrintReport() {
           if (!sno) return;
           _snapDecisions[sno] = {
             action:       row.ActionTaken   || 'skip',
+            additionalProgress: row.ActionTaken === 'additional' && row.NewLevel ? 'promote' : 'stay',
             nextLevel:    row.NewLevel      || '',
             uniName:      row.UniName       || '',
             uniNameEN:    row.UniNameEN     || '',
@@ -5537,6 +5599,7 @@ function buildPromoTableHTML(dataRows, isEN, lvl) {
   let seq = 1;
   const aMap = {
     promote:       { lbl:isEN?'Promote':'เลื่อนชั้น',              cls:'a-promote' },
+    additional:    { lbl:isEN?'Additional enrollment':'ลงเรียนเพิ่มเติม', cls:'a-promote' },
     continue_inst: { lbl:isEN?'Grad+Cont.ปวส.':'จบ + ต่อ ปวส.',   cls:'a-graduate' },
     graduate:    { lbl:isEN?'Graduate':'จบการศึกษา',                cls:'a-graduate' },
     uni:         { lbl:isEN?'Uni (RDF)':'ต่อ ม. (RDF)',             cls:'a-uni' },
@@ -5552,13 +5615,14 @@ function buildPromoTableHTML(dataRows, isEN, lvl) {
     const act = dec.action || 'promote';
     const { lbl, cls } = aMap[act] || { lbl:act, cls:'' };
     // nextLevel display — use abbrevLevel in EN to avoid Thai text
-    const nextLvlRaw = (act==='promote' || act==='continue_inst') ? (dec.nextLevel||'—') : null;
+    const nextLvlRaw = (act==='promote' || act==='continue_inst' || (act==='additional' && dec.additionalProgress==='promote')) ? (dec.nextLevel||'—') : null;
     const nextLvl = nextLvlRaw
       ? (isEN ? abbrevLevel(nextLvlRaw) : nextLvlRaw)
       : act==='graduate' ? (isEN?'Graduated':'สำเร็จการศึกษา')
       : act==='uni'      ? (isEN?'UNI Year 1 (RDF Sch.)':'มหาวิทยาลัย ปี 1 (RDF)')
       : act==='uni_own'  ? (isEN?'University (Own funding)':'มหาวิทยาลัย (ทุนตนเอง)')
       : act==='hold'     ? (isEN?'Same level':'ระดับเดิม')
+      : act==='additional' ? (isEN?'Same level (additional enrollment)':'ระดับเดิม (ลงเรียนเพิ่มเติม)')
       : act==='suspend'  ? (isEN?'Suspended':'พักการเรียน')
       : act==='resign'       ? (isEN?'Withdrawn (Institution)':'ลาออกจากสถาบัน')
       : act==='withdraw_sch' ? (isEN?'Withdrawn (Scholarship)':'ถอนทุนการศึกษา') : '—';
@@ -5682,6 +5746,7 @@ function buildReportSummaryHTML(dataRows, reportType, isEN, S) {
   } else {
     const aNames = {
       promote:     isEN?'Grade Promotion':'เลื่อนชั้น',
+      additional:  isEN?'Additional Enrollment':'ลงเรียนเพิ่มเติม',
       graduate:    isEN?'Graduated':'จบการศึกษา',
       uni:         isEN?'Cont. Uni (Apply RDF Scholarship)':'จบ + ต่อ ม. (ขอรับทุน RDF. ต่อ)',
       uni_own:     isEN?'Cont. to University (Own Funding)':'ต่อมหาวิทยาลัย (ทุนตนเอง)',
@@ -6148,6 +6213,7 @@ function renderStatsChart() {
   // Count decisions
   const ACTIONS = [
     { key:'promote',        label: LANG==='th'?'เลื่อนชั้น':'Promote',              color:'#1d4ed8' },
+    { key:'additional',     label: t('promoActAdditional'),                         color:'#0369a1' },
     { key:'continue_inst',  label: LANG==='th'?'จบ+ต่อ ปวส.':'Continue to Higher Vocational', color:'#059669' },
     { key:'graduate',    label: LANG==='th'?'จบการศึกษา':'Graduate',             color:'#16a34a' },
     { key:'uni',         label: LANG==='th'?'ต่อม. (RDF)':'Uni (RDF)',           color:'#7c3aed' },

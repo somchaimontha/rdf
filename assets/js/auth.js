@@ -356,7 +356,7 @@ function _buildStaffNotifications(user, pending, students) {
     });
 
     students.filter(s =>
-      s.status === 'Graduated' && s.uniName &&
+      s.status === 'Graduated' && s.uniName && !String(s.schApprovalStatus || '').trim() &&
       String(s.uniScholarship || '').toLowerCase() !== 'no' &&
       !pendingIds.has(String(s.stipNo || ''))
     ).forEach(s => {

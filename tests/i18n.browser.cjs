@@ -484,6 +484,11 @@ const server = http.createServer((req,res)=>{
      assert.equal(promotionReport.footerReference,true,'promotion report footer must contain its reference');
      assert.equal(promotionReport.orientations,2,'promotion formal report must offer landscape and portrait');
      assert.equal(promotionReport.defaultOrientation,'landscape','promotion formal report must default to landscape');
+     const additionalEnrollment=await evaluate(`(()=>{const oldGroups=ALL_GROUPS,oldDecisions=ROW_DECISIONS,student={StipNo:'UNI_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'มหาวิทยาลัย',CurrentAcademicYear:'2569'},dec={action:'additional',additionalProgress:'stay',nextAcademicYear:'2570',nextLevel:'ชั้นปีที่ 3',notes:''};ALL_GROUPS=[{institution:'UNI',level:'ชั้นปีที่ 2',students:[student]}];ROW_DECISIONS={UNI_001:dec};const stay=_buildStudentPayload('UNI_001',dec,'UNI','ชั้นปีที่ 2');dec.additionalProgress='promote';const promote=_buildStudentPayload('UNI_001',dec,'UNI','ชั้นปีที่ 2'),html=renderDetailCell('UNI_001','UNI','ชั้นปีที่ 2','additional',dec,'');ALL_GROUPS=oldGroups;ROW_DECISIONS=oldDecisions;return {stayLevel:stay.NewLevel||'',stayYear:stay.NextAcademicYear,promoteLevel:promote.NewLevel,detail:html,stayLabel:t('promoAdditionalStay'),promoteLabel:t('promoAdditionalPromote')};})()`);
+     assert.equal(additionalEnrollment.stayLevel,'','additional enrollment can retain the current university year');
+     assert.equal(additionalEnrollment.stayYear,'2570','additional enrollment must advance the academic year');
+     assert.equal(additionalEnrollment.promoteLevel,'ชั้นปีที่ 3','additional enrollment can also advance the university level');
+     assert.match(additionalEnrollment.detail,new RegExp(additionalEnrollment.promoteLabel),'additional enrollment outcome control must be localized');
    }
    if(initialLang==='en' && file==='students.html') {
      const dynamic=await evaluate(`({institutionLevel:document.querySelector('#studentTableBody tr td:nth-child(3)')?.textContent||'',scholarshipYear:document.querySelector('#studentTableBody tr td:nth-child(4)')?.textContent||''})`);

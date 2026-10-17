@@ -622,12 +622,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.5.0"></script>
+<script src="assets/js/config.js?v=2.6.0"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.5.0"></script>
-<script src="assets/js/api.js?v=2.5.0"></script>
-<script src="assets/js/auth.js?v=2.5.0"></script>
-<script src="assets/js/rbac.js?v=2.5.0"></script>
+<script src="assets/js/i18n.js?v=2.6.0"></script>
+<script src="assets/js/api.js?v=2.6.0"></script>
+<script src="assets/js/auth.js?v=2.6.0"></script>
+<script src="assets/js/rbac.js?v=2.6.0"></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
@@ -820,6 +820,30 @@ function applyFilters() {
   updateActiveFilters({ q, inst, status, level, year });
 }
 
+function _studentAcademicYearNumber(value) {
+  const match = String(value || '').match(/\d{4}/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
+function _universityTimeline(student) {
+  if (!student || student.institution !== 'UNI') return null;
+  const duration = parseInt(student.uniDuration, 10) || 0;
+  const levelMatch = String(student.level || '').match(/ชั้นปีที่\s*(\d+)/);
+  const currentYear = _studentAcademicYearNumber(student.currentAcademicYear);
+  const explicitEntry = _studentAcademicYearNumber(student.uniEntryYear);
+  const derivedEntry = currentYear && levelMatch ? currentYear - Math.max(0, parseInt(levelMatch[1], 10) - 1) : 0;
+  const entry = explicitEntry || derivedEntry;
+  const finalYear = entry && duration ? entry + duration - 1 : 0;
+  let transferred = false;
+  try {
+    const history = typeof student.uniTransferHistory === 'string'
+      ? JSON.parse(student.uniTransferHistory || '[]')
+      : student.uniTransferHistory;
+    transferred = Array.isArray(history) && history.length > 0;
+  } catch (_) {}
+  return { duration, entry, finalYear, transferred };
+}
+
 function renderTable() {
   const tbody = document.getElementById('studentTableBody');
   const noData = document.getElementById('noDataMsg');
@@ -846,6 +870,7 @@ function renderTable() {
     const instColor   = RDF.INST_COLORS[s.institution] || '#64748b';
     const continued   = isContinuedScholarship(s);
     const beYear      = s.scholarshipYear ? parseInt(s.scholarshipYear) + 543 : '—';
+    const uniTimeline = _universityTimeline(s);
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -874,7 +899,12 @@ function renderTable() {
       </td>
       <td>
         <div class="font-semibold text-xs" style="color:${instColor}">${instLabelBi(s.institution)}</div>
-        <div class="text-xs text-gray-500" title="${s.level||''}">${levelLabelBi(s.level)}</div>
+        <div class="text-xs text-gray-500" title="${s.level||''}">${levelLabelBi(s.level)}${uniTimeline?.duration ? ` · ${t('uniCourseYears').replace('{count}', uniTimeline.duration)}` : ''}</div>
+        ${uniTimeline ? `<div class="mt-1" style="font-size:10px;line-height:1.45;color:#6d28d9">
+          ${(uniTimeline.entry || uniTimeline.finalYear) ? `<div style="color:#64748b">${t('uniStudyTimeline')
+            .replace('{entry}', uniTimeline.entry || '—').replace('{final}', uniTimeline.finalYear || '—')}</div>` : ''}
+          ${uniTimeline.transferred ? `<span class="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-size:9px;font-weight:700">${t('uniTransferred')}</span>` : ''}
+        </div>` : ''}
         ${s.institution === 'UNI' ? (() => {
           const uniName  = LANG === 'en' ? (s.uniNameEN  || s.uniName  || '') : (s.uniName  || '');
           const uniMajor = LANG === 'en' ? (s.uniMajorEN || s.uniMajor || '') : (s.uniMajor || '');
@@ -896,7 +926,7 @@ function renderTable() {
       <td class="hide-mobile text-xs">
         ${(() => {
           const isAlumni = ['Graduated','University','Resigned','WithdrawnScholarship','Incomplete'].includes(s.status);
-          const yr = s.currentAcademicYear || (isAlumni && s.scholarshipYear ? String(parseInt(s.scholarshipYear)+543) : '');
+          const yr = s.currentAcademicYear || '';
           if (!yr) return '<span class="text-gray-300">—</span>';
           const ce = parseInt(yr) - 543;
           return `<span class="font-semibold" style="color:${isAlumni ? '#7c3aed' : '#1d4ed8'}">${yr}</span>
