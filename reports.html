@@ -112,6 +112,9 @@
 .emp-coverage { border:1px solid #d1fae5; border-radius:12px; background:#f0fdf4; padding:11px 13px; margin-bottom:12px; }
 .emp-coverage-track { height:7px; overflow:hidden; border-radius:999px; background:#dce7e2; }
 .emp-coverage-bar { width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#14b8a6); transition:width .3s ease; }
+.emp-period-panel { border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; padding:12px 13px; margin-bottom:12px; }
+.emp-period-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) auto; align-items:end; gap:10px; margin-top:10px; }
+.emp-period-summary { margin-top:8px; color:#1e40af; font-size:10px; font-weight:600; line-height:1.45; }
 .scholarship-data-source {
   display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; padding:11px 13px;
   border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a;
@@ -128,6 +131,7 @@
   .emp-settings-btn { flex:1 1 auto; justify-content:center; }
   .emp-notif-shell { height:calc(100dvh - 144px); max-height:calc(100dvh - 144px); transform:translateY(-4px); }
   .emp-notif-body { flex:1 1 0%; }
+  .emp-period-grid { grid-template-columns:1fr; }
 }
 /* ── Filters bar ── */
 .filters-bar {
@@ -631,6 +635,38 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
       <div id="empReportContent" class="hidden">
         <div id="empLegacyWarning" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 mb-3 text-xs text-amber-800"></div>
 
+        <section class="emp-period-panel no-print" aria-labelledby="empPeriodTitle">
+          <div class="flex items-start gap-2">
+            <i data-lucide="calendar-range" class="w-4 h-4 text-blue-700 mt-0.5 flex-shrink-0"></i>
+            <div>
+              <strong id="empPeriodTitle" class="block text-xs text-blue-900" data-t="empPeriodTitle">ช่วงเวลารายงานและการติดตาม</strong>
+              <span class="block mt-0.5 text-[10px] leading-relaxed text-slate-600" data-t="empPeriodDesc">ใช้ขอบเขตเดียวกันกับตาราง ตัวชี้วัด และรายงานที่ส่งออก</span>
+            </div>
+          </div>
+          <div class="emp-period-grid">
+            <label class="filter-group">
+              <span class="filter-label" data-t="empPeriodAsOf">คำนวณระยะเวลาถึงเดือน</span>
+              <input id="empPeriodAsOf" type="month" class="filter-input w-full">
+            </label>
+            <label class="filter-group">
+              <span class="filter-label" data-t="empPeriodFrom">ติดตามตั้งแต่วันที่</span>
+              <input id="empPeriodFrom" type="date" class="filter-input w-full">
+            </label>
+            <label class="filter-group">
+              <span class="filter-label" data-t="empPeriodTo">ถึงวันที่</span>
+              <input id="empPeriodTo" type="date" class="filter-input w-full">
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm" style="height:32px;background:#1d4ed8;color:#fff;border:none" onclick="applyEmploymentPeriod()">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i><span data-t="empPeriodApply">ใช้ช่วงเวลา</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" style="height:32px" onclick="resetEmploymentPeriod()" data-t="empPeriodReset">ทุกช่วงเวลา</button>
+            </div>
+          </div>
+          <p id="empPeriodSummary" class="emp-period-summary"></p>
+          <p class="mt-1 text-[10px] text-slate-500" data-t="empPeriodHint">ช่วงวันที่จะตรวจทั้งวันที่ติดต่อและวันติดตามครั้งถัดไป</p>
+        </section>
+
         <div class="emp-coverage">
           <div class="flex items-center justify-between gap-3 mb-2">
             <span class="text-xs font-bold text-emerald-900" data-t="empCoverageLabel">ความครบถ้วนของข้อมูลภาวะการทำงาน</span>
@@ -710,11 +746,13 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
                 <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColPeriod">ช่วงเวลาทำงาน</th>
                 <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColDuration">ระยะเวลา</th>
                 <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColVerification">การตรวจสอบ/ที่มา</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColLastFollowUp">ติดตามล่าสุด</th>
+                <th class="px-3 py-2 text-left font-700 text-gray-500 whitespace-nowrap" data-t="empColLastUpdated">อัปเดตล่าสุด</th>
                 <th class="px-3 py-2 text-center font-700 text-gray-500 whitespace-nowrap no-print" data-t="empColFollowUp">ติดตาม</th>
               </tr>
             </thead>
             <tbody id="employmentTableBody">
-              <tr><td colspan="8" class="text-center text-gray-400 py-8"><span data-t="stLoading">กำลังโหลด...</span></td></tr>
+              <tr><td colspan="10" class="text-center text-gray-400 py-8"><span data-t="stLoading">กำลังโหลด...</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -1106,12 +1144,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.1"></script>
+<script src="assets/js/config.js?v=2.6.2"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.1"></script>
-<script src="assets/js/auth.js?v=2.6.1"></script>
-<script src="assets/js/rbac.js?v=2.6.1"></script>
-<script src="assets/js/api.js?v=2.6.1"></script>
+<script src="assets/js/i18n.js?v=2.6.2"></script>
+<script src="assets/js/auth.js?v=2.6.2"></script>
+<script src="assets/js/rbac.js?v=2.6.2"></script>
+<script src="assets/js/api.js?v=2.6.2"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
@@ -1134,6 +1172,7 @@ const _EMP_CACHE = {
   errorCode: '',
   loaded: false,
 };
+const _EMP_PERIOD = { asOfMonth:'', from:'', to:'' };
 
 // ── Withdrawal statuses (centralized definition) ──
 const WITHDRAW_STATUSES = new Set(['Resigned','WithdrawnScholarship']);
@@ -1269,6 +1308,39 @@ function employmentLatestUpdateDate(person){
     .concat((person.followUps||[]).map(item=>employmentUpdateDate(item.updatedAt||item.createdAt)))
     .filter(Boolean).sort();
   return dates.pop()||'';
+}
+
+function employmentLatestUpdateTimestamp(person,history){
+  const dates=[person?.statusUpdatedAt,history?.updatedAt]
+    .concat((person?.followUps||[]).map(item=>item.updatedAt||item.createdAt))
+    .filter(Boolean).map(String).sort();
+  return dates.pop()||'';
+}
+
+function employmentLatestFollowUp(person,recordId=''){
+  return (person?.followUps||[]).filter(item=>!recordId||item.employmentRecordId===recordId)
+    .slice().sort((a,b)=>String(b.contactDate||b.updatedAt||b.createdAt||'').localeCompare(String(a.contactDate||a.updatedAt||a.createdAt||'')))[0]||{};
+}
+
+function employmentReferenceDate(){
+  if(_EMP_PERIOD.to)return _EMP_PERIOD.to;
+  const reportDate=_EMP_CACHE.response?.reportDate||new Date().toISOString().slice(0,10);
+  const match=String(_EMP_PERIOD.asOfMonth||_EMP_CACHE.response?.asOfMonth||'').match(/^(\d{4})-(\d{2})$/);
+  if(!match)return reportDate;
+  const monthEnd=new Date(Date.UTC(Number(match[1]),Number(match[2]),0)).toISOString().slice(0,10);
+  return monthEnd<reportDate?monthEnd:reportDate;
+}
+
+function employmentFollowUpInPeriod(item){
+  if(!_EMP_PERIOD.from&&!_EMP_PERIOD.to)return true;
+  return [item?.contactDate,item?.nextFollowUpDate].filter(Boolean).some(date=>(!_EMP_PERIOD.from||date>=_EMP_PERIOD.from)&&(!_EMP_PERIOD.to||date<=_EMP_PERIOD.to));
+}
+
+function formatEmploymentTimestamp(value){
+  if(!value)return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(String(value)))return formatEmploymentDate(value);
+  const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);
+  return new Intl.DateTimeFormat(getLocale(),{dateStyle:'medium',timeStyle:'short'}).format(date);
 }
 
 // ── Default signature slots if none configured in settings ──
@@ -1984,7 +2056,7 @@ function employmentFollowUpActionCell(person, history) {
   cell.className = 'px-3 py-2 align-top text-center no-print';
   const recordId = history?.recordId || '';
   const related = (person.followUps || []).filter(item => !recordId || item.employmentRecordId === recordId);
-  const reportDate = _EMP_CACHE.response?.reportDate || new Date().toISOString().slice(0,10);
+  const reportDate = employmentReferenceDate();
   const overdue = related.filter(item => item.nextFollowUpDate && item.nextFollowUpDate < reportDate).length;
   const button = document.createElement('button');
   button.type = 'button';
@@ -2000,16 +2072,33 @@ function employmentFollowUpActionCell(person, history) {
   return cell;
 }
 
+function employmentLatestFollowUpCell(person,history){
+  const latest=employmentLatestFollowUp(person,history?.recordId||'');
+  return employmentCell([
+    {text:latest.contactDate?`${t('empCsvLastContact')}: ${formatEmploymentDate(latest.contactDate)}`:'—',strong:!!latest.contactDate},
+    {text:latest.nextFollowUpDate?`${t('empCsvNextFollowUp')}: ${formatEmploymentDate(latest.nextFollowUpDate)}`:'',muted:true},
+  ],'whitespace-nowrap');
+}
+
+function employmentLastUpdatedCell(person,history){
+  const value=employmentLatestUpdateTimestamp(person,history);
+  return employmentCell([{text:value?formatEmploymentTimestamp(value):'—'}],'whitespace-nowrap');
+}
+
 function filteredEmploymentPeople() {
   const response = _EMP_CACHE.response || {};
   const institution = document.getElementById('empFltInst')?.value || '';
   const status = document.getElementById('empFltStatus')?.value || '';
   const followUpState = document.getElementById('empFltFollowUp')?.value || '';
-  const reportDate = response.reportDate || new Date().toISOString().slice(0,10);
+  const reportDate = employmentReferenceDate();
   const dueThrough = (()=>{const date=new Date(`${reportDate}T00:00:00Z`);date.setUTCDate(date.getUTCDate()+employmentNotificationLeadDays());return date.toISOString().slice(0,10);})();
   const updatedFrom = (()=>{const date=new Date(`${reportDate}T00:00:00Z`);date.setUTCDate(date.getUTCDate()-employmentNotificationUpdatedDays());return date.toISOString().slice(0,10);})();
   const query = (document.getElementById('empFltSearch')?.value || '').trim().toLocaleLowerCase(getLocale());
-  return (response.data || []).filter(person => {
+  return (response.data || []).map(person=>{
+    if(!_EMP_PERIOD.from&&!_EMP_PERIOD.to)return person;
+    const followUps=(person.followUps||[]).filter(employmentFollowUpInPeriod);
+    return followUps.length?{...person,followUps}:null;
+  }).filter(Boolean).filter(person => {
     if (institution && person.institution !== institution) return false;
     if (status === '__unreported__' && (person.employmentStatus || (person.histories || []).length)) return false;
     if (status && status !== '__unreported__' && person.employmentStatus !== status) return false;
@@ -2050,7 +2139,7 @@ function renderEmploymentRows() {
   const people = filteredEmploymentPeople();
   const recordCount = people.reduce((total, person) => total + (person.histories || []).length, 0);
   const followUps = people.reduce((all,person)=>all.concat(person.followUps||[]),[]);
-  const reportDate = _EMP_CACHE.response?.reportDate || new Date().toISOString().slice(0,10);
+  const reportDate = employmentReferenceDate();
   const overdueCount = followUps.filter(item=>item.nextFollowUpDate&&item.nextFollowUpDate<reportDate).length;
   const reportedCount = people.filter(person => person.employmentStatus || (person.histories || []).length).length;
   document.getElementById('empKpiEligible').textContent = people.length;
@@ -2072,7 +2161,7 @@ function renderEmploymentRows() {
   if (!people.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 8;
+    cell.colSpan = 10;
     cell.className = 'text-center text-gray-400 py-8';
     cell.textContent = t('empNoResults');
     row.appendChild(cell);
@@ -2115,6 +2204,8 @@ function renderEmploymentRows() {
         emptyCell.className = 'px-3 py-4 text-center text-gray-400 italic';
         emptyCell.textContent = t('empNoWorkHistory');
         row.appendChild(emptyCell);
+        row.appendChild(employmentLatestFollowUpCell(person,null));
+        row.appendChild(employmentLastUpdatedCell(person,null));
         row.appendChild(employmentFollowUpActionCell(person,null));
         tbody.appendChild(row);
         return;
@@ -2145,6 +2236,8 @@ function renderEmploymentRows() {
       source.textContent = employmentSourceLabel(history.source);
       verificationCell.append(verification,source);
       row.appendChild(verificationCell);
+      row.appendChild(employmentLatestFollowUpCell(person,history));
+      row.appendChild(employmentLastUpdatedCell(person,history));
       row.appendChild(employmentFollowUpActionCell(person,history));
       tbody.appendChild(row);
     });
@@ -2152,14 +2245,46 @@ function renderEmploymentRows() {
   lucide.createIcons();
 }
 
-function applyEmploymentFilters() { renderEmploymentRows(); }
+function applyEmploymentFilters() { markEmploymentReportDirty();renderEmploymentRows(); }
 
 function resetEmploymentFilters() {
   document.getElementById('empFltInst').value = '';
   document.getElementById('empFltStatus').value = '';
   document.getElementById('empFltFollowUp').value = '';
   document.getElementById('empFltSearch').value = '';
+  markEmploymentReportDirty();
   renderEmploymentRows();
+}
+
+function renderEmploymentPeriodSummary(){
+  const summary=document.getElementById('empPeriodSummary');if(!summary)return;
+  const asOf=formatEmploymentMonth(_EMP_PERIOD.asOfMonth)||_EMP_PERIOD.asOfMonth||'—';
+  const range=(!_EMP_PERIOD.from&&!_EMP_PERIOD.to)?t('empPeriodAllDates'):
+    `${_EMP_PERIOD.from?formatEmploymentDate(_EMP_PERIOD.from):t('empPeriodOpenStart')} – ${_EMP_PERIOD.to?formatEmploymentDate(_EMP_PERIOD.to):t('empPeriodOpenEnd')}`;
+  summary.textContent=`${t('empPeriodAsOf')}: ${asOf} · ${t('empPeriodFollowUpRange')}: ${range}`;
+}
+
+function syncEmploymentPeriodInputs(){
+  const asOf=document.getElementById('empPeriodAsOf'),from=document.getElementById('empPeriodFrom'),to=document.getElementById('empPeriodTo');
+  if(asOf)asOf.value=_EMP_PERIOD.asOfMonth;
+  if(from)from.value=_EMP_PERIOD.from;
+  if(to)to.value=_EMP_PERIOD.to;
+  renderEmploymentPeriodSummary();
+}
+
+async function applyEmploymentPeriod(){
+  const asOf=document.getElementById('empPeriodAsOf')?.value||_EMP_CACHE.response?.asOfMonth||'';
+  const from=document.getElementById('empPeriodFrom')?.value||'',to=document.getElementById('empPeriodTo')?.value||'';
+  if(from&&to&&from>to){Swal.fire(t('error'),t('empPeriodRangeError'),'error');return;}
+  const reload=asOf!==(_EMP_CACHE.response?.asOfMonth||'');
+  _EMP_PERIOD.asOfMonth=asOf;_EMP_PERIOD.from=from;_EMP_PERIOD.to=to;
+  markEmploymentReportDirty();renderEmploymentPeriodSummary();
+  if(reload)await loadEmploymentReport();else renderEmploymentRows();
+}
+
+async function resetEmploymentPeriod(){
+  _EMP_PERIOD.from='';_EMP_PERIOD.to='';_EMP_PERIOD.asOfMonth=_EMP_CACHE.response?.asOfMonth||'';
+  syncEmploymentPeriodInputs();markEmploymentReportDirty();renderEmploymentRows();
 }
 
 let _EMP_ENTRY_FILTERS_APPLIED=false;
@@ -2202,6 +2327,8 @@ function renderEmploymentReport() {
   document.getElementById('empFollowUpSettingsBtn')?.classList.toggle('hidden',!RBAC.has('manageNotifications'));
   const asOf = document.getElementById('empAsOf');
   if (asOf) asOf.textContent = `${t('empAsOf')} ${formatEmploymentMonth(response.asOfMonth) || response.asOfMonth || '—'}`;
+  if(!_EMP_PERIOD.asOfMonth){_EMP_PERIOD.asOfMonth=response.asOfMonth||'';syncEmploymentPeriodInputs();}
+  else renderEmploymentPeriodSummary();
   const legacy = Number(response.legacyRowsPendingMigration || 0);
   const warning = document.getElementById('empLegacyWarning');
   if (warning) {
@@ -2218,7 +2345,7 @@ async function loadEmploymentReport() {
   _EMP_CACHE.errorCode = '';
   renderEmploymentReport();
   try {
-    const result = await API.getEmploymentReport();
+    const result = await API.getEmploymentReport(_EMP_PERIOD.asOfMonth?{asOfMonth:_EMP_PERIOD.asOfMonth}:undefined);
     if (result.status !== 'success') throw new Error(result.message || t('empReportError'));
     _EMP_CACHE.response = result;
   } catch (error) {
@@ -2489,6 +2616,7 @@ const EMPLOYMENT_REPORT_FIELDS = [
   {key:'lastContact',label:'empCsvLastContact'},
   {key:'nextFollowUp',label:'empCsvNextFollowUp'},
   {key:'assignedTo',label:'empFollowUpAssigned'},
+  {key:'lastUpdated',label:'empCsvLastUpdated'},
   // Follow-up notes must remain the final selectable/exported column.
   {key:'followUpNotes',label:'empFollowUpNotes',recommended:true},
 ];
@@ -2499,8 +2627,7 @@ function employmentReportRecords(){
   const rows=[];
   filteredEmploymentPeople().forEach(person=>{
     const histories=(person.histories||[]).length?person.histories:[null];
-    const latest=(person.followUps||[])[0]||{};
-    histories.forEach(history=>rows.push({person,history,latest}));
+    histories.forEach(history=>rows.push({person,history,latest:employmentLatestFollowUp(person,history?.recordId||''),lastUpdated:employmentLatestUpdateTimestamp(person,history)}));
   });
   return rows;
 }
@@ -2525,7 +2652,7 @@ function employmentReportFundingLabel(person,lang){
   return employmentReportStudentStatus(person.studentStatus,lang);
 }
 function employmentReportFieldValue(row,key,lang){
-  const {person,history,latest}=row;
+  const {person,history,latest,lastUpdated}=row;
   const line=(...values)=>values.filter(value=>value!==undefined&&value!==null&&String(value).trim()!=='').join('\n');
   const university=lang==='en'?(person.universityNameEN||person.universityName):(person.universityName||person.universityNameEN);
   const statusSource=person.employmentStatusSource==='scholarship_continuation'?employmentReportText('empStatusFromScholarship',lang):'';
@@ -2535,12 +2662,12 @@ function employmentReportFieldValue(row,key,lang){
     employmentSummary:line(employmentReportStatusLabel(person.employmentStatus||'',lang),statusSource,history?.jobTitle,[employmentReportTypeLabel(history?.employmentType||'',lang),history?.industry].filter(Boolean).join(' · ')),
     workplaceSummary:line(history?.employerName,[history?.workplaceLocation,history?.workplaceProvince].filter(Boolean).join(' · ')),
     periodSummary:history?line(`${history.startMonth||'—'} – ${history.current?employmentReportText('empCurrentJob',lang):(history.endMonth||'—')}`,Number.isFinite(history.durationMonths)?`${history.durationMonths} ${employmentReportText('dfDurationMonths',lang)}`:''):'',
-    followUpSummary:line(latest.contactDate?`${employmentReportText('empCsvLastContact',lang)}: ${latest.contactDate}`:'',latest.nextFollowUpDate?`${employmentReportText('empCsvNextFollowUp',lang)}: ${latest.nextFollowUpDate}`:'',latest.assignedTo?`${employmentReportText('empFollowUpAssigned',lang)}: ${latest.assignedTo}`:''),
+    followUpSummary:line(latest.contactDate?`${employmentReportText('empCsvLastContact',lang)}: ${latest.contactDate}`:'',latest.nextFollowUpDate?`${employmentReportText('empCsvNextFollowUp',lang)}: ${latest.nextFollowUpDate}`:'',lastUpdated?`${employmentReportText('empCsvLastUpdated',lang)}: ${lastUpdated}`:'',latest.assignedTo?`${employmentReportText('empFollowUpAssigned',lang)}: ${latest.assignedTo}`:''),
     alumni:employmentName(person,lang),stipNo:person.stipNo||'',institution:person.institution||'',studentStatus:employmentReportStudentStatus(person.studentStatus,lang),
     employmentStatus:employmentReportStatusLabel(person.employmentStatus||'',lang),employer:history?.employerName||'',location:history?.workplaceLocation||'',province:history?.workplaceProvince||'',
     jobTitle:history?.jobTitle||'',employmentType:employmentReportTypeLabel(history?.employmentType||'',lang),industry:history?.industry||'',startMonth:history?.startMonth||'',
     endMonth:history?.current?employmentReportText('empCurrentJob',lang):(history?.endMonth||''),durationMonths:history?.durationMonths??'',verification:history?employmentReportVerificationLabel(history.verificationStatus,lang):'',
-    source:history?employmentReportSourceLabel(history.source,lang):'',lastContact:latest.contactDate||'',nextFollowUp:latest.nextFollowUpDate||'',assignedTo:latest.assignedTo||'',followUpNotes:latest.notes||'',
+    source:history?employmentReportSourceLabel(history.source,lang):'',lastContact:latest.contactDate||'',nextFollowUp:latest.nextFollowUpDate||'',assignedTo:latest.assignedTo||'',lastUpdated:lastUpdated||'',followUpNotes:latest.notes||'',
   };
   return values[key]??'';
 }
@@ -2587,9 +2714,13 @@ function selectEmploymentReportFields(mode){
   renderEmploymentReportPreview();
 }
 function employmentReportFilterContext(lang){
-  const parts=[],inst=document.getElementById('empFltInst')?.value,status=document.getElementById('empFltStatus')?.value,query=document.getElementById('empFltSearch')?.value.trim();
+  const parts=[],inst=document.getElementById('empFltInst')?.value,status=document.getElementById('empFltStatus')?.value,followUp=document.getElementById('empFltFollowUp')?.value,query=document.getElementById('empFltSearch')?.value.trim();
+  const text=key=>employmentReportText(key,lang);
+  if(_EMP_PERIOD.asOfMonth)parts.push(`${text('empPeriodAsOf')}: ${_EMP_PERIOD.asOfMonth}`);
+  if(_EMP_PERIOD.from||_EMP_PERIOD.to)parts.push(`${text('empPeriodFollowUpRange')}: ${_EMP_PERIOD.from||text('empPeriodOpenStart')} – ${_EMP_PERIOD.to||text('empPeriodOpenEnd')}`);
   if(inst)parts.push(`${employmentReportText('rptFilterInst',lang)}: ${inst}`);
   if(status)parts.push(`${employmentReportText('empReportStatus',lang)}: ${status==='__unreported__'?employmentReportText('empStatusUnreported',lang):employmentReportStatusLabel(status,lang)}`);
+  if(followUp)parts.push(`${text('empFollowUpFilterLabel')}: ${text({overdue:'empFollowUpFilterOverdue',due_soon:'empFollowUpFilterDueSoon',updated_recent:'empFollowUpFilterUpdated'}[followUp])}`);
   if(query)parts.push(`${employmentReportText('empSearchLabel',lang)}: ${query}`);
   return parts.join(' · ')||employmentReportText('empComposerAllFiltered',lang);
 }
@@ -2670,7 +2801,7 @@ function employmentReportSubjects(lang=employmentReportLang()){
   return {subject:custom||employmentReportText('empReportTitle',lang),subjectTH:custom||employmentReportText('empReportTitle','th'),subjectEN:custom||employmentReportText('empReportTitle','en')};
 }
 function employmentReportScope(){
-  return {institution:document.getElementById('empFltInst')?.value||'',employmentStatus:document.getElementById('empFltStatus')?.value||'',search:document.getElementById('empFltSearch')?.value.trim()||'',asOfMonth:_EMP_CACHE.response?.asOfMonth||''};
+  return {institution:document.getElementById('empFltInst')?.value||'',employmentStatus:document.getElementById('empFltStatus')?.value||'',followUpState:document.getElementById('empFltFollowUp')?.value||'',search:document.getElementById('empFltSearch')?.value.trim()||'',asOfMonth:_EMP_PERIOD.asOfMonth||_EMP_CACHE.response?.asOfMonth||'',followUpFrom:_EMP_PERIOD.from,followUpTo:_EMP_PERIOD.to};
 }
 function stableReportJson(value){
   if(Array.isArray(value))return `[${value.map(stableReportJson).join(',')}]`;

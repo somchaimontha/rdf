@@ -12,7 +12,18 @@ test('employment report keeps grouped columns compact and follow-up notes last',
   const fields = reports.slice(reports.indexOf('const EMPLOYMENT_REPORT_FIELDS'), reports.indexOf('function employmentReportText'));
   assert.match(fields, /identitySummary[\s\S]*educationFunding[\s\S]*employmentSummary[\s\S]*workplaceSummary[\s\S]*periodSummary[\s\S]*followUpSummary/);
   assert.match(fields, /followUpNotes[^\n]*recommended:true/);
+  assert.ok(fields.lastIndexOf("key:'lastUpdated'") > fields.lastIndexOf("key:'assignedTo'"));
   assert.ok(fields.lastIndexOf("key:'followUpNotes'") > fields.lastIndexOf("key:'assignedTo'"));
+});
+
+test('employment reporting uses a shared period scope and exposes follow-up timestamps', () => {
+  assert.match(reports, /id="empPeriodAsOf"/);
+  assert.match(reports, /id="empPeriodFrom"/);
+  assert.match(reports, /id="empPeriodTo"/);
+  assert.match(reports, /function applyEmploymentPeriod/);
+  assert.match(reports, /followUpFrom:_EMP_PERIOD\.from,followUpTo:_EMP_PERIOD\.to/);
+  assert.match(reports, /data-t="empColLastFollowUp"/);
+  assert.match(reports, /data-t="empColLastUpdated"/);
 });
 
 test('employment preview changes paper shape and places QR beside the reference on the right', () => {
