@@ -204,6 +204,14 @@
 .report-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
 .report-field-option { display:flex; align-items:center; gap:7px; min-width:0; padding:7px 9px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; font-size:11px; color:#475569; cursor:pointer; }
 .report-field-option:has(input:checked) { border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
+.report-signature-card { padding:10px; background:#fff; }
+.report-signature-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.report-signature-pad-shell { margin-top:7px; border:1.5px solid #cbd5e1; border-radius:9px; background:#fff; overflow:hidden; }
+.report-signature-pad-shell:focus-within { border-color:#059669; box-shadow:0 0 0 3px rgba(5,150,105,.10); }
+.report-signature-pad-canvas { display:block; width:100%; height:112px; background:#fff; touch-action:none; cursor:crosshair; }
+.report-signature-pad-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; border-top:1px solid #e2e8f0; background:#f8fafc; }
+.report-signature-pad-actions button { font-size:10px; font-weight:700; color:#047857; }
+.report-signature-pad-actions button:hover { text-decoration:underline; }
 .report-preview-page { width:100%; min-height:0; border:1px solid #cbd5e1; border-radius:8px; padding:18px; background:#fff; color:#1f2937; box-shadow:0 8px 24px rgba(15,23,42,.10); overflow:hidden; display:flex; flex-direction:column; transition:width .2s ease,aspect-ratio .2s ease; }
 .report-preview-page[data-orientation="landscape"] { aspect-ratio:297 / 210; }
 .report-preview-page[data-orientation="portrait"] { width:min(70.7%,520px); aspect-ratio:210 / 297; margin-inline:auto; }
@@ -773,7 +781,7 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
         <div class="pr-section">
           <div class="flex items-center justify-between gap-2 mb-2"><span class="pr-label" style="margin:0" data-t="rptPrSigs">ผู้ลงนามในเอกสาร</span><a href="settings.html" target="_blank" onclick="localStorage.setItem('settingsTab','print')" class="text-[11px] font-semibold text-blue-700 hover:underline" data-t="rptPrSigSettings">ตั้งค่าผู้ลงนาม</a></div>
           <div id="empReportSigList" class="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100"></div>
-          <p class="text-[11px] text-gray-400 mt-2" data-t="empComposerSignatureSource">อ้างอิงรายชื่อเดียวกับรายงานอื่นในระบบ จึงไม่สร้างข้อมูลผู้ลงนามซ้ำ</p>
+          <p class="text-[11px] text-gray-400 mt-2" data-t="empComposerSignatureSource">ใช้รายชื่อจากการตั้งค่ากลาง และสามารถเซ็นสำหรับรายงานฉบับนี้ได้ทันทีโดยไม่แก้ค่าเริ่มต้น</p>
         </div>
         <div id="empReportQrPanel" class="report-qr-panel pr-section">
           <div class="flex items-start gap-2">
@@ -983,12 +991,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.4.1"></script>
+<script src="assets/js/config.js?v=2.4.2"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.4.1"></script>
-<script src="assets/js/auth.js?v=2.4.1"></script>
-<script src="assets/js/rbac.js?v=2.4.1"></script>
-<script src="assets/js/api.js?v=2.4.1"></script>
+<script src="assets/js/i18n.js?v=2.4.2"></script>
+<script src="assets/js/auth.js?v=2.4.2"></script>
+<script src="assets/js/rbac.js?v=2.4.2"></script>
+<script src="assets/js/api.js?v=2.4.2"></script>
 <script>
 // RBAC: Manager+ can view reports
 RBAC.enforcePage(['viewReports']);
@@ -2261,9 +2269,23 @@ function employmentReportFieldValue(row,key,lang){
   return values[key]??'';
 }
 function selectedEmploymentReportFields(){return [...document.querySelectorAll('input[name="empReportField"]:checked')].map(input=>input.value);}
+let _EMP_REPORT_SIGNATURE_DRAFTS=[];
+const _EMP_REPORT_SIGNATURE_PADS=new Map();
+function employmentReportSignatureSource(){
+  const source=(Array.isArray(_SETTINGS['SIGNATURE_BLOCK'])&&_SETTINGS['SIGNATURE_BLOCK'].length)?_SETTINGS['SIGNATURE_BLOCK']:DEFAULT_SIG_SLOTS;
+  return source.map(signature=>({...signature}));
+}
+function resetEmploymentReportSignatureDrafts(){
+  _EMP_REPORT_SIGNATURE_DRAFTS=employmentReportSignatureSource();
+  _EMP_REPORT_SIGNATURE_PADS.clear();
+}
+function syncEmploymentReportSignatureDrafts(){
+  window._empReportSignatures=reportResolveSignatories(_EMP_REPORT_SIGNATURE_DRAFTS);
+}
 function selectedEmploymentReportSignatures(){
+  if(!_EMP_REPORT_SIGNATURE_DRAFTS.length)resetEmploymentReportSignatureDrafts();
   const indexes=new Set([...document.querySelectorAll('input[name="empReportSignature"]:checked')].map(input=>Number(input.value)));
-  return reportResolveSignatories((window._empReportSignatures||[]).filter((_,index)=>indexes.has(index)));
+  return reportResolveSignatories(_EMP_REPORT_SIGNATURE_DRAFTS.filter((_,index)=>indexes.has(index)));
 }
 function employmentExportHeaders(fieldKeys=EMPLOYMENT_REPORT_FIELDS.map(field=>field.key),lang=LANG){
   const selected=new Set(fieldKeys);return EMPLOYMENT_REPORT_FIELDS.filter(field=>selected.has(field.key)).map(field=>employmentReportText(field.label,lang));
@@ -2295,19 +2317,68 @@ function employmentReportFilterContext(lang){
   if(query)parts.push(`${employmentReportText('empSearchLabel',lang)}: ${query}`);
   return parts.join(' · ')||employmentReportText('empComposerAllFiltered',lang);
 }
+function updateEmploymentReportSignaturePadStatus(index){
+  const status=document.getElementById(`empSigPadStatus_${index}`);if(!status)return;
+  const captured=!!reportSignatureDataUrl(_EMP_REPORT_SIGNATURE_DRAFTS[index]);
+  status.textContent=employmentReportText(captured?'stSigCaptured':'stSigNotCaptured',employmentReportLang());
+  status.style.color=captured?'#047857':'#94a3b8';
+}
+function initializeEmploymentReportSignaturePad(index){
+  const canvas=document.getElementById(`empSigCanvas_${index}`),signature=_EMP_REPORT_SIGNATURE_DRAFTS[index];if(!canvas||!signature)return;
+  const rect=canvas.getBoundingClientRect(),ratio=Math.min(2,window.devicePixelRatio||1),width=Math.max(280,Math.round(rect.width||320)),height=112;
+  canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);
+  const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.strokeStyle='#0f172a';ctx.lineWidth=2.2;ctx.lineCap='round';ctx.lineJoin='round';
+  let drawing=false,moved=false,revision=0;
+  const point=event=>{const box=canvas.getBoundingClientRect();return{x:(event.clientX-box.left)*(width/box.width),y:(event.clientY-box.top)*(height/box.height)};};
+  const save=()=>{
+    if(!moved)return;
+    const output=document.createElement('canvas');output.width=360;output.height=108;
+    const outputCtx=output.getContext('2d');outputCtx.fillStyle='#fff';outputCtx.fillRect(0,0,output.width,output.height);outputCtx.drawImage(canvas,0,0,output.width,output.height);
+    signature.signatureDataUrl=output.toDataURL('image/png');signature.signatureUpdatedAt=new Date().toISOString();
+    const include=document.getElementById(`empSigInclude_${index}`);if(include)include.checked=true;
+    syncEmploymentReportSignatureDrafts();updateEmploymentReportSignaturePadStatus(index);markEmploymentReportDirty();renderEmploymentReportPreview();
+  };
+  canvas.addEventListener('pointerdown',event=>{event.preventDefault();drawing=true;moved=false;revision++;canvas.setPointerCapture?.(event.pointerId);const p=point(event);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+  canvas.addEventListener('pointermove',event=>{if(!drawing)return;event.preventDefault();const p=point(event);ctx.lineTo(p.x,p.y);ctx.stroke();moved=true;});
+  const finish=event=>{if(!drawing)return;drawing=false;canvas.releasePointerCapture?.(event.pointerId);save();};
+  canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);
+  const clear=()=>{revision++;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.restore();};
+  _EMP_REPORT_SIGNATURE_PADS.set(index,{canvas,clear});
+  const existing=reportSignatureDataUrl(signature);if(existing){const image=new Image(),loadRevision=revision;image.onload=()=>{if(revision===loadRevision)ctx.drawImage(image,0,0,width,height);};image.src=existing;}
+  updateEmploymentReportSignaturePadStatus(index);
+}
+function clearEmploymentReportSignature(index,focusAfter=false){
+  const signature=_EMP_REPORT_SIGNATURE_DRAFTS[index];if(!signature)return;
+  signature.signatureDataUrl='';signature.signatureUpdatedAt='';_EMP_REPORT_SIGNATURE_PADS.get(index)?.clear();
+  syncEmploymentReportSignatureDrafts();updateEmploymentReportSignaturePadStatus(index);markEmploymentReportDirty();renderEmploymentReportPreview();
+  if(focusAfter){const canvas=_EMP_REPORT_SIGNATURE_PADS.get(index)?.canvas;canvas?.focus();canvas?.scrollIntoView({behavior:'smooth',block:'center'});}
+}
 function renderEmploymentReportSignatures(preserve=true){
   const holder=document.getElementById('empReportSigList');if(!holder)return;
-  const lang=employmentReportLang(),previous=new Set(preserve?[...holder.querySelectorAll('input:checked')].map(input=>Number(input.value)):[]);
-  const slots=reportResolveSignatories((Array.isArray(_SETTINGS['SIGNATURE_BLOCK'])&&_SETTINGS['SIGNATURE_BLOCK'].length)?_SETTINGS['SIGNATURE_BLOCK']:DEFAULT_SIG_SLOTS);
-  window._empReportSignatures=slots;holder.replaceChildren();
+  if(!_EMP_REPORT_SIGNATURE_DRAFTS.length)resetEmploymentReportSignatureDrafts();
+  const lang=employmentReportLang(),previous=new Set(preserve?[...holder.querySelectorAll('input:checked')].map(input=>Number(input.value)):[]),slots=reportResolveSignatories(_EMP_REPORT_SIGNATURE_DRAFTS);
+  window._empReportSignatures=slots;_EMP_REPORT_SIGNATURE_PADS.clear();holder.replaceChildren();
   slots.forEach((signature,index)=>{
-    const label=document.createElement('label');label.className='flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer';
-    const input=document.createElement('input');input.type='checkbox';input.name='empReportSignature';input.value=String(index);input.checked=preserve?previous.has(index):true;input.className='accent-emerald-600 flex-shrink-0';input.addEventListener('change',()=>{markEmploymentReportDirty();renderEmploymentReportPreview();});
+    const card=document.createElement('div');card.className='report-signature-card';
+    const head=document.createElement('div');head.className='report-signature-card-head';
+    const label=document.createElement('label');label.className='flex items-start gap-3 min-w-0 cursor-pointer';
+    const input=document.createElement('input');input.id=`empSigInclude_${index}`;input.type='checkbox';input.name='empReportSignature';input.value=String(index);input.checked=preserve?previous.has(index):true;input.className='accent-emerald-600 flex-shrink-0 mt-0.5';input.addEventListener('change',()=>{markEmploymentReportDirty();renderEmploymentReportPreview();});
     const text=document.createElement('div');text.className='min-w-0 text-xs';
     const role=document.createElement('strong');role.className='block text-gray-700';role.textContent=formatSignatoryRole(signature.role,lang)||`${employmentReportText('signatory',lang)} ${index+1}`;
-    const name=document.createElement('span');name.className='text-gray-500';name.textContent=[signature.name,signature.position].filter(Boolean).join(' · ')||employmentReportText('unnamedSignatory',lang);
-    text.append(role,name);label.append(input,text);holder.appendChild(label);
+    const name=document.createElement('span');name.className='text-gray-500 break-words';name.textContent=[signature.name,signature.position].filter(Boolean).join(' · ')||employmentReportText('unnamedSignatory',lang);
+    const status=document.createElement('span');status.id=`empSigPadStatus_${index}`;status.className='text-[10px] font-semibold flex-shrink-0';
+    text.append(role,name);label.append(input,text);head.append(label,status);
+    const padLabel=document.createElement('label');padLabel.className='block text-[10px] font-semibold text-gray-500 mt-2';padLabel.htmlFor=`empSigCanvas_${index}`;padLabel.textContent=employmentReportText('stSigDigitalLabel',lang);
+    const shell=document.createElement('div');shell.className='report-signature-pad-shell';
+    const canvas=document.createElement('canvas');canvas.id=`empSigCanvas_${index}`;canvas.className='report-signature-pad-canvas';canvas.tabIndex=0;canvas.setAttribute('aria-label',employmentReportText('stSigCanvasAria',lang));
+    const actions=document.createElement('div');actions.className='report-signature-pad-actions';
+    const help=document.createElement('span');help.className='text-[10px] text-gray-400';help.textContent=employmentReportText('stSigDrawHelp',lang);
+    const buttons=document.createElement('span');buttons.className='flex gap-3 flex-shrink-0';
+    const clear=document.createElement('button');clear.type='button';clear.textContent=employmentReportText('stSigClear',lang);clear.addEventListener('click',()=>clearEmploymentReportSignature(index));
+    const retry=document.createElement('button');retry.type='button';retry.textContent=employmentReportText('stSigRetry',lang);retry.addEventListener('click',()=>clearEmploymentReportSignature(index,true));
+    buttons.append(clear,retry);actions.append(help,buttons);shell.append(canvas,actions);card.append(head,padLabel,shell);holder.appendChild(card);
   });
+  requestAnimationFrame(()=>_EMP_REPORT_SIGNATURE_DRAFTS.forEach((_,index)=>initializeEmploymentReportSignaturePad(index)));
 }
 let _EMP_REPORT_REGISTRATION = null;
 
@@ -2404,6 +2475,7 @@ function fitEmploymentReportPreview(preview=document.getElementById('empReportPr
 function refreshEmploymentReportComposer(){renderEmploymentReportFieldSelector(true);renderEmploymentReportSignatures(true);renderEmploymentReportPreview();}
 function openEmploymentReportComposer(){
   _EMP_REPORT_REGISTRATION=null;
+  resetEmploymentReportSignatureDrafts();
   document.querySelectorAll('input[name="empComposerLang"]').forEach(input=>input.checked=input.value===LANG);
   document.querySelectorAll('input[name="empComposerFormat"]').forEach(input=>input.checked=input.value==='pdf');
   document.querySelectorAll('input[name="empComposerOrientation"]').forEach(input=>input.checked=input.value==='landscape');

@@ -32,3 +32,12 @@ test('shared signature settings support drawing, clearing, and signed-in recorde
   assert.match(auth, /resolved\.name = String\(user\.name\)\.trim\(\)/);
   assert.match(auth, /reportSignatureMarkHtml/);
 });
+
+test('employment report composer supports report-specific on-screen signatures', () => {
+  assert.match(reports, /report-signature-pad-canvas/);
+  assert.match(reports, /function initializeEmploymentReportSignaturePad/);
+  assert.match(reports, /output\.toDataURL\('image\/png'\)/);
+  assert.match(reports, /function clearEmploymentReportSignature/);
+  assert.match(reports, /_EMP_REPORT_SIGNATURE_DRAFTS/);
+  assert.match(reports, /resetEmploymentReportSignatureDrafts\(\);[\s\S]*renderEmploymentReportSignatures\(false\)/);
+});
