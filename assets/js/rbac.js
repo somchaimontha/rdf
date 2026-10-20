@@ -20,6 +20,8 @@
  *  runPromotion      — execute batch promotions
  *  manageNotifications — create and delete system notifications
  *  manageCustomFields — configure metadata-driven form sections and fields
+ *  viewVolunteers    — view volunteer profiles
+ *  manageVolunteers  — create, update, and archive volunteer profiles
  *  viewSettings      — access settings.html
  *  editSettings      — modify system settings (SuperAdmin only)
  *  viewReports       — view & export reports
@@ -27,6 +29,10 @@
  *  printProfile      — print student profile
  *  viewOwnProfile    — Student: view own profile
  *  editOwnProfile    — Student: edit own permitted fields
+ *  manageSurveys     — create, edit, and publish alumni surveys
+ *  viewSurveyResults — view survey response summaries
+ *  exportSurveyResults — export survey responses and summaries
+ *  respondOwnSurveys — Student/Alumni: answer assigned surveys
  *
  * ROLES: SuperAdmin | Manager | Finance | Committee | DormTeacher | Student
  */
@@ -43,15 +49,17 @@
 const RBAC_MAP = {
   SuperAdmin:  ['*'],
   Manager:     ['viewStudents','editStudents','deleteStudents','importStudents',
+                'viewVolunteers','manageVolunteers',
                 'viewPromotion','runPromotion','viewSchApprovalPanel',
                 'manageNotifications',
+                'manageSurveys','viewSurveyResults','exportSurveyResults',
                 'viewSettings',
                 'viewReports','exportData','printProfile',
                 'viewUniHistory'],
   Finance:     ['viewStudents','viewReports','exportData','printProfile'],
-  Committee:   ['viewStudents','viewReports','printProfile'],
+  Committee:   ['viewStudents','viewReports','printProfile','viewSurveyResults'],
   DormTeacher: ['viewStudents','editStudents','printProfile','viewUniHistory'],
-  Student:     ['viewOwnProfile','editOwnProfile'],
+  Student:     ['viewOwnProfile','editOwnProfile','respondOwnSurveys'],
 };
 
 // Dynamic map loaded from settings (null = use RBAC_MAP defaults above)
@@ -116,7 +124,7 @@ const RBAC = {
     // SuperAdmin and Student are always fixed — never affected by dynamic map
     if (user.role === 'SuperAdmin') return true;
     if (user.role === 'Student') {
-      return ['viewOwnProfile','editOwnProfile'].includes(perm);
+      return ['viewOwnProfile','editOwnProfile','respondOwnSurveys'].includes(perm);
     }
     // Use admin-configured permissions if available, else fall back to defaults
     const map   = _rbacDynamicMap || RBAC_MAP;

@@ -32,6 +32,81 @@
   };
   const safeId = value => String(value || '').replace(/[^A-Za-z0-9_-]/g, '_');
   const newRecordId = () => `rec_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  const employmentHistorySection = section => section?.sectionKey === 'alumni_employment_history';
+
+  function employmentStatusValue() {
+    const field = (state.schema?.fields || []).find(item => item.fieldKey === 'employment_current_status');
+    return field ? String(state.current.get(keyOf(field.fieldId, 'single')) || '') : '';
+  }
+
+  function employmentHistoryIsOptional() {
+    return employmentStatusValue() === 'studying_only';
+  }
+
+  function fieldRequiredNow(field) {
+    const section = (state.schema?.sections || []).find(item => item.sectionId === field?.sectionId);
+    return !!field?.required && !(employmentHistorySection(section) && employmentHistoryIsOptional());
+  }
+
+  function initializeRecord(section, recordId) {
+    (state.schema?.fields || []).filter(field => field.sectionId === section.sectionId).forEach(field => {
+      state.current.set(keyOf(field.fieldId, recordId), normalizeValue(field, field.defaultValue || ''));
+    });
+  }
+
+  function syncEmploymentHistoryRecord() {
+    const section = (state.schema?.sections || []).find(employmentHistorySection);
+    if (!section) return false;
+    const records = state.records.get(section.sectionId) || [];
+    if (employmentHistoryIsOptional()) {
+      const removable = records.filter(recordId => {
+        const stored = [...state.original.keys()].some(key => key.startsWith(`${recordId}|`));
+        if (stored) return false;
+        return (state.schema?.fields || []).filter(field => field.sectionId === section.sectionId)
+          .every(field => field.fieldType === 'calculated_duration' ||
+            field.fieldKey === 'employment_verification_status' ||
+            !String(state.current.get(keyOf(field.fieldId, recordId)) || '').trim());
+      });
+      if (removable.length) {
+        state.records.set(section.sectionId, records.filter(recordId => !removable.includes(recordId)));
+        removable.forEach(recordId => (state.schema?.fields || []).filter(field => field.sectionId === section.sectionId)
+          .forEach(field => state.current.delete(keyOf(field.fieldId, recordId))));
+        return true;
+      }
+      return false;
+    }
+    if (!records.length) {
+      const recordId = newRecordId();
+      state.records.set(section.sectionId, [recordId]);
+      initializeRecord(section, recordId);
+      return true;
+    }
+    return false;
+  }
+
+  function shouldDefaultToStudyingOnly() {
+    const context = coreContext();
+    const status = String(context.Status || context.studentStatus || '').trim();
+    const approval = String(context.SchApprovalStatus || context.scholarshipApprovalStatus || '').trim();
+    const funding = String(context.UniScholarship || context.universityScholarship || '').trim().toLowerCase();
+    return approval === 'Rejected' ||
+      (funding === 'no' && (status === 'Graduated' || status === 'University'));
+  }
+
+  function applyEmploymentDefaults(renderAfter = true) {
+    if (!state.schema || state.mode !== 'form' || !shouldDefaultToStudyingOnly()) return false;
+    const field = (state.schema.fields || []).find(item => item.fieldKey === 'employment_current_status');
+    if (!field) return false;
+    const key = keyOf(field.fieldId, 'single');
+    if (String(state.current.get(key) || '').trim()) return false;
+    // This is a derived display default, not a user edit. Keep original and
+    // current aligned so saving the core profile does not create a duplicate.
+    state.current.set(key, 'studying_only');
+    state.original.set(key, 'studying_only');
+    syncEmploymentHistoryRecord();
+    if (renderAfter) render();
+    return true;
+  }
 
   function injectStyles() {
     if (document.getElementById('rdfDynamicFieldStyles')) return;
@@ -104,7 +179,7 @@
         const field = fieldMap.get(item.fieldId);
         if (field?.sectionId === section.sectionId && item.recordId && item.recordId !== 'single' && !ids.includes(item.recordId)) ids.push(item.recordId);
       });
-      if (!ids.length && state.mode === 'form') ids.push(newRecordId());
+      if (!ids.length && state.mode === 'form' && !(employmentHistorySection(section) && employmentHistoryIsOptional())) ids.push(newRecordId());
       state.records.set(section.sectionId, ids);
     });
     schema.fields.forEach(field => {
@@ -232,6 +307,7 @@
     const update = () => {
       state.current.set(keyOf(field.fieldId, recordId), normalizeValue(field, controlValue(field, root)));
       clearFieldError(root);
+      if (field.fieldKey === 'employment_current_status' && syncEmploymentHistoryRecord()) { render(); return; }
       refreshVisibility();
     };
     root.querySelectorAll('input,select,textarea').forEach(el => {
@@ -322,7 +398,9 @@
     wrapper.dataset.dfRecord = recordId;
     if (field.fieldType === 'hidden') wrapper.hidden = true;
     const label = make('label', 'df-label', pick(field, 'labelTH', 'labelEN'));
-    if (field.required) label.appendChild(make('span', 'df-required', '*'));
+    if (field.required) {
+      const required = make('span', 'df-required', '*');required.hidden = !fieldRequiredNow(field);label.appendChild(required);
+    }
     wrapper.appendChild(label);
     buildControl(field, recordId, wrapper);
     const help = pick(field, 'helpTextTH', 'helpTextEN') || pick(field, 'descriptionTH', 'descriptionEN');
@@ -349,15 +427,10 @@
       return option ? optionLabel(option) : value;
     }
     if (field.fieldType === 'date' || field.fieldType === 'datetime') {
-      const date = new Date(field.fieldType === 'date' ? `${value}T00:00:00` : value);
-      if (!Number.isNaN(date.getTime())) return new Intl.DateTimeFormat(currentLang() === 'en' ? 'en-GB' : 'th-TH', field.fieldType === 'date' ? { dateStyle: 'medium' } : { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+      return field.fieldType === 'date' ? formatAppDate(value, currentLang()) : formatAppDateTime(value, currentLang());
     }
     if (field.fieldType === 'month') {
-      const match = value.match(/^(\d{4})-(\d{2})$/);
-      if (match) {
-        const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
-        return new Intl.DateTimeFormat(currentLang() === 'en' ? 'en-GB' : 'th-TH', { month: 'long', year: 'numeric' }).format(date);
-      }
+      return formatAppMonth(value, currentLang());
     }
     return value;
   }
@@ -413,7 +486,7 @@
     }
     const body = make('div', 'df-section-body');
     if (section.cardinality === 'repeatable') {
-      if (!recordIds.length) body.appendChild(make('div', 'df-empty', t('dfNoRecords')));
+      if (!recordIds.length) body.appendChild(make('div', 'df-empty', t(employmentHistorySection(section) && employmentHistoryIsOptional() ? 'dfEmploymentHistoryNotRequired' : 'dfNoRecords')));
       recordIds.forEach((recordId, index) => {
         if (state.mode === 'profile') {
           const grid = buildProfileFields(fields, recordId);
@@ -469,6 +542,7 @@
       const sectionEl = fieldEl.closest('[data-df-section]');
       const shown = !!field && !sectionEl?.hidden && rulesPass(field.visibilityRules, fieldEl.dataset.dfRecord || 'single');
       fieldEl.hidden = !shown || field?.fieldType === 'hidden';
+      const required = fieldEl.querySelector('.df-required');if(required)required.hidden = !fieldRequiredNow(field);
       if (!shown) clearFieldError(fieldEl);
     });
   }
@@ -534,7 +608,7 @@
       const field = state.schema.fields.find(item => item.fieldId === wrapper.dataset.dfField);
       if (!field?.canEdit) return;
       const value = state.current.get(keyOf(field.fieldId, wrapper.dataset.dfRecord || 'single'));
-      const code = validateValue(field, value);
+      const code = validateValue(fieldRequiredNow(field) ? field : {...field,required:false}, value);
       if (!code) return;
       wrapper.classList.add('df-invalid');
       const error = wrapper.querySelector('.df-error');
@@ -606,7 +680,7 @@
         state.container.replaceChildren(); state.container.hidden = true;
         return result;
       }
-      initValues(result); render();
+      initValues(result); applyEmploymentDefaults(false); render();
       if (state.mode === 'form' && !state.unloadBound) {
         window.addEventListener('beforeunload', event => {
           if (!hasChanges()) return;
@@ -641,6 +715,7 @@
     initProfile,
     ready: () => state.readyPromise,
     refreshVisibility,
+    applyEmploymentDefaults,
     validate,
     hasChanges,
     save,

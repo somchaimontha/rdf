@@ -8,3 +8,4 @@ docs/
 .clasp.json
 .clasprc.json
 *.md
+!ALUMNI_SURVEY_SYSTEM_DESIGN.md

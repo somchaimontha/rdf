@@ -275,7 +275,7 @@ function _buildBroadcastNotifications(user, broadcasts, ownStudent) {
       const description = LANG === 'en' ? (n.bodyEN || n.bodyTH) : (n.bodyTH || n.bodyEN);
       const sentAt = n.sentAt ? new Date(n.sentAt) : null;
       const validDate = sentAt && !Number.isNaN(sentAt.getTime());
-      const meta = [validDate ? sentAt.toLocaleString(typeof getLocale === 'function' ? getLocale() : undefined, { dateStyle:'short', timeStyle:'short' }) : '', n.sentBy ? `${t('navNotifFrom')} ${n.sentBy}` : ''].filter(Boolean).join(' • ');
+      const meta = [validDate ? formatAppDateTime(sentAt) : '', n.sentBy ? `${t('navNotifFrom')} ${n.sentBy}` : ''].filter(Boolean).join(' • ');
       const type = n.type || 'general';
       return _notifItem({
         id:_notifStableId('broadcast',[n.id || n.sentAt || title]),
@@ -302,10 +302,7 @@ function _notifOperationalHref(event) {
 }
 
 function _notifShortDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return '';
-  return new Intl.DateTimeFormat(typeof getLocale === 'function' ? getLocale() : undefined, {
-    year:'numeric', month:'short', day:'numeric', timeZone:'UTC'
-  }).format(new Date(`${value}T00:00:00Z`));
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? formatAppDate(value) : '';
 }
 
 function _buildOperationalNotifications(events) {

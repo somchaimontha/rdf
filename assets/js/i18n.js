@@ -262,6 +262,7 @@ const T = {
     uiVocationalCertificate: "ประกาศนียบัตรวิชาชีพ — จบ ปวช.",
     uiHigherVocationalCertificate: "ประกาศนียบัตรวิชาชีพชั้นสูง — จบ ปวส.",
     uiPromotionGraduationHistory: "ประวัติการเลื่อนชั้น / สำเร็จการศึกษา",
+    promoHistoryUniversity: "เรียนต่อมหาวิทยาลัย",
     uiStudentProfileRDF: "ประวัตินักเรียน — RDF",
     uiOperationType: "ประเภทการดำเนินการ",
     uiNotificationType: "ประเภทการแจ้งเตือน / Type",
@@ -500,6 +501,85 @@ const T = {
     menuReports: "รายงานและสถิติ",
     menuReportsDesc: "แผนภูมิแนวโน้ม สถิติการลาออก และข้อมูลเชิงลึก",
     menuReport: "รายงาน", menuReportDesc: "พิมพ์รายงานนักเรียนทางการ",
+    menuVolunteers: "ข้อมูลอาสาสมัคร", menuVolunteersDesc: "เก็บประวัติ การศึกษา ช่องทางติดต่อ และช่วงเวลาปฏิบัติงาน",
+    volunteerTitle: "จัดการข้อมูลอาสาสมัคร", volunteerSubtitle: "ค้นหา เพิ่ม และดูข้อมูลอาสาสมัครของมูลนิธิ",
+    volunteerNew: "เพิ่มอาสาสมัคร", volunteerEdit: "แก้ไขข้อมูลอาสาสมัคร", volunteerBackList: "กลับรายชื่ออาสาสมัคร",
+    volunteerSearch: "ค้นหาชื่อ อีเมล โทรศัพท์ หรือทักษะ", volunteerStatusAll: "ทุกสถานะ", volunteerNoData: "ยังไม่มีข้อมูลอาสาสมัคร",
+    volunteerSetupTitle: "ยังไม่ได้ติดตั้งโครงสร้างข้อมูลอาสาสมัคร", volunteerSetupDesc: "ระบบจะเพิ่มเฉพาะชีตและหัวคอลัมน์ที่ขาด โดยไม่เปลี่ยนข้อมูลเดิม", volunteerInstall: "ติดตั้งระบบอาสาสมัคร", volunteerInstalling: "กำลังติดตั้งระบบอาสาสมัคร...",
+    volunteerCustomFields: "กำหนดหัวข้อเพิ่มเติม", volunteerCustomFieldsTitle: "กำหนดหัวข้อข้อมูลอาสาสมัคร", volunteerCustomFieldsDesc: "เพิ่มส่วนและช่องข้อมูลใหม่ได้ภายหลัง โดยไม่แก้โครงสร้างข้อมูลหลัก", dfEntityVolunteer: "ข้อมูลอาสาสมัคร",
+    volunteerIdentity: "ข้อมูลส่วนบุคคล", volunteerPrefix: "คำนำหน้า", volunteerFirstName: "ชื่อ", volunteerLastName: "นามสกุล", volunteerEngFirstName: "ชื่อภาษาอังกฤษ", volunteerEngLastName: "นามสกุลภาษาอังกฤษ", volunteerNickname: "ชื่อเล่น", volunteerBirthDate: "วันเกิด",
+    volunteerContact: "ข้อมูลติดต่อและโซเชียล", volunteerPhone: "โทรศัพท์", volunteerEmail: "อีเมล", volunteerLineId: "LINE ID", volunteerFacebook: "Facebook", volunteerInstagram: "Instagram", volunteerOtherSocial: "โซเชียลอื่น",
+    volunteerEducation: "ข้อมูลการศึกษา", volunteerEducationLevel: "ระดับการศึกษา", volunteerEducationInstitution: "สถานศึกษา", volunteerFieldOfStudy: "สาขาวิชา",
+    volunteerAddress: "ที่อยู่", volunteerAddressLine: "บ้านเลขที่ / ถนน / หมู่บ้าน", volunteerSubdistrict: "ตำบล / แขวง", volunteerDistrict: "อำเภอ / เขต", volunteerProvince: "จังหวัด", volunteerPostalCode: "รหัสไปรษณีย์",
+    volunteerService: "การเป็นอาสาสมัคร", volunteerStartDate: "วันที่เริ่มเป็นอาสาสมัคร", volunteerEndDate: "วันที่สิ้นสุด", volunteerAvailability: "ช่วงเวลาที่สะดวก", volunteerSkills: "ทักษะและความสนใจ", volunteerStatus: "สถานะ", volunteerStatusActive: "ปฏิบัติงาน", volunteerStatusPaused: "พักชั่วคราว", volunteerStatusCompleted: "สิ้นสุดการเป็นอาสาสมัคร", volunteerOngoing: "ปัจจุบัน",
+    volunteerEmergency: "ผู้ติดต่อฉุกเฉิน", volunteerEmergencyName: "ชื่อผู้ติดต่อ", volunteerEmergencyPhone: "โทรศัพท์ฉุกเฉิน", volunteerPhoto: "รูปอาสาสมัคร", volunteerChoosePhoto: "เลือกรูปภาพ", volunteerPhotoHint: "รองรับ JPG, PNG หรือ WEBP ขนาดไม่เกิน 4 MB", volunteerNotes: "หมายเหตุ",
+    volunteerSave: "บันทึกอาสาสมัคร", volunteerSaved: "บันทึกข้อมูลอาสาสมัครแล้ว", volunteerArchive: "ปิดข้อมูล", volunteerArchiveConfirm: "ข้อมูลจะไม่แสดงในรายชื่อ แต่ยังเก็บไว้ในฐานข้อมูล", volunteerUpdatedAt: "อัปเดตล่าสุด", volunteerServicePeriod: "ช่วงเวลาปฏิบัติงาน", volunteerRequiredHint: "ช่องที่มี * จำเป็นต้องกรอก",
+    volunteerSetupPreviewError: "ตรวจสอบโครงสร้างข้อมูลอาสาสมัครไม่สำเร็จ", volunteerSetupError: "ติดตั้งระบบอาสาสมัครไม่สำเร็จ", volunteerSetupRequired: "กรุณาติดตั้งระบบอาสาสมัครก่อน", volunteerLoadError: "โหลดข้อมูลอาสาสมัครไม่สำเร็จ", volunteerNotFound: "ไม่พบข้อมูลอาสาสมัคร", volunteerValidationError: "กรุณาตรวจชื่อ นามสกุล อีเมล วันที่เริ่ม และช่วงวันที่ให้ถูกต้อง", volunteerSaveError: "บันทึกข้อมูลอาสาสมัครไม่สำเร็จ", volunteerArchiveError: "ปิดข้อมูลอาสาสมัครไม่สำเร็จ", volunteerPhotoInvalid: "กรุณาเลือกรูป JPG, PNG หรือ WEBP ขนาดไม่เกิน 4 MB", volunteerPhotoUploadError: "อัปโหลดรูปอาสาสมัครไม่สำเร็จ",
+    /* Alumni surveys */
+    surveyManageTitle: "จัดการแบบสอบถามศิษย์เก่า", surveyManageSubtitle: "สร้างแบบสอบถาม กำหนดรอบ และติดตามผลตอบกลับ",
+    surveyShortcut: "แบบสอบถามศิษย์เก่า", surveyShortcutDesc: "จัดการแบบสอบถามและดูอัตราการตอบ",
+    surveySetupTitle: "ยังไม่ได้ติดตั้งโครงสร้างแบบสอบถาม", surveySetupDesc: "ระบบจะเพิ่มเฉพาะชีตและหัวคอลัมน์ที่ขาด โดยไม่เปลี่ยนข้อมูลนักเรียนหรือข้อมูลเดิม",
+    surveyInstall: "ติดตั้งระบบแบบสอบถาม", surveyInstalling: "กำลังติดตั้งระบบแบบสอบถาม...",
+    surveyForms: "แบบสอบถาม", surveyNewForm: "สร้างแบบสอบถาม", surveyNoForms: "ยังไม่มีแบบสอบถาม",
+    surveyDraft: "แบบร่าง", surveyPublished: "เผยแพร่แล้ว", surveyScheduled: "กำหนดเวลาแล้ว", surveyOpen: "เปิดรับคำตอบ", surveyClosed: "ปิดรับคำตอบ",
+    surveyFormDetails: "ข้อมูลแบบสอบถาม", surveyTitleTH: "ชื่อภาษาไทย", surveyTitleEN: "ชื่อภาษาอังกฤษ",
+    surveyDescriptionTH: "คำอธิบายภาษาไทย", surveyDescriptionEN: "คำอธิบายภาษาอังกฤษ",
+    surveyAllowDraft: "อนุญาตให้บันทึกร่าง", surveyAllowEditAfterSubmit: "อนุญาตให้แก้ไขหลังส่ง",
+    surveyQuestions: "คำถาม", surveyAddQuestion: "เพิ่มคำถาม", surveyNoQuestions: "เพิ่มคำถามอย่างน้อย 1 ข้อ",
+    surveyQuestionEditor: "ตั้งค่าคำถาม", surveyQuestionTH: "คำถามภาษาไทย", surveyQuestionEN: "คำถามภาษาอังกฤษ",
+    surveyQuestionType: "รูปแบบคำตอบ", surveyRequired: "บังคับตอบ", surveyOptional: "ไม่บังคับ",
+    surveyTypeShort: "คำตอบสั้น", surveyTypeLong: "คำตอบยาว", surveyTypeSingle: "เลือกหนึ่งคำตอบ",
+    surveyTypeMultiple: "เลือกหลายคำตอบ", surveyTypeDropdown: "รายการเลือก", surveyTypeYesNo: "ใช่ / ไม่ใช่",
+    surveyTypeRating5: "คะแนน 1–5", surveyTypeRating10: "คะแนน 0–10", surveyTypeMatrix: "ตารางความพึงพอใจ",
+    surveyOptions: "ตัวเลือก", surveyOptionsHelp: "หนึ่งบรรทัดต่อหนึ่งตัวเลือก ใช้รูปแบบ ไทย | English",
+    surveyMatrixRows: "หัวข้อประเมิน (แถว)", surveyMatrixColumns: "ระดับคะแนน (คอลัมน์)",
+    surveyQuestionSave: "เพิ่มคำถาม", surveyQuestionUpdate: "บันทึกการแก้ไข", surveyQuestionRemove: "ลบคำถาม",
+    surveySaveDraft: "บันทึกแบบร่าง", surveySaved: "บันทึกแบบสอบถามแล้ว", surveySelectForm: "เลือกแบบสอบถาม",
+    surveyCampaigns: "รอบแบบสอบถาม", surveyNewCampaign: "สร้างรอบ", surveyNoCampaigns: "ยังไม่มีรอบแบบสอบถาม",
+    surveyCampaignEditor: "กำหนดรอบแบบสอบถาม", surveyCampaignNameTH: "ชื่อรอบภาษาไทย", surveyCampaignNameEN: "ชื่อรอบภาษาอังกฤษ",
+    surveyAudience: "กลุ่มศิษย์เก่า", surveyAudienceAll: "ศิษย์เก่าทุกสถาบัน", surveyOpenAt: "เปิดรับคำตอบ", surveyDueAt: "สิ้นสุดการตอบ",
+    surveyCampaignRequired: "กำหนดให้ต้องตอบ", surveyCampaignSave: "บันทึกรอบแบบร่าง", surveyCampaignSaved: "บันทึกรอบแล้ว",
+    surveyPublish: "เผยแพร่", surveyPublishTitle: "เผยแพร่แบบสอบถามนี้หรือไม่", surveyPublishConfirm: "ระบบจะตรึงคำถามและสร้างรายการให้ศิษย์เก่าที่อยู่ในกลุ่มเป้าหมาย",
+    surveyPublishedAssigned: "เผยแพร่แล้ว · มอบหมาย {count} คน", surveyViewSummary: "ดูสรุปผล",
+    surveySummaryTitle: "สรุปผลแบบสอบถาม", surveyAssigned: "ได้รับแบบสอบถาม", surveySubmitted: "ส่งคำตอบแล้ว",
+    surveyInProgress: "กำลังตอบ", surveyNotStarted: "ยังไม่เริ่ม", surveyResponseRate: "อัตราการตอบ",
+    surveyAverage: "คะแนนเฉลี่ย", surveyAnswerCount: "คำตอบ {count} รายการ", surveyNoAnalytics: "ยังไม่มีคำตอบสำหรับสรุปผล",
+    surveyMyTitle: "แบบสอบถามของฉัน", surveyMySubtitle: "แบบสอบถามสำหรับการติดตามศิษย์เก่า",
+    surveyPending: "รอตอบ", surveyExpired: "หมดเขต", surveyCompleted: "ส่งแล้ว", surveyContinue: "ทำแบบสอบถามต่อ",
+    surveyStart: "เริ่มตอบ", surveyDue: "กำหนดส่ง", surveyProgress: "ตอบแล้ว {answered} จาก {total} ข้อ",
+    surveySaveResponseDraft: "บันทึกร่าง", surveySubmit: "ส่งคำตอบ", surveySubmitTitle: "ยืนยันส่งคำตอบหรือไม่",
+    surveySubmitConfirm: "หลังส่งแล้วจะไม่สามารถแก้ไขได้ เว้นแต่แบบสอบถามนี้อนุญาต", surveyDraftSaved: "บันทึกร่างแล้ว",
+    surveySubmittedSuccess: "ส่งแบบสอบถามเรียบร้อยแล้ว", surveyBackToList: "กลับรายการแบบสอบถาม",
+    surveyYes: "ใช่", surveyNo: "ไม่ใช่", surveyChoose: "เลือกคำตอบ", surveyRequiredMark: "จำเป็น",
+    surveySetupPreviewError: "ตรวจโครงสร้างแบบสอบถามไม่สำเร็จ", surveySetupError: "ติดตั้งระบบแบบสอบถามไม่สำเร็จ",
+    surveySetupRequired: "ต้องติดตั้งระบบแบบสอบถามก่อน", surveyLoadError: "โหลดข้อมูลแบบสอบถามไม่สำเร็จ",
+    surveyValidationError: "ข้อมูลแบบสอบถามไม่ครบถ้วน", surveyQuestionInvalid: "คำถามบางข้อไม่ถูกต้อง",
+    surveyOptionsRequired: "คำถามตัวเลือกต้องมีอย่างน้อย 2 ตัวเลือก", surveyMatrixInvalid: "ตารางต้องมีอย่างน้อย 1 แถวและ 2 คอลัมน์",
+    surveyDuplicateQuestionKey: "พบคีย์คำถามซ้ำ", surveyDuplicateOption: "พบค่าตัวเลือกซ้ำ",
+    surveyFormImmutable: "แบบสอบถามที่เผยแพร่แล้วไม่สามารถแก้โครงสร้างเดิมได้", surveyFormNotFound: "ไม่พบแบบสอบถาม",
+    surveySaveError: "บันทึกแบบสอบถามไม่สำเร็จ", surveyCampaignInvalid: "ข้อมูลรอบแบบสอบถามไม่ถูกต้อง",
+    surveyCampaignNotFound: "ไม่พบรอบแบบสอบถาม", surveyCampaignImmutable: "รอบที่เผยแพร่แล้วไม่สามารถแก้ไขได้",
+    surveyPublishError: "เผยแพร่แบบสอบถามไม่สำเร็จ", surveyAssignmentNotFound: "ไม่พบแบบสอบถามที่ได้รับมอบหมาย",
+    surveyAssignmentsLoadError: "โหลดรายการแบบสอบถามไม่สำเร็จ", surveyResponseLoadError: "โหลดคำตอบแบบสอบถามไม่สำเร็จ",
+    surveyResponseSaveError: "บันทึกคำตอบไม่สำเร็จ", surveyRequiredAnswers: "กรุณาตอบคำถามที่จำเป็นให้ครบ",
+    surveyAlreadySubmitted: "แบบสอบถามนี้ถูกส่งแล้ว", surveyNotOpen: "แบบสอบถามนี้ยังไม่เปิดหรือสิ้นสุดแล้ว", surveySummaryError: "โหลดสรุปผลไม่สำเร็จ",
+    trackingManageTitle: "จัดการรอบรายงานและการติดตาม", trackingManageSubtitle: "กำหนดช่วงรายงาน งานติดตาม และแบบสอบถามจากข้อมูลกลางชุดเดียว",
+    trackingSharedTitle: "รอบรายงานและการติดตาม", trackingSharedDesc: "รายงานภาวะการทำงานและแบบสอบถามใช้รอบเดียวกัน ไม่ต้องกำหนดช่วงเวลาซ้ำ",
+    trackingNewCycle: "สร้างรอบใหม่", trackingManageCycles: "จัดการรอบ", trackingOpenFullPage: "เปิดหน้าจัดการเต็ม",
+    trackingNoCycles: "ยังไม่มีรอบรายงานและการติดตาม", trackingCycleEditor: "ข้อมูลรอบรายงานและการติดตาม",
+    trackingNameTH: "ชื่อรอบภาษาไทย", trackingNameEN: "ชื่อรอบภาษาอังกฤษ", trackingStartDate: "เริ่มติดตามวันที่",
+    trackingEndDate: "สิ้นสุดวันที่", trackingAsOfMonth: "คำนวณข้อมูลถึงเดือน", trackingOngoing: "ต่อเนื่อง",
+    trackingEnableSurvey: "ให้ทำแบบสอบถามในรอบนี้", trackingSurveyForm: "ชุดแบบสอบถาม", trackingSurveySchedule: "ช่วงเปิดรับแบบสอบถาม",
+    trackingSaveDraft: "บันทึกรอบแบบร่าง", trackingSaved: "บันทึกรอบแล้ว", trackingPublish: "เปิดใช้งานรอบ",
+    trackingPublishTitle: "เปิดใช้งานรอบนี้หรือไม่", trackingPublishConfirm: "ช่วงรายงานจะพร้อมใช้งาน และระบบจะมอบหมายแบบสอบถามให้ศิษย์เก่าหากเปิดใช้แบบสอบถาม",
+    trackingPublishedAssigned: "เปิดใช้งานแล้ว · มอบหมายแบบสอบถาม {count} คน", trackingArchive: "ลบรอบแบบร่าง",
+    trackingArchiveTitle: "ลบรอบแบบร่างนี้หรือไม่", trackingArchiveConfirm: "การลบนี้ใช้ได้เฉพาะรอบที่ยังไม่เปิดใช้งาน",
+    trackingSetupTitle: "ยังไม่ได้ติดตั้งฐานข้อมูลรอบกลาง", trackingSetupDesc: "ระบบจะสร้างตารางรอบกลางและนำเข้าช่วงติดตามเดิมโดยไม่ลบข้อมูล",
+    trackingSetup: "ติดตั้งฐานข้อมูลรอบกลาง", trackingLoadError: "โหลดรอบรายงานและการติดตามไม่สำเร็จ",
+    trackingCycleLoadError: "โหลดรอบรายงานและการติดตามไม่สำเร็จ", trackingCycleInvalid: "ข้อมูลรอบรายงานและการติดตามไม่ถูกต้อง",
+    trackingCycleNotFound: "ไม่พบรอบรายงานและการติดตาม", trackingCycleImmutable: "รอบที่เปิดใช้งานแล้วไม่สามารถแก้ไขหรือลบได้",
+    trackingCycleDuplicate: "มีรอบช่วงเวลาเดียวกันอยู่แล้ว", trackingSelectCycle: "เลือกรอบที่บันทึกไว้",
+    trackingCurrentCycle: "รอบที่กำลังใช้งาน", trackingReportScope: "ช่วงรายงาน", trackingSurveyDisabled: "ไม่ใช้แบบสอบถาม",
     /* Reports page */
     rptTitle: "รายงานและสถิติ",
     rptSubtitle: "ดูสถิติทุนการศึกษา และติดตามภาวะการทำงานของศิษย์เก่า",
@@ -553,6 +633,7 @@ const T = {
     empPeriodFrom: "ติดตามตั้งแต่วันที่",
     empPeriodTo: "ถึงวันที่",
     empPeriodApply: "ใช้ช่วงเวลา",
+    empPeriodSave: "เพิ่มช่วงติดตาม",
     empPeriodReset: "ทุกช่วงเวลา",
     empPeriodHint: "ช่วงวันที่จะตรวจทั้งวันที่ติดต่อและวันติดตามครั้งถัดไป",
     empPeriodRangeError: "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด",
@@ -560,6 +641,18 @@ const T = {
     empPeriodOpenStart: "เริ่มต้นทั้งหมด",
     empPeriodOpenEnd: "ถึงปัจจุบัน",
     empPeriodFollowUpRange: "ช่วงวันที่ติดตาม",
+    empPeriodYear: "ปี {year}",
+    empPeriodOngoing: "ต่อเนื่อง",
+    empPeriodSavedEmpty: "ยังไม่มีช่วงติดตามที่บันทึกไว้ สามารถกำหนดหลายช่วงและระบบจะจัดกลุ่มตามปี",
+    empPeriodUseSaved: "ใช้ช่วงติดตามนี้",
+    empPeriodDelete: "ลบช่วงติดตาม",
+    empPeriodDeleteTitle: "ลบช่วงติดตามนี้หรือไม่",
+    empPeriodDeleteConfirm: "การลบจะนำช่วงนี้ออกจากการตั้งค่ากลาง แต่ไม่ลบบันทึกการติดตามเดิม",
+    empPeriodRequiredError: "กรุณาระบุเดือนคำนวณและวันที่เริ่มต้นของช่วงติดตาม",
+    empPeriodDuplicateError: "มีช่วงติดตามนี้อยู่แล้ว",
+    empPeriodSaved: "เพิ่มช่วงติดตามแล้ว",
+    empPeriodDeleted: "ลบช่วงติดตามแล้ว",
+    empPeriodSaveError: "ไม่สามารถบันทึกช่วงติดตามได้",
     empCoverageLabel: "ความครบถ้วนของข้อมูลภาวะการทำงาน",
     empReportSetupTitle: "ยังไม่ได้ติดตั้งแม่แบบข้อมูลการทำงาน",
     empReportSetupDesc: "ติดตั้งผ่านหน้าจัดการช่องข้อมูลเพิ่มเติม ระบบจะตรวจข้อมูลเดิมก่อนและจะไม่ย้ายหรือเขียนทับอัตโนมัติ",
@@ -587,6 +680,7 @@ const T = {
     empKpiReported: "มีข้อมูลภาวะการทำงาน",
     empKpiRecords: "รายการประวัติการทำงาน",
     empKpiMissing: "ยังไม่รายงาน",
+    empFollowUpRecordCount: "บันทึกการติดตาม",
     empColAlumni: "ศิษย์เก่า",
     empColStatus: "ภาวะการทำงาน",
     empColWorkplace: "สถานที่ทำงาน",
@@ -613,8 +707,12 @@ const T = {
     empNotProvided: "ไม่ระบุ",
     empNoResults: "ไม่พบข้อมูลภาวะการทำงานตามตัวกรอง",
     empResultCount: "แสดง {people} คน · {records} รายการงาน",
+    empResultCountPaged: "แสดงรายชื่อ {from}–{to} จาก {people} คน · {records} รายการงานทั้งหมด",
+    empRowsPerPage: "จำนวนรายชื่อต่อหน้า", empPageSize20: "20 รายชื่อ", empPageSizeAll: "ทั้งหมด",
+    empPreviousPage: "ก่อนหน้า", empNextPage: "ถัดไป", empPageStatus: "หน้า {current} จาก {total}",
     empLegacyRowsWarning: "พบข้อมูลอาชีพเดิมในชีต Alumni {count} แถว ซึ่งยังไม่ถูกย้ายเข้าระบบใหม่นี้",
     localAuditBanner: "LOCALHOST · โหมดตรวจสอบแบบอ่านอย่างเดียว · ระบบปิดกั้นการแก้ไขข้อมูล",
+    localLiveBanner: "LOCALHOST LIVE · เชื่อมต่อ STAGING · การแก้ไขมีผลกับฐานข้อมูล RDF จริง",
     localAuditModeError: "Localhost อยู่ในโหมดตรวจสอบแบบอ่านอย่างเดียว จึงไม่ส่งคำสั่งแก้ไขข้อมูล",
     empAuditModeBadge: "ตรวจสอบเท่านั้น", empAuditModeNotice: "ระบบติดตามอยู่ในโหมดตรวจสอบแบบอ่านอย่างเดียว สามารถดูรายงานและ Preview ได้ แต่ยังติดตั้ง ย้ายข้อมูล หรือบันทึกการติดตามไม่ได้",
     empAuditModeError: "ระบบติดตามอยู่ในโหมดตรวจสอบแบบอ่านอย่างเดียว กรุณาตรวจผล Preview ก่อนเปิดใช้งานการเขียนข้อมูล",
@@ -653,6 +751,7 @@ const T = {
     empFollowUpAction: "ติดตาม", empFollowUpOverdue: "เลยกำหนด {count} รายการ", empFollowUpLinkedWork: "อ้างอิงงาน", empFollowUpEdit: "แก้ไขการติดตาม", empFollowUpArchive: "เก็บรายการติดตาม",
     empFollowUpArchiveConfirm: "รายการจะถูกซ่อนแต่ยังคงอยู่ในประวัติการตรวจสอบ", empFollowUpDateError: "วันติดตามครั้งถัดไปต้องไม่ก่อนวันที่ติดต่อ", empFollowUpSaved: "บันทึกการติดตามเรียบร้อยแล้ว",
     empFollowUpValidationError: "ข้อมูลการติดตามไม่ถูกต้อง กรุณาตรวจวันที่ ช่องทาง และผลการติดตาม", empFollowUpRecordError: "ไม่พบรายการงานที่อ้างอิง", empFollowUpNotFound: "ไม่พบบันทึกการติดตาม", empFollowUpSaveError: "บันทึกการติดตามไม่สำเร็จ", empFollowUpArchiveError: "เก็บรายการติดตามไม่สำเร็จ",
+    profileEmploymentFollowUps: "บันทึกการติดตามภาวะการทำงาน", profileFollowUpUpdatedAt: "อัปเดตล่าสุด",
     empCsvStipNo: "รหัสทุน", empCsvEmployer: "นายจ้าง/สถานที่ทำงาน", empCsvLocation: "ที่ตั้ง", empCsvProvince: "จังหวัด/ประเทศ", empCsvJobTitle: "ตำแหน่งงาน", empCsvEmploymentType: "รูปแบบการจ้าง", empCsvIndustry: "อุตสาหกรรม", empCsvStartMonth: "เดือนเริ่ม", empCsvEndMonth: "เดือนสิ้นสุด", empCsvDurationMonths: "ระยะเวลา (เดือน)", empCsvVerification: "สถานะตรวจสอบ", empCsvSource: "ที่มาข้อมูล", empCsvLastContact: "ติดต่อล่าสุด", empCsvNextFollowUp: "ติดตามครั้งถัดไป", empCsvLastUpdated: "ข้อมูลอัปเดตล่าสุด",
     empMigrationTitle: "ตรวจสอบและย้ายข้อมูลอาชีพเดิม", empMigrationDesc: "ระบบจะ Mapping Occupation ไปยังตำแหน่งงาน และ Workplace ไปยังนายจ้าง โดยคงข้อมูลต้นฉบับไว้และกำหนดสถานะ “ต้องแก้ไขเพิ่มเติม”",
     empMigrationRun: "ย้ายรายการที่พร้อม", empMigrationSelect: "เลือก", empMigrationPerson: "ศิษย์เก่า", empMigrationOccupation: "Occupation → ตำแหน่ง", empMigrationWorkplace: "Workplace → นายจ้าง", empMigrationStatus: "ผลตรวจสอบ",
@@ -866,7 +965,7 @@ const T = {
     /* Misc */
     year: "ปี", term: "ภาคเรียน", male: "ชาย", female: "หญิง",
     unknown: "ไม่ทราบ", none: "ไม่มี", other: "อื่นๆ",
-    yes: "ใช่", no: "ไม่ใช่", confirm: "ยืนยัน", close: "ปิด",
+    yes: "ใช่", no: "ไม่ใช่", confirm: "ยืนยัน", open: "เปิด", close: "ปิด",
     success: "สำเร็จ", warning: "แจ้งเตือน", info: "ข้อมูล",
     network_error: "ไม่สามารถเชื่อมต่อฐานข้อมูลได้",
     /* Grade Promotion */
@@ -1417,7 +1516,7 @@ const T = {
     dfDurationYear: "ปี", dfDurationYears: "ปี", dfDurationMonth: "เดือน", dfDurationMonths: "เดือน",
     dfOptionValue: "ค่าที่จัดเก็บ", dfOptionTH: "ป้ายภาษาไทย", dfOptionEN: "ป้ายภาษาอังกฤษ", dfRemoveOption: "นำตัวเลือกออก", dfPermissions: "สิทธิ์ของฟิลด์", dfPreview: "ตัวอย่าง", dfPreviewLabel: "ตัวอย่างฟิลด์",
     dfSectionSaved: "บันทึกส่วนข้อมูลแล้ว", dfFieldSaved: "บันทึกฟิลด์แล้ว", dfFieldArchived: "เก็บฟิลด์เข้าคลังแล้ว", dfOrderSaved: "บันทึกลำดับแล้ว",
-    dfAddRecord: "เพิ่มรายการ", dfRemoveRecord: "ลบรายการ", dfRecord: "รายการที่", dfNoRecords: "ยังไม่มีรายการ", dfYesEnabled: "ใช่ / เปิด",
+    dfAddRecord: "เพิ่มรายการ", dfRemoveRecord: "ลบรายการ", dfRecord: "รายการที่", dfNoRecords: "ยังไม่มีรายการ", dfEmploymentHistoryNotRequired: "สถานะศึกษาต่อและยังไม่ได้ทำงาน ไม่จำเป็นต้องบันทึกประวัติการทำงาน", dfYesEnabled: "ใช่ / เปิด",
     dfLoading: "กำลังโหลดข้อมูลเพิ่มเติม...", dfLoadError: "โหลดข้อมูลเพิ่มเติมไม่สำเร็จ", dfSaving: "กำลังบันทึกข้อมูลเพิ่มเติม...", dfSaveError: "บันทึกข้อมูลเพิ่มเติมไม่สำเร็จ",
     dfCoreSavedExtraFailed: "ข้อมูลหลักบันทึกแล้ว แต่ข้อมูลเพิ่มเติมยังไม่สำเร็จ", dfPleaseCheckFields: "กรุณาตรวจสอบช่องข้อมูลเพิ่มเติมที่ระบุ",
     dfValidationRequired: "กรุณากรอกข้อมูลนี้", dfValidationMinLength: "ข้อมูลสั้นกว่าความยาวขั้นต่ำ", dfValidationMaxLength: "ข้อมูลยาวเกินความยาวสูงสุด", dfValidationNumber: "กรุณากรอกตัวเลขให้ถูกต้อง",
@@ -1683,6 +1782,7 @@ const T = {
     uiVocationalCertificate: "Vocational Certificate",
     uiHigherVocationalCertificate: "Higher Vocational Certificate",
     uiPromotionGraduationHistory: "Promotion / Graduation History",
+    promoHistoryUniversity: "Continued to university",
     uiStudentProfileRDF: "Student Profile — RDF",
     uiOperationType: "Operation Type",
     uiNotificationType: "Notification Type",
@@ -1917,6 +2017,85 @@ const T = {
     menuReports: "Reports & Statistics",
     menuReportsDesc: "Enrollment trends, withdrawal analysis, and insights",
     menuReport: "Report", menuReportDesc: "Print official student reports",
+    menuVolunteers: "Volunteer Profiles", menuVolunteersDesc: "Store volunteer profiles, education, contact channels, and service periods",
+    volunteerTitle: "Volunteer Management", volunteerSubtitle: "Search, add, and review foundation volunteer profiles",
+    volunteerNew: "Add Volunteer", volunteerEdit: "Edit Volunteer", volunteerBackList: "Back to Volunteers",
+    volunteerSearch: "Search name, email, phone, or skills", volunteerStatusAll: "All statuses", volunteerNoData: "No volunteer profiles yet",
+    volunteerSetupTitle: "Volunteer storage is not installed", volunteerSetupDesc: "Only missing sheets and headers will be added. Existing data will not be changed.", volunteerInstall: "Install Volunteer System", volunteerInstalling: "Installing volunteer system...",
+    volunteerCustomFields: "Configure additional fields", volunteerCustomFieldsTitle: "Configure Volunteer Fields", volunteerCustomFieldsDesc: "Add new sections and fields later without changing the core data schema", dfEntityVolunteer: "Volunteer data",
+    volunteerIdentity: "Personal information", volunteerPrefix: "Prefix", volunteerFirstName: "First name", volunteerLastName: "Last name", volunteerEngFirstName: "English first name", volunteerEngLastName: "English last name", volunteerNickname: "Nickname", volunteerBirthDate: "Date of birth",
+    volunteerContact: "Contact and social accounts", volunteerPhone: "Phone", volunteerEmail: "Email", volunteerLineId: "LINE ID", volunteerFacebook: "Facebook", volunteerInstagram: "Instagram", volunteerOtherSocial: "Other social account",
+    volunteerEducation: "Education", volunteerEducationLevel: "Education level", volunteerEducationInstitution: "Institution", volunteerFieldOfStudy: "Field of study",
+    volunteerAddress: "Address", volunteerAddressLine: "House no. / street / village", volunteerSubdistrict: "Subdistrict", volunteerDistrict: "District", volunteerProvince: "Province", volunteerPostalCode: "Postal code",
+    volunteerService: "Volunteer service", volunteerStartDate: "Volunteer start date", volunteerEndDate: "End date", volunteerAvailability: "Availability", volunteerSkills: "Skills and interests", volunteerStatus: "Status", volunteerStatusActive: "Active", volunteerStatusPaused: "Paused", volunteerStatusCompleted: "Completed", volunteerOngoing: "Present",
+    volunteerEmergency: "Emergency contact", volunteerEmergencyName: "Contact name", volunteerEmergencyPhone: "Emergency phone", volunteerPhoto: "Volunteer photo", volunteerChoosePhoto: "Choose photo", volunteerPhotoHint: "JPG, PNG, or WEBP up to 4 MB", volunteerNotes: "Notes",
+    volunteerSave: "Save Volunteer", volunteerSaved: "Volunteer profile saved", volunteerArchive: "Archive", volunteerArchiveConfirm: "The profile will be hidden from the list but retained in storage.", volunteerUpdatedAt: "Last updated", volunteerServicePeriod: "Service period", volunteerRequiredHint: "Fields marked * are required",
+    volunteerSetupPreviewError: "Unable to inspect volunteer storage", volunteerSetupError: "Unable to install the volunteer system", volunteerSetupRequired: "Install the volunteer system first", volunteerLoadError: "Unable to load volunteers", volunteerNotFound: "Volunteer not found", volunteerValidationError: "Check the name, email, start date, and date range", volunteerSaveError: "Unable to save the volunteer profile", volunteerArchiveError: "Unable to archive the volunteer profile", volunteerPhotoInvalid: "Choose a JPG, PNG, or WEBP image up to 4 MB", volunteerPhotoUploadError: "Unable to upload the volunteer photo",
+    /* Alumni surveys */
+    surveyManageTitle: "Alumni Survey Management", surveyManageSubtitle: "Create surveys, schedule campaigns, and monitor responses",
+    surveyShortcut: "Alumni Surveys", surveyShortcutDesc: "Manage surveys and review response rates",
+    surveySetupTitle: "Survey storage is not installed", surveySetupDesc: "Only missing sheets and headers will be added. Student and existing data will not be changed.",
+    surveyInstall: "Install Survey System", surveyInstalling: "Installing survey system...",
+    surveyForms: "Surveys", surveyNewForm: "Create Survey", surveyNoForms: "No surveys yet",
+    surveyDraft: "Draft", surveyPublished: "Published", surveyScheduled: "Scheduled", surveyOpen: "Open", surveyClosed: "Closed",
+    surveyFormDetails: "Survey details", surveyTitleTH: "Thai title", surveyTitleEN: "English title",
+    surveyDescriptionTH: "Thai description", surveyDescriptionEN: "English description",
+    surveyAllowDraft: "Allow draft responses", surveyAllowEditAfterSubmit: "Allow editing after submission",
+    surveyQuestions: "Questions", surveyAddQuestion: "Add Question", surveyNoQuestions: "Add at least one question",
+    surveyQuestionEditor: "Question settings", surveyQuestionTH: "Question in Thai", surveyQuestionEN: "Question in English",
+    surveyQuestionType: "Answer type", surveyRequired: "Required", surveyOptional: "Optional",
+    surveyTypeShort: "Short answer", surveyTypeLong: "Long answer", surveyTypeSingle: "Single choice",
+    surveyTypeMultiple: "Multiple choice", surveyTypeDropdown: "Dropdown", surveyTypeYesNo: "Yes / No",
+    surveyTypeRating5: "Rating 1–5", surveyTypeRating10: "Rating 0–10", surveyTypeMatrix: "Satisfaction matrix",
+    surveyOptions: "Options", surveyOptionsHelp: "One option per line using Thai | English",
+    surveyMatrixRows: "Assessment items (rows)", surveyMatrixColumns: "Rating levels (columns)",
+    surveyQuestionSave: "Add Question", surveyQuestionUpdate: "Save Changes", surveyQuestionRemove: "Remove Question",
+    surveySaveDraft: "Save Draft", surveySaved: "Survey saved", surveySelectForm: "Select a survey",
+    surveyCampaigns: "Survey Campaigns", surveyNewCampaign: "Create Campaign", surveyNoCampaigns: "No survey campaigns yet",
+    surveyCampaignEditor: "Survey campaign settings", surveyCampaignNameTH: "Thai campaign name", surveyCampaignNameEN: "English campaign name",
+    surveyAudience: "Alumni audience", surveyAudienceAll: "Alumni from all institutions", surveyOpenAt: "Opens", surveyDueAt: "Response deadline",
+    surveyCampaignRequired: "Response is required", surveyCampaignSave: "Save Campaign Draft", surveyCampaignSaved: "Campaign saved",
+    surveyPublish: "Publish", surveyPublishTitle: "Publish this survey campaign?", surveyPublishConfirm: "Questions will be locked and assignments will be created for eligible alumni.",
+    surveyPublishedAssigned: "Published · assigned to {count} alumni", surveyViewSummary: "View Summary",
+    surveySummaryTitle: "Survey Summary", surveyAssigned: "Assigned", surveySubmitted: "Submitted",
+    surveyInProgress: "In progress", surveyNotStarted: "Not started", surveyResponseRate: "Response rate",
+    surveyAverage: "Average score", surveyAnswerCount: "{count} answers", surveyNoAnalytics: "No submitted answers to summarize yet",
+    surveyMyTitle: "My Surveys", surveyMySubtitle: "Surveys assigned for alumni follow-up",
+    surveyPending: "Pending", surveyExpired: "Expired", surveyCompleted: "Submitted", surveyContinue: "Continue Survey",
+    surveyStart: "Start Survey", surveyDue: "Due", surveyProgress: "Answered {answered} of {total} questions",
+    surveySaveResponseDraft: "Save Draft", surveySubmit: "Submit Response", surveySubmitTitle: "Submit this response?",
+    surveySubmitConfirm: "You cannot edit after submission unless this survey explicitly allows it.", surveyDraftSaved: "Draft saved",
+    surveySubmittedSuccess: "Survey submitted successfully", surveyBackToList: "Back to survey list",
+    surveyYes: "Yes", surveyNo: "No", surveyChoose: "Choose an answer", surveyRequiredMark: "Required",
+    surveySetupPreviewError: "Unable to inspect survey setup", surveySetupError: "Unable to install the survey system",
+    surveySetupRequired: "Install the survey system first", surveyLoadError: "Unable to load survey data",
+    surveyValidationError: "Survey information is incomplete", surveyQuestionInvalid: "One or more questions are invalid",
+    surveyOptionsRequired: "Choice questions require at least two options", surveyMatrixInvalid: "A matrix requires at least one row and two columns",
+    surveyDuplicateQuestionKey: "Duplicate question key", surveyDuplicateOption: "Duplicate option value",
+    surveyFormImmutable: "A published survey structure cannot be edited", surveyFormNotFound: "Survey not found",
+    surveySaveError: "Unable to save survey", surveyCampaignInvalid: "Survey campaign information is invalid",
+    surveyCampaignNotFound: "Survey campaign not found", surveyCampaignImmutable: "A published campaign cannot be edited",
+    surveyPublishError: "Unable to publish survey campaign", surveyAssignmentNotFound: "Assigned survey not found",
+    surveyAssignmentsLoadError: "Unable to load assigned surveys", surveyResponseLoadError: "Unable to load survey response",
+    surveyResponseSaveError: "Unable to save survey response", surveyRequiredAnswers: "Complete all required questions",
+    surveyAlreadySubmitted: "This survey has already been submitted", surveyNotOpen: "This survey is not open or has ended", surveySummaryError: "Unable to load survey summary",
+    trackingManageTitle: "Report and Tracking Cycle Management", trackingManageSubtitle: "Manage reporting periods, follow-up work, and surveys from one shared source",
+    trackingSharedTitle: "Report and Tracking Cycles", trackingSharedDesc: "Employment reports and surveys use the same cycle, so dates are defined only once",
+    trackingNewCycle: "Create Cycle", trackingManageCycles: "Manage Cycles", trackingOpenFullPage: "Open Full Management Page",
+    trackingNoCycles: "No report and tracking cycles yet", trackingCycleEditor: "Report and tracking cycle details",
+    trackingNameTH: "Thai cycle name", trackingNameEN: "English cycle name", trackingStartDate: "Tracking start date",
+    trackingEndDate: "End date", trackingAsOfMonth: "Calculate data through", trackingOngoing: "Ongoing",
+    trackingEnableSurvey: "Include a survey in this cycle", trackingSurveyForm: "Survey form", trackingSurveySchedule: "Survey response window",
+    trackingSaveDraft: "Save Cycle Draft", trackingSaved: "Cycle saved", trackingPublish: "Activate Cycle",
+    trackingPublishTitle: "Activate this cycle?", trackingPublishConfirm: "The reporting period will become available and survey assignments will be created when surveys are enabled.",
+    trackingPublishedAssigned: "Activated · survey assigned to {count} alumni", trackingArchive: "Delete Draft Cycle",
+    trackingArchiveTitle: "Delete this draft cycle?", trackingArchiveConfirm: "Only cycles that have not been activated can be deleted.",
+    trackingSetupTitle: "Shared cycle storage is not installed", trackingSetupDesc: "The shared cycle table will be created and existing tracking periods will be imported without deleting data.",
+    trackingSetup: "Install Shared Cycle Storage", trackingLoadError: "Unable to load report and tracking cycles",
+    trackingCycleLoadError: "Unable to load report and tracking cycles", trackingCycleInvalid: "Report and tracking cycle information is invalid",
+    trackingCycleNotFound: "Report and tracking cycle not found", trackingCycleImmutable: "An activated cycle cannot be edited or deleted",
+    trackingCycleDuplicate: "A cycle with the same date range already exists", trackingSelectCycle: "Select a saved cycle",
+    trackingCurrentCycle: "Current cycle", trackingReportScope: "Reporting period", trackingSurveyDisabled: "Survey disabled",
     /* Reports page */
     rptTitle: "Reports & Statistics",
     rptSubtitle: "Review scholarship statistics and track alumni employment outcomes",
@@ -1970,6 +2149,7 @@ const T = {
     empPeriodFrom: "Follow-ups from",
     empPeriodTo: "Through date",
     empPeriodApply: "Apply period",
+    empPeriodSave: "Add tracking period",
     empPeriodReset: "All dates",
     empPeriodHint: "The date range checks both contact dates and next scheduled follow-up dates.",
     empPeriodRangeError: "The start date must not be after the end date.",
@@ -1977,6 +2157,18 @@ const T = {
     empPeriodOpenStart: "Earliest",
     empPeriodOpenEnd: "Present",
     empPeriodFollowUpRange: "Follow-up date range",
+    empPeriodYear: "Year {year}",
+    empPeriodOngoing: "Ongoing",
+    empPeriodSavedEmpty: "No saved tracking periods yet. Add multiple periods and they will be grouped by year.",
+    empPeriodUseSaved: "Use this tracking period",
+    empPeriodDelete: "Delete tracking period",
+    empPeriodDeleteTitle: "Delete this tracking period?",
+    empPeriodDeleteConfirm: "This removes the period from shared settings without deleting existing follow-up records.",
+    empPeriodRequiredError: "Enter a calculation month and tracking-period start date.",
+    empPeriodDuplicateError: "This tracking period already exists.",
+    empPeriodSaved: "Tracking period added.",
+    empPeriodDeleted: "Tracking period deleted.",
+    empPeriodSaveError: "Unable to save tracking periods.",
     empCoverageLabel: "Employment information coverage",
     empReportSetupTitle: "The employment data template is not installed",
     empReportSetupDesc: "Install it from Custom Fields. The system checks existing data first and never migrates or overwrites it automatically.",
@@ -2004,6 +2196,7 @@ const T = {
     empKpiReported: "With employment data",
     empKpiRecords: "Employment history records",
     empKpiMissing: "Not reported",
+    empFollowUpRecordCount: "Follow-up records",
     empColAlumni: "Alumni",
     empColStatus: "Employment status",
     empColWorkplace: "Workplace",
@@ -2030,8 +2223,12 @@ const T = {
     empNotProvided: "Not provided",
     empNoResults: "No employment data matches the filters",
     empResultCount: "Showing {people} people · {records} job records",
+    empResultCountPaged: "Showing alumni {from}–{to} of {people} · {records} total job records",
+    empRowsPerPage: "Alumni per page", empPageSize20: "20 alumni", empPageSizeAll: "All",
+    empPreviousPage: "Previous", empNextPage: "Next", empPageStatus: "Page {current} of {total}",
     empLegacyRowsWarning: "{count} legacy employment rows were found in Alumni and have not been migrated into this report.",
     localAuditBanner: "LOCALHOST · Read-only audit mode · Data mutations are blocked",
+    localLiveBanner: "LOCALHOST LIVE · Connected to STAGING · Changes affect the real RDF database",
     localAuditModeError: "Localhost is in read-only audit mode, so no data mutation request was sent.",
     empAuditModeBadge: "Audit only", empAuditModeNotice: "Employment tracking is in read-only audit mode. Reports and previews are available, but setup, migration, and follow-up writes are disabled.",
     empAuditModeError: "Employment tracking is in read-only audit mode. Review the preview results before enabling data writes.",
@@ -2070,6 +2267,7 @@ const T = {
     empFollowUpAction: "Follow up", empFollowUpOverdue: "{count} overdue", empFollowUpLinkedWork: "Linked job", empFollowUpEdit: "Edit follow-up", empFollowUpArchive: "Archive follow-up",
     empFollowUpArchiveConfirm: "The record will be hidden but retained in the audit history.", empFollowUpDateError: "The next follow-up date cannot be before the contact date.", empFollowUpSaved: "Follow-up saved successfully.",
     empFollowUpValidationError: "The follow-up details are invalid. Check the dates, method, and outcome.", empFollowUpRecordError: "The referenced employment record was not found.", empFollowUpNotFound: "Follow-up record not found.", empFollowUpSaveError: "Unable to save the follow-up.", empFollowUpArchiveError: "Unable to archive the follow-up.",
+    profileEmploymentFollowUps: "Employment follow-up records", profileFollowUpUpdatedAt: "Last updated",
     empCsvStipNo: "Scholarship ID", empCsvEmployer: "Employer/workplace", empCsvLocation: "Location", empCsvProvince: "Province/country", empCsvJobTitle: "Job title", empCsvEmploymentType: "Employment type", empCsvIndustry: "Industry", empCsvStartMonth: "Start month", empCsvEndMonth: "End month", empCsvDurationMonths: "Duration (months)", empCsvVerification: "Verification", empCsvSource: "Data source", empCsvLastContact: "Last contact", empCsvNextFollowUp: "Next follow-up", empCsvLastUpdated: "Last data update",
     empMigrationTitle: "Review and migrate legacy employment data", empMigrationDesc: "Occupation maps to job title and Workplace maps to employer. Source data is preserved and migrated records are marked Needs revision.",
     empMigrationRun: "Migrate ready records", empMigrationSelect: "Select", empMigrationPerson: "Alumni", empMigrationOccupation: "Occupation → job title", empMigrationWorkplace: "Workplace → employer", empMigrationStatus: "Review result",
@@ -2268,7 +2466,7 @@ const T = {
     /* Misc */
     year: "Year", term: "Term", male: "Male", female: "Female",
     unknown: "Unknown", none: "None", other: "Other",
-    yes: "Yes", no: "No", confirm: "Confirm", close: "Close",
+    yes: "Yes", no: "No", confirm: "Confirm", open: "Open", close: "Close",
     success: "Success", warning: "Warning", info: "Information",
     network_error: "Cannot connect to database",
     /* Grade Promotion */
@@ -2819,7 +3017,7 @@ const T = {
     dfDurationYear: "year", dfDurationYears: "years", dfDurationMonth: "month", dfDurationMonths: "months",
     dfOptionValue: "Stored value", dfOptionTH: "Thai label", dfOptionEN: "English label", dfRemoveOption: "Remove option", dfPermissions: "Field permissions", dfPreview: "Preview", dfPreviewLabel: "Field preview",
     dfSectionSaved: "Section saved.", dfFieldSaved: "Field saved.", dfFieldArchived: "Field archived.", dfOrderSaved: "Order saved.",
-    dfAddRecord: "Add record", dfRemoveRecord: "Remove record", dfRecord: "Record", dfNoRecords: "No records yet.", dfYesEnabled: "Yes / Enabled",
+    dfAddRecord: "Add record", dfRemoveRecord: "Remove record", dfRecord: "Record", dfNoRecords: "No records yet.", dfEmploymentHistoryNotRequired: "Employment history is not required while studying without working.", dfYesEnabled: "Yes / Enabled",
     dfLoading: "Loading additional information...", dfLoadError: "Unable to load additional information.", dfSaving: "Saving additional information...", dfSaveError: "Unable to save additional information.",
     dfCoreSavedExtraFailed: "Core data was saved, but additional information was not saved", dfPleaseCheckFields: "Check the highlighted additional fields.",
     dfValidationRequired: "This field is required.", dfValidationMinLength: "The value is shorter than the minimum length.", dfValidationMaxLength: "The value exceeds the maximum length.", dfValidationNumber: "Enter a valid number.",
@@ -2945,6 +3143,67 @@ function localizeApiMessage(message, fallbackKey = 'error', lang = LANG) {
 }
 
 function getLocale() { return LANG === 'en' ? 'en-GB' : 'th-TH'; }
+
+const APP_TIME_ZONE = 'Asia/Bangkok';
+const APP_MONTH_NAMES = {
+  th: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
+  en: ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'],
+};
+
+function appDateParts(value, includeTime = false) {
+  if (value === null || value === undefined || value === '') return null;
+  const raw = String(value).trim();
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnly) {
+    const parts = { year: Number(dateOnly[1]), month: Number(dateOnly[2]), day: Number(dateOnly[3]) };
+    const check = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+    if (parts.month < 1 || parts.month > 12 || parts.day < 1 ||
+        check.getUTCFullYear() !== parts.year || check.getUTCMonth() + 1 !== parts.month || check.getUTCDate() !== parts.day) return null;
+    return parts;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const options = { timeZone: APP_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' };
+  if (includeTime) Object.assign(options, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const output = {};
+  new Intl.DateTimeFormat('en-US', options).formatToParts(date).forEach(part => {
+    if (['year', 'month', 'day', 'hour', 'minute'].includes(part.type)) output[part.type] = Number(part.value);
+  });
+  return output;
+}
+
+// Display dates with an explicit month name so 10/11 is never ambiguous. Native
+// date/month input values remain ISO and are converted only when shown to users.
+function formatAppDate(value, lang = LANG) {
+  const parts = appDateParts(value);
+  if (!parts) return value === null || value === undefined ? '' : String(value);
+  const target = normalizeLang(lang);
+  const year = target === 'th' ? parts.year + 543 : parts.year;
+  return `${APP_MONTH_NAMES[target][parts.month - 1]} ${parts.day} ${year}`;
+}
+
+function formatAppMonth(value, lang = LANG) {
+  if (value === null || value === undefined || value === '') return '';
+  const raw = String(value).trim();
+  const monthOnly = raw.match(/^(\d{4})-(\d{2})$/);
+  let parts;
+  if (monthOnly) parts = { year: Number(monthOnly[1]), month: Number(monthOnly[2]) };
+  else parts = appDateParts(value);
+  if (!parts || parts.month < 1 || parts.month > 12) return raw;
+  const target = normalizeLang(lang);
+  const year = target === 'th' ? parts.year + 543 : parts.year;
+  return `${APP_MONTH_NAMES[target][parts.month - 1]} ${year}`;
+}
+
+function formatAppDateTime(value, lang = LANG) {
+  const raw = value === null || value === undefined ? '' : String(value).trim();
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return formatAppDate(raw, lang);
+  const parts = appDateParts(value, true);
+  if (!parts) return raw;
+  const dateText = formatAppDate(`${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`, lang);
+  return `${dateText} · ${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
+}
 
 // Translate only labels and attributes, never form values or stored codes.
 function applyTranslations(root = document) {

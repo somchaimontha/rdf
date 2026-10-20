@@ -59,11 +59,11 @@
 <main class="container main-content flex-1">
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
     <div>
-      <a href="settings.html" class="text-xs text-gray-400 hover:text-blue-700 inline-flex items-center gap-1 mb-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i><span data-t="dfBackSettings">กลับหน้าตั้งค่า</span></a>
-      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="list-plus" class="w-5 h-5 text-blue-700"></i><span data-t="dfPageTitle">จัดการช่องข้อมูลเพิ่มเติม</span></h2>
-      <p class="text-xs text-gray-500 mt-1" data-t="dfPageSubtitle">กำหนดส่วน ฟิลด์ ตัวเลือก เงื่อนไข และสิทธิ์ โดยไม่แก้โครงสร้างข้อมูลนักเรียนเดิม</p>
+      <a id="pageBackLink" href="settings.html" class="text-xs text-gray-400 hover:text-blue-700 inline-flex items-center gap-1 mb-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i><span id="pageBackText" data-t="dfBackSettings">กลับหน้าตั้งค่า</span></a>
+      <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="list-plus" class="w-5 h-5 text-blue-700"></i><span id="pageTitle" data-t="dfPageTitle">จัดการช่องข้อมูลเพิ่มเติม</span></h2>
+      <p id="pageSubtitle" class="text-xs text-gray-500 mt-1" data-t="dfPageSubtitle">กำหนดส่วน ฟิลด์ ตัวเลือก เงื่อนไข และสิทธิ์ โดยไม่แก้โครงสร้างข้อมูลนักเรียนเดิม</p>
     </div>
-    <div class="text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700"><span data-t="dfEntityStudent">ข้อมูลนักเรียน</span> · <span id="schemaVersion">—</span></div>
+    <div class="text-xs font-semibold px-3 py-2 rounded-lg bg-blue-50 text-blue-700"><span id="entityLabel" data-t="dfEntityStudent">ข้อมูลนักเรียน</span> · <span id="schemaVersion">—</span></div>
   </div>
 
   <section id="setupPanel" class="builder-card mb-5">
@@ -178,7 +178,7 @@
             <label><span class="builder-label" data-t="dfDescriptionTH">คำอธิบายภาษาไทย</span><textarea id="sec_desc_th" class="builder-input" rows="2"></textarea></label>
             <label><span class="builder-label" data-t="dfDescriptionEN">คำอธิบายภาษาอังกฤษ</span><textarea id="sec_desc_en" class="builder-input" rows="2"></textarea></label>
             <label><span class="builder-label" data-t="dfCardinality">รูปแบบรายการ</span><select id="sec_cardinality" class="builder-input"><option value="single" data-t="dfSingle">รายการเดียว</option><option value="repeatable" data-t="dfRepeatable">เพิ่มซ้ำได้หลายรายการ</option></select></label>
-            <label><span class="builder-label" data-t="dfAudience">ใช้ส่วนข้อมูลนี้กับใคร</span><select id="sec_audience" class="builder-input" onchange="onSectionAudienceChange()"><option value="all" data-t="dfAudienceAll">นักเรียนทุกคน</option><option value="alumni" data-t="dfAudienceAlumni">เฉพาะศิษย์เก่า</option><option value="custom" data-t="dfAudienceCustom">กำหนดเงื่อนไขเอง</option></select><span class="block text-[10px] text-gray-400 mt-1" data-t="dfAudienceHelp">เลือก “นักเรียนทุกคน” เพื่อแสดงกับทุกสถานะและทุกสถาบัน</span></label>
+            <label id="secAudienceField"><span class="builder-label" data-t="dfAudience">ใช้ส่วนข้อมูลนี้กับใคร</span><select id="sec_audience" class="builder-input" onchange="onSectionAudienceChange()"><option value="all" data-t="dfAudienceAll">นักเรียนทุกคน</option><option value="alumni" data-t="dfAudienceAlumni">เฉพาะศิษย์เก่า</option><option value="custom" data-t="dfAudienceCustom">กำหนดเงื่อนไขเอง</option></select><span class="block text-[10px] text-gray-400 mt-1" data-t="dfAudienceHelp">เลือก “นักเรียนทุกคน” เพื่อแสดงกับทุกสถานะและทุกสถาบัน</span></label>
             <div class="flex items-end gap-4 pb-2"><label class="role-item"><input id="sec_active" type="checkbox" checked><span data-t="dfActive">เปิดใช้งาน</span></label><label class="role-item"><input id="sec_collapsible" type="checkbox" checked><span data-t="dfCollapsible">ย่อส่วนได้</span></label></div>
           </div>
           <div class="editor-section"><h4 data-t="dfVisibleRoles">สิทธิ์ที่มองเห็น</h4><div id="sec_visible_roles" class="role-grid"></div></div>
@@ -256,11 +256,11 @@
 
 <footer class="rdf-footer"><div class="footer-left"><strong data-t="foundation">มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย</strong><span class="mx-2 hide-xs">•</span><span class="hide-xs">Scholarship Management System &copy; <span id="footerYear"></span></span></div><div id="dbStatus" class="db-status checking" onclick="checkDBConnection()" data-t-title="hintClickToCheckAgain"><span class="db-dot"></span><span id="dbStatusText"><span data-t="stChecking">กำลังตรวจสอบ...</span></span></div></footer>
 
-<script src="assets/js/config.js?v=2.6.2"></script>
-<script src="assets/js/i18n.js?v=2.6.2"></script>
-<script src="assets/js/api.js?v=2.6.2"></script>
-<script src="assets/js/auth.js?v=2.6.2"></script>
-<script src="assets/js/rbac.js?v=2.6.2"></script>
+<script src="assets/js/config.js?v=2.6.13"></script>
+<script src="assets/js/i18n.js?v=2.6.13"></script>
+<script src="assets/js/api.js?v=2.6.13"></script>
+<script src="assets/js/auth.js?v=2.6.13"></script>
+<script src="assets/js/rbac.js?v=2.6.13"></script>
 <script>
 const user = requireAuth();
 if (user) renderNavUser(user);
@@ -269,6 +269,7 @@ document.getElementById('footerYear').textContent = new Date().getFullYear();
 lucide.createIcons(); initDBStatus();
 
 const DF_ROLES = ['SuperAdmin','Manager','Finance','Committee','DormTeacher','Student'];
+const CUSTOM_ENTITY_TYPE = new URLSearchParams(window.location.search).get('entityType') === 'volunteer' ? 'volunteer' : 'student';
 const DF_TYPES = ['text','textarea','number','decimal','email','tel','date','month','datetime','select','multiselect','radio','checkbox','boolean','url','readonly','calculated_duration','hidden'];
 const DF_OPERATORS = ['equals','not_equals','contains','in','not_in','is_empty','is_not_empty'];
 const DF_CORE_FIELDS = ['Status','Institution','CurrentLevel','ScholarshipYear','EntryYear','Sex','Province','Nationality','UniName','UniProvince','BankName'];
@@ -285,6 +286,21 @@ let adminData = { sections:[], fields:[], options:[], setupRequired:true };
 let employmentTemplatePlan = null;
 let employmentMigrationPlan = null;
 let sectionCustomRules = {logic:'AND',conditions:[]};
+
+function configureEntityUI() {
+  if (CUSTOM_ENTITY_TYPE !== 'volunteer') return;
+  document.title = t('volunteerCustomFieldsTitle');
+  const mapping = [
+    ['pageBackText','volunteerBackList'],['pageTitle','volunteerCustomFieldsTitle'],
+    ['pageSubtitle','volunteerCustomFieldsDesc'],['entityLabel','dfEntityVolunteer']
+  ];
+  mapping.forEach(([id,key])=>{const node=el(id);node.dataset.t=key;node.textContent=t(key);});
+  el('pageBackLink').href='volunteers.html';
+  el('employmentTemplatePanel').classList.add('hidden');
+  el('usageGuide').classList.add('hidden');
+  el('secAudienceField').classList.add('hidden');
+  el('sec_audience').value='all';
+}
 
 const el = id => document.getElementById(id);
 const value = id => el(id)?.value?.trim() || '';
@@ -599,7 +615,7 @@ async function loadEmploymentTemplatePlan() {
 
 async function loadAdminData() {
   showLoader(true,t('loading'));
-  try { const result=await API.getDynamicFieldAdminData('student');showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfLoadError'));adminData=result;setSetupStatus(result.setup||result);renderSchemaList();populateSectionSelect();await loadEmploymentTemplatePlan(); }
+  try { const result=await API.getDynamicFieldAdminData(CUSTOM_ENTITY_TYPE);showLoader(false);if(result.status!=='success')throw new Error(result.message||t('dfLoadError'));adminData=result;setSetupStatus(result.setup||result);renderSchemaList();populateSectionSelect();if(CUSTOM_ENTITY_TYPE==='student')await loadEmploymentTemplatePlan(); }
   catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message),'error');}
 }
 
@@ -663,6 +679,7 @@ function sectionAudienceFromRules(rules){
   return 'custom';
 }
 function sectionRulesForAudience(){
+  if(CUSTOM_ENTITY_TYPE==='volunteer')return {logic:'AND',conditions:[]};
   const audience=value('sec_audience');
   if(audience==='all')return {logic:'AND',conditions:[]};
   if(audience==='alumni')return {logic:'AND',conditions:[{source:'core',field:'Status',operator:'in',value:[...DF_ALUMNI_STATUSES]}]};
@@ -681,7 +698,7 @@ function openSectionEditor(section) {
   el('sec_cardinality').value=section?.cardinality||'single';el('sec_active').checked=section?.active!==false;el('sec_collapsible').checked=section?.collapsible!==false;
   roleChecks('sec_visible_roles',section?.visibleRoles);sectionCustomRules={logic:'AND',conditions:[]};setSectionAudience(sectionAudienceFromRules(section?.visibilityRules),section?.visibilityRules);lucide.createIcons();
 }
-async function saveSectionEditor(){const audience=value('sec_audience');if(audience==='custom'&&!validateConditionEditor('sec_condition'))return;const section={sectionId:value('sec_id'),sectionKey:value('sec_key'),nameTH:value('sec_name_th'),nameEN:value('sec_name_en'),descriptionTH:value('sec_desc_th'),descriptionEN:value('sec_desc_en'),displayOrder:Number(value('sec_order'))||0,cardinality:value('sec_cardinality'),active:checked('sec_active'),collapsible:checked('sec_collapsible'),visibleRoles:selectedRoles('sec_visible_roles'),visibilityRules:sectionRulesForAudience()};await saveAndReload(()=>API.saveDynamicSection(section),t('dfSectionSaved'));}
+async function saveSectionEditor(){const audience=value('sec_audience');if(CUSTOM_ENTITY_TYPE==='student'&&audience==='custom'&&!validateConditionEditor('sec_condition'))return;const section={entityType:CUSTOM_ENTITY_TYPE,sectionId:value('sec_id'),sectionKey:value('sec_key'),nameTH:value('sec_name_th'),nameEN:value('sec_name_en'),descriptionTH:value('sec_desc_th'),descriptionEN:value('sec_desc_en'),displayOrder:Number(value('sec_order'))||0,cardinality:value('sec_cardinality'),active:checked('sec_active'),collapsible:checked('sec_collapsible'),visibleRoles:selectedRoles('sec_visible_roles'),visibilityRules:sectionRulesForAudience()};await saveAndReload(()=>API.saveDynamicSection(section),t('dfSectionSaved'));}
 
 function applySectionExample(kind){
   if(adminData.setupRequired){Swal.fire(t('error'),t('dfSetupFirst'),'error');return;}
@@ -747,7 +764,7 @@ function populateCalculationFields(config){
 function readCalculationConfig(){return {startFieldId:value('fld_calc_start'),endFieldId:value('fld_calc_end'),useCurrentMonth:checked('fld_calc_current')};}
 function readOptions(){return [...el('optionRows').children].map((row,index)=>({optionId:row.dataset.optionId||'',value:row.querySelector('.opt-value').value.trim(),labelTH:row.querySelector('.opt-th').value.trim(),labelEN:row.querySelector('.opt-en').value.trim(),displayOrder:index+1,active:row.dataset.active!=='false'}));}
 function readOptionalNumber(id){const raw=value(id);return raw===''?null:Number(raw);}
-function fieldPayload(field){const section=adminData.sections.find(s=>s.sectionId===(field?.sectionId||value('fld_section')));return {fieldId:field?.fieldId||value('fld_id'),fieldKey:field?.fieldKey||value('fld_key'),sectionId:field?.sectionId||value('fld_section'),fieldType:field?.fieldType||value('fld_type'),labelTH:field?.labelTH??value('fld_label_th'),labelEN:field?.labelEN??value('fld_label_en'),placeholderTH:field?.placeholderTH??value('fld_placeholder_th'),placeholderEN:field?.placeholderEN??value('fld_placeholder_en'),helpTextTH:field?.helpTextTH??value('fld_help_th'),helpTextEN:field?.helpTextEN??value('fld_help_en'),descriptionTH:field?.descriptionTH??value('fld_desc_th'),descriptionEN:field?.descriptionEN??value('fld_desc_en'),defaultValue:field?.defaultValue??value('fld_default'),required:field?.required??checked('fld_required'),unique:field?.unique??checked('fld_unique'),searchable:field?.searchable??checked('fld_searchable'),editable:field?.editable??checked('fld_editable'),visible:field?.visible??checked('fld_visible'),active:field?.active??checked('fld_active'),displayOrder:field?.displayOrder??(Number(value('fld_order'))||0),minLength:field?.minLength??readOptionalNumber('fld_min_length'),maxLength:field?.maxLength??readOptionalNumber('fld_max_length'),minValue:field?.minValue??readOptionalNumber('fld_min_value'),maxValue:field?.maxValue??readOptionalNumber('fld_max_value'),validationPattern:field?.validationPattern??value('fld_pattern'),validationMessageTH:field?.validationMessageTH??value('fld_validation_th'),validationMessageEN:field?.validationMessageEN??value('fld_validation_en'),visibleRoles:field?.visibleRoles||selectedRoles('fld_visible_roles'),editableRoles:field?.editableRoles||selectedRoles('fld_editable_roles'),visibilityRules:field?.visibilityRules||readCondition('fld_condition'),cardinality:section?.cardinality||'single',calculationType:(field?.fieldType||value('fld_type'))==='calculated_duration'?'month_range_duration':'',calculationConfig:field?.calculationConfig??readCalculationConfig()};}
+function fieldPayload(field){const section=adminData.sections.find(s=>s.sectionId===(field?.sectionId||value('fld_section')));return {entityType:CUSTOM_ENTITY_TYPE,fieldId:field?.fieldId||value('fld_id'),fieldKey:field?.fieldKey||value('fld_key'),sectionId:field?.sectionId||value('fld_section'),fieldType:field?.fieldType||value('fld_type'),labelTH:field?.labelTH??value('fld_label_th'),labelEN:field?.labelEN??value('fld_label_en'),placeholderTH:field?.placeholderTH??value('fld_placeholder_th'),placeholderEN:field?.placeholderEN??value('fld_placeholder_en'),helpTextTH:field?.helpTextTH??value('fld_help_th'),helpTextEN:field?.helpTextEN??value('fld_help_en'),descriptionTH:field?.descriptionTH??value('fld_desc_th'),descriptionEN:field?.descriptionEN??value('fld_desc_en'),defaultValue:field?.defaultValue??value('fld_default'),required:field?.required??checked('fld_required'),unique:field?.unique??checked('fld_unique'),searchable:field?.searchable??checked('fld_searchable'),editable:field?.editable??checked('fld_editable'),visible:field?.visible??checked('fld_visible'),active:field?.active??checked('fld_active'),displayOrder:field?.displayOrder??(Number(value('fld_order'))||0),minLength:field?.minLength??readOptionalNumber('fld_min_length'),maxLength:field?.maxLength??readOptionalNumber('fld_max_length'),minValue:field?.minValue??readOptionalNumber('fld_min_value'),maxValue:field?.maxValue??readOptionalNumber('fld_max_value'),validationPattern:field?.validationPattern??value('fld_pattern'),validationMessageTH:field?.validationMessageTH??value('fld_validation_th'),validationMessageEN:field?.validationMessageEN??value('fld_validation_en'),visibleRoles:field?.visibleRoles||selectedRoles('fld_visible_roles'),editableRoles:field?.editableRoles||selectedRoles('fld_editable_roles'),visibilityRules:field?.visibilityRules||readCondition('fld_condition'),cardinality:section?.cardinality||'single',calculationType:(field?.fieldType||value('fld_type'))==='calculated_duration'?'month_range_duration':'',calculationConfig:field?.calculationConfig??readCalculationConfig()};}
 async function saveFieldEditor(){
   if(!validateConditionEditor('fld_condition'))return;
   if(value('fld_type')==='calculated_duration'){
@@ -779,6 +796,7 @@ document.addEventListener('rdf:languagechange',()=>{
   if(sectionOpen){roleChecks('sec_visible_roles',sectionRoles);setSectionAudience(sectionAudience,sectionRules);}
   if(fieldOpen){roleChecks('fld_visible_roles',fieldVisibleRoles);roleChecks('fld_editable_roles',fieldEditableRoles);conditionEditor('fld_condition',fieldRules);toggleOptionsEditor();populateCalculationFields();renderFieldPreview();}
 });
+configureEntityUI();
 loadAdminData();
 </script>
 </body>

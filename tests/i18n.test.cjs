@@ -88,6 +88,16 @@ test('canonical Thai levels, academic years, signature roles, and API messages l
   assert.equal(c.localizeApiMessage('ข้อความใหม่จากเซิร์ฟเวอร์', 'error', 'en'), 'Error');
 });
 
+test('shared date formatter uses unambiguous month names and Buddhist years', () => {
+  const { context: c } = setup('th');
+  assert.equal(c.formatAppDate('2026-10-11', 'th'), 'ตุลาคม 11 2569');
+  assert.equal(c.formatAppDate('2026-10-11', 'en'), 'Oct. 11 2026');
+  assert.equal(c.formatAppMonth('2026-10', 'th'), 'ตุลาคม 2569');
+  assert.equal(c.formatAppMonth('2026-10', 'en'), 'Oct. 2026');
+  assert.equal(c.formatAppDateTime('2026-10-11T08:45:00+07:00', 'en'), 'Oct. 11 2026 · 08:45');
+  assert.equal(c.formatAppDateTime('2026-10-11T08:45:00+07:00', 'th'), 'ตุลาคม 11 2569 · 08:45');
+});
+
 test('known dynamic English views do not contain the previous Thai-only labels', () => {
   const checks = {
     'students.html': ['ปวช. Yr.', '>ปีสุดท้าย</span>', '<span>อนุมัติทุน ม.</span>', 'tags.push(`ค้นหา:', 'tags.push(`ปีการศึกษา '],

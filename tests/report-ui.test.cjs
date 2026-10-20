@@ -5,8 +5,10 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const reports = fs.readFileSync(path.join(root, 'reports.html'), 'utf8');
+const profile = fs.readFileSync(path.join(root, 'student-profile.html'), 'utf8');
 const settings = fs.readFileSync(path.join(root, 'settings.html'), 'utf8');
 const auth = fs.readFileSync(path.join(root, 'assets/js/auth.js'), 'utf8');
+const tracking = fs.readFileSync(path.join(root, 'tracking-management.html'), 'utf8');
 
 test('employment report keeps grouped columns compact and follow-up notes last', () => {
   const fields = reports.slice(reports.indexOf('const EMPLOYMENT_REPORT_FIELDS'), reports.indexOf('function employmentReportText'));
@@ -20,10 +22,27 @@ test('employment reporting uses a shared period scope and exposes follow-up time
   assert.match(reports, /id="empPeriodAsOf"/);
   assert.match(reports, /id="empPeriodFrom"/);
   assert.match(reports, /id="empPeriodTo"/);
+  assert.match(reports, /id="empPeriodAsOfDisplay"/);
+  assert.match(reports, /id="empPeriodFromDisplay"/);
+  assert.match(reports, /id="empPeriodToDisplay"/);
+  assert.match(reports, /function renderEmploymentPeriodInputDates/);
+  assert.match(reports, /class="emp-date-native"/);
   assert.match(reports, /function applyEmploymentPeriod/);
   assert.match(reports, /followUpFrom:_EMP_PERIOD\.from,followUpTo:_EMP_PERIOD\.to/);
   assert.match(reports, /data-t="empColLastFollowUp"/);
   assert.match(reports, /data-t="empColLastUpdated"/);
+  assert.match(reports, /id="empSavedPeriods"/);
+  assert.match(reports, /function openTrackingCycleManager/);
+  assert.match(reports, /API\.getTrackingCycleData/);
+  assert.match(tracking, /function saveCycle/);
+  assert.match(tracking, /tracking-management\.html/);
+  assert.match(reports, /empFollowUpRecordCount/);
+});
+
+test('student profile reads and displays shared employment follow-up records', () => {
+  assert.match(profile, /id="employmentFollowUpCard"/);
+  assert.match(profile, /API\.getStudentEmploymentFollowUps\(stipNo\)/);
+  assert.match(profile, /function renderProfileEmploymentFollowUps/);
 });
 
 test('employment preview changes paper shape and places QR beside the reference on the right', () => {

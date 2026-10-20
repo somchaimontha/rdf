@@ -24,6 +24,7 @@ function loadBackendWithSheets() {
       return Array.from({ length: this.rowCount }, (_, r) => Array.from({ length: this.columnCount }, (_, c) => this.sheet.rows[this.row - 1 + r]?.[this.column - 1 + c] ?? ''));
     }
     getValues() { return this.read(); }
+    getValue() { return this.read()[0]?.[0] ?? ''; }
     getDisplayValues() { return this.read().map(row => row.map(value => String(value ?? ''))); }
     setValues(values) {
       values.forEach((source, r) => {
@@ -65,7 +66,17 @@ function loadBackendWithSheets() {
       setProperty(key, value) { scriptProperties.set(key, String(value)); return this; },
       deleteProperty(key) { scriptProperties.delete(key); return this; },
     }; } },
-    Utilities: { getUuid() { uuidCounter += 1; return `${String(uuidCounter).padStart(8, '0')}-0000-0000-0000-000000000000`; } },
+    Utilities: {
+      getUuid() { uuidCounter += 1; return `${String(uuidCounter).padStart(8, '0')}-0000-0000-0000-000000000000`; },
+      formatDate(value, timeZone, pattern) {
+        assert.equal(pattern, 'yyyy-MM-dd');
+        const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+          timeZone, year:'numeric', month:'2-digit', day:'2-digit'
+        }).formatToParts(new Date(value)).filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+        return `${parts.year}-${parts.month}-${parts.day}`;
+      },
+    },
+    Session: { getScriptTimeZone() { return 'Asia/Bangkok'; } },
     console,
   };
   vm.createContext(context);
@@ -489,6 +500,74 @@ test('rejected continuation funding becomes self-funded study and is derived onc
   assert.equal(c.DynamicFieldRepository.readTable('CustomFieldValues').objects.length, 0, 'derived scholarship status must not be copied to employment values');
 });
 
+test('graduated self-funded university students default to studying only without employment history', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+
+  const students = spreadsheet.getSheetByName('Students');
+  students.rows = [
+    ['StipNo','Status','Institution','Title','FirstName','LastName','CurrentAcademicYear','SchApprovalStatus','UniScholarship','UniName','UniNameEN','UpdatedAt'],
+    ['MBS_001','Graduated','MBS','นาย','เรียนต่อ','ทุนตนเอง','2569','','No','มหาวิทยาลัยเชียงใหม่','Chiang Mai University','2026-10-18T08:00:00Z'],
+  ];
+
+  const schema = c.getDynamicFormSchema(admin, 'student', 'MBS_001');
+  const statusField = schema.fields.find(field => field.fieldKey === 'employment_current_status');
+  const derived = schema.values.find(value => value.fieldId === statusField.fieldId && value.recordId === 'single');
+  assert.equal(derived.value, 'studying_only');
+  assert.equal(derived.derived, true);
+  assert.equal(derived.source, 'scholarship_continuation');
+
+  const report = c.getEmploymentReport(admin, { asOfMonth:'2026-10' });
+  assert.equal(report.data[0].employmentStatus, 'studying_only');
+  assert.equal(report.data[0].employmentStatusSource, 'scholarship_continuation');
+  assert.equal(report.data[0].continuingEducationWithoutRdf, true);
+  assert.equal(report.data[0].histories.length, 0);
+  assert.equal(c.DynamicFieldRepository.readTable('CustomFieldValues').objects.length, 0, 'automatic status must remain derived instead of duplicated');
+
+  const headers = students.rows[0];
+  students.rows[1][headers.indexOf('Status')] = 'University';
+  students.rows[1][headers.indexOf('UniScholarship')] = 'Yes';
+  students.rows[1][headers.indexOf('SchApprovalStatus')] = 'Approved';
+  const sponsoredSchema = c.getDynamicFormSchema(admin, 'student', 'MBS_001');
+  assert.equal(sponsoredSchema.values.some(value => value.fieldId === statusField.fieldId), false,
+    'RDF-funded university students must not be classified as self-funded');
+  const sponsoredReport = c.getEmploymentReport(admin, { asOfMonth:'2026-10' });
+  assert.equal(sponsoredReport.data[0].continuingEducationWithoutRdf, false);
+  assert.equal(sponsoredReport.data[0].employmentStatus, '');
+});
+
+test('student promotion history hides technical scholarship rows and returns ISO dates', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const headers = [
+    'BatchID','Date','AcademicYear','StipNo','Title','FirstName','LastName','EngFirstName','EngLastName',
+    'Institution','OldLevel','ActionTaken','NewLevel','NewStatus','UniName','UniNameEN','UniFaculty','UniFacultyEN',
+    'UniMajor','UniMajorEN','UniProvince','UniProvinceEN','UniDuration','SchPriority','Notes','SavedBy'
+  ];
+  const history = spreadsheet.insertSheet('Promotion_History');
+  const row = values => headers.map(header => values[header] || '');
+  history.rows = [headers,
+    row({ BatchID:'2568_PROMO', Date:new Date('2026-04-30T17:00:00.000Z'), AcademicYear:'2568', StipNo:'333',
+      NewStatus:'Graduated', UniName:'มหาวิทยาลัยราชภัฏเชียงใหม่', UniFaculty:'มนุษยศาสตร์และสังคมศาสตร์', UniMajor:'รัฐประศาสนศาสตร์' }),
+    row({ BatchID:'UNKNOWN_PROMO', Date:new Date('2026-05-30T17:00:00.000Z'), AcademicYear:'UNKNOWN', StipNo:'333',
+      NewStatus:'Active', Institution:'UNI' }),
+  ];
+
+  const result = c.getStudentPromoHistory('333');
+  assert.equal(result.status, 'success');
+  assert.equal(result.rows.length, 1, 'administrative scholarship decisions must not appear as empty promotions');
+  assert.equal(result.rows[0].ActionTaken, 'university_transition');
+  assert.equal(result.rows[0].AcademicYear, '2568');
+  assert.equal(result.rows[0].Date, '2026-05-01');
+
+  const before = history.rows.length;
+  c._appendPromotionHistory([{ StipNo:'333', NewStatus:'Active', SchApprovalStatus:'Approved' }], 'admin', '2026-05-31');
+  assert.equal(history.rows.length, before, 'new scholarship decisions must not create promotion-history rows');
+  c._appendPromotionHistory([{ StipNo:'333', Action:'graduate', NewStatus:'Graduated', CurrentAcademicYear:'2569' }], 'admin', '2027-05-01');
+  assert.equal(history.rows.length, before + 1, 'explicit promotion and graduation actions remain in history');
+});
+
 test('signature settings accept compact PNG marks and reject unsafe or oversized payloads', () => {
   const c = loadBackend();
   const png = 'data:image/png;base64,' + Buffer.from('compact-signature').toString('base64');
@@ -516,6 +595,23 @@ test('shared notification rules validate once and preserve an extensible module 
     rules:[{ruleId:'academic_results.update_due',eventType:'update_due',enabled:true,leadDays:14}],
   });
   assert.equal(c._validateNotificationRules(future).ok, true, 'future modules reuse the same validated notification schema');
+});
+
+test('employment tracking periods accept multiple yearly and ongoing ranges safely', () => {
+  const c = loadBackend();
+  const valid = c._validateEmploymentTrackingPeriods({ schemaVersion:'1.0.0', periods:[
+    { periodId:'period_2026_a', startDate:'2026-01-01', endDate:'2026-03-31', asOfMonth:'2026-03', active:true },
+    { periodId:'period_2026_b', startDate:'2026-04-01', endDate:'', asOfMonth:'2026-12', active:true },
+    { periodId:'period_2025_a', startDate:'2025-01-01', endDate:'2025-12-31', asOfMonth:'2025-12', active:true },
+  ] });
+  assert.equal(valid.ok,true);
+  assert.equal(valid.values.periods.length,3);
+  assert.equal(valid.values.periods[0].periodId,'period_2026_b');
+  assert.equal(c._validateEmploymentTrackingPeriods({periods:[{periodId:'period_bad',startDate:'2026-03-31',endDate:'2026-03-01',asOfMonth:'2026-03'}]}).ok,false);
+  assert.equal(c._validateEmploymentTrackingPeriods({periods:[
+    {periodId:'period_same',startDate:'2026-01-01',endDate:'',asOfMonth:'2026-01'},
+    {periodId:'period_same',startDate:'2026-02-01',endDate:'',asOfMonth:'2026-02'},
+  ]}).ok,false);
 });
 
 test('operational notification feed aggregates live follow-up data without copying it', () => {
@@ -552,6 +648,12 @@ test('operational notification feed aggregates live follow-up data without copyi
   assert.deepEqual([...studentFeed.data.map(item => item.eventType)], ['followup_overdue','followup_due_soon','data_missing','data_updated']);
   assert.deepEqual([...studentFeed.data.map(item => item.count)], [1,1,1,1], 'student feed is limited to the signed-in record');
   assert.equal(c.getEmploymentReport({ username:'MBS_001', role:'Student' }, {}).code, 'ACCESS_DENIED', 'students cannot open the aggregate employment report');
+  const managerProfileFollowUps=c.getStudentEmploymentFollowUps(manager,'MBS_001');
+  assert.equal(managerProfileFollowUps.status,'success');
+  assert.equal(managerProfileFollowUps.data.length,2,'staff profile reads the same active follow-up records');
+  const ownProfileFollowUps=c.getStudentEmploymentFollowUps({username:'MBS_001',role:'Student'},'MBS_001');
+  assert.equal(ownProfileFollowUps.data.length,2,'students can read follow-ups only on their own profile');
+  assert.equal(c.getStudentEmploymentFollowUps({username:'MBS_002',role:'Student'},'MBS_001').code,'ACCESS_DENIED');
   const stored = c.DynamicFieldRepository.readTable('EmploymentFollowUps').objects;
   assert.equal(stored.length, 2);
   assert.equal(Object.hasOwn(stored[0], 'StudentName'), false, 'notification feed must not copy profile identity into follow-up storage');
@@ -716,4 +818,52 @@ test('legacy employment migration requires review, is idempotent, and preserves 
   assert.equal(repeated.status, 'success');
   assert.equal(repeated.migrated.length, 0);
   assert.equal(c.DynamicFieldRepository.readTable('EmploymentMigrationLog').objects.length, 1);
+});
+
+test('volunteer profiles are additive, validated, archivable, and support custom fields', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username: 'admin', role: 'SuperAdmin' };
+  const preview = c.previewVolunteerSetupForUser(admin);
+  assert.equal(preview.ready, false);
+  assert.equal(c.setupVolunteerSchema(admin).ready, true);
+  assert.equal(c.setupVolunteerSchema(admin).changed.length, 0, 'setup must be idempotent');
+
+  const invalid = c.saveVolunteer(admin, { firstName:'Volunteer', lastName:'Missing' });
+  assert.equal(invalid.code, 'VOLUNTEER_VALIDATION_ERROR');
+  const saved = c.saveVolunteer(admin, {
+    firstName:'อาสา', lastName:'ทดสอบ', engFirstName:'Test', engLastName:'Volunteer',
+    email:'volunteer@example.com', phone:'081-234-5678', lineId:'rdf-volunteer',
+    volunteerStartDate:'2026-10-01', status:'active', skills:'=HELP()',
+  });
+  assert.equal(saved.status, 'success', JSON.stringify(saved));
+  assert.match(saved.volunteerId, /^vol_/);
+  const loaded = c.getVolunteer(admin, saved.volunteerId);
+  assert.equal(loaded.data.lineId, 'rdf-volunteer');
+  assert.equal(loaded.data.skills, '=HELP()', 'formula-safe storage must not change the displayed value');
+  const stored = c.DynamicFieldRepository.readTable('Volunteers').objects[0];
+  assert.equal(stored.Skills, "'=HELP()", 'spreadsheet formulas must be neutralized at rest');
+
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  const section = c.saveDynamicSection(admin, {
+    entityType:'volunteer', sectionKey:'volunteer_assignment', nameTH:'งานที่รับผิดชอบ', nameEN:'Assignment',
+    cardinality:'single', visibleRoles:['SuperAdmin'], visibilityRules:{ logic:'AND', conditions:[] },
+  });
+  assert.equal(section.status, 'success', JSON.stringify(section));
+  const field = c.saveDynamicField(admin, {
+    entityType:'volunteer', sectionId:section.sectionId, fieldKey:'volunteer_project', fieldType:'text',
+    labelTH:'โครงการ', labelEN:'Project', visibleRoles:['SuperAdmin'], editableRoles:['SuperAdmin'],
+    visibilityRules:{ logic:'AND', conditions:[] },
+  }, []);
+  assert.equal(field.status, 'success', JSON.stringify(field));
+  assert.equal(c.saveStudentDynamicValues(admin, 'volunteer', saved.volunteerId, [
+    { fieldId:field.fieldId, recordId:'single', value:'Education camp' },
+  ], []).status, 'success');
+  const schema = c.getDynamicFormSchema(admin, 'volunteer', saved.volunteerId);
+  assert.equal(schema.sections.length, 1);
+  assert.equal(schema.values[0].value, 'Education camp');
+  assert.equal(c.getDynamicFieldAdminData(admin, 'student').sections.some(item => item.sectionKey === 'volunteer_assignment'), false, 'volunteer sections must not leak into student forms');
+
+  assert.equal(c.archiveVolunteer(admin, saved.volunteerId).status, 'success');
+  assert.equal(c.getVolunteers(admin).data.length, 0);
+  assert.equal(spreadsheet.getSheetByName('Students').rows.length, 2, 'volunteer setup must not modify student rows');
 });

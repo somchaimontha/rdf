@@ -37,6 +37,11 @@ window.fetch = async (url, options) => {
  if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student'}]}];
  if (action==='getSystemSettings') data.data={
    STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}],
+   EMPLOYMENT_TRACKING_PERIODS:{schemaVersion:'1.0.0',periods:[
+     {periodId:'period_2026_a',startDate:'2026-01-01',endDate:'2026-03-31',asOfMonth:'2026-03',label:'Q1',active:true},
+     {periodId:'period_2026_b',startDate:'2026-04-01',endDate:'',asOfMonth:'2026-12',label:'Ongoing',active:true},
+     {periodId:'period_2025_a',startDate:'2025-01-01',endDate:'2025-12-31',asOfMonth:'2025-12',label:'Annual',active:true}
+   ]},
    NOTIFICATIONS:[
      {id:'N_ALL',type:'general',audienceKey:'all',titleTH:'ประกาศทั้งหมด',titleEN:'Everyone notice',bodyTH:'รายละเอียด',bodyEN:'Details',link:'dashboard.html',sentBy:'Admin',sentAt:'2026-09-10T08:00:00Z'},
      {id:'N_ADMIN',type:'general',audienceKey:'admin',titleTH:'ประกาศผู้ดูแล',titleEN:'Admin notice',bodyTH:'รายละเอียด',bodyEN:'Details',link:'settings.html',sentBy:'Admin',sentAt:'2026-09-10T09:00:00Z'},
@@ -49,15 +54,50 @@ window.fetch = async (url, options) => {
    ]
  };
  if (action==='getNotificationFeed') data={status:'success',schemaVersion:'1.0.0',data:[{eventId:'employment.followup_due_soon.fixture',moduleId:'employment',eventType:'followup_due_soon',count:1,sampleTH:'นายทดสอบ นักเรียน',sampleEN:'Mr Test Student',dateFrom:'2026-03-20',dateTo:'2026-03-27',href:'reports.html?view=employment&source=notification&followUp=due_soon'}]};
- if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:'Active',ScholarshipYear:2025};
+ if (action==='getStudentPromoHistory') data.rows=[
+   {BatchID:'2568_PROMO',Date:'Fri May 01 2026 00:00:00 GMT+0700 (Indochina Time)',AcademicYear:'2568',OldLevel:'',ActionTaken:'',NewLevel:'',NewStatus:'Graduated',UniName:'มหาวิทยาลัยราชภัฏเชียงใหม่',UniNameEN:'Chiang Mai Rajabhat University',UniFaculty:'มนุษยศาสตร์และสังคมศาสตร์',UniFacultyEN:'Humanities and Social Sciences',UniMajor:'รัฐประศาสนศาสตร์',UniMajorEN:'Public Administration',Notes:''},
+   {BatchID:'UNKNOWN_PROMO',Date:'Sun May 31 2026 00:00:00 GMT+0700 (Indochina Time)',AcademicYear:'UNKNOWN',OldLevel:'',ActionTaken:'',NewLevel:'',NewStatus:'Active',UniName:'',UniNameEN:'',Notes:''}
+ ];
+ if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:location.pathname.endsWith('/student-form.html')?'Graduated':'Active',ScholarshipYear:2025,UniScholarship:location.pathname.endsWith('/student-form.html')?'No':''};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
+ const volunteer={volunteerId:'vol_fixture',prefix:'นางสาว',firstName:'อาสา',lastName:'ทดสอบ',engFirstName:'Test',engLastName:'Volunteer',nickname:'อาย',birthDate:'2000-02-03',phone:'0812345678',email:'volunteer@example.com',lineId:'rdf-volunteer',facebook:'rdf.volunteer',instagram:'rdf_volunteer',otherSocial:'',educationLevel:'ปริญญาตรี',educationInstitution:'มหาวิทยาลัยเชียงใหม่',fieldOfStudy:'สังคมศาสตร์',addressLine:'123 ถนนตัวอย่าง',subdistrict:'สุเทพ',district:'เมืองเชียงใหม่',province:'เชียงใหม่',postalCode:'50200',volunteerStartDate:'2026-10-01',volunteerEndDate:'',availability:'วันเสาร์',skills:'ประสานงาน',emergencyContactName:'ผู้ติดต่อ',emergencyContactPhone:'0890000000',photoUrl:'',photoFileId:'',status:'active',notes:'',updatedAt:'2026-10-19T08:00:00Z'};
+ if (action==='previewVolunteerSetup') data={status:'success',ready:true,schemaVersion:'1.0.0',missingHeaders:[],rowCount:1};
+ if (action==='getVolunteers') data={status:'success',setupRequired:false,schemaVersion:'1.0.0',canManage:true,data:[volunteer]};
+ if (action==='getVolunteer') data={status:'success',canManage:true,data:volunteer};
  if (action==='getDynamicFormSchema') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'ข้อมูลที่กำหนดจากระบบ',descriptionEN:'System-configured information',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true},{sectionId:'sec_work',sectionKey:'employment_history',nameTH:'ประวัติการทำงาน',nameEN:'Employment History',descriptionTH:'',descriptionEN:'',displayOrder:2,visibilityRules:{logic:'AND',conditions:[]},cardinality:'repeatable',active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_start',fieldKey:'start_month',labelTH:'เดือนเริ่มต้น',labelEN:'Start month',fieldType:'month',sectionId:'sec_work',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_end',fieldKey:'end_month',labelTH:'เดือนสิ้นสุด',labelEN:'End month',fieldType:'month',sectionId:'sec_work',displayOrder:2,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_duration',fieldKey:'employment_duration',labelTH:'ระยะเวลาทำงาน',labelEN:'Employment duration',fieldType:'calculated_duration',sectionId:'sec_work',displayOrder:3,required:false,visible:true,editable:false,canEdit:false,calculationType:'month_range_duration',calculationConfig:{startFieldId:'fld_start',endFieldId:'fld_end',useCurrentMonth:true},visibilityRules:{logic:'AND',conditions:[]}}],options:[],values:location.pathname.endsWith('/student-profile.html')?[{valueId:'val_1',fieldId:'fld_note',recordId:'single',value:'Fixture value'},{valueId:'val_2',fieldId:'fld_start',recordId:'rec_work_1',value:'2025-01'},{valueId:'val_3',fieldId:'fld_end',recordId:'rec_work_1',value:'2025-12'}]:[]};
+ if (action==='getDynamicFormSchema'&&location.pathname.endsWith('/student-form.html')) {
+   data.sections[1].sectionKey='alumni_employment_history';
+   data.sections.splice(1,0,{sectionId:'sec_emp_summary',sectionKey:'alumni_employment_summary',nameTH:'ภาวะการทำงานปัจจุบัน',nameEN:'Current Employment Status',descriptionTH:'',descriptionEN:'',displayOrder:90,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true});
+   data.fields.unshift({fieldId:'fld_emp_status',fieldKey:'employment_current_status',labelTH:'สถานะการทำงานปัจจุบัน',labelEN:'Current employment status',fieldType:'select',sectionId:'sec_emp_summary',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibilityRules:{logic:'AND',conditions:[]}});
+   data.fields.find(field=>field.fieldId==='fld_start').required=true;
+   data.options=[{optionId:'opt_study',fieldId:'fld_emp_status',value:'studying_only',labelTH:'ศึกษาต่อและยังไม่ได้ทำงาน',labelEN:'Studying only',displayOrder:1},{optionId:'opt_work',fieldId:'fld_emp_status',value:'employed_full_time',labelTH:'ทำงานประจำเต็มเวลา',labelEN:'Employed full-time',displayOrder:2}];
+   data.values=[];
+ }
+ if (action==='getDynamicFormSchema'&&location.pathname.endsWith('/volunteer-form.html')) data={status:'success',setupRequired:false,schemaVersion:'1.1.0',sections:[{sectionId:'sec_volunteer',sectionKey:'volunteer_assignment',nameTH:'งานที่รับผิดชอบ',nameEN:'Assignment',descriptionTH:'',descriptionEN:'',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},cardinality:'single',active:true}],fields:[{fieldId:'fld_volunteer_project',fieldKey:'volunteer_project',labelTH:'โครงการ',labelEN:'Project',fieldType:'text',sectionId:'sec_volunteer',displayOrder:1,required:false,visible:true,editable:true,canEdit:true,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}}],options:[],values:[{valueId:'val_volunteer',fieldId:'fld_volunteer_project',recordId:'single',value:'Education camp'}]};
  if (action==='getDynamicFieldAdminData') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',setup:{status:'success',ready:true,schemaVersion:'1.1.0',sheets:[{name:'FormSections',exists:true,missingHeaders:[],rowCount:1}]},sections:[{sectionId:'sec_profile',sectionKey:'extra_profile',nameTH:'ข้อมูลเพิ่มเติม',nameEN:'Additional Information',descriptionTH:'',descriptionEN:'',displayOrder:1,visibilityRules:{logic:'AND',conditions:[]},visibleRoles:['SuperAdmin'],cardinality:'single',collapsible:true,active:true}],fields:[{fieldId:'fld_note',fieldKey:'extra_note',labelTH:'ข้อความเพิ่มเติม',labelEN:'Additional note',fieldType:'text',sectionId:'sec_profile',displayOrder:1,required:false,visible:true,editable:true,active:true,archived:false,valueCount:1,visibleRoles:['SuperAdmin'],editableRoles:['SuperAdmin'],visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_start',fieldKey:'start_month',labelTH:'เดือนเริ่มต้น',labelEN:'Start month',fieldType:'month',sectionId:'sec_profile',displayOrder:2,active:true,archived:false,valueCount:0,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_end',fieldKey:'end_month',labelTH:'เดือนสิ้นสุด',labelEN:'End month',fieldType:'month',sectionId:'sec_profile',displayOrder:3,active:true,archived:false,valueCount:0,visibilityRules:{logic:'AND',conditions:[]}},{fieldId:'fld_duration',fieldKey:'employment_duration',labelTH:'ระยะเวลาทำงาน',labelEN:'Employment duration',fieldType:'calculated_duration',sectionId:'sec_profile',displayOrder:4,editable:false,active:true,archived:false,valueCount:0,calculationType:'month_range_duration',calculationConfig:{startFieldId:'fld_start',endFieldId:'fld_end',useCurrentMonth:true},visibilityRules:{logic:'AND',conditions:[]}}],options:[]};
  if (action==='previewDynamicFieldSetup') data={status:'success',ready:true,schemaVersion:'1.1.0',sheets:[]};
  if (action==='previewEmploymentHistorySetup') data={status:'success',launchMode:'enabled',ready:true,safeToInstall:false,setupRequired:false,schemaVersion:'1.1.0',missingSections:[],missingFields:[],conflicts:[],candidateSections:[],legacy:{rowsWithEmployment:1,rowsMissingStipNo:0}};
  if (action==='previewLegacyEmploymentMigration') data={status:'success',launchMode:'enabled',schemaReady:true,total:1,ready:1,migrated:0,possibleDuplicate:0,missingStudent:0,rows:[{sourceRow:2,sourceKey:'Alumni:v1:fixture',stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',occupation:'Coordinator',workplace:'RDF Foundation',status:'ready',existingRecordId:''}]};
  if (action==='getEmploymentReport') data={status:'success',launchMode:'enabled',setupRequired:false,schemaVersion:'1.1.0',asOfMonth:'2026-03',reportDate:'2026-03-20',canManageFollowUps:true,legacyRowsPendingMigration:0,summary:{eligiblePeople:1,reportedPeople:1,employmentRecords:1,followUpRecords:1,dueFollowUps:1,overdueFollowUps:0,byStatus:{employed_full_time:1}},data:[{stipNo:'MBS_001',nameTH:'นายทดสอบ นักเรียน',nameEN:'Mr Test Student',institution:'MBS',studentStatus:'University',currentAcademicYear:'2569',scholarshipApprovalStatus:'Rejected',universityScholarship:'No',universityName:'มหาวิทยาลัยเชียงใหม่',universityNameEN:'Chiang Mai University',continuingEducationWithoutRdf:true,employmentStatus:'employed_full_time',histories:[{recordId:'rec_work_1',employerName:'RDF Foundation',workplaceLocation:'Mae Sariang',workplaceProvince:'Mae Hong Son',jobTitle:'Coordinator',employmentType:'full_time',industry:'Education',startMonth:'2025-01',endMonth:'',durationMonths:15,current:true,verificationStatus:'verified',source:'self_reported',updatedAt:'2026-03-18T08:00:00Z'}],followUps:[{followUpId:'fup_fixture',employmentRecordId:'rec_work_1',contactDate:'2026-03-10',contactMethod:'phone',outcome:'follow_up_needed',nextFollowUpDate:'2026-03-20',assignedTo:'Test Admin',notes:'Fixture follow-up',updatedAt:'2026-03-20T09:00:00Z'}]}]};
+ if (action==='getStudentEmploymentFollowUps') data={status:'success',schemaVersion:'1.1.0',data:[{followUpId:'fup_fixture',stipNo:'MBS_001',employmentRecordId:'rec_work_1',contactDate:'2026-03-10',contactMethod:'phone',outcome:'follow_up_needed',nextFollowUpDate:'2026-03-20',assignedTo:'Test Admin',notes:'Fixture follow-up',createdAt:'2026-03-10T08:00:00Z',updatedAt:'2026-03-20T09:00:00Z'}]};
+ const surveyForm={formId:'srv_fixture',titleTH:'แบบติดตามศิษย์เก่า',titleEN:'Alumni follow-up survey',descriptionTH:'ร่วมตอบความคิดเห็นเพื่อพัฒนาการดูแล',descriptionEN:'Share feedback to improve alumni support',status:'draft',responseMode:'identified',allowDraft:true,allowEditAfterSubmit:false,updatedAt:'2026-10-19T08:00:00Z',questions:[{questionId:'qst_comment',formId:'srv_fixture',questionKey:'comment',type:'long_text',promptTH:'ข้อเสนอแนะ',promptEN:'Suggestions',required:false,displayOrder:1,options:[]},{questionId:'qst_rating',formId:'srv_fixture',questionKey:'rating',type:'rating_5',promptTH:'ความพึงพอใจ',promptEN:'Satisfaction',required:true,displayOrder:2,options:[]},{questionId:'qst_matrix',formId:'srv_fixture',questionKey:'services',type:'likert_matrix',promptTH:'ประเมินบริการ',promptEN:'Rate our services',required:true,displayOrder:3,options:[{optionId:'row_1',questionId:'qst_matrix',optionType:'row',value:'support',labelTH:'การดูแล',labelEN:'Support',displayOrder:1},{optionId:'col_1',questionId:'qst_matrix',optionType:'column',value:'1',labelTH:'ไม่พอใจ',labelEN:'Dissatisfied',displayOrder:2},{optionId:'col_5',questionId:'qst_matrix',optionType:'column',value:'5',labelTH:'พอใจมาก',labelEN:'Very satisfied',displayOrder:3}]}]};
+ const surveyCampaign={campaignId:'cmp_fixture',formId:'srv_fixture',nameTH:'รอบติดตาม 2569',nameEN:'2026 follow-up',institution:'MBS',openAt:'2026-10-01T00:00:00Z',dueAt:'2026-12-31T16:59:00Z',required:true,status:'open',publishedAt:'2026-10-01T00:00:00Z',updatedAt:'2026-10-01T00:00:00Z',summary:{assigned:12,opened:2,inProgress:3,submitted:7}};
+ const trackingCycles=[{cycleId:'period_2026_a',nameTH:'ไตรมาส 1 ปี 2569',nameEN:'Q1 2026',startDate:'2026-01-01',endDate:'2026-03-31',asOfMonth:'2026-03',institution:'MBS',surveyEnabled:true,surveyFormId:'srv_fixture',surveyOpenAt:'2026-01-01T00:00:00Z',surveyDueAt:'2026-03-31T16:59:00Z',surveyRequired:true,status:'open',campaignId:'cmp_fixture',campaignStatus:'open',summary:{assigned:12,opened:2,inProgress:3,submitted:7}},{cycleId:'period_2026_b',nameTH:'ติดตามต่อเนื่อง 2569',nameEN:'Ongoing 2026',startDate:'2026-04-01',endDate:'',asOfMonth:'2026-12',institution:'',surveyEnabled:false,status:'scheduled',summary:{assigned:0,opened:0,inProgress:0,submitted:0}},{cycleId:'period_2025_a',nameTH:'รอบประจำปี 2568',nameEN:'Annual 2025',startDate:'2025-01-01',endDate:'2025-12-31',asOfMonth:'2025-12',institution:'',surveyEnabled:false,status:'closed',summary:{assigned:0,opened:0,inProgress:0,submitted:0}}];
+ if (action==='previewSurveySetup') data={status:'success',schemaVersion:'1.0.0',ready:true,sheets:[]};
+ if (action==='getSurveyAdminData') data={status:'success',setupRequired:false,schemaVersion:'1.0.0',canManage:true,canViewResults:true,forms:[surveyForm],campaigns:[surveyCampaign]};
+ if (action==='getTrackingCycleData') data={status:'success',setupRequired:false,schemaVersion:'1.1.0',canManage:true,canManageSurveys:true,forms:[surveyForm],cycles:trackingCycles};
+ if (action==='getMySurveyAssignments') data={status:'success',setupRequired:false,assignments:[{assignmentId:'asg_fixture',campaignId:'cmp_fixture',formId:'srv_fixture',titleTH:surveyForm.titleTH,titleEN:surveyForm.titleEN,descriptionTH:surveyForm.descriptionTH,descriptionEN:surveyForm.descriptionEN,openAt:surveyCampaign.openAt,dueAt:surveyCampaign.dueAt,required:true,campaignStatus:'open',responseStatus:'in_progress',submittedAt:''}]};
+ if (action==='getSurveyForResponse') data={status:'success',assignment:{assignmentId:'asg_fixture',responseStatus:'in_progress',campaignStatus:'open',required:true,openAt:surveyCampaign.openAt,dueAt:surveyCampaign.dueAt,submittedAt:''},form:surveyForm,response:{responseId:'rsp_fixture',status:'draft',language:'th',savedAt:'2026-10-19T08:00:00Z',submittedAt:'',revision:1,answers:{qst_comment:'คำตอบที่ยังไม่บันทึก',qst_rating:4,qst_matrix:{support:'5'}}}};
+ if (action==='getSurveyCampaignSummary') data={status:'success',campaign:surveyCampaign,summary:{assigned:12,submitted:7,inProgress:3,notStarted:2,responseRate:58.3},analytics:[{questionId:'qst_rating',questionKey:'rating',type:'rating_5',promptTH:'ความพึงพอใจ',promptEN:'Satisfaction',answerCount:7,average:4.2,counts:{}}]};
+ if (action==='saveSurveyFormDraft') data={status:'success',formId:'srv_fixture',updatedAt:'2026-10-19T09:00:00Z'};
+ if (action==='saveSurveyCampaignDraft') data={status:'success',campaignId:'cmp_fixture',updatedAt:'2026-10-19T09:00:00Z'};
+ if (action==='publishSurveyCampaign') data={status:'success',campaignId:'cmp_fixture',assigned:12,reused:false};
+ if (action==='saveTrackingCycle') data={status:'success',cycleId:'period_2026_a',updatedAt:'2026-10-19T09:00:00Z'};
+ if (action==='publishTrackingCycle') data={status:'success',cycleId:'period_2026_a',campaignId:'cmp_fixture',assigned:12,reused:false};
+ if (action==='archiveTrackingCycle') data={status:'success',cycleId:'period_2026_a'};
+ if (action==='saveSurveyResponseDraft') data={status:'success',responseId:'rsp_fixture',status:'draft',savedAt:'2026-10-19T09:00:00Z',revision:2};
+ if (action==='submitSurveyResponse') data={status:'success',responseId:'rsp_fixture',status:'submitted',savedAt:'2026-10-19T09:00:00Z',submittedAt:'2026-10-19T09:00:00Z',revision:2};
  const reportDefs={employment_status:['a','b','1','RDF-EMP-20260320-11111111','รายงานภาวะการทำงานของศิษย์เก่า','Alumni Employment Status Report'],scholarship_statistics:['d','e','2','RDF-SCH-20260320-22222222','รายงานสถิติทุนการศึกษา','Scholarship Statistics Report'],promotion_results:['f','g','3','RDF-PRO-20260320-33333333','รายงานเลื่อนชั้นและผู้สำเร็จการศึกษา','Promotion and Graduation Report'],academic_results:['h','i','4','RDF-ACA-20260320-44444444','รายงานผลการศึกษา','Academic Results Report']};
  const reportDef=(type)=>reportDefs[type]||reportDefs.employment_status;
  const reportTypeByToken=(token)=>Object.keys(reportDefs).find(type=>reportDefs[type][0]===token[0]||reportDefs[type][1]===token[0])||'employment_status';
@@ -110,8 +150,8 @@ const server = http.createServer((req,res)=>{
  try {
   await send('Network.enable');
   await send('Network.setBlockedURLs',{urls:['https://*']});
-  for (const initialLang of ['th','en']) for (const file of ['index.html','dashboard.html','students.html','student-form.html','student-profile.html','reports.html','academic-results.html','academic-terms.html','promotion.html','settings.html','custom-fields.html','report-verification.html']) {
-   const pageUrl=base+'/'+file+'?testLang='+initialLang+(file==='student-profile.html'?'&stipNo=MBS_001':'')+(file==='report-verification.html'?'&token='+'a'.repeat(64):'');
+  for (const initialLang of ['th','en']) for (const file of ['index.html','dashboard.html','students.html','student-form.html','student-profile.html','volunteers.html','volunteer-form.html','reports.html','academic-results.html','academic-terms.html','promotion.html','settings.html','custom-fields.html','survey-management.html','tracking-management.html','survey-response.html','report-verification.html']) {
+   const pageUrl=base+'/'+file+'?testLang='+initialLang+(['student-form.html','student-profile.html'].includes(file)?'&stipNo=MBS_001':'')+(file==='volunteer-form.html'?'&volunteerId=vol_fixture':'')+(file==='report-verification.html'?'&token='+'a'.repeat(64):'');
    await send('Page.navigate',{url:pageUrl});
    const deadline=Date.now()+10000;
    while (true) {
@@ -139,14 +179,24 @@ const server = http.createServer((req,res)=>{
    if(file==='custom-fields.html') {
      await evaluate(`openFieldEditor(adminData.fields[0]);document.getElementById('fld_label_th').value='ค่าที่ยังไม่บันทึก';document.querySelector('#fld_visible_roles input').click();`);
    }
+   if(file==='survey-management.html') {
+     await evaluate(`openFormModal(SURVEY_DATA.forms[0]);document.getElementById('surveyTitleTH').value='แบบร่างที่ยังไม่บันทึก';openQuestionModal(0);document.getElementById('questionTH').value='คำถามที่ยังไม่บันทึก';`);
+   }
+   if(file==='tracking-management.html') {
+     await evaluate(`openCycleEditor(TRACKING_DATA.cycles[0]);document.getElementById('cycleNameTH').value='รอบที่ยังไม่บันทึก';document.getElementById('cycleStartDate').value='2026-02-01';syncDateDisplays();`);
+   }
+   if(file==='survey-response.html') {
+     await evaluate(`openAssignment('asg_fixture')`);
+     await evaluate(`document.querySelector('[data-question-id="qst_comment"] textarea').value='คำตอบที่ยังไม่บันทึก';`);
+   }
    if(file==='reports.html') await evaluate('openRptPrintModal()');
    if(file==='academic-results.html') await evaluate('openPrintModal()');
    const before=await evaluate(`(async()=>{
      if (location.pathname.endsWith('student-form.html')) {document.getElementById('f_institution').value='MBS';onInstitutionChange();document.getElementById('f_level').selectedIndex=2;}
      await new Promise(resolve => setTimeout(resolve, 50));
-     const el=document.querySelector('input[type="text"]:not([readonly]):not([disabled])');if(el) el.value='Unsaved ไทย English';
+     const el=document.querySelector('input[type="text"]:not([readonly]):not([disabled])');if(el){el.value='Unsaved ไทย English';el.dispatchEvent(new Event('input',{bubbles:true}));}
      window.__beforeInputs=[...document.querySelectorAll('input[id],select[id],textarea[id]')].map(e=>[e.id,e.value,e.checked]);
-     return {calls:__calls.length,errors:__errors.slice()};
+     return {calls:__calls.length,actions:__calls.slice(),errors:__errors.slice()};
    })()`);
    const result=await evaluate(`(async()=>{
      document.getElementById('langBtn').click();
@@ -156,11 +206,11 @@ const server = http.createServer((req,res)=>{
      const enInputs=[...document.querySelectorAll('input[id],select[id],textarea[id]')].map(e=>[e.id,e.value,e.checked]);
      document.getElementById('langBtn').click();
      await new Promise(resolve => setTimeout(resolve, 0));
-     return {en,th:document.documentElement.lang,calls:__calls.length,errors:__errors,missing,enInputs,beforeInputs:__beforeInputs};
+     return {en,th:document.documentElement.lang,calls:__calls.length,actions:__calls.slice(),errors:__errors,missing,enInputs,beforeInputs:__beforeInputs};
    })()`);
    assert.equal(result.en,initialLang==='th'?'en':'th',file);assert.equal(result.th,initialLang,file);
    assert.deepEqual(result.errors,[],file+' runtime errors');
-   assert.equal(result.calls,before.calls,file+' must not refetch on switch');
+   assert.equal(result.calls,before.calls,file+' must not refetch on switch: '+JSON.stringify({before:before.actions,after:result.actions}));
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
    if(file==='settings.html') {
@@ -193,6 +243,25 @@ const server = http.createServer((req,res)=>{
      assert.equal(startupCalls.students,1,'dashboard must share the student request');
      assert.equal(startupCalls.pending,1,'dashboard must share the pending-request call');
      assert.deepEqual(quickCounts,['28','15','3','128'],'quick stats must render before full student data');
+     await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+     const reportEntries=await evaluate(`(()=>{const holder=document.querySelector('.report-menu-options'),links=[...holder.querySelectorAll('a[href^="reports.html?view="]')],cards=[...holder.children],rects=cards.map(card=>card.getBoundingClientRect()),grid=document.querySelector('.menu-cards-grid');return {links:links.map(link=>({href:link.getAttribute('href'),text:link.textContent.trim()})),expected:[t('rptViewScholarship'),t('rptViewEmployment')],columns:getComputedStyle(holder).gridTemplateColumns,menuColumns:getComputedStyle(grid).gridTemplateColumns,sameRow:Math.abs(rects[0].top-rects[1].top)<1,equalHeight:Math.abs(rects[0].height-rects[1].height)<1,volunteerVisible:getComputedStyle(document.getElementById('volunteerMenuCard')).display!=='none',surveyNested:document.querySelector('.report-menu-option-employment #surveyDashboardLink')!==null,surveyVisible:getComputedStyle(document.getElementById('surveyDashboardLink')).display!=='none',legacySurvey:document.querySelector('#surveyDashboardShortcut')!==null};})()`);
+     assert.deepEqual(reportEntries.links.map(item=>item.href),['reports.html?view=scholarship','reports.html?view=employment'],'dashboard must expose both major report workflows');
+     assert.match(reportEntries.links[0].text,new RegExp(reportEntries.expected[0]),'dashboard scholarship report entry must localize');
+     assert.match(reportEntries.links[1].text,new RegExp(reportEntries.expected[1]),'dashboard employment report entry must localize');
+     assert.equal(reportEntries.columns.split(' ').length,2,'dashboard report workflows must use two compact columns');
+     assert.equal(reportEntries.sameRow,true,'dashboard report workflows must stay side by side');
+     assert.equal(reportEntries.equalHeight,true,'dashboard report workflow buttons must have equal height');
+     assert.equal(reportEntries.menuColumns.split(' ').length,4,'desktop dashboard must fit four menu cards per row');
+     assert.equal(reportEntries.volunteerVisible,true,'authorized staff must see the volunteer menu card');
+     assert.equal(reportEntries.surveyNested,true,'alumni surveys must be nested under employment');
+     assert.equal(reportEntries.surveyVisible,true,'authorized staff must see the nested survey shortcut');
+     assert.equal(reportEntries.legacySurvey,false,'the standalone survey shortcut must be removed');
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:700,deviceScaleFactor:1,mobile:true});
+     const compactReportMenu=await evaluate(`(()=>{const card=document.querySelector('.menu-card-report'),holder=card.querySelector('.report-menu-options'),items=[...holder.children],rects=items.map(item=>item.getBoundingClientRect());return {sameRow:Math.abs(rects[0].top-rects[1].top)<1,horizontalOverflow:card.scrollWidth>card.clientWidth+1,buttonsInside:rects.every(rect=>rect.left>=card.getBoundingClientRect().left-1&&rect.right<=card.getBoundingClientRect().right+1)};})()`);
+     assert.equal(compactReportMenu.sameRow,true,'dashboard report workflows must remain side by side on mobile');
+     assert.equal(compactReportMenu.horizontalOverflow,false,'compact dashboard report card must not overflow horizontally');
+     assert.equal(compactReportMenu.buttonsInside,true,'compact report buttons must stay inside the dashboard card');
+     await send('Emulation.clearDeviceMetricsOverride');
      if (initialLang === 'en') {
        const notifications=await evaluate(`(()=>{
          const original=getUser();
@@ -246,6 +315,56 @@ const server = http.createServer((req,res)=>{
        assert.ok(notifications.beforeUnread>0,'new notifications must be unread');
        assert.equal(notifications.afterUnread,0,'mark all read must clear unread state');
      }
+   }
+   if(file==='volunteers.html') {
+     const volunteers=await evaluate(`({cards:document.querySelectorAll('#volunteerList .vol-card').length,text:document.getElementById('volunteerList').textContent,newVisible:getComputedStyle(document.getElementById('newVolunteerBtn')).display!=='none',customHref:document.getElementById('customFieldsBtn').getAttribute('href')})`);
+     assert.equal(volunteers.cards,1,'volunteer list must render stored profiles');
+     assert.match(volunteers.text,initialLang==='th'?/ตุลาคม 1 2569/:/Oct\. 1 2026/,'volunteer service dates must use unambiguous month names');
+     assert.equal(volunteers.newVisible,true,'authorized staff can add volunteers');
+     assert.equal(volunteers.customHref,'custom-fields.html?entityType=volunteer','volunteer custom fields must open the shared entity-aware builder');
+   }
+   if(file==='volunteer-form.html') {
+     const volunteerForm=await evaluate(`({firstName:document.getElementById('firstName').value,email:document.getElementById('email').value,start:document.getElementById('volunteerStartDate').value,startDisplay:document.getElementById('volunteerStartDateDisplay').textContent,dynamic:document.querySelectorAll('#dynamicFieldsForm .df-section').length,dynamicValue:document.querySelector('#dynamicFieldsForm input')?.value||''})`);
+     assert.equal(volunteerForm.firstName,'อาสา','volunteer edit form must load the profile');
+     assert.equal(volunteerForm.email,'volunteer@example.com');
+     assert.equal(volunteerForm.start,'2026-10-01','volunteer date storage value must remain ISO');
+     assert.equal(volunteerForm.startDisplay,initialLang==='th'?'ตุลาคม 1 2569':'Oct. 1 2026','volunteer date control must show the central localized format');
+     assert.equal(volunteerForm.dynamic,1,'volunteer form must render shared custom-field sections');
+     assert.equal(volunteerForm.dynamicValue,'Unsaved ไทย English','volunteer custom-field edits must survive language switching');
+   }
+   if(file==='survey-management.html') {
+     const surveyManager=await evaluate(`({forms:document.querySelectorAll('#surveyFormList .survey-item').length,campaigns:document.querySelectorAll('#surveyCampaignList .survey-item').length,formOpen:!document.getElementById('formModal').classList.contains('hidden'),questionOpen:!document.getElementById('questionModal').classList.contains('hidden'),unsavedTitle:document.getElementById('surveyTitleTH').value,unsavedQuestion:document.getElementById('questionTH').value})`);
+     assert.equal(surveyManager.forms,1,'survey management must render forms');
+     assert.equal(surveyManager.campaigns,3,'survey management must render shared tracking cycles');
+     assert.equal(surveyManager.formOpen,true,'survey form popup must stay open across language switching');
+     assert.equal(surveyManager.questionOpen,true,'survey question popup must stay open across language switching');
+     assert.equal(surveyManager.unsavedTitle,'แบบร่างที่ยังไม่บันทึก','survey language switching must preserve unsaved form data');
+     assert.equal(surveyManager.unsavedQuestion,'คำถามที่ยังไม่บันทึก','survey language switching must preserve unsaved question data');
+     await evaluate(`closeSurveyModal('questionModal');closeSurveyModal('formModal')`);
+   }
+   if(file==='tracking-management.html') {
+     const cycles=await evaluate(`({count:document.querySelectorAll('#cycleList .cycle-card').length,open:!document.getElementById('cycleModal').classList.contains('hidden'),name:document.getElementById('cycleNameTH').value,start:document.getElementById('cycleStartDate').value,startDisplay:document.getElementById('cycleStartDateDisplay').textContent})`);
+     assert.equal(cycles.count,3,'central tracking management must render all shared cycles');
+     assert.equal(cycles.open,true,'responsive cycle editor must remain open across language switching');
+     assert.equal(cycles.name,'รอบที่ยังไม่บันทึก','language switching must preserve an unsaved cycle name');
+     assert.equal(cycles.start,'2026-02-01','language switching must preserve the native cycle date value');
+     assert.equal(cycles.startDisplay,initialLang==='th'?'กุมภาพันธ์ 1 2569':'Feb. 1 2026','cycle editor must show an unambiguous localized date');
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:640,deviceScaleFactor:1,mobile:true});
+     const mobileCycle=await evaluate(`(()=>{const box=document.querySelector('#cycleModal .cycle-modal-box'),body=document.querySelector('#cycleModal .cycle-modal-body'),footer=document.querySelector('#cycleModal .cycle-modal-foot'),rect=box.getBoundingClientRect(),footerRect=footer.getBoundingClientRect();return{top:rect.top,bottom:rect.bottom,viewport:innerHeight,width:rect.width,viewportWidth:innerWidth,bodyOverflow:getComputedStyle(body).overflowY,horizontal:box.scrollWidth>box.clientWidth+1,footerVisible:footerRect.bottom<=innerHeight+1};})()`);
+     assert.ok(mobileCycle.top>=0&&mobileCycle.bottom<=mobileCycle.viewport+1,'cycle editor must fit within a mobile viewport');
+     assert.ok(mobileCycle.width<=mobileCycle.viewportWidth+1,'cycle editor must not overflow the mobile width');
+     assert.equal(mobileCycle.bodyOverflow,'auto','cycle editor body must own responsive scrolling');
+     assert.equal(mobileCycle.horizontal,false,'cycle editor must not require horizontal scrolling');
+     assert.equal(mobileCycle.footerVisible,true,'cycle editor actions must stay visible on mobile');
+     await send('Emulation.clearDeviceMetricsOverride');
+     await evaluate(`closeCycleEditor()`);
+   }
+   if(file==='survey-response.html') {
+     const surveyResponse=await evaluate(`({questions:document.querySelectorAll('.response-question').length,matrix:document.querySelectorAll('.matrix-table').length,unsaved:document.querySelector('[data-question-id="qst_comment"] textarea').value,progress:document.getElementById('responseProgress').textContent})`);
+     assert.equal(surveyResponse.questions,3,'assigned survey must render every question');
+     assert.equal(surveyResponse.matrix,1,'assigned survey must render the satisfaction matrix');
+     assert.equal(surveyResponse.unsaved,'คำตอบที่ยังไม่บันทึก','survey language switching must preserve unsaved answers');
+     assert.match(surveyResponse.progress,/3|questions|ข้อ/,'survey response must show progress');
    }
    if(file==='index.html') {
      const googleLogin=await evaluate(`({configured:typeof _gClientId==='string'&&_gClientId===RDF.GOOGLE_CLIENT_ID&&_gClientId.length>0,button:getComputedStyle(document.getElementById('googleBtnWrap')).display,warning:getComputedStyle(document.getElementById('googleNotCfg')).display})`);
@@ -331,20 +450,42 @@ const server = http.createServer((req,res)=>{
      assert.equal(capture.image,'fixture-image');
      assert.ok(capture.labels.includes(initialLang==='th'?'Active':'กำลังศึกษา'),'chart must use report language '+JSON.stringify(capture));
      assert.equal(capture.lang,capture.previous);assert.equal(capture.saved,capture.previousSaved);
+     const pagination=await evaluate(`(()=>{const original=_EMP_CACHE.response.data,source=original[0];_EMP_CACHE.response.data=Array.from({length:45},(_,index)=>({...source,stipNo:'PAGE_'+String(index+1).padStart(3,'0'),nameTH:'ทดสอบ '+(index+1),nameEN:'Test '+(index+1)}));_EMP_PAGINATION.page=1;_EMP_PAGINATION.pageSize=20;renderEmploymentRows();const first={rows:document.querySelectorAll('#employmentTableBody tr').length,status:document.getElementById('empPageStatus').textContent,count:document.getElementById('empResultCount').textContent,previous:document.getElementById('empPagePrevious').disabled,next:document.getElementById('empPageNext').disabled};changeEmploymentPage(1);const second={rows:document.querySelectorAll('#employmentTableBody tr').length,status:document.getElementById('empPageStatus').textContent};setEmploymentPageSize('all');const all={rows:document.querySelectorAll('#employmentTableBody tr').length,exportRows:employmentReportRecords().length,previous:document.getElementById('empPagePrevious').disabled,next:document.getElementById('empPageNext').disabled};_EMP_CACHE.response.data=original;_EMP_PAGINATION.page=1;_EMP_PAGINATION.pageSize=20;renderEmploymentRows();return {first,second,all};})()`);
+     assert.equal(pagination.first.rows,20,'employment table must render 20 alumni by default');
+     assert.match(pagination.first.status,/1/,'employment pagination must show the first page');
+     assert.match(pagination.first.count,/45/,'employment pagination must show the filtered total');
+     assert.equal(pagination.first.previous,true,'previous page must be disabled on the first page');
+     assert.equal(pagination.first.next,false,'next page must be available when more rows exist');
+     assert.equal(pagination.second.rows,20,'the second page must render the next 20 alumni');
+     assert.match(pagination.second.status,/2/,'employment pagination must advance to page two');
+     assert.equal(pagination.all.rows,45,'the All option must render every filtered alumnus');
+     assert.equal(pagination.all.exportRows,45,'pagination must not truncate report/export data');
+     assert.equal(pagination.all.previous,true);
+     assert.equal(pagination.all.next,true);
      const employment=await evaluate(`({rows:document.querySelectorAll('#employmentTableBody tr').length,text:document.getElementById('employmentTableBody').textContent,duration:document.querySelector('#employmentTableBody tr td:nth-last-child(5)')?.textContent||'',headers:document.querySelectorAll('#employmentTable thead th').length,lastFollowUp:document.querySelector('#employmentTableBody tr td:nth-last-child(3)')?.textContent||'',lastUpdated:document.querySelector('#employmentTableBody tr td:nth-last-child(2)')?.textContent||''})`);
      assert.equal(employment.rows,1,'employment report must render repeatable work records');
      assert.equal(employment.headers,10,'employment table must include latest follow-up and last-updated columns');
      assert.match(employment.text,/RDF Foundation/,'employment report workplace');
+     assert.match(employment.text,/Fixture follow-up/,'employment table must show the latest follow-up note');
+     assert.match(employment.lastFollowUp,/1/,'employment table must show the follow-up record count');
      assert.match(employment.duration,initialLang==='th'?/1 ปี 3 เดือน/:/1 year 3 months/,'employment duration must localize from cached data');
-     assert.match(employment.lastFollowUp,/2026|20/,'employment table must show the latest follow-up date');
-     assert.match(employment.lastUpdated,/2026|20/,'employment table must show the last data update time');
-     const employmentPeriod=await evaluate(`(async()=>{const from=document.getElementById('empPeriodFrom'),to=document.getElementById('empPeriodTo');from.value='2026-03-01';to.value='2026-03-31';const target=LANG==='th'?'en':'th';setLang(target);const preserved=from.value==='2026-03-01'&&to.value==='2026-03-31';setLang(${JSON.stringify(initialLang)});await applyEmploymentPeriod();const scope=employmentReportScope(),context=employmentReportFilterContext(LANG),result={preserved,rows:filteredEmploymentPeople().length,exportRows:employmentReportRecords().length,scope,context,summary:document.getElementById('empPeriodSummary').textContent};await resetEmploymentPeriod();return result;})()`);
+     assert.match(employment.lastFollowUp,initialLang==='th'?/มีนาคม 10 2569/:/Mar\. 10 2026/,'employment table must show an unambiguous latest follow-up date');
+     assert.match(employment.lastUpdated,initialLang==='th'?/มีนาคม 20 2569 · 16:00/:/Mar\. 20 2026 · 16:00/,'employment table must show an unambiguous last data update time');
+     const savedPeriods=await evaluate(`({years:document.querySelectorAll('#empSavedPeriods .emp-period-year').length,periods:document.querySelectorAll('#empSavedPeriods .emp-period-item').length,text:document.getElementById('empSavedPeriods').textContent})`);
+     assert.equal(savedPeriods.years,2,'saved tracking periods must be grouped by year');
+     assert.equal(savedPeriods.periods,3,'more than one tracking period must be displayed');
+     assert.match(savedPeriods.text,initialLang==='th'?/2569/:/2026/,'tracking period year must follow the active language');
+     const employmentPeriod=await evaluate(`(async()=>{const from=document.getElementById('empPeriodFrom'),to=document.getElementById('empPeriodTo');from.value='2026-03-01';to.value='2026-03-31';from.dispatchEvent(new Event('input'));to.dispatchEvent(new Event('input'));const initialDisplay=document.getElementById('empPeriodFromDisplay').textContent,target=LANG==='th'?'en':'th';setLang(target);const targetDisplay=document.getElementById('empPeriodFromDisplay').textContent,preserved=from.value==='2026-03-01'&&to.value==='2026-03-31';setLang(${JSON.stringify(initialLang)});await applyEmploymentPeriod();const scope=employmentReportScope(),context=employmentReportFilterContext(LANG),result={preserved,initialDisplay,targetDisplay,display:document.getElementById('empPeriodFromDisplay').textContent,asOfDisplay:document.getElementById('empPeriodAsOfDisplay').textContent,rows:filteredEmploymentPeople().length,exportRows:employmentReportRecords().length,scope,context,summary:document.getElementById('empPeriodSummary').textContent};await resetEmploymentPeriod();return result;})()`);
      assert.equal(employmentPeriod.preserved,true,'language switching must preserve unsaved employment period values');
+     assert.equal(employmentPeriod.initialDisplay,initialLang==='th'?'มีนาคม 1 2569':'Mar. 1 2026','native date input must have an unambiguous visible label');
+     assert.equal(employmentPeriod.targetDisplay,initialLang==='th'?'Mar. 1 2026':'มีนาคม 1 2569','visible date label must update when language changes');
+     assert.equal(employmentPeriod.display,initialLang==='th'?'มีนาคม 1 2569':'Mar. 1 2026','visible date label must return to the screen language');
+     assert.equal(employmentPeriod.asOfDisplay,initialLang==='th'?'มีนาคม 2569':'Mar. 2026','native month input must have an unambiguous visible label');
      assert.equal(employmentPeriod.rows,1,'the shared follow-up period must filter the visible table');
      assert.equal(employmentPeriod.exportRows,1,'the report builder must use the same follow-up period');
      assert.equal(employmentPeriod.scope.followUpFrom,'2026-03-01');
      assert.equal(employmentPeriod.scope.followUpTo,'2026-03-31');
-     assert.match(employmentPeriod.context,/2026-03-01/,'export context must include the shared reporting period');
+     assert.match(employmentPeriod.context,initialLang==='th'?/มีนาคม 1 2569/:/Mar\. 1 2026/,'export context must include the localized shared reporting period');
      const updatedFilter=await evaluate(`(()=>{document.getElementById('empFltFollowUp').value='updated_recent';applyEmploymentFilters();const result={options:document.getElementById('empFltFollowUp').options.length,rows:filteredEmploymentPeople().length};resetEmploymentFilters();return result;})()`);
      assert.equal(updatedFilter.options,4,'follow-up filter must include recently updated data');
      assert.equal(updatedFilter.rows,1,'recent-update alerts must link to a matching report filter');
@@ -527,6 +668,33 @@ const server = http.createServer((req,res)=>{
      assert.match(extra,/Employment duration/,'calculated employment duration must appear in the profile');
      assert.match(extra,/1 year/,'month-range duration must include both boundary months');
    }
+   if(file==='student-profile.html') {
+     const followUps=await evaluate(`({visible:getComputedStyle(document.getElementById('employmentFollowUpCard')).display!=='none',count:document.getElementById('profileEmploymentFollowUpCount').textContent,text:document.getElementById('employmentFollowUpBody').textContent,title:document.querySelector('#employmentFollowUpCard [data-t="profileEmploymentFollowUps"]').textContent.trim(),expected:t('profileEmploymentFollowUps')})`);
+     assert.equal(followUps.visible,true,'student profile must display employment follow-up records');
+     assert.equal(followUps.count,'1','student profile must display the follow-up count');
+     assert.match(followUps.text,/Fixture follow-up/,'student profile must display the shared follow-up note');
+     assert.equal(followUps.title,followUps.expected,'student profile follow-up title must localize');
+     const promotionHistory=await evaluate(`({visible:!document.getElementById('promoHistoryCard').classList.contains('hidden'),rows:document.querySelectorAll('#promoHistoryBody > div').length,text:document.getElementById('promoHistoryBody').textContent,label:t('promoHistoryUniversity')})`);
+     assert.equal(promotionHistory.visible,true,'student profile must display meaningful university history');
+     assert.equal(promotionHistory.rows,1,'technical UNKNOWN scholarship rows must be hidden');
+     assert.match(promotionHistory.text,new RegExp(promotionHistory.label),'legacy university history must receive a meaningful action label');
+     assert.match(promotionHistory.text,initialLang==='th'?/พฤษภาคม 1 2569/:/May 1 2026/,'promotion history date must use the shared unambiguous formatter');
+     assert.doesNotMatch(promotionHistory.text,/UNKNOWN|GMT\+0700/,'raw history metadata must not reach the UI');
+   }
+   if(file==='student-form.html') {
+     const selfFunded=await evaluate(`(()=>{
+       const section=()=>document.querySelector('[data-df-section="sec_work"]');
+       const status=document.querySelector('[data-df-field="fld_emp_status"] [data-df-input]');
+       const before={status:status?.value||'',records:section()?.querySelectorAll('.df-repeat').length||0,message:section()?.querySelector('.df-empty')?.textContent.trim()||'',expected:t('dfEmploymentHistoryNotRequired'),valid:DynamicFields.validate().valid};
+       status.value='employed_full_time';status.dispatchEvent(new Event('change',{bubbles:true}));
+       return {before,afterRecords:section()?.querySelectorAll('.df-repeat').length||0};
+     })()`);
+     assert.equal(selfFunded.before.status,'studying_only','self-funded university continuation must default to studying only');
+     assert.equal(selfFunded.before.records,0,'studying-only students must not receive a blank required employment record');
+     assert.equal(selfFunded.before.message,selfFunded.before.expected,'optional employment-history notice must localize');
+     assert.equal(selfFunded.before.valid,true,'studying-only students must pass dynamic validation without employment history');
+     assert.equal(selfFunded.afterRecords,1,'changing to an employed status must restore an employment-history record');
+   }
    if(initialLang==='en' && file==='student-form.html') {
      const duration=await evaluate(`(()=>{
        const start=document.querySelector('[data-df-field="fld_start"] [data-df-input]');
@@ -605,6 +773,12 @@ const server = http.createServer((req,res)=>{
   const employmentRoute=await evaluate(`({view:document.getElementById('reportsWorkspace').dataset.reportView,visible:getComputedStyle(document.getElementById('employmentReportSection')).display!=='none',back:document.getElementById('reportsBackLink').getAttribute('href')})`);
   assert.deepEqual(employmentRoute,{view:'employment',visible:true,back:'students.html?status=Alumni'},'employment report URL must open the target view and preserve its alumni return path');
   console.log('PASS alumni employment report route');
+  const liveUrl=base+'/reports.html?view=employment&localMode=live&testLang=en';
+  await navigateAndWait(liveUrl);
+  const localLive=await evaluate(`(async()=>{const result=await API.saveEmploymentFollowUp({stipNo:'MBS_001'});return {live:RDF.LOCAL_LIVE_MODE,audit:RDF.LOCAL_AUDIT_MODE,staging:RDF.GAS_URL.includes('AKfycbzhBlZi0tax1'),banner:document.getElementById('rdfLocalAuditBanner')?.textContent||'',called:window.__calls.includes('saveEmploymentFollowUp'),status:result.status};})()`);
+  assert.deepEqual(localLive,{live:true,audit:false,staging:true,banner:'LOCALHOST LIVE · Connected to STAGING · Changes affect the real RDF database',called:true,status:'success'},'explicit localhost live mode must write only through staging');
+  console.log('PASS localhost live staging mode');
+  await navigateAndWait(base+'/reports.html?view=employment&localMode=audit&testLang=en');
  } finally {
   await send('Page.close');
   if(ws.readyState!==3)await new Promise(resolve=>{const timer=setTimeout(resolve,1000);ws.addEventListener('close',()=>{clearTimeout(timer);resolve();},{once:true});if(ws.readyState<2)ws.close();});

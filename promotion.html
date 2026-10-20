@@ -924,13 +924,13 @@ img.student-avatar {
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.2"></script>
+<script src="assets/js/config.js?v=2.6.13"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.2"></script>
-<script src="assets/js/auth.js?v=2.6.2"></script>
-<script src="assets/js/rbac.js?v=2.6.2"></script>
-<script src="assets/js/api.js?v=2.6.2"></script>
-<script src="assets/js/report-registry.js?v=2.6.2"></script>
+<script src="assets/js/i18n.js?v=2.6.13"></script>
+<script src="assets/js/auth.js?v=2.6.13"></script>
+<script src="assets/js/rbac.js?v=2.6.13"></script>
+<script src="assets/js/api.js?v=2.6.13"></script>
+<script src="assets/js/report-registry.js?v=2.6.13"></script>
 <script>
 // RBAC: only Manager+ can access promotion page
 RBAC.enforcePage(['viewPromotion']);
@@ -4530,7 +4530,7 @@ async function generatePDF(rows, lang, tL, registration, orientation = 'landscap
     const reference = registration?.report?.referenceNo || '—';
     const qrVersion = registration?.report?.qrVersion || 1;
     const qrDataUrl = registration ? await ReportRegistryClient.qrDataUrl(registration.verificationUrl) : '';
-    const exportedAt = new Date().toLocaleString(lang==='en'?'en-US':'th-TH');
+    const exportedAt = formatAppDateTime(new Date(),lang);
 
     // Build table HTML
     const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
@@ -4576,7 +4576,7 @@ thead{display:table-header-group}
   <div class="rpt-meta">
     <div style="font-weight:700;color:#111827">${reference}</div>
     <div>${lang==='en'?'QR version':'รุ่น QR'}: <b>${qrVersion}</b></div>
-    <div>${tL('exportDate')||'วันที่'}: <b>${pDate}</b></div>
+    <div>${tL('exportDate')||'วันที่'}: <b>${formatAppDate(pDate,lang)}</b></div>
     ${user ? `<div>${tL('exportGeneratedBy')||'จัดทำโดย'}: ${user}</div>` : ''}
     <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${lang==='th'?'รวม':'Total'}: ${rows.length} ${lang==='th'?'รายการ':'rows'}</div>
   </div>
@@ -5257,7 +5257,7 @@ function generateFormalReportHTML(opts, registration, qrDataUrl) {
   const reference    = registration?.report?.referenceNo || '—';
   const qrVersion    = registration?.report?.qrVersion || 1;
   const reportUser   = (getUser()||{}).name || (getUser()||{}).username || '—';
-  const exportedAt   = new Date().toLocaleString(isEN?'en-US':'th-TH');
+  const exportedAt   = formatAppDateTime(new Date(),opts.lang);
 
   // Collect and sort dataRows for a specific report type
   const _collectRows = reportType => {
@@ -5378,7 +5378,7 @@ function generateFormalReportHTML(opts, registration, qrDataUrl) {
   <div class="rpt-meta">
     <div style="font-weight:700;color:#111827">${reference}</div>
     <div>${isEN?'QR version':'รุ่น QR'}: <b>${qrVersion}</b></div>
-    <div>${S.date}: <b>${opts.pDate||''}</b></div>
+    <div>${S.date}: <b>${formatAppDate(opts.pDate,opts.lang)||''}</b></div>
     ${opts.acad?`<div>${S.acad}: <b>${opts.acad}</b></div>`:''}
     <div style="margin-top:4px;font-size:7pt;color:#9ca3af">${S.total}: ${dataRows.length} ${S.person}</div>
   </div>

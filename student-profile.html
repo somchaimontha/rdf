@@ -15,6 +15,9 @@
 /* ── Screen: hide print layout ── */
 #printLayout { display: none; }
 .print-header, .print-footer { display: none; }
+.profile-followup-item { border:1px solid #d1fae5; border-radius:11px; padding:11px 13px; background:#f8fffb; }
+.profile-followup-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.profile-followup-pill { display:inline-flex; border-radius:999px; background:#d1fae5; color:#065f46; padding:2px 8px; font-size:10px; font-weight:700; }
 
 /* ── Print: show document layout only ── */
 @media print {
@@ -310,6 +313,16 @@
       <div class="card-body p-0" id="promoHistoryBody"></div>
     </div>
 
+    <!-- Employment follow-up history — sourced from the shared alumni employment workflow. -->
+    <div id="employmentFollowUpCard" class="card mb-4 hidden">
+      <div class="card-header" style="background:#047857">
+        <i data-lucide="messages-square" class="w-4 h-4"></i>
+        <span data-t="profileEmploymentFollowUps">บันทึกการติดตามภาวะการทำงาน</span>
+        <span id="profileEmploymentFollowUpCount" class="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold">0</span>
+      </div>
+      <div class="card-body space-y-2" id="employmentFollowUpBody"></div>
+    </div>
+
     <!-- Remarks (conditional) -->
     <div id="remarksCard" class="card mb-4 hidden">
       <div class="card-header" style="background:#475569">
@@ -459,11 +472,11 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.6.2"></script>
-<script src="assets/js/i18n.js?v=2.6.2"></script>
-<script src="assets/js/api.js?v=2.6.2"></script>
-<script src="assets/js/auth.js?v=2.6.2"></script>
-<script src="assets/js/dynamic-fields.js?v=2.6.2"></script>
+<script src="assets/js/config.js?v=2.6.13"></script>
+<script src="assets/js/i18n.js?v=2.6.13"></script>
+<script src="assets/js/api.js?v=2.6.13"></script>
+<script src="assets/js/auth.js?v=2.6.13"></script>
+<script src="assets/js/dynamic-fields.js?v=2.6.13"></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
@@ -483,17 +496,20 @@ if (!stipNo) {
 
 let profileRenderArgs = null;
 let promoHistoryRows = null;
+let employmentFollowUpRows = [];
 document.addEventListener('rdf:languagechange', () => {
   if (profileRenderArgs) renderProfile(...profileRenderArgs);
   if (promoHistoryRows) renderPromoHistory(promoHistoryRows, LANG);
+  renderProfileEmploymentFollowUps();
 });
 
 async function loadProfile() {
   showLoader(true, t('loading'));
   try {
-    const [result, settingsResult] = await Promise.all([
+    const [result, settingsResult, followUpResult] = await Promise.all([
       API.getStudent(stipNo),
-      API.getSystemSettings().catch(() => ({ status: 'error' }))
+      API.getSystemSettings().catch(() => ({ status: 'error' })),
+      API.getStudentEmploymentFollowUps(stipNo).catch(() => ({ status:'error', data:[] }))
     ]);
     showLoader(false);
     if (result.status !== 'success') {
@@ -508,6 +524,8 @@ async function loadProfile() {
     }
     profileRenderArgs = [result.data, sigBlock, printTitle, printLayout];
     renderProfile(...profileRenderArgs);
+    employmentFollowUpRows=followUpResult.status==='success'&&Array.isArray(followUpResult.data)?followUpResult.data:[];
+    renderProfileEmploymentFollowUps();
     await DynamicFields.initProfile({
       containerId: 'dynamicFieldsProfile',
       entityType: 'student',
@@ -520,6 +538,46 @@ async function loadProfile() {
     showLoader(false);
     Swal.fire(t('error'), t('network_error'), 'error');
   }
+}
+
+function profileEmploymentDate(value,withTime=false){
+  if(!value)return '—';
+  return withTime?formatAppDateTime(value):formatAppDate(value);
+}
+
+function profileEmploymentMethod(value){return t({phone:'empMethodPhone',email:'empMethodEmail',line:'empMethodLine',social:'empMethodSocial',in_person:'empMethodInPerson',video_call:'empMethodVideo',other:'empMethodOther'}[value]||'empMethodOther');}
+function profileEmploymentOutcome(value){return t({reached_no_change:'empOutcomeNoChange',employment_updated:'empOutcomeUpdated',verification_completed:'empOutcomeVerified',unreachable:'empOutcomeUnreachable',follow_up_needed:'empOutcomeFollowUp',declined:'empOutcomeDeclined',other:'empOutcomeOther'}[value]||'empOutcomeOther');}
+
+function profileBirthDate(year,month,day,lang=LANG){
+  const parsedYear=parseInt(year,10),parsedMonth=parseInt(month,10),parsedDay=parseInt(day,10);
+  if(!Number.isFinite(parsedYear))return '—';
+  if(parsedMonth>=1&&parsedMonth<=12&&parsedDay>=1&&parsedDay<=31){
+    return formatAppDate(`${parsedYear}-${String(parsedMonth).padStart(2,'0')}-${String(parsedDay).padStart(2,'0')}`,lang);
+  }
+  if(parsedMonth>=1&&parsedMonth<=12)return formatAppMonth(`${parsedYear}-${String(parsedMonth).padStart(2,'0')}`,lang);
+  return String(normalizeLang(lang)==='th'?parsedYear+543:parsedYear);
+}
+
+function renderProfileEmploymentFollowUps(){
+  const card=document.getElementById('employmentFollowUpCard'),body=document.getElementById('employmentFollowUpBody'),count=document.getElementById('profileEmploymentFollowUpCount');
+  if(!card||!body||!count)return;
+  const rows=employmentFollowUpRows||[];count.textContent=String(rows.length);card.classList.toggle('hidden',rows.length===0);body.replaceChildren();
+  rows.forEach(item=>{
+    const article=document.createElement('article');article.className='profile-followup-item';
+    const meta=document.createElement('div');meta.className='profile-followup-meta';
+    const date=document.createElement('strong');date.className='text-xs text-emerald-900';date.textContent=`${t('empFollowUpContactDate')}: ${profileEmploymentDate(item.contactDate)}`;
+    const method=document.createElement('span');method.className='profile-followup-pill';method.textContent=profileEmploymentMethod(item.contactMethod);
+    const outcome=document.createElement('span');outcome.className='profile-followup-pill';outcome.textContent=profileEmploymentOutcome(item.outcome);
+    meta.append(date,method,outcome);article.appendChild(meta);
+    if(item.notes){const notes=document.createElement('p');notes.className='mt-2 text-xs text-slate-700 whitespace-pre-wrap break-words';notes.textContent=item.notes;article.appendChild(notes);}
+    const details=[];
+    if(item.nextFollowUpDate)details.push(`${t('empFollowUpNextDate')}: ${profileEmploymentDate(item.nextFollowUpDate)}`);
+    if(item.assignedTo)details.push(`${t('empFollowUpAssigned')}: ${item.assignedTo}`);
+    if(item.updatedAt||item.createdAt)details.push(`${t('profileFollowUpUpdatedAt')}: ${profileEmploymentDate(item.updatedAt||item.createdAt,true)}`);
+    if(details.length){const detail=document.createElement('p');detail.className='mt-2 text-[10px] text-slate-500';detail.textContent=details.join(' · ');article.appendChild(detail);}
+    body.appendChild(article);
+  });
+  lucide.createIcons();
 }
 
 function renderProfile(d, sigBlock, printTitle, printLayout) {
@@ -575,14 +633,9 @@ function renderProfile(d, sigBlock, printTitle, printLayout) {
     [lang==='th'?'ชื่อเล่น':'Nickname',  d.Nickname],
     [lang==='th'?'วันเดือนปีเกิด':'Date of Birth', (() => {
       if (!d.BirthYear) return '—';
-      const mNames = lang==='en' ? RDF.MONTHS_EN : RDF.MONTHS_TH;
-      const mName = d.BirthMonth ? mNames[parseInt(d.BirthMonth)-1] : '';
-      const dPart = d.BirthDay ? `${d.BirthDay} ` : '';
-      const mPart = mName ? `${mName} ` : '';
       const age = calcAgeFromDOB(d.BirthYear, d.BirthMonth, d.BirthDay);
       const agePart = age !== null ? ` (${lang==='en'?'Age':'อายุ'} ${age} ${lang==='en'?'yrs':'ปี'})` : '';
-      const bePart = lang==='th' ? ` พ.ศ.${parseInt(d.BirthYear)+543}` : '';
-      return `${dPart}${mPart}${d.BirthYear}${bePart}${agePart}`;
+      return `${profileBirthDate(d.BirthYear,d.BirthMonth,d.BirthDay,lang)}${agePart}`;
     })()],
     [lang==='th'?'สัญชาติ':'Nationality', d.Nationality],
     [lang==='th'?'ศาสนา':'Religion',     d.Religion],
@@ -926,10 +979,25 @@ async function loadPromoHistory(sno) {
   try {
     const res = await API.getStudentPromoHistory(sno);
     if (res.status === 'success') {
-      promoHistoryRows = res.rows;
+      promoHistoryRows = normalizePromoHistoryRows(res.rows);
       renderPromoHistory(promoHistoryRows, LANG);
     }
   } catch(e) { /* non-fatal */ }
+}
+
+function normalizePromoHistoryRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map(source => {
+    const row = { ...source };
+    if (/^UNKNOWN$/i.test(String(row.AcademicYear || '').trim())) row.AcademicYear = '';
+    if (!row.ActionTaken) {
+      if (row.NewStatus === 'Graduated') row.ActionTaken = (row.UniName || row.UniNameEN) ? 'university_transition' : 'graduate';
+      else if (row.NewStatus === 'Active' && row.NewLevel)
+        row.ActionTaken = String(row.NewLevel).includes('ปวส. ชั้นปีที่ 1') ? 'continue_inst' : 'promote';
+      else if (row.NewLevel) row.ActionTaken = 'promote';
+      else if (row.UniName || row.UniNameEN) row.ActionTaken = 'university_transition';
+    }
+    return row;
+  }).filter(row => row.ActionTaken || row.OldLevel || row.NewLevel || row.UniName || row.UniNameEN || row.Notes);
 }
 
 function renderPromoHistory(rows, lang) {
@@ -945,6 +1013,7 @@ function renderPromoHistory(rows, lang) {
     graduate:      { th:'สำเร็จการศึกษา',          en:'Graduated',               color:'#059669', bg:'#f0fdf4', icon:'graduation-cap' },
     uni:           { th:'เรียนต่อมหาวิทยาลัย',     en:'University (RDF)',         color:'#7c3aed', bg:'#faf5ff', icon:'building-2' },
     uni_own:       { th:'เรียนต่อ ม. (ทุนตัวเอง)', en:'University (Own Funding)', color:'#9333ea', bg:'#fdf4ff', icon:'building-2' },
+    university_transition: { key:'promoHistoryUniversity', color:'#7c3aed', bg:'#faf5ff', icon:'building-2' },
     continue_inst: { th:'จบ ปวช. + ต่อ ปวส.',      en:'Vocational Certificate → Higher Vocational Certificate',color:'#0d9488', bg:'#f0fdfa', icon:'award' },
     resign:        { th:'ลาออก',                   en:'Resigned',                color:'#dc2626', bg:'#fef2f2', icon:'log-out' },
     withdraw_sch:  { th:'ถอนทุน',                  en:'Scholarship Withdrawn',   color:'#b91c1c', bg:'#fef2f2', icon:'x-circle' },
@@ -954,9 +1023,9 @@ function renderPromoHistory(rows, lang) {
 
   const html = rows.map((r, i) => {
     const a   = ACT[r.ActionTaken] || { th: r.ActionTaken||'—', en: r.ActionTaken||'—', color:'#6b7280', bg:'#f9fafb', icon:'circle' };
-    const lbl = isEN ? a.en : a.th;
+    const lbl = a.key ? t(a.key) : (isEN ? a.en : a.th);
     const isLast   = (i === rows.length - 1);
-    const isGrad   = ['graduate','uni','uni_own','continue_inst'].includes(r.ActionTaken);
+    const isGrad   = ['graduate','uni','uni_own','university_transition','continue_inst'].includes(r.ActionTaken);
 
     const uniLine = (r.UniName || r.UniNameEN) ? `
       <div style="margin-top:4px;font-size:11px;color:#6b7280;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
@@ -989,7 +1058,7 @@ function renderPromoHistory(rows, lang) {
           </div>
           <div style="font-size:10px;color:#9ca3af;white-space:nowrap;flex-shrink:0">
             ${r.AcademicYear ? `<span style="font-weight:600;color:#6b7280">${isEN?'AY ':'ปีการศึกษา '}${r.AcademicYear}</span>` : ''}
-            ${r.Date ? `<span style="margin-left:4px">${r.Date}</span>` : ''}
+            ${r.Date ? `<span style="margin-left:4px">${formatAppDate(r.Date, lang)}</span>` : ''}
           </div>
         </div>
         ${uniLine}${notesLine}
@@ -1015,12 +1084,12 @@ initDBStatus();
 
 function printProfile() {
   const now = new Date();
-  const dateStr = now.toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
-  document.getElementById('printDateLine').textContent = `พิมพ์เมื่อ ${dateStr}`;
+  const dateStr = formatAppDate(now);
+  document.getElementById('printDateLine').textContent = `${bi('พิมพ์เมื่อ','Printed on')} ${dateStr}`;
   const pDate = document.getElementById('pPrintDate');
   if (pDate) pDate.textContent = dateStr;
   const pDocDate = document.getElementById('pDocDate');
-  if (pDocDate) pDocDate.textContent = `วันที่พิมพ์: ${dateStr}`;
+  if (pDocDate) pDocDate.textContent = `${bi('วันที่พิมพ์','Print date')}: ${dateStr}`;
   window.print();
 }
 
@@ -1104,14 +1173,10 @@ function renderPrintLayout(d, sigBlock, printTitle, printLayout) {
     ${d.ScholarshipYear ? `<span class="doc-badge" style="color:#92400e;border-color:#fde68a;background:#fffbeb">ปีทุน พ.ศ. ${parseInt(d.ScholarshipYear)+543}</span>` : ''}`;
 
   // ── Section 1: Personal ──────────────────────
-  const mNames = RDF.MONTHS_TH;
   let dobStr = '—';
   if (d.BirthYear) {
-    const dPart = d.BirthDay   ? `${d.BirthDay} ` : '';
-    const mPart = d.BirthMonth ? `${mNames[parseInt(d.BirthMonth)-1]} ` : '';
-    const be    = parseInt(d.BirthYear) + 543;
     const age   = calcAgeFromDOB(d.BirthYear, d.BirthMonth, d.BirthDay);
-    dobStr = `${dPart}${mPart}พ.ศ. ${be}${age !== null ? ` (อายุ ${age} ปี)` : ''}`;
+    dobStr = `${profileBirthDate(d.BirthYear,d.BirthMonth,d.BirthDay,'th')}${age !== null ? ` (อายุ ${age} ปี)` : ''}`;
   }
   _fillDocTable('pPersonal', [
     ['เลขบัตรประชาชน', fmtIDCard(d.IDCard)||'—',   'ชื่อเล่น',          _s(d.Nickname)||'—'],

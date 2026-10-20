@@ -10,7 +10,7 @@ The shared dictionary and translation engine are in `assets/js/i18n.js`. Support
 - A mutation observer translates tagged elements inserted by modal and asynchronous renderers. It scans added element subtrees and ignores text-node updates, avoiding translation loops.
 - Call `setLang(lang)` to change language. `rdf:languagechange` fires once when the normalized language changes. Page listeners refresh cached data; do not fetch again or reopen forms just to translate labels.
 - Preserve option `value`, form values, checkbox selections, filter values, student records, and permission state. Translate display labels, not stored codes or user-authored content.
-- Use `getLocale()` for display dates. Academic years explicitly labelled B.E. remain B.E.; switching language must not reinterpret stored years.
+- Use `formatAppDate()`, `formatAppMonth()`, or `formatAppDateTime()` for displayed dates so month names are explicit in both languages. Academic years explicitly labelled B.E. remain B.E.; switching language must not reinterpret stored years.
 - Native language names, personal names, user-entered text, and the deliberately bilingual profile print form retain their original content.
 
 ## Changes covered

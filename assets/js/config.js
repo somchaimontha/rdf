@@ -1,23 +1,36 @@
 /* ── RDF Config ── */
-const RDF_LOCAL_AUDIT_MODE = (() => {
+const RDF_LOCAL_HOST = (() => {
   try { return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname); }
   catch (_) { return false; }
 })();
+const RDF_LOCAL_LIVE_MODE = (() => {
+  if (!RDF_LOCAL_HOST) return false;
+  try {
+    const requested = new URLSearchParams(window.location.search).get('localMode');
+    if (requested === 'live') sessionStorage.setItem('rdfLocalMode', 'live');
+    if (requested === 'audit') sessionStorage.removeItem('rdfLocalMode');
+    return sessionStorage.getItem('rdfLocalMode') === 'live';
+  } catch (_) { return false; }
+})();
+const RDF_LOCAL_AUDIT_MODE = RDF_LOCAL_HOST && !RDF_LOCAL_LIVE_MODE;
+const RDF_PRODUCTION_GAS_URL = "https://script.google.com/macros/s/AKfycbyJwHM-vyqSddDfqSu1puLc86E42O6Pxjg4PHRfhuCSvc4fcmuNp1YS85OvYMWdAlc2/exec";
+const RDF_STAGING_GAS_URL = "https://script.google.com/macros/s/AKfycbzhBlZi0tax1-iYHXxf2xLDxwbDv5mDba7YNgeMSp88jO1iFKWV-XGU20FXhyotl6uC/exec";
 
 const RDF = {
-  GAS_URL: "https://script.google.com/macros/s/AKfycbyJwHM-vyqSddDfqSu1puLc86E42O6Pxjg4PHRfhuCSvc4fcmuNp1YS85OvYMWdAlc2/exec",
+  GAS_URL: RDF_LOCAL_LIVE_MODE ? RDF_STAGING_GAS_URL : RDF_PRODUCTION_GAS_URL,
   // OAuth Client IDs are public identifiers. Keep this bootstrap value so
   // Google Sign-In does not depend on a slow SystemSettings request.
   GOOGLE_CLIENT_ID: "692943413718-823rsampc4jafpf897m89iv7v13nrf10.apps.googleusercontent.com",
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.6.2",
+  VERSION: "2.6.13",
   DEFAULT_LANG: "th",
-  // Localhost may read the configured API, but shared API helpers reject data
-  // mutations before making a network request. The server independently locks
-  // employment writes until EMPLOYMENT_LAUNCH_MODE=enabled is configured.
+  // Localhost is read-only by default. An explicit ?localMode=live opt-in is
+  // stored only for the current browser tab and routes requests to staging.
+  // The server independently enforces authentication and role permissions.
   LOCAL_AUDIT_MODE: RDF_LOCAL_AUDIT_MODE,
+  LOCAL_LIVE_MODE: RDF_LOCAL_LIVE_MODE,
   INSTITUTION_LABELS: { MBS:"Maesariang Boripat Suksa School", VC:"Maesariang Industrial and Community Education College", UNI:"University", OTHER:"Other" },
   INSTITUTION_LABELS_TH: { MBS:'โรงเรียนแม่สะเรียง "บริพัตรศึกษา"', VC:'วิทยาลัยการอาชีพแม่สะเรียง', UNI:'มหาวิทยาลัย', OTHER:'อื่นๆ' },
   INSTITUTION_DATA: {
