@@ -92,6 +92,10 @@ test('survey schema setup is additive and idempotent', () => {
   const admin = { username:'admin', role:'SuperAdmin' };
   const preview = c.previewSurveySetupForUser(admin);
   assert.equal(preview.ready, false);
+  const beforeSetup = c.getSurveyAdminData(admin);
+  assert.equal(beforeSetup.setupRequired, true);
+  assert.equal(beforeSetup.canManage, true, 'authorized admins must retain the install action before setup');
+  assert.equal(beforeSetup.canViewResults, true);
   const first = c.setupSurveySchemaForUser(admin);
   assert.equal(first.ready, true);
   assert.equal(first.changed.length, 8);
