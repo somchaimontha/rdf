@@ -234,6 +234,31 @@ const server = http.createServer((req,res)=>{
      assert.equal(adminModal.buttonsVisible,true,'admin modal cancel and save actions must remain visible');
      await send('Emulation.clearDeviceMetricsOverride');
      await evaluate('closeAdminModal()');
+     await send('Emulation.setDeviceMetricsOverride',{width:360,height:640,deviceScaleFactor:1,mobile:true});
+     await delay(50);
+     const settingsMobile=await evaluate(`(()=>{const main=document.querySelector('.settings-main'),card=document.getElementById('cardPermMatrix'),table=document.getElementById('permMatrixTable'),picker=document.querySelector('.perm-mobile-role-picker'),select=document.getElementById('permMatrixMobileRole'),visibleHeaders=[...table.querySelectorAll('thead th')].filter(cell=>getComputedStyle(cell).display!=='none'),actions=[...card.querySelectorAll('.settings-card-actions .btn')].map(button=>button.getBoundingClientRect()),cardRect=card.getBoundingClientRect();select.value='Volunteer';select.dispatchEvent(new Event('change',{bubbles:true}));const volunteerVisible=[...table.querySelectorAll('thead th')].filter(cell=>getComputedStyle(cell).display!=='none').map(cell=>cell.textContent.trim());return{viewport:innerWidth,documentOverflow:document.documentElement.scrollWidth>innerWidth+1,mainWidth:main.getBoundingClientRect().width,cardWidth:cardRect.width,pickerVisible:getComputedStyle(picker).display!=='none',tableOverflow:table.scrollWidth>table.clientWidth+1,visibleHeaderCount:visibleHeaders.length,mobileRole:table.dataset.mobileRole,volunteerVisible,groupColspans:[...table.querySelectorAll('.perm-group-cell')].map(cell=>cell.colSpan),actionsInside:actions.every(rect=>rect.left>=cardRect.left-1&&rect.right<=cardRect.right+1)};})()`);
+     assert.equal(settingsMobile.viewport,360,'responsive settings test must use the mobile viewport');
+     assert.equal(settingsMobile.documentOverflow,false,'settings page must not overflow the mobile viewport');
+     assert.ok(settingsMobile.mainWidth<=360&&settingsMobile.cardWidth<=360,'settings content and cards must fit the mobile viewport');
+     assert.equal(settingsMobile.pickerVisible,true,'mobile permission matrix must expose a role selector');
+     assert.equal(settingsMobile.tableOverflow,false,'selected-role permission matrix must fit without horizontal scrolling');
+     assert.equal(settingsMobile.visibleHeaderCount,2,'mobile permission matrix must show the permission and one selected role');
+     assert.equal(settingsMobile.mobileRole,'Volunteer','mobile role selector must switch the visible permission column');
+     assert.ok(settingsMobile.volunteerVisible.some(label=>label.includes('Volunteer')),'selected Volunteer column must be visible');
+     assert.ok(settingsMobile.groupColspans.every(span=>span===2),'mobile permission groups must span the two visible columns');
+     assert.equal(settingsMobile.actionsInside,true,'permission actions must remain inside the card on mobile');
+     await send('Emulation.setDeviceMetricsOverride',{width:800,height:700,deviceScaleFactor:1,mobile:false});
+     await delay(50);
+     const settingsTablet=await evaluate(`(()=>{const sidebar=document.getElementById('settingsSidebar'),main=document.querySelector('.settings-main'),table=document.getElementById('permMatrixTable'),picker=document.querySelector('.perm-mobile-role-picker'),style=getComputedStyle(sidebar),visibleHeaders=[...table.querySelectorAll('thead th')].filter(cell=>getComputedStyle(cell).display!=='none');return{sidebarPosition:style.position,sidebarTransform:style.transform,mainWidth:main.getBoundingClientRect().width,viewport:innerWidth,documentOverflow:document.documentElement.scrollWidth>innerWidth+1,pickerVisible:getComputedStyle(picker).display!=='none',tableOverflow:table.scrollWidth>table.clientWidth+1,visibleHeaderCount:visibleHeaders.length,groupColspans:[...table.querySelectorAll('.perm-group-cell')].map(cell=>cell.colSpan)};})()`);
+     assert.equal(settingsTablet.sidebarPosition,'fixed','settings sidebar must collapse into a drawer on tablet widths');
+     assert.notEqual(settingsTablet.sidebarTransform,'none','collapsed tablet sidebar must remain off-canvas until opened');
+     assert.ok(settingsTablet.mainWidth<=settingsTablet.viewport+1,'tablet settings content must use the available viewport');
+     assert.equal(settingsTablet.documentOverflow,false,'settings page must not overflow the tablet viewport');
+     assert.equal(settingsTablet.pickerVisible,true,'tablet permission matrix must expose the compact role selector');
+     assert.equal(settingsTablet.tableOverflow,false,'tablet permission matrix must fit without horizontal scrolling');
+     assert.equal(settingsTablet.visibleHeaderCount,2,'tablet permission matrix must show only the selected role');
+     assert.ok(settingsTablet.groupColspans.every(span=>span===2),'tablet permission groups must span the visible columns');
+     await send('Emulation.clearDeviceMetricsOverride');
    }
    if(file==='dashboard.html') {
      const customFieldsShortcut=await evaluate(`!![...document.querySelectorAll('.menu-card')].find(card=>card.getAttribute('onclick')?.includes('custom-fields.html'))`);

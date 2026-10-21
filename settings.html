@@ -19,6 +19,8 @@
 .settings-layout {
   display: flex;
   align-items: flex-start;
+  width: 100%;
+  min-width: 0;
   min-height: calc(100vh - 60px);
 }
 
@@ -112,13 +114,17 @@
 
 /* ── Main content area ── */
 .settings-main {
-  flex: 1; min-width: 0;
+  flex: 1 1 auto; min-width: 0;
+  width: calc(100% - 256px);
   padding: 24px 24px 60px;
-  max-width: 900px;
+  max-width: none;
 }
 
 /* scroll-margin so content isn't hidden under sticky navbar */
 .settings-section {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   scroll-margin-top: 80px;
 }
 
@@ -141,8 +147,8 @@
 }
 .sbar-overlay.visible { display: block; }
 
-/* ── Responsive: mobile sidebar slides in from left ── */
-@media (max-width: 767px) {
+/* ── Responsive: tablet/mobile sidebar slides in from left ── */
+@media (max-width: 1023px) {
   .settings-sidebar {
     position: fixed; top: 60px; left: 0;
     height: calc(100vh - 60px); z-index: 50;
@@ -150,8 +156,12 @@
     box-shadow: 4px 0 24px rgba(15,23,42,0.18);
   }
   .settings-sidebar.mobile-open { transform: translateX(0); }
-  .settings-main { padding: 16px 16px 60px; }
+  .settings-main { width:100%; padding:20px 20px 68px; }
   .sbar-mobile-toggle { display: flex; }
+}
+
+@media (max-width: 767px) {
+  .settings-main { padding: 14px 14px 72px; }
 }
 
 /* ── Role Badges ── */
@@ -167,7 +177,7 @@
 .role-volunteer  { background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4; }
 
 /* ── Admin Cards Grid ── */
-.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px,100%),1fr)); gap: 14px; }
 .admin-card {
   background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
   padding: 18px; transition: all 0.2s; position: relative;
@@ -311,6 +321,9 @@
 }
 /* ── Settings — sticky card headers (level 2, below panel header) ── */
 .settings-main .card {
+  width:100%;
+  min-width:0;
+  max-width:100%;
   overflow: clip; /* clips to border-radius without creating scroll container → allows sticky inside */
   scroll-margin-top: 115px;
 }
@@ -319,6 +332,106 @@
   top: 110px;
   z-index: 20;
   background: #fff; /* fallback for light-style headers; colored headers override via inline style */
+}
+.settings-main .card-header.flex { gap:10px; flex-wrap:wrap; }
+.settings-main .card-header.flex > * { min-width:0; }
+.settings-card-title { min-width:0; flex:1 1 240px; flex-wrap:wrap; }
+.settings-card-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.settings-toolbar-actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
+.settings-scroll-region {
+  width:100%; max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain;
+  scrollbar-width:thin; scrollbar-color:#94a3b8 #eef2f7;
+}
+.settings-scroll-region::-webkit-scrollbar { height:8px; }
+.settings-scroll-region::-webkit-scrollbar-track { background:#eef2f7; border-radius:999px; }
+.settings-scroll-region::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:999px; }
+.bilingual-grid-row,.bilingual-grid-form,.bilingual-grid-labels { min-width:0; }
+.bilingual-grid-row > *,.bilingual-grid-form > * { min-width:0; max-width:100%; }
+.perm-mobile-role-picker { display:none; }
+#permMatrixTable { border-collapse:separate; border-spacing:0; }
+#permMatrixTable .perm-function-col,
+#permMatrixTable .perm-function-cell {
+  position:sticky; left:0; z-index:2; background:#fff;
+  box-shadow:1px 0 0 #e5e7eb;
+}
+#permMatrixTable .perm-function-col { z-index:4; background:#f8faff; }
+#permMatrixTable .perm-group-cell { position:relative; z-index:3; }
+
+@media (max-width: 1199px) {
+  .perm-mobile-role-picker { display:block; padding:10px 0 4px; }
+  .perm-mobile-role-picker label { display:block; margin-bottom:5px; font-size:12px; font-weight:700; color:#475569; }
+  #permMatrixMobileRole { width:100%; min-width:0; }
+  #permMatrixTable { width:100% !important; min-width:0 !important; table-layout:fixed; }
+  #permMatrixTable .perm-fixed-col,
+  #permMatrixTable .perm-role-col,
+  #permMatrixTable .perm-fixed-cell,
+  #permMatrixTable .perm-role-cell { display:none; }
+  #permMatrixTable[data-mobile-role="Manager"] [data-role-col="Manager"],
+  #permMatrixTable[data-mobile-role="Finance"] [data-role-col="Finance"],
+  #permMatrixTable[data-mobile-role="Committee"] [data-role-col="Committee"],
+  #permMatrixTable[data-mobile-role="DormTeacher"] [data-role-col="DormTeacher"],
+  #permMatrixTable[data-mobile-role="Volunteer"] [data-role-col="Volunteer"] { display:table-cell; }
+  #permMatrixTable .perm-function-col,
+  #permMatrixTable .perm-function-cell { position:static; width:auto !important; min-width:0 !important; box-shadow:none; }
+  #permMatrixTable .perm-role-col,
+  #permMatrixTable .perm-role-cell { width:110px; min-width:110px !important; padding-left:5px !important; padding-right:5px !important; }
+  #permMatrixTable .perm-function-cell { overflow-wrap:anywhere; }
+  #permMatrixTable .perm-label-th,#permMatrixTable .perm-label-en { display:block; margin:0; }
+  html[lang="th"] #permMatrixTable .perm-label-en,
+  html[lang="en"] #permMatrixTable .perm-label-th { display:none; }
+  #permMatrixTable .perm-group-cell { padding-left:8px !important; padding-right:8px !important; }
+}
+
+@media (max-width: 767px) {
+  .stn-ph { top:60px; padding-top:8px; }
+  .stn-ph > div:last-child { min-width:0; }
+  .settings-main .card-header { position:static; }
+  .settings-card-header-responsive { align-items:stretch !important; flex-direction:column; }
+  .settings-card-title { flex-basis:auto; width:100%; }
+  .settings-card-actions { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .settings-card-actions .btn { width:100%; min-width:0; justify-content:center; white-space:normal; }
+  .settings-toolbar-actions { width:100%; margin-left:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .settings-toolbar-actions .btn { width:100%; min-width:0; justify-content:center; white-space:normal; }
+  #panelAdmins .card-body > .flex,
+  #panelAdmins .card-body > .flex > .flex,
+  #panelLogs .card-body > .flex,
+  #panelLogs .card-body > .flex > .flex { width:100%; min-width:0; }
+  #panelAdmins .search-wrap,#panelLogs .search-wrap { width:100%; min-width:0; }
+  #adminSearch,#adminRoleFilter,#adminStatusFilter,#logSearch,#logTypeFilter { width:100% !important; max-width:100%; }
+  #btnAddAdmin,#panelLogs .card-body > .flex > button { width:100%; justify-content:center; }
+  #logPager { gap:10px; flex-wrap:wrap; }
+  #logPagerBtns { max-width:100%; overflow-x:auto; padding-bottom:2px; }
+  #permMatrixTable .perm-role-col,
+  #permMatrixTable .perm-role-cell { width:92px; min-width:92px !important; }
+  #studentFieldsGrid { grid-template-columns:minmax(0,1fr) !important; }
+  .settings-inline-input-actions { flex-wrap:wrap; }
+  .settings-inline-input-actions > .relative,
+  .settings-inline-input-actions > .flex-1 { flex:1 1 100%; width:100%; }
+  .settings-inline-input-actions > .btn { flex:1 1 120px; justify-content:center; }
+  #gcidConfigured { align-items:flex-start; flex-wrap:wrap; }
+  #gcidConfigured > .flex:last-child { width:100%; }
+  #gcidConfigured > .flex:last-child .btn { flex:1; justify-content:center; }
+  #cardGmailLinked .card-body > .flex:last-child { align-items:flex-start; gap:10px; flex-direction:column; }
+  #cardGmailLinked .card-body > .flex:last-child .btn { width:100%; justify-content:center; }
+}
+
+@media (max-width: 640px) {
+  .settings-main { padding-left:10px; padding-right:10px; }
+  .settings-main .card-body { padding-left:14px; padding-right:14px; }
+  .settings-main .card-header { padding-left:14px; padding-right:14px; }
+  .admin-grid { gap:10px; }
+  .ov-stat { padding:14px 12px; gap:10px; }
+  .ov-stat-icon { width:40px; height:40px; border-radius:10px; }
+  .ov-stat-num { font-size:23px; }
+  .settings-toolbar-actions { grid-template-columns:minmax(0,1fr); }
+  .bilingual-grid-labels { display:none !important; }
+  .bilingual-grid-row,.bilingual-grid-form { grid-template-columns:minmax(0,1fr) auto !important; }
+  .bilingual-grid-row > :nth-child(1),.bilingual-grid-row > :nth-child(2),
+  .bilingual-grid-form > :nth-child(1),.bilingual-grid-form > :nth-child(2) { grid-column:1; }
+  .bilingual-grid-row > :last-child,.bilingual-grid-form > :last-child {
+    grid-column:2; grid-row:1 / span 2; align-self:stretch; min-width:40px;
+  }
+  .bilingual-grid-row > :last-child,.bilingual-grid-form > :last-child { display:flex; align-items:center; justify-content:center; }
 }
 /* ── Sidebar sub-menu label truncation ── */
 .sbar-sub-item span:not(.sbar-sub-dot) {
@@ -734,7 +847,7 @@
         <input type="text" id="apSearch" oninput="apRender()" class="field-input text-sm"
                data-t="stMajSearch" data-t-attr="placeholder" placeholder="ค้นหา / Search...">
       </div>
-      <div class="ml-auto flex gap-2">
+      <div class="settings-toolbar-actions">
         <button onclick="apImportCSV()" class="btn btn-sm" style="background:#faf5ff;color:#7c3aed;border:1.5px solid #c4b5fd" title="นำเข้าจาก CSV" data-t-title="hintImportFromCsv">
           <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span><span data-t="uiImportCSV">นำเข้า CSV</span></span>
         </button>
@@ -789,14 +902,14 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-4" data-t="stMajUniListDesc">รายชื่อมหาวิทยาลัยที่ใช้ใน dropdown ฟอร์มนักเรียนและรายงาน — รองรับทั้งสองภาษา</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;font-size:11px;font-weight:700;
+        <div class="bilingual-grid-labels" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;font-size:11px;font-weight:700;
                     color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding:0 4px">
           <span><span data-t="stMajColNameTH">ชื่อภาษาไทย</span></span><span>English Name</span><span></span>
         </div>
         <div id="uniListRows" class="space-y-2 mb-4">
           <div class="text-center text-gray-400 py-4 text-sm" data-t="stLoading">กำลังโหลด...</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center" class="mb-4">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center" class="bilingual-grid-form mb-4">
           <input type="text" id="uniInputTH" class="field-input text-sm" placeholder="ชื่อมหาวิทยาลัย (ไทย)" data-t-placeholder="uiUniversityNameThai">
           <input type="text" id="uniInputEN" class="field-input text-sm" placeholder="University Name (EN)">
           <button onclick="addUniEntry()" class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1.5px solid #bae6fd;white-space:nowrap">
@@ -819,13 +932,13 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-3"><span data-t="uiUniversityProgramsUsedForAutocompleteInPromotion">สาขาวิชาที่เปิดสอนในมหาวิทยาลัย — ใช้ใน autocomplete ระบบเลื่อนชั้นและฟอร์มนักเรียน</span></p>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
+        <div class="bilingual-grid-labels" style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
           <span><span data-t="uiProgramThai">สาขาวิชา (ไทย)</span></span><span>Major (EN)</span><span></span>
         </div>
         <div id="uniProgRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm"><span data-t="stLoading">กำลังโหลด...</span></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-purple-100 mb-3">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center" class="bilingual-grid-form pt-3 border-t border-purple-100 mb-3">
           <input type="text" id="uniProgNameTH" class="field-input text-sm" style="margin:0" placeholder="สาขาวิชา (ไทย) *" data-t-placeholder="hintProgramThai">
           <input type="text" id="uniProgNameEN" class="field-input text-sm" style="margin:0;border-color:#c4b5fd" placeholder="Major (EN) *">
           <button onclick="addUniProg()" class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1.5px solid #c4b5fd;white-space:nowrap">
@@ -848,13 +961,13 @@
       </div>
       <div class="card-body">
         <p class="text-xs text-gray-500 mb-3"><span data-t="uiUniversityFacultiesUsedForAutocompleteInProgram">รายชื่อคณะในมหาวิทยาลัย — ใช้เป็น autocomplete ในช่องคณะของสาขาวิชา</span></p>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
+        <div class="bilingual-grid-labels" style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;padding:0 2px">
           <span><span data-t="uiFacultyThai">คณะ (ไทย)</span></span><span>Faculty (EN)</span><span></span>
         </div>
         <div id="uniFacRows" class="space-y-1 mb-3">
           <div class="text-center text-gray-400 py-6 text-sm"><span data-t="stLoading">กำลังโหลด...</span></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center" class="pt-3 border-t border-blue-100 mb-3">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center" class="bilingual-grid-form pt-3 border-t border-blue-100 mb-3">
           <input type="text" id="uniFacNameTH" class="field-input text-sm" style="margin:0" placeholder="คณะ (ไทย) *" data-t-placeholder="hintFacultyThai">
           <input type="text" id="uniFacNameEN" class="field-input text-sm" style="margin:0;border-color:#bfdbfe" placeholder="Faculty (EN)">
           <button onclick="addUniFac()" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;white-space:nowrap">
@@ -1563,7 +1676,7 @@
           <!-- Input -->
           <div class="mb-4">
             <label class="field-label" data-t="stApiGeminiPaste">วาง API Key ใหม่</label>
-            <div class="flex gap-2">
+            <div class="settings-inline-input-actions flex gap-2">
               <div class="relative flex-1">
                 <input type="password" id="geminiKeyInput" class="field-input pr-10" placeholder="AIza...">
                 <button type="button" onclick="toggleKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" title="แสดง/ซ่อน" data-t-title="hintShowHide">
@@ -1627,7 +1740,7 @@
           <!-- Input state -->
           <div id="gcidInputWrap">
             <label class="field-label" data-t="stApiGcidPaste">วาง Client ID ใหม่</label>
-            <div class="flex gap-2">
+            <div class="settings-inline-input-actions flex gap-2">
               <div class="relative flex-1">
                 <input type="password" id="googleClientId" class="field-input pr-10 font-mono text-sm"
                        placeholder="XXXXXXXXXX-xxxxxxxxxxxxxxxx.apps.googleusercontent.com">
@@ -1911,13 +2024,13 @@
 
     <!-- Permission Matrix (Editable) -->
     <div id="cardPermMatrix" class="card fade-in-up delay-1">
-      <div class="card-header flex items-center justify-between">
-        <span class="font-bold text-gray-700 flex items-center gap-2">
+      <div class="settings-card-header-responsive card-header flex items-center justify-between">
+        <span class="settings-card-title font-bold text-gray-700 flex items-center gap-2">
           <i data-lucide="table" class="w-4 h-4" style="color:#1e3a8a"></i>
           <span data-t="stRolesMatrixTitle">ตาราง Permission Matrix</span>
           <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-weight:600" data-t="stRolesMatrixHint">คลิกเซลล์เพื่อแก้ไข</span>
         </span>
-        <div class="flex gap-2">
+        <div class="settings-card-actions">
           <button onclick="resetPermMatrix()"
                   class="btn btn-secondary btn-sm text-xs">
             <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span data-t="stRolesMatrixReset">คืนค่าเริ่มต้น</span>
@@ -1928,34 +2041,46 @@
           </button>
         </div>
       </div>
-      <div class="card-body overflow-x-auto" style="padding-top:0">
+      <div class="card-body" style="padding-top:0">
+        <div class="perm-mobile-role-picker">
+          <label for="permMatrixMobileRole" data-t="stRolesMobileRoleLabel">เลือกบทบาทที่ต้องการแสดง</label>
+          <select id="permMatrixMobileRole" class="field-select" onchange="setMobilePermRole(this.value)" data-t-aria-label="stRolesMobileRoleLabel">
+            <option value="Manager">Manager</option>
+            <option value="Finance">Finance</option>
+            <option value="Committee">Committee</option>
+            <option value="DormTeacher">DormTeacher</option>
+            <option value="Volunteer">Volunteer</option>
+          </select>
+        </div>
         <p class="text-xs text-gray-400 py-2">
           <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
           <span data-t="stRolesMatrixNote">SuperAdmin (สิทธิ์สูงสุดทุกอย่าง) และ Student (เฉพาะโปรไฟล์ตนเอง) ถูกล็อคไว้เสมอ — ไม่สามารถแก้ไขได้</span><br>
           <span data-t="uiEditableRoles">Roles ที่แก้ไขได้:</span> <b>Manager, Finance, Committee, DormTeacher, Volunteer</b>
         </p>
-        <table class="w-full text-xs min-w-max" id="permMatrixTable">
-          <thead>
-            <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
-              <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;min-width:200px" data-t="stRolesMatrixFn">ฟังก์ชัน / Permission</th>
-              <th style="padding:10px 12px;text-align:center;color:#dc2626;font-weight:800;min-width:90px">SuperAdmin<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixLocked">ล็อค</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#1d4ed8;font-weight:800;min-width:90px">Manager<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#16a34a;font-weight:800;min-width:90px">Finance<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#7c3aed;font-weight:800;min-width:90px">Committee<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#ea580c;font-weight:800;min-width:100px">DormTeacher<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#0f766e;font-weight:800;min-width:100px">Volunteer<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
-              <th style="padding:10px 12px;text-align:center;color:#0ea5e9;font-weight:800;min-width:90px">Student<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixLocked">ล็อค</span></th>
-            </tr>
-          </thead>
-          <tbody id="permMatrix"></tbody>
-        </table>
+        <div class="settings-scroll-region" id="permMatrixScroll">
+          <table class="w-full text-xs min-w-max" id="permMatrixTable" data-mobile-role="Manager">
+            <thead>
+              <tr style="background:#f8faff;border-bottom:2px solid #e5e7eb">
+                <th class="perm-function-col" style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;min-width:200px" data-t="stRolesMatrixFn">ฟังก์ชัน / Permission</th>
+                <th class="perm-fixed-col" style="padding:10px 12px;text-align:center;color:#dc2626;font-weight:800;min-width:90px">SuperAdmin<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixLocked">ล็อค</span></th>
+                <th class="perm-role-col" data-role-col="Manager" style="padding:10px 12px;text-align:center;color:#1d4ed8;font-weight:800;min-width:90px">Manager<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+                <th class="perm-role-col" data-role-col="Finance" style="padding:10px 12px;text-align:center;color:#16a34a;font-weight:800;min-width:90px">Finance<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+                <th class="perm-role-col" data-role-col="Committee" style="padding:10px 12px;text-align:center;color:#7c3aed;font-weight:800;min-width:90px">Committee<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+                <th class="perm-role-col" data-role-col="DormTeacher" style="padding:10px 12px;text-align:center;color:#ea580c;font-weight:800;min-width:100px">DormTeacher<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+                <th class="perm-role-col" data-role-col="Volunteer" style="padding:10px 12px;text-align:center;color:#0f766e;font-weight:800;min-width:100px">Volunteer<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixEditable">แก้ไขได้</span></th>
+                <th class="perm-fixed-col" style="padding:10px 12px;text-align:center;color:#0ea5e9;font-weight:800;min-width:90px">Student<br><span style="font-size:9px;font-weight:400;color:#9ca3af" data-t="stRolesMatrixLocked">ล็อค</span></th>
+              </tr>
+            </thead>
+            <tbody id="permMatrix"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- ── Student Access Configuration ── -->
     <div id="cardStudentAccess" class="card fade-in-up delay-2 mt-4" style="border-left:4px solid #0ea5e9">
-      <div class="card-header flex items-center justify-between">
-        <span class="font-bold text-gray-700 flex items-center gap-2">
+      <div class="settings-card-header-responsive card-header flex items-center justify-between">
+        <span class="settings-card-title font-bold text-gray-700 flex items-center gap-2">
           <i data-lucide="shield-check" class="w-4 h-4" style="color:#0ea5e9"></i>
           <span data-t="stRolesStudentTitle">กำหนดสิทธิ์นักเรียน / Student Editable Fields</span>
         </span>
@@ -2148,12 +2273,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.6.14"></script>
+<script src="assets/js/config.js?v=2.6.15"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.14"></script>
-<script src="assets/js/api.js?v=2.6.14"></script>
-<script src="assets/js/auth.js?v=2.6.14"></script>
-<script src="assets/js/rbac.js?v=2.6.14"></script>
+<script src="assets/js/i18n.js?v=2.6.15"></script>
+<script src="assets/js/api.js?v=2.6.15"></script>
+<script src="assets/js/auth.js?v=2.6.15"></script>
+<script src="assets/js/rbac.js?v=2.6.15"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -3479,7 +3604,7 @@ function renderUniListRows() {
     return;
   }
   el.innerHTML = uniListState.map((u, i) => `
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;
+    <div class="bilingual-grid-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;
                 padding:6px 8px;background:${i%2===0?'#f8fafc':'#fff'};border-radius:8px;
                 border:1px solid #e5e7eb">
       <input type="text" value="${_esc(u.nameTH)}" oninput="uniListState[${i}].nameTH=this.value"
@@ -3591,7 +3716,7 @@ function renderUniProgRows() {
     return;
   }
   el.innerHTML = uniProgs.map(p => `
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
+    <div class="bilingual-grid-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
                 padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
       <span class="text-sm font-medium text-gray-800">${_esc(p.nameTH||'')}</span>
       <span class="text-sm text-gray-600">${_esc(p.nameEN||'')}</span>
@@ -3640,7 +3765,7 @@ function renderUniFacRows() {
     return;
   }
   el.innerHTML = uniFacultyState.map(f => `
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
+    <div class="bilingual-grid-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;
                 padding:5px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:3px">
       <span class="text-sm font-medium text-gray-800">${_esc(f.faculty||'')}</span>
       <span class="text-sm text-gray-600">${_esc(f.facultyEN||'')}</span>
@@ -4160,7 +4285,7 @@ function buildPermMatrix() {
 
     // Group header
     html += `<tr style="background:${bgColor}">
-      <td colspan="8" style="padding:5px 12px;font-size:10px;font-weight:800;
+      <td class="perm-group-cell" colspan="8" style="padding:5px 12px;font-size:10px;font-weight:800;
           text-transform:uppercase;letter-spacing:.7px;color:#64748b;border-top:1px solid #e5e7eb">
         ${GROUP_LABEL_MAP[g] || g}
       </td>
@@ -4179,7 +4304,7 @@ function buildPermMatrix() {
         const tip   = on
           ? bi(`${role}: มีสิทธิ์ — คลิกเพื่อยกเลิก`, `${role}: allowed — click to revoke`)
           : bi(`${role}: ไม่มีสิทธิ์ — คลิกเพื่อเปิด`, `${role}: denied — click to allow`);
-        return `<td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9">
+        return `<td class="perm-role-cell" data-role-col="${role}" style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9">
           <button class="pmc-toggle ${cls}" data-role="${role}" data-perm="${p.key}"
                   onclick="togglePermCell('${role}','${p.key}',this)"
                   title="${tip}"
@@ -4192,19 +4317,43 @@ function buildPermMatrix() {
       }).join('');
 
       html += `<tr style="border-bottom:1px solid #f1f5f9" onmouseover="this.style.background='#fafbff'" onmouseout="this.style.background=''">
-        <td style="padding:8px 12px;font-size:12px;color:#374151;font-weight:500">
-          ${p.th}
-          <span style="color:#94a3b8;font-size:10px;margin-left:6px">${p.en}</span>
+        <td class="perm-function-cell" style="padding:8px 12px;font-size:12px;color:#374151;font-weight:500">
+          <span class="perm-label-th">${p.th}</span>
+          <span class="perm-label-en" style="color:#94a3b8;font-size:10px;margin-left:6px">${p.en}</span>
         </td>
-        <td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9;background:#fef2f2">${saCell}</td>
+        <td class="perm-fixed-cell" style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9;background:#fef2f2">${saCell}</td>
         ${editCells}
-        <td style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9;background:#f0f9ff">${stuCell}</td>
+        <td class="perm-fixed-cell" style="padding:7px 12px;text-align:center;border-bottom:1px solid #f1f5f9;background:#f0f9ff">${stuCell}</td>
       </tr>`;
     });
   });
 
   tbody.innerHTML = html;
+  syncPermMatrixResponsive();
 }
+
+function setMobilePermRole(role) {
+  if (!PERM_EDITABLE_ROLES.includes(role)) return;
+  const table = document.getElementById('permMatrixTable');
+  const select = document.getElementById('permMatrixMobileRole');
+  if (table) table.dataset.mobileRole = role;
+  if (select && select.value !== role) select.value = role;
+}
+
+function syncPermMatrixResponsive() {
+  const table = document.getElementById('permMatrixTable');
+  if (!table) return;
+  const compact = window.matchMedia('(max-width: 1199px)').matches;
+  table.querySelectorAll('.perm-group-cell').forEach(cell => {
+    cell.colSpan = compact ? 2 : 8;
+  });
+  if (compact) {
+    const select = document.getElementById('permMatrixMobileRole');
+    setMobilePermRole(select?.value || table.dataset.mobileRole || 'Manager');
+  }
+}
+
+window.addEventListener('resize', syncPermMatrixResponsive);
 
 function togglePermCell(role, perm, btn) {
   if (!_permState[role]) _permState[role] = new Set();
