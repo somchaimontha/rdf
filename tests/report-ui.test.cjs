@@ -9,6 +9,7 @@ const profile = fs.readFileSync(path.join(root, 'student-profile.html'), 'utf8')
 const settings = fs.readFileSync(path.join(root, 'settings.html'), 'utf8');
 const auth = fs.readFileSync(path.join(root, 'assets/js/auth.js'), 'utf8');
 const tracking = fs.readFileSync(path.join(root, 'tracking-management.html'), 'utf8');
+const rbac = fs.readFileSync(path.join(root, 'assets/js/rbac.js'), 'utf8');
 
 test('employment report keeps grouped columns compact and follow-up notes last', () => {
   const fields = reports.slice(reports.indexOf('const EMPLOYMENT_REPORT_FIELDS'), reports.indexOf('function employmentReportText'));
@@ -81,4 +82,17 @@ test('employment follow-up settings reuse the central notification system', () =
   assert.match(auth, /function _buildOperationalNotifications/);
   assert.match(auth, /API\.getNotificationFeed\(force\)/);
   assert.match(auth, /operationalEvents/);
+});
+
+test('volunteer UI permissions expose alumni workflows without exposing scholarship reports', () => {
+  assert.match(rbac, /Volunteer:\s*\[[^\]]*'viewAlumni'[^\]]*'manageAlumniFollowUps'[^\]]*'manageSurveys'[^\]]*'exportAlumniReports'/s);
+  assert.match(reports, /RBAC\.enforcePage\(\['viewReports','viewAlumniEmployment'\]\)/);
+  assert.match(reports, /CAN_VIEW_SCHOLARSHIP_REPORTS \? API\.getStudents\(\)/);
+  assert.match(reports, /CAN_EXPORT_EMPLOYMENT_REPORTS/);
+  assert.match(rbac, /RBAC_PERMISSIONS_SCHEMA_VERSION = '2\.0\.0'/);
+  assert.match(rbac, /_rbacUpgradePermissionMap/);
+  assert.match(tracking, /'manageTrackingCycles'/);
+  assert.match(auth, /_notifHas\('viewAlumniEmployment'\)/);
+  assert.match(settings, /value="Volunteer"/);
+  assert.match(settings, /const PERM_EDITABLE_ROLES = \['Manager','Finance','Committee','DormTeacher','Volunteer'\]/);
 });

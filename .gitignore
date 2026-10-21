@@ -9,3 +9,4 @@ docs/
 .clasprc.json
 *.md
 !ALUMNI_SURVEY_SYSTEM_DESIGN.md
+!ALUMNI_TRACKING_DEVELOPMENT_PLAN.md

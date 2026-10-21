@@ -921,6 +921,7 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Finance" class="accent-emerald-600"><span data-t="roleFinance">Finance</span></label>
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Committee" class="accent-emerald-600"><span data-t="roleCommittee">Committee</span></label>
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="DormTeacher" class="accent-emerald-600"><span data-t="roleDormTeacher">Dorm Teacher</span></label>
+            <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Volunteer" class="accent-emerald-600"><span data-t="stRoleVolunteerBadge">อาสาสมัคร</span></label>
             <label class="emp-notif-role"><input type="checkbox" name="empNotifRole" value="Student" class="accent-emerald-600"><span data-t="roleStudent">นักเรียนทุน</span></label>
           </div>
           <p class="mt-2 text-[11px] leading-relaxed text-gray-500" data-t="empNotifAudienceNote">เจ้าหน้าที่ต้องมีสิทธิ์ดูรายงานและข้อมูลนักเรียน ส่วนนักเรียนจะเห็นเฉพาะการแจ้งเตือนภาวะการทำงานของตนเองเท่านั้น</p>
@@ -1206,15 +1207,18 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.13"></script>
+<script src="assets/js/config.js?v=2.6.14"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.13"></script>
-<script src="assets/js/auth.js?v=2.6.13"></script>
-<script src="assets/js/rbac.js?v=2.6.13"></script>
-<script src="assets/js/api.js?v=2.6.13"></script>
+<script src="assets/js/i18n.js?v=2.6.14"></script>
+<script src="assets/js/auth.js?v=2.6.14"></script>
+<script src="assets/js/rbac.js?v=2.6.14"></script>
+<script src="assets/js/api.js?v=2.6.14"></script>
 <script>
-// RBAC: Manager+ can view reports
-RBAC.enforcePage(['viewReports']);
+// Scholarship reports and alumni-employment reports have separate permissions.
+RBAC.enforcePage(['viewReports','viewAlumniEmployment']);
+const CAN_VIEW_SCHOLARSHIP_REPORTS = RBAC.has('viewReports');
+const CAN_VIEW_EMPLOYMENT_REPORTS = RBAC.has('viewAlumniEmployment');
+const CAN_EXPORT_EMPLOYMENT_REPORTS = RBAC.has('exportAlumniReports');
 
 // ═══════════════════════════════════════════════════════════
 // CENTRALIZED DATA STORE
@@ -1249,7 +1253,9 @@ const _CHARTS = {
 // Keep scholarship analytics visually primary while retaining the alumni workflow
 // as an on-demand secondary view. Switching views is client-side and never reloads data.
 function switchReportView(view, moveFocus = false) {
-  const next = view === 'scholarship' ? 'scholarship' : 'employment';
+  let next = view === 'scholarship' ? 'scholarship' : 'employment';
+  if (next === 'scholarship' && !CAN_VIEW_SCHOLARSHIP_REPORTS) next = 'employment';
+  if (next === 'employment' && !CAN_VIEW_EMPLOYMENT_REPORTS) next = 'scholarship';
   const workspace = document.getElementById('reportsWorkspace');
   if (!workspace) return;
   workspace.dataset.reportView = next;
@@ -1281,14 +1287,25 @@ function applyReportEntryContext() {
     backText.dataset.t = fromAlumni ? 'backToAlumniList' : 'promoBackDash';
     backText.textContent = t(backText.dataset.t);
   }
+  if (!CAN_VIEW_SCHOLARSHIP_REPORTS) return 'employment';
+  if (!CAN_VIEW_EMPLOYMENT_REPORTS) return 'scholarship';
   return params.get('view') === 'employment' ? 'employment' : 'scholarship';
+}
+
+function configureReportPermissions() {
+  document.getElementById('reportTabScholarship')?.classList.toggle('hidden', !CAN_VIEW_SCHOLARSHIP_REPORTS);
+  document.getElementById('reportTabEmployment')?.classList.toggle('hidden', !CAN_VIEW_EMPLOYMENT_REPORTS);
+  document.querySelectorAll('[data-report-action="scholarship"]').forEach(el => el.classList.toggle('hidden', !CAN_VIEW_SCHOLARSHIP_REPORTS));
+  const switcher = document.querySelector('.report-view-tabs');
+  if (switcher && (CAN_VIEW_SCHOLARSHIP_REPORTS !== CAN_VIEW_EMPLOYMENT_REPORTS)) switcher.style.gridTemplateColumns = '1fr';
 }
 
 document.querySelectorAll('.report-view-tab').forEach(tab => {
   tab.addEventListener('keydown', event => {
     if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
     event.preventDefault();
-    switchReportView(tab.dataset.reportView === 'employment' ? 'scholarship' : 'employment', true);
+    const target = tab.dataset.reportView === 'employment' ? 'scholarship' : 'employment';
+    if ((target === 'scholarship' && CAN_VIEW_SCHOLARSHIP_REPORTS) || (target === 'employment' && CAN_VIEW_EMPLOYMENT_REPORTS)) switchReportView(target, true);
   });
 });
 
@@ -1371,9 +1388,9 @@ async function useEmploymentSavedPeriod(periodId){
 }
 
 const EMP_NOTIFICATION_DEFAULTS = {
-  schemaVersion:'1.0.0',
+  schemaVersion:'1.1.0',
   modules:[{
-    moduleId:'employment', enabled:true, audienceRoles:['SuperAdmin','Manager'],
+    moduleId:'employment', enabled:true, audienceRoles:['SuperAdmin','Manager','Volunteer'],
     rules:[
       {ruleId:'employment.followup_overdue',eventType:'followup_overdue',enabled:true,leadDays:0},
       {ruleId:'employment.followup_due_soon',eventType:'followup_due_soon',enabled:true,leadDays:7},
@@ -1391,7 +1408,11 @@ function employmentNotificationConfig(){
   if(!config.modules.some(module=>module.moduleId==='employment')){
     config.modules.push(JSON.parse(JSON.stringify(EMP_NOTIFICATION_DEFAULTS.modules[0])));
   }
-  config.schemaVersion='1.0.0';
+  if(config.schemaVersion!=='1.1.0'){
+    const employment=config.modules.find(module=>module.moduleId==='employment');
+    if(employment&&!employment.audienceRoles.includes('Volunteer'))employment.audienceRoles.push('Volunteer');
+  }
+  config.schemaVersion='1.1.0';
   return config;
 }
 
@@ -1472,7 +1493,7 @@ async function loadReportData() {
   showLoader(true, t('loading'));
   try {
     const [studRes, settRes, cycleRes] = await Promise.all([
-      API.getStudents(),
+      CAN_VIEW_SCHOLARSHIP_REPORTS ? API.getStudents() : Promise.resolve({ status:'success', data:[] }),
       API.getSystemSettings().catch(() => ({ status:'success', data:{} })),
       API.getTrackingCycleData().catch(() => ({ status:'success', setupRequired:true, cycles:[] })),
     ]);
@@ -1485,16 +1506,13 @@ async function loadReportData() {
     if (_EMP_CACHE.loaded && _EMP_CACHE.response && !_EMP_CACHE.response.setupRequired) renderEmploymentRows();
     renderEmploymentSavedPeriods();
 
-    // Populate year filter dropdown (unique scholarship years, sorted)
-    populateYearFilter();
-
-    // Apply current filter settings → updates _CACHE.filtered
-    applyFilters();
-
-    // Show timestamp
-    const ts = document.getElementById('rptDataTimestamp');
-    if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + formatAppDateTime(_CACHE.loadedAt);
-    renderScholarshipDataSource();
+    if (CAN_VIEW_SCHOLARSHIP_REPORTS) {
+      populateYearFilter();
+      applyFilters();
+      const ts = document.getElementById('rptDataTimestamp');
+      if (ts) ts.textContent = (LANG==='th'?'อัปเดต: ':'Updated: ') + formatAppDateTime(_CACHE.loadedAt);
+      renderScholarshipDataSource();
+    }
 
     showLoader(false);
   } catch(e) {
@@ -2511,7 +2529,7 @@ function renderEmploymentReport() {
   }
 
   content.classList.remove('hidden');
-  document.getElementById('empExportBtn')?.classList.toggle('hidden',!RBAC.has('exportData'));
+  document.getElementById('empExportBtn')?.classList.toggle('hidden',!CAN_EXPORT_EMPLOYMENT_REPORTS);
   document.getElementById('empFollowUpSettingsBtn')?.classList.toggle('hidden',!RBAC.has('manageNotifications'));
   const asOf = document.getElementById('empAsOf');
   if (asOf) asOf.textContent = `${t('empAsOf')} ${formatEmploymentMonth(response.asOfMonth) || response.asOfMonth || '—'}`;
@@ -3014,7 +3032,7 @@ function employmentVerificationUrl(token,lang=employmentReportLang()){return rep
 function updateEmploymentReportQrUi(){
   const panel=document.getElementById('empReportQrPanel'),status=document.getElementById('empReportQrStatus'),reference=document.getElementById('empReportReference'),button=document.getElementById('empRegenerateQrBtn');if(!panel||!status||!reference||!button)return;
   const lang=LANG,state=_EMP_REPORT_REGISTRATION;
-  panel.classList.toggle('is-issued',!!state);reference.classList.toggle('hidden',!state);button.classList.toggle('hidden',!state||!RBAC.has('exportData'));
+  panel.classList.toggle('is-issued',!!state);reference.classList.toggle('hidden',!state);button.classList.toggle('hidden',!state||!CAN_EXPORT_EMPLOYMENT_REPORTS);
   if(state){status.textContent=employmentReportText(state.reused?'empComposerQrReused':'empComposerQrIssued',lang);reference.textContent=`${employmentReportText('empComposerReference',lang)}: ${state.report.referenceNo} · QR v${state.report.qrVersion}`;}
   else{status.textContent=employmentReportText('empComposerQrPending',lang);reference.textContent='';}
 }
@@ -3075,7 +3093,7 @@ function openEmploymentReportComposer(){
   document.querySelectorAll('input[name="empComposerFormat"]').forEach(input=>input.checked=input.value==='pdf');
   document.querySelectorAll('input[name="empComposerOrientation"]').forEach(input=>input.checked=input.value==='landscape');
   document.getElementById('empComposerSubject').value='';renderEmploymentReportFieldSelector(false);renderEmploymentReportSignatures(false);
-  document.getElementById('empComposerExportBtn').classList.toggle('hidden',!RBAC.has('exportData'));
+  document.getElementById('empComposerExportBtn').classList.toggle('hidden',!CAN_EXPORT_EMPLOYMENT_REPORTS);
   document.getElementById('empReportComposerModal').classList.remove('hidden');document.body.style.overflow='hidden';document.querySelector('.report-composer-config')?.scrollTo({top:0});renderEmploymentReportPreview();lucide.createIcons();
 }
 function closeEmploymentReportComposer(event){
@@ -3117,7 +3135,7 @@ async function buildEmploymentPrintHtml(registration,qrDataUrl){
   return `<!doctype html><html lang="${escapeEmploymentHtml(lang)}"><head><meta charset="utf-8"><title>${escapeEmploymentHtml(subjects.subject)}</title><style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');*{box-sizing:border-box;max-width:100%}html,body{margin:0;padding:0}body{font-family:'Sarabun',Arial,sans-serif;color:#1f2937;font-size:8pt;padding-bottom:8mm;overflow-wrap:anywhere;word-break:break-word}@page{size:A4 ${orientation};margin:12mm 10mm 18mm}.header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px;border-bottom:2.5px solid #047857;padding-bottom:9px;margin-bottom:10px}.qr{width:56px;height:56px;object-fit:contain}.brand{display:flex;align-items:flex-start;gap:9px;min-width:0}.verification{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px}.logo{width:42px;height:42px;object-fit:contain;flex:0 0 auto}.org{font-weight:800;color:#065f46}.title{font-size:14pt;font-weight:800;margin-top:2px;overflow-wrap:anywhere}.meta{font-size:7.5pt;color:#64748b;margin-top:3px}.reference{text-align:right;font-size:7.5pt;color:#64748b;max-width:48mm}.reference strong{display:block;color:#0f172a;font-size:8pt}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}.kpi{border:1px solid #d1fae5;border-radius:6px;padding:6px 8px;background:#f0fdf4;min-width:0}.kpi b{display:block;font-size:13pt;color:#065f46}.kpi span{color:#64748b;font-size:7pt}.table-section{max-width:100%}.table-section.next-section{break-before:page;page-break-before:always}.part-label{font-size:7pt;color:#64748b;font-weight:700;margin:0 0 4px}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}th,td{min-width:0;max-width:0;border:1px solid #cbd5e1;padding:4px;vertical-align:top;text-align:left;overflow-wrap:anywhere;word-break:break-word;white-space:pre-line}th{background:#ecfdf5;color:#065f46;font-size:7pt}td{font-size:7pt}tr{break-inside:avoid;page-break-inside:avoid}.empty{text-align:center;color:#94a3b8}.signatures{display:flex;justify-content:flex-end;gap:20px;margin-top:28px;break-inside:avoid;page-break-inside:avoid}.signature{width:170px;text-align:center;font-size:8pt}.signature>*{display:block}.signature span,.signature small{color:#64748b;margin-top:2px}.print-footer{position:fixed;left:0;right:0;bottom:-13mm;border-top:1px solid #cbd5e1;padding-top:3mm;display:flex;justify-content:space-between;gap:8px;color:#64748b;font-size:7pt;background:#fff}.print-footer span{min-width:0;overflow-wrap:anywhere}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="header"><div class="brand"><img class="logo" src="${escapeEmploymentHtml(RDF.LOGO_URL)}" alt="RDF"><div><div class="org">${escapeEmploymentHtml(lang==='en'?RDF.FOUNDATION_EN:RDF.FOUNDATION_TH)}</div><div class="title">${escapeEmploymentHtml(subjects.subject)}</div><div class="meta">${escapeEmploymentHtml(filterContext)}</div></div></div><div class="verification"><div class="reference"><strong>${escapeEmploymentHtml(reference)}</strong>${escapeEmploymentHtml(employmentReportText('empComposerQrVersion',lang))}: ${registration.report.qrVersion}<br>${escapeEmploymentHtml(employmentReportText('empAsOf',lang))} ${escapeEmploymentHtml(formatAppMonth(_EMP_CACHE.response?.asOfMonth,lang)||'—')}</div><img class="qr" src="${escapeEmploymentHtml(qrDataUrl)}" alt="QR"></div></div><div class="kpis"><div class="kpi"><b>${people.length}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiEligible',lang))}</span></div><div class="kpi"><b>${reported}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiReported',lang))}</span></div><div class="kpi"><b>${workRecords}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiRecords',lang))}</span></div><div class="kpi"><b>${followUps}</b><span>${escapeEmploymentHtml(employmentReportText('empKpiFollowUps',lang))}</span></div></div>${tables}${signatureHtml}<footer class="print-footer"><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedBy',lang))}: ${escapeEmploymentHtml(user.name||user.username||'—')}</span><span>${escapeEmploymentHtml(employmentReportText('empComposerExportedAt',lang))}: ${escapeEmploymentHtml(exportedAt)}</span><span>${escapeEmploymentHtml(reference)}</span></footer><script>window.addEventListener('load',()=>window.print())<\/script></body></html>`;
 }
 async function exportEmploymentReport(){
-  if(!RBAC.has('exportData')||!validateEmploymentReportFields())return;
+  if(!CAN_EXPORT_EMPLOYMENT_REPORTS||!validateEmploymentReportFields())return;
   const format=employmentReportFormat(),lang=employmentReportLang();
   if(format==='xlsx'&&(typeof XLSX==='undefined'||typeof XLSX.utils?.aoa_to_sheet!=='function')){Swal.fire(t('error'),employmentReportText('empComposerExcelLibraryError',lang),'error');return;}
   if(format==='pdf'&&typeof QRCode==='undefined'){Swal.fire(t('error'),employmentReportText('empComposerQrLibraryError',lang),'error');return;}
@@ -3670,6 +3688,7 @@ initDBStatus();
   const btn = document.getElementById('langBtn');
   if (btn) btn.textContent = (localStorage.getItem('rdfLang')||'th') === 'th' ? 'EN' : 'TH';
   setLang(readSavedLang());
+  configureReportPermissions();
   bindEmploymentPeriodInputs();
   switchReportView(applyReportEntryContext());
   lucide.createIcons();

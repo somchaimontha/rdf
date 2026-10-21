@@ -3,7 +3,8 @@
 
 ## เอกสารออกแบบระบบ
 
-- [แนวทางออกแบบระบบแบบสอบถามศิษย์เก่า](ALUMNI_SURVEY_SYSTEM_DESIGN.md) — ระยะที่ 1 และรอบติดตามกลางพัฒนาใน local แล้ว
+- [แผนพัฒนาระบบติดตามศิษย์เก่าแบบเชื่อมโยงครบวงจร](ALUMNI_TRACKING_DEVELOPMENT_PLAN.md) — ลำดับ release, migration, test gate และ deployment
+- [แนวทางออกแบบระบบแบบสอบถามศิษย์เก่า](ALUMNI_SURVEY_SYSTEM_DESIGN.md) — เป้าหมายสถาปัตยกรรมและ baseline ของระบบแบบสอบถาม
 - [แนวทางขยายโครงสร้างฐานข้อมูลอย่างปลอดภัย](SAFE_SCHEMA_EVOLUTION.md)
 - [เงื่อนไขกลางของระบบรายงานและการตรวจสอบเอกสาร](REPORT_POLICY.md)
 

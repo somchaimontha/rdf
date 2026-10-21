@@ -22,6 +22,12 @@
  *  manageCustomFields — configure metadata-driven form sections and fields
  *  viewVolunteers    — view volunteer profiles
  *  manageVolunteers  — create, update, and archive volunteer profiles
+ *  viewAlumni        — view alumni-only lists and profiles
+ *  viewAlumniEmployment — view alumni employment tracking and reports
+ *  manageAlumniEmployment — edit alumni employment status and work history only
+ *  manageAlumniFollowUps — add, update, and archive alumni follow-up records
+ *  manageTrackingCycles — create and publish shared reporting/tracking cycles
+ *  exportAlumniReports — export alumni employment reports
  *  viewSettings      — access settings.html
  *  editSettings      — modify system settings (SuperAdmin only)
  *  viewReports       — view & export reports
@@ -34,7 +40,7 @@
  *  exportSurveyResults — export survey responses and summaries
  *  respondOwnSurveys — Student/Alumni: answer assigned surveys
  *
- * ROLES: SuperAdmin | Manager | Finance | Committee | DormTeacher | Student
+ * ROLES: SuperAdmin | Manager | Finance | Committee | DormTeacher | Volunteer | Student
  */
 
 // ─────────────────────────────────────────────
@@ -49,6 +55,7 @@
 const RBAC_MAP = {
   SuperAdmin:  ['*'],
   Manager:     ['viewStudents','editStudents','deleteStudents','importStudents',
+                'viewAlumni','viewAlumniEmployment','manageAlumniEmployment','manageAlumniFollowUps','manageTrackingCycles','exportAlumniReports',
                 'viewVolunteers','manageVolunteers',
                 'viewPromotion','runPromotion','viewSchApprovalPanel',
                 'manageNotifications',
@@ -56,11 +63,35 @@ const RBAC_MAP = {
                 'viewSettings',
                 'viewReports','exportData','printProfile',
                 'viewUniHistory'],
-  Finance:     ['viewStudents','viewReports','exportData','printProfile'],
-  Committee:   ['viewStudents','viewReports','printProfile','viewSurveyResults'],
-  DormTeacher: ['viewStudents','editStudents','printProfile','viewUniHistory'],
+  Finance:     ['viewStudents','viewAlumni','viewAlumniEmployment','viewReports','exportData','exportAlumniReports','printProfile'],
+  Committee:   ['viewStudents','viewAlumni','viewAlumniEmployment','viewReports','printProfile','viewSurveyResults'],
+  DormTeacher: ['viewStudents','viewAlumni','editStudents','manageAlumniEmployment','printProfile','viewUniHistory'],
+  Volunteer:   ['viewAlumni','viewAlumniEmployment','manageAlumniEmployment','manageAlumniFollowUps','manageTrackingCycles',
+                'manageSurveys','viewSurveyResults','exportSurveyResults','exportAlumniReports','printProfile'],
   Student:     ['viewOwnProfile','editOwnProfile','respondOwnSurveys'],
 };
+const RBAC_PERMISSIONS_SCHEMA_VERSION = '2.0.0';
+
+function _rbacUpgradePermissionMap(input) {
+  const map = { ...(input || {}) };
+  Object.keys(RBAC_MAP).forEach(role => {
+    if (Array.isArray(map[role])) map[role] = [...new Set(map[role])];
+  });
+  if (map._schemaVersion !== RBAC_PERMISSIONS_SCHEMA_VERSION) {
+    ['Manager','Finance','Committee','DormTeacher'].forEach(role => {
+      const permissions = new Set(map[role] || RBAC_MAP[role] || []);
+      if (permissions.has('viewStudents')) permissions.add('viewAlumni');
+      if (permissions.has('viewReports') && permissions.has('viewStudents')) permissions.add('viewAlumniEmployment');
+      if (permissions.has('editStudents')) permissions.add('manageAlumniEmployment');
+      if (permissions.has('viewReports') && permissions.has('editStudents')) permissions.add('manageAlumniFollowUps');
+      if (permissions.has('manageNotifications') || permissions.has('manageSurveys')) permissions.add('manageTrackingCycles');
+      if (permissions.has('viewReports') && permissions.has('exportData')) permissions.add('exportAlumniReports');
+      map[role] = [...permissions];
+    });
+  }
+  map._schemaVersion = RBAC_PERMISSIONS_SCHEMA_VERSION;
+  return map;
+}
 
 // Dynamic map loaded from settings (null = use RBAC_MAP defaults above)
 let _rbacDynamicMap = null;
@@ -69,7 +100,10 @@ let _rbacDynamicMap = null;
 (function _rbacInitCache() {
   try {
     const cached = JSON.parse(localStorage.getItem('rdfRbacPermissions') || 'null');
-    if (cached && typeof cached === 'object') _rbacDynamicMap = cached;
+    if (cached && typeof cached === 'object') {
+      _rbacDynamicMap = _rbacUpgradePermissionMap(cached);
+      localStorage.setItem('rdfRbacPermissions', JSON.stringify(_rbacDynamicMap));
+    }
   } catch { /* ignore — will fall back to RBAC_MAP */ }
 })();
 
@@ -247,9 +281,9 @@ const RBAC = {
     const saved = settings.RBAC_PERMISSIONS;
     if (typeof saved !== 'object') return;
     // Merge: keep defaults for SuperAdmin/Student; use saved for others
-    const merged = { ...RBAC_MAP, ...saved };
+    const merged = _rbacUpgradePermissionMap({ ...RBAC_MAP, ...saved });
     merged.SuperAdmin = ['*'];                              // always locked
-    merged.Student    = ['viewOwnProfile','editOwnProfile']; // always locked
+    merged.Student    = ['viewOwnProfile','editOwnProfile','respondOwnSurveys']; // always locked
     _rbacDynamicMap = merged;
     localStorage.setItem('rdfRbacPermissions', JSON.stringify(merged));
   },
@@ -264,6 +298,8 @@ const RBAC = {
 
   /** Default (hardcoded) permission map — used for "Reset to Default" button. */
   getDefaultMap() { return { ...RBAC_MAP }; },
+
+  getPermissionSchemaVersion() { return RBAC_PERMISSIONS_SCHEMA_VERSION; },
 
   // ── Field-level control (student-form.html) ───
 
@@ -411,9 +447,33 @@ const RBAC = {
       }
     } else {
       // Admin: dim/disable restricted cards
+      if (!this.has('viewStudents')) {
+        document.querySelectorAll('.stat-card').forEach(card => {
+          card.style.cursor = 'default';
+          card.onclick = null;
+          card.style.pointerEvents = 'none';
+          card.style.opacity = '0.55';
+        });
+        if (this.has('viewAlumni')) {
+          const alumniCard = document.getElementById('statAlumni')?.closest('.stat-card');
+          if (alumniCard) {
+            alumniCard.style.cursor = 'pointer';
+            alumniCard.style.pointerEvents = '';
+            alumniCard.style.opacity = '';
+            alumniCard.onclick = () => { window.location.href = 'students.html?status=Alumni'; };
+          }
+        }
+      }
       document.querySelectorAll('.menu-card').forEach(card => {
         const oc = card.getAttribute('onclick') || '';
-        if (oc.includes('settings.html') && !canSettings) {
+        if (oc.includes('students.html') && !this.has('viewStudents') && this.has('viewAlumni')) {
+          card.onclick = () => { window.location.href = 'students.html?status=Alumni'; };
+          card.querySelector('[data-t="menuStudents"]')?.setAttribute('data-t', 'menuAlumni');
+          card.querySelector('[data-t="menuStudentsDesc"]')?.setAttribute('data-t', 'menuAlumniDesc');
+          if (typeof applyTranslations === 'function') applyTranslations();
+        } else if (oc.includes('students.html') && !this.has('viewStudents')) {
+          _rbacDimCard(card, 'viewStudents');
+        } else if (oc.includes('settings.html') && !canSettings) {
           _rbacDimCard(card, 'viewSettings');
         } else if (oc.includes('custom-fields.html') && !canCustomFields) {
           _rbacDimCard(card, 'manageCustomFields');
@@ -446,6 +506,7 @@ const RBAC = {
       Finance:     { th:'การเงิน',         en:'Finance Officer' },
       Committee:   { th:'คณะกรรมการ',      en:'Committee' },
       DormTeacher: { th:'ครูหอพัก',        en:'Dorm Teacher' },
+      Volunteer:   { th:'อาสาสมัคร',       en:'Volunteer' },
       Student:     { th:'นักเรียนทุน',     en:'Student' },
     };
     return (L[role] || {})[isEN ? 'en' : 'th'] || role;

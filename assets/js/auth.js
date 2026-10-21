@@ -258,6 +258,8 @@ function _notifBroadcastHref(link, user) {
     }
     return page === 'dashboard.html' ? page : 'dashboard.html';
   }
+  if (page === 'students.html') return (_notifHas('viewStudents') || _notifHas('viewAlumni')) ? String(link) : 'dashboard.html';
+  if (page === 'reports.html') return (_notifHas('viewReports') || _notifHas('viewAlumniEmployment')) ? String(link) : 'dashboard.html';
   const required = permissionByPage[page];
   return !required || _notifHas(required) ? String(link) : 'dashboard.html';
 }
@@ -573,7 +575,7 @@ async function _refreshNotifBell(force = false) {
     const needsStudents = !isStudent && (_notifHas('viewStudents') || _notifHas('editStudents') || canApprove);
     // Students may receive employment reminders, but the server limits their
     // feed to their own StipNo and never returns the aggregate staff report.
-    const needsOperationalFeed = isStudent || (_notifHas('viewReports') && _notifHas('viewStudents'));
+    const needsOperationalFeed = isStudent || _notifHas('viewAlumniEmployment');
     const requests = [];
     const slots = [];
     slots.push('settings'); requests.push(API.getSystemSettings());

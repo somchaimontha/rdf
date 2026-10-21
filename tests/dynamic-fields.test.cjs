@@ -584,7 +584,7 @@ test('shared notification rules validate once and preserve an extensible module 
   const valid = c._validateNotificationRules(defaults);
   assert.equal(valid.ok, true);
   assert.equal(valid.values.modules[0].moduleId, 'employment');
-  assert.deepEqual([...valid.values.modules[0].audienceRoles], ['SuperAdmin','Manager']);
+  assert.deepEqual([...valid.values.modules[0].audienceRoles], ['SuperAdmin','Manager','Volunteer']);
   assert.equal(c._validateNotificationRules({ modules:[] }).ok, false);
   const duplicate = JSON.parse(JSON.stringify(defaults));
   duplicate.modules[0].rules.push({ ...duplicate.modules[0].rules[0] });
@@ -639,6 +639,8 @@ test('operational notification feed aggregates live follow-up data without copyi
   assert.deepEqual([...feed.data.map(item => item.count)], [1,1,1,1]);
   assert.match(feed.data[0].eventId, /^employment\.followup_overdue\.[a-f0-9]{8}$/);
   assert.equal(c.getNotificationFeed({ username:'finance', role:'Finance' }, true).data.length, 0, 'default audience excludes Finance');
+  const volunteerFeed = c.getNotificationFeed({ username:'volunteer', role:'Volunteer' }, true);
+  assert.deepEqual([...volunteerFeed.data.map(item => item.eventType)], ['followup_overdue','followup_due_soon','data_missing','data_updated'], 'volunteers receive alumni follow-up notifications by default');
   const studentConfig = c._defaultNotificationRules();
   studentConfig.modules[0].audienceRoles.push('Student');
   assert.equal(c._validateNotificationRules(studentConfig).ok, true, 'Student is a supported notification recipient');
@@ -780,6 +782,63 @@ test('employment follow-ups reference student and work record without copying wo
   assert.equal(c.getEmploymentReport(manager, {}).summary.followUpRecords, 0);
 });
 
+test('volunteer role is limited to alumni employment, follow-ups, surveys, and reports', () => {
+  const { context: c, spreadsheet } = loadBackendWithSheets();
+  const admin = { username:'admin', role:'SuperAdmin' };
+  const volunteer = { username:'volunteer.user', role:'Volunteer' };
+  assert.equal(c.setupDynamicFieldSheets().ready, true);
+  assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
+  spreadsheet.getSheetByName('Students').rows[1][1] = 'Graduated';
+  spreadsheet.getSheetByName('Students').rows.push(['MBS_002','Active']);
+
+  assert.equal(c._serverHasPermission(volunteer, 'viewAlumniEmployment'), true);
+  assert.equal(c._serverHasPermission(volunteer, 'editStudents'), false);
+  assert.equal(c._serverCanReadStudent(volunteer, 'MBS_001'), true);
+  assert.equal(c._serverCanReadStudent(volunteer, 'MBS_002'), false);
+  assert.equal(c.getAlumniStudentsData().data.length, 1);
+  assert.equal(c.getEmploymentReport(volunteer, {}).status, 'success');
+
+  const fields = c.DynamicFieldRepository.readTable('CustomFieldDefinitions').objects;
+  const statusField = fields.find(field => field.FieldKey === 'employment_current_status');
+  assert.equal(c.saveStudentDynamicValues(volunteer, 'student', 'MBS_001', [
+    { fieldId:statusField.FieldID, recordId:'single', value:'employed_full_time' },
+  ], []).status, 'success');
+
+  const extraSection = c.saveDynamicSection(admin, {
+    entityType:'student', sectionKey:'private_admin_notes', nameTH:'บันทึกเจ้าหน้าที่', nameEN:'Staff Notes',
+    cardinality:'single', visibleRoles:['SuperAdmin'], visibilityRules:{logic:'AND',conditions:[]},
+  });
+  const extraField = c.saveDynamicField(admin, {
+    entityType:'student', sectionId:extraSection.sectionId, fieldKey:'private_admin_note', fieldType:'text',
+    labelTH:'หมายเหตุ', labelEN:'Note', visibleRoles:['SuperAdmin'], editableRoles:['SuperAdmin'],
+    visibilityRules:{logic:'AND',conditions:[]},
+  }, []);
+  assert.equal(c.saveStudentDynamicValues(volunteer, 'student', 'MBS_001', [
+    { fieldId:extraField.fieldId, recordId:'single', value:'must be denied' },
+  ], []).code, 'FIELD_ACCESS_DENIED');
+
+  const followUp = c.saveEmploymentFollowUp(volunteer, {
+    stipNo:'MBS_001', contactDate:'2026-10-20', contactMethod:'phone', outcome:'follow_up_needed',
+    nextFollowUpDate:'2026-11-01', assignedTo:'Volunteer A', notes:'Volunteer follow-up',
+  });
+  assert.equal(followUp.status, 'success');
+
+  const migrated = c._upgradeServerPermissionMap({ Manager:['viewStudents','editStudents','viewReports','exportData','manageNotifications'] });
+  assert.equal(migrated.Manager.includes('viewAlumniEmployment'), true, 'legacy permission maps gain equivalent granular permissions once');
+  assert.equal(migrated.Manager.includes('manageAlumniFollowUps'), true);
+  assert.equal(migrated.Manager.includes('manageTrackingCycles'), true);
+
+  c.getSystemSettings = () => ({ status:'success', data:{ RBAC_PERMISSIONS:{
+    _schemaVersion:'2.0.0', Manager:['viewStudents','editStudents','viewReports'],
+  } } });
+  const restrictedManager = { username:'restricted.manager', role:'Manager' };
+  assert.equal(c.getEmploymentReport(restrictedManager, {}).code, 'ACCESS_DENIED', 'current permission maps must not regain a revoked alumni-report permission through legacy rights');
+  assert.equal(c._employmentCanManageFollowUps(restrictedManager), false, 'follow-up permission matrix choices must be authoritative');
+  assert.equal(c.saveStudentDynamicValues(restrictedManager, 'student', 'MBS_001', [
+    { fieldId:statusField.FieldID, recordId:'single', value:'self_employed' },
+  ], []).code, 'FIELD_ACCESS_DENIED', 'student-registry edit access must not bypass alumni-employment edit permission');
+});
+
 test('legacy employment migration requires review, is idempotent, and preserves Alumni source rows', () => {
   const { context: c, spreadsheet } = loadBackendWithSheets();
   const admin = { username: 'admin', role: 'SuperAdmin' };
@@ -842,6 +901,16 @@ test('volunteer profiles are additive, validated, archivable, and support custom
   assert.equal(loaded.data.skills, '=HELP()', 'formula-safe storage must not change the displayed value');
   const stored = c.DynamicFieldRepository.readTable('Volunteers').objects[0];
   assert.equal(stored.Skills, "'=HELP()", 'spreadsheet formulas must be neutralized at rest');
+  assert.equal(c.saveVolunteer(admin, {
+    firstName:'ซ้ำ', lastName:'อีเมล', email:'VOLUNTEER@example.com',
+    volunteerStartDate:'2026-10-02', status:'active',
+  }).code, 'VOLUNTEER_EMAIL_DUPLICATE', 'active volunteer emails must be unique regardless of letter case');
+
+  const adminsSheet = spreadsheet.insertSheet('Admins');
+  adminsSheet.rows.push(['Username','Email','Role','Active'], ['volunteer.user','volunteer@example.com','Volunteer','true']);
+  const linked = c.getVolunteer(admin, saved.volunteerId).data;
+  assert.equal(linked.accountLinked, true);
+  assert.equal(linked.accountRole, 'Volunteer');
 
   assert.equal(c.setupDynamicFieldSheets().ready, true);
   const section = c.saveDynamicSection(admin, {
