@@ -687,11 +687,13 @@ const server = http.createServer((req,res)=>{
      assert.equal(alumniShortcut.href,'reports.html?view=employment&source=alumni','alumni shortcut must deep-link to the employment report');
      assert.equal(alumniShortcut.title,alumniShortcut.expectedTitle,'alumni shortcut title must match the destination');
      assert.equal(alumniShortcut.button,alumniShortcut.expectedButton,'alumni shortcut action must be explicit');
-     const nameChange=await evaluate(`(async()=>{document.getElementById('searchInput').value='';document.getElementById('filterStatus').value='';applyFilters();const row=document.querySelector('#studentTableBody tr'),button=row?.querySelector('button[onclick^="openNameChangeModal"]');await openNameChangeModal('MBS_001');return{rowText:row?.textContent||'',button:!!button,visible:getComputedStyle(document.getElementById('nameChangeModal')).display!=='none',current:document.getElementById('nameChangeCurrentTH').textContent,history:document.getElementById('nameChangeHistoryList').textContent,label:t('nameChangeFormer'),date:formatAppDate('2026-10-11')};})()`);
+     const nameChange=await evaluate(`(async()=>{document.getElementById('searchInput').value='';document.getElementById('filterStatus').value='';applyFilters();const row=document.querySelector('#studentTableBody tr'),button=row?.querySelector('button[onclick^="openNameChangeModal"]');await openNameChangeModal('MBS_001');return{rowText:row?.textContent||'',button:!!button,visible:getComputedStyle(document.getElementById('nameChangeModal')).display!=='none',current:document.getElementById('nameChangeCurrentTH').textContent,stipNo:document.getElementById('nameChangeStipNoDisplay').textContent,profilePic:document.getElementById('nameChangeProfilePic').getAttribute('src'),history:document.getElementById('nameChangeHistoryList').textContent,label:t('nameChangeFormer'),date:formatAppDate('2026-10-11')};})()`);
      assert.match(nameChange.rowText,/ชื่อเดิม นามสกุลเดิม/,'student list must show the latest former name');
      assert.equal(nameChange.button,true,'authorized staff must receive a dedicated name-change action');
      assert.equal(nameChange.visible,true,'name-change action must open a responsive modal');
      assert.match(nameChange.current,/ทดสอบ นักเรียน/,'name-change modal must show the current name read-only');
+     assert.equal(nameChange.stipNo,'MBS_001','name-change modal must show the immutable scholarship identifier');
+     assert.match(nameChange.profilePic,/ui-avatars\.com/,'name-change modal must show a profile image or safe fallback');
      assert.match(nameChange.history,new RegExp(nameChange.date),'name history must use the shared date formatter');
      const nameChangeLanguage=await evaluate(`(()=>{const initial=LANG,target=initial==='th'?'en':'th',beforeCalls=__calls.filter(action=>action==='getStudent').length,input=document.getElementById('nameChangeFirstTH');input.value='ค่าที่ยังไม่บันทึก';setLang(target);const switched={value:input.value,history:document.getElementById('nameChangeHistoryList').textContent,date:formatAppDate('2026-10-11',target),calls:__calls.filter(action=>action==='getStudent').length-beforeCalls};setLang(initial);return switched;})()`);
      assert.equal(nameChangeLanguage.value,'ค่าที่ยังไม่บันทึก','language switching must preserve an unsaved name-change form');
@@ -731,6 +733,13 @@ const server = http.createServer((req,res)=>{
      assert.match(formerName.text,/ชื่อเดิม นามสกุลเดิม/,'student profile must retain the former identity for recognition');
    }
    if(file==='student-form.html') {
+     const identityNameChange=await evaluate(`(()=>{const section=document.getElementById('identityNameFields').closest('.form-section'),button=document.getElementById('formOfficialNameChangeBtn'),initial=LANG,target=initial==='th'?'en':'th';beginOfficialNameChange();document.getElementById('f_fname').value='ค่าที่ยังไม่บันทึก';document.getElementById('formNameChangeReason').value='เหตุผลที่ยังไม่บันทึก';setLang(target);const switched={insideIdentity:section.querySelector('#f_fname')!==null,buttonVisible:getComputedStyle(button).display!=='none',panelVisible:getComputedStyle(document.getElementById('officialNameChangePanel')).display!=='none',firstName:document.getElementById('f_fname').value,reason:document.getElementById('formNameChangeReason').value,original:document.getElementById('formNameChangeOriginal').textContent};setLang(initial);cancelOfficialNameChange();return switched;})()`);
+     assert.equal(identityNameChange.insideIdentity,true,'Thai and English name fields must remain in section 1 identity');
+     assert.equal(identityNameChange.buttonVisible,true,'authorized staff must see the name-change action in the edit form');
+     assert.equal(identityNameChange.panelVisible,true,'the form action must open official name-change details inline');
+     assert.equal(identityNameChange.firstName,'ค่าที่ยังไม่บันทึก','language switching must preserve an unsaved official name');
+     assert.equal(identityNameChange.reason,'เหตุผลที่ยังไม่บันทึก','language switching must preserve an unsaved name-change reason');
+     assert.match(identityNameChange.original,/ทดสอบ นักเรียน/,'official name-change mode must show the current identity');
      const selfFunded=await evaluate(`(()=>{
        const section=()=>document.querySelector('[data-df-section="sec_work"]');
        const status=document.querySelector('[data-df-field="fld_emp_status"] [data-df-input]');

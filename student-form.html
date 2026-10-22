@@ -97,9 +97,18 @@
 
   <!-- ─── SECTION A: Identification ─── -->
   <div class="form-section mb-4">
-    <div class="form-section-header" style="background:#1e3a8a">
-      <i data-lucide="id-card" class="w-4 h-4"></i>
-      <span data-t="secA">1. ข้อมูลการระบุตัวตน</span>
+    <div class="form-section-header flex-col sm:flex-row items-stretch sm:items-center gap-2" style="background:#1e3a8a;justify-content:space-between">
+      <div class="flex items-center gap-2">
+        <i data-lucide="id-card" class="w-4 h-4"></i>
+        <span data-t="secA">1. ข้อมูลการระบุตัวตน</span>
+      </div>
+      <button id="formOfficialNameChangeBtn" type="button" onclick="beginOfficialNameChange()"
+              class="hidden items-center justify-center gap-1.5 text-xs font-bold rounded-lg px-3 py-1.5 transition flex-shrink-0"
+              style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35)"
+              data-t-title="nameChangeTitle">
+        <i data-lucide="user-round-pen" class="w-3.5 h-3.5"></i>
+        <span data-t="nameChangeTitle">เปลี่ยนชื่อ/นามสกุล</span>
+      </button>
     </div>
     <div class="form-section-body">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -157,6 +166,72 @@
             <p class="text-xs text-gray-400" data-t="birthDateHint">ใช้ปีเกิด (ค.ศ.) เป็นรหัสผ่าน</p>
             <p id="ageDisplay" class="text-xs font-bold text-blue-600"></p>
           </div>
+        </div>
+      </div>
+
+      <!-- Thai Name -->
+      <div id="identityNameFields" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
+        <div>
+          <label class="field-label"><span data-t="titleLabel">คำนำหน้า</span> <span class="text-red-500">*</span></label>
+          <select id="f_title" class="field-select" required onchange="autoFillFromThaiTitle()">
+            <option value="นาย" data-t="uiMr">นาย</option>
+            <option value="นางสาว" data-t="uiMiss">นางสาว</option>
+            <option value="นาง" data-t="uiMrs">นาง</option>
+            <option value="เด็กชาย" data-t="uiMaster">เด็กชาย</option>
+            <option value="เด็กหญิง" data-t="uiMissChild">เด็กหญิง</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label"><span data-t="firstName">ชื่อ</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="f_fname" class="field-input" required>
+        </div>
+        <div class="md:col-span-2">
+          <label class="field-label flex justify-between items-center">
+            <span><span data-t="lastName">นามสกุล</span> <span class="text-red-500">*</span></span>
+            <label class="flex items-center gap-1 text-xs font-normal text-gray-500 cursor-pointer">
+              <input type="checkbox" id="f_noSurname" onchange="toggleSurname()" class="rounded">
+              <span data-t="noSurname">ไม่มีนามสกุล</span>
+            </label>
+          </label>
+          <input type="text" id="f_lname" class="field-input" required>
+        </div>
+      </div>
+
+      <!-- English Name -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="field-label" data-t="engTitle">คำนำหน้า (อังกฤษ)</label>
+          <select id="f_engTitle" class="field-select" onchange="autoFillFromEngTitle()">
+            <option value="">—</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Miss">Miss</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Master">Master</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" data-t="engFirstName">ชื่อภาษาอังกฤษ</label>
+          <input type="text" id="f_engFname" class="field-input" placeholder="First name">
+        </div>
+        <div class="md:col-span-2">
+          <label class="field-label" data-t="engLastName">นามสกุลภาษาอังกฤษ</label>
+          <input type="text" id="f_engLname" class="field-input" placeholder="Last name">
+        </div>
+      </div>
+
+      <div id="officialNameChangePanel" class="hidden rounded-xl border border-violet-200 bg-violet-50 p-3 sm:p-4">
+        <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
+          <i data-lucide="history" class="w-5 h-5 text-violet-700 flex-shrink-0"></i>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold text-violet-800 text-sm" data-t="nameChangeDetailsTitle">รายละเอียดการเปลี่ยนชื่อ</p>
+            <p class="text-xs text-violet-700 mt-0.5" data-t="nameChangeOfficialModeHint">แก้ไขชื่อด้านบน แล้วระบุวันที่มีผลและเหตุผล ระบบจะเก็บชื่อเดิมไว้ในประวัติ</p>
+            <p id="formNameChangeOriginal" class="text-xs text-slate-600 mt-1"></p>
+          </div>
+          <button type="button" onclick="cancelOfficialNameChange()" class="btn btn-secondary btn-sm flex-shrink-0" data-t="nameChangeCancelMode">ยกเลิกโหมดเปลี่ยนชื่อ</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <label class="block"><span class="field-label" data-t="nameChangeEffectiveDate">วันที่มีผล</span><input id="formNameChangeEffectiveDate" type="date" class="field-input" required></label>
+          <label class="block"><span class="field-label" data-t="nameChangeReason">เหตุผล/หมายเหตุ</span><textarea id="formNameChangeReason" class="field-textarea w-full" maxlength="500" rows="2" data-t-placeholder="nameChangeReasonPlaceholder"></textarea></label>
         </div>
       </div>
     </div>
@@ -416,56 +491,6 @@
             <i data-lucide="camera" class="w-4 h-4"></i>
             <span data-t="scanIdCard">สแกนบัตรประชาชน (OCR อัตโนมัติ)</span>
           </button>
-        </div>
-      </div>
-
-      <!-- Thai Name -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <label class="field-label"><span data-t="titleLabel">คำนำหน้า</span> <span class="text-red-500">*</span></label>
-          <select id="f_title" class="field-select" required onchange="autoFillFromThaiTitle()">
-            <option value="นาย" data-t="uiMr">นาย</option>
-            <option value="นางสาว" data-t="uiMiss">นางสาว</option>
-            <option value="นาง" data-t="uiMrs">นาง</option>
-            <option value="เด็กชาย" data-t="uiMaster">เด็กชาย</option>
-            <option value="เด็กหญิง" data-t="uiMissChild">เด็กหญิง</option>
-          </select>
-        </div>
-        <div>
-          <label class="field-label"><span data-t="firstName">ชื่อ</span> <span class="text-red-500">*</span></label>
-          <input type="text" id="f_fname" class="field-input" required>
-        </div>
-        <div class="md:col-span-2">
-          <label class="field-label flex justify-between items-center">
-            <span><span data-t="lastName">นามสกุล</span> <span class="text-red-500">*</span></span>
-            <label class="flex items-center gap-1 text-xs font-normal text-gray-500 cursor-pointer">
-              <input type="checkbox" id="f_noSurname" onchange="toggleSurname()" class="rounded">
-              <span data-t="noSurname">ไม่มีนามสกุล</span>
-            </label>
-          </label>
-          <input type="text" id="f_lname" class="field-input" required>
-        </div>
-      </div>
-
-      <!-- English Name -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <label class="field-label" data-t="engTitle">คำนำหน้า (อังกฤษ)</label>
-          <select id="f_engTitle" class="field-select" onchange="autoFillFromEngTitle()">
-            <option value="">—</option>
-            <option value="Mr.">Mr.</option>
-            <option value="Miss">Miss</option>
-            <option value="Mrs.">Mrs.</option>
-            <option value="Master">Master</option>
-          </select>
-        </div>
-        <div>
-          <label class="field-label" data-t="engFirstName">ชื่อภาษาอังกฤษ</label>
-          <input type="text" id="f_engFname" class="field-input" placeholder="First name">
-        </div>
-        <div class="md:col-span-2">
-          <label class="field-label" data-t="engLastName">นามสกุลภาษาอังกฤษ</label>
-          <input type="text" id="f_engLname" class="field-input" placeholder="Last name">
         </div>
       </div>
 
@@ -1258,12 +1283,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.17"></script>
-<script src="assets/js/i18n.js?v=2.6.17"></script>
-<script src="assets/js/api.js?v=2.6.17"></script>
-<script src="assets/js/auth.js?v=2.6.17"></script>
-<script src="assets/js/rbac.js?v=2.6.17"></script>
-<script src="assets/js/dynamic-fields.js?v=2.6.17"></script>
+<script src="assets/js/config.js?v=2.6.18"></script>
+<script src="assets/js/i18n.js?v=2.6.18"></script>
+<script src="assets/js/api.js?v=2.6.18"></script>
+<script src="assets/js/auth.js?v=2.6.18"></script>
+<script src="assets/js/rbac.js?v=2.6.18"></script>
+<script src="assets/js/dynamic-fields.js?v=2.6.18"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
@@ -1319,6 +1344,7 @@ document.addEventListener('rdf:languagechange', () => {
     option.textContent = levelLabel(option.value);
   });
   renderGradeFormTable();
+  if (officialNameChangeMode) renderOfficialNameChangeMode();
   if (typeof _csvRows !== 'undefined' && _csvRows.length) {
     _csvRows.forEach(row => {
       row._issues = _validateRow(row);
@@ -1504,6 +1530,8 @@ const editStipNo = urlParams.get('stipNo');
 let ocrStream = null;
 let dynamicStudentContext = {};
 let originalStudentName = null;
+let officialNameChangeMode = false;
+let officialNameChangeStartValues = null;
 
 function getDynamicCoreContext() {
   const value = id => document.getElementById(id)?.value || '';
@@ -1788,6 +1816,8 @@ function fillForm(d) {
     engTitle:String(d.EngTitle || ''), engFirstName:String(d.EngFirstName || ''), engLastName:String(d.EngLastName || ''),
     hasNoSurname:String(d.HasNoSurname || '')
   };
+  const nameChangeButton=document.getElementById('formOfficialNameChangeBtn');
+  if(editStipNo&&RBAC.has('editStudents')){nameChangeButton?.classList.remove('hidden');nameChangeButton?.classList.add('flex');}
   // sv() only sets value when val is a non-empty string/number,
   // so that missing DB fields don't clear select defaults (e.g. f_entryTerm)
   const sv = (id, val) => {
@@ -2649,6 +2679,48 @@ function studentNameEscape(value) {
   return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 }
 
+function currentFormNameValues() {
+  return {
+    title:document.getElementById('f_title')?.value||'', firstName:document.getElementById('f_fname')?.value||'', lastName:document.getElementById('f_lname')?.value||'',
+    engTitle:document.getElementById('f_engTitle')?.value||'', engFirstName:document.getElementById('f_engFname')?.value||'', engLastName:document.getElementById('f_engLname')?.value||'',
+    hasNoSurname:String(document.getElementById('f_noSurname')?.checked===true)
+  };
+}
+
+function renderOfficialNameChangeMode() {
+  const original=document.getElementById('formNameChangeOriginal');
+  if(!original||!originalStudentName)return;
+  const thai=studentThaiName(originalStudentName)||'—';
+  const english=[originalStudentName.engTitle,originalStudentName.engFirstName,originalStudentName.engLastName].filter(Boolean).join(' ');
+  original.textContent=`${t('nameChangeCurrent')}: ${thai}${english?` · ${english}`:''}`;
+}
+
+function beginOfficialNameChange() {
+  if(!editStipNo||!RBAC.has('editStudents')||!originalStudentName)return;
+  if(!officialNameChangeMode)officialNameChangeStartValues=currentFormNameValues();
+  officialNameChangeMode=true;
+  const panel=document.getElementById('officialNameChangePanel');
+  panel?.classList.remove('hidden');
+  const date=document.getElementById('formNameChangeEffectiveDate');
+  if(date&&!date.value)date.value=new Date(Date.now()+7*60*60*1000).toISOString().slice(0,10);
+  renderOfficialNameChangeMode();
+  document.getElementById('identityNameFields')?.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>document.getElementById('f_fname')?.focus(),250);
+}
+
+function cancelOfficialNameChange() {
+  if(officialNameChangeStartValues){
+    const value=(id,key)=>{const element=document.getElementById(id);if(element)element.value=officialNameChangeStartValues[key]||'';};
+    value('f_title','title');value('f_fname','firstName');value('f_lname','lastName');
+    value('f_engTitle','engTitle');value('f_engFname','engFirstName');value('f_engLname','engLastName');
+    const noSurname=document.getElementById('f_noSurname');if(noSurname)noSurname.checked=officialNameChangeStartValues.hasNoSurname==='true';toggleSurname();
+  }
+  officialNameChangeMode=false;officialNameChangeStartValues=null;
+  document.getElementById('officialNameChangePanel')?.classList.add('hidden');
+  const date=document.getElementById('formNameChangeEffectiveDate');if(date)date.value='';
+  const reason=document.getElementById('formNameChangeReason');if(reason)reason.value='';
+}
+
 async function confirmLargeStudentNameChange(data) {
   if(!originalStudentName)return true;
   const next={title:data.Title,firstName:data.FirstName,lastName:data.LastName,engTitle:data.EngTitle,engFirstName:data.EngFirstName,engLastName:data.EngLastName,hasNoSurname:data.HasNoSurname};
@@ -2656,7 +2728,17 @@ async function confirmLargeStudentNameChange(data) {
   const oldEnglish=[originalStudentName.engTitle,originalStudentName.engFirstName,originalStudentName.engLastName].filter(Boolean).join(' ').trim();
   const newEnglish=[next.engTitle,next.engFirstName,next.engLastName].filter(Boolean).join(' ').trim();
   const distance=Math.max(studentNameEditDistance(oldText,newText),studentNameEditDistance(oldEnglish,newEnglish));
-  if((oldText===newText&&oldEnglish===newEnglish)||distance<=5)return true;
+  const changed=oldText!==newText||oldEnglish!==newEnglish||String(originalStudentName.hasNoSurname||'')!==String(next.hasNoSurname||'');
+  if(officialNameChangeMode){
+    if(!RBAC.has('editStudents'))return false;
+    if(!changed){await Swal.fire(t('warning'),t('nameChangeUnchanged'),'warning');return false;}
+    const effectiveDate=document.getElementById('formNameChangeEffectiveDate')?.value||'';
+    if(!effectiveDate){await Swal.fire(t('warning'),t('nameChangeDateRequired'),'warning');return false;}
+    data.NameChangeMode='official';data.NameChangeEffectiveDate=effectiveDate;data.NameChangeReason=document.getElementById('formNameChangeReason')?.value.trim()||'';
+    const confirmation=await Swal.fire({icon:'question',title:t('nameChangeConfirmSaveTitle'),html:`<div class="text-left text-sm"><p><b>${t('nameChangeCurrent')}:</b> ${studentNameEscape(oldText||'—')}</p><p><b>${t('nameChangeNew')}:</b> ${studentNameEscape(newText||'—')}</p><p class="mt-2 text-gray-500">${studentNameEscape(t('nameChangeKeepsStipNo').replace('{stipNo}',data.StipNo||editStipNo||''))}</p></div>`,showCancelButton:true,confirmButtonText:t('nameChangeSave'),cancelButtonText:t('cancel'),confirmButtonColor:'#7c3aed'});
+    return confirmation.isConfirmed;
+  }
+  if(!changed||distance<=5)return true;
   if(RBAC.isStudent()){
     await Swal.fire(t('nameChangeReviewTitle'),t('nameChangeStudentReviewRequired'),'warning');
     return false;
