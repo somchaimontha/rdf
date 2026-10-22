@@ -136,6 +136,66 @@ test('student self-update is limited to the server-configured allowlist', () => 
   assert.equal(c._prepareStudentUpdate({ username: 'MBS_001', role: 'Student' }, { StipNo: 'MBS_002', Phone1: 'x' }), null);
 });
 
+test('official student name changes retain StipNo and append an additive history record', () => {
+  const { context:c, spreadsheet } = loadBackendWithSheets();
+  const students = spreadsheet.getSheetByName('Students');
+  students.rows = [
+    ['StipNo','Status','Title','FirstName','LastName','HasNoSurname','EngTitle','EngFirstName','EngLastName','UpdatedAt'],
+    ['MBS_001','Active','นางสาว','มะลิ','ใจดี','false','Miss','Mali','Jaidee','old']
+  ];
+  const pending = c.updateStudentData({
+    StipNo:'MBS_001', FirstName:'กัลยาณี', LastName:'นามสกุลใหม่', SavedBy:'manager',
+    _NameChangeAuthorized:true, _NameChangeActorRole:'Manager'
+  });
+  assert.equal(pending.code, 'NAME_CHANGE_CONFIRMATION_REQUIRED');
+  assert.equal(students.rows[1][3], 'มะลิ');
+  const pendingEnglish = c.updateStudentData({
+    StipNo:'MBS_001', EngFirstName:'CompletelyDifferent', EngLastName:'OfficialSurname', SavedBy:'manager',
+    _NameChangeAuthorized:true, _NameChangeActorRole:'Manager'
+  });
+  assert.equal(pendingEnglish.code, 'NAME_CHANGE_CONFIRMATION_REQUIRED', 'large English-name changes require the same review');
+  assert.equal(students.rows[1][7], 'Mali');
+
+  const changed = c.updateStudentData({
+    StipNo:'MBS_001', Title:'นางสาว', FirstName:'กัลยาณี', LastName:'นามสกุลใหม่', HasNoSurname:'false',
+    EngTitle:'Miss', EngFirstName:'Kanlayanee', EngLastName:'Newname',
+    NameChangeMode:'official', NameChangeEffectiveDate:'2026-10-22', NameChangeReason:'Legal name change',
+    SavedBy:'manager', _NameChangeAuthorized:true, _NameChangeActorRole:'Manager'
+  });
+  assert.equal(changed.status, 'success', JSON.stringify(changed));
+  assert.equal(students.rows[1][0], 'MBS_001', 'StipNo must remain immutable');
+  assert.equal(students.rows[1][3], 'กัลยาณี');
+  assert.equal(students.rows[1][4], 'นามสกุลใหม่');
+
+  const history = spreadsheet.getSheetByName('StudentNameHistory');
+  assert.ok(history, 'history sheet should be created on the first official name change');
+  assert.equal(history.rows.length, 2);
+  const historyHeaders = history.rows[0];
+  assert.equal(history.rows[1][historyHeaders.indexOf('StipNo')], 'MBS_001');
+  assert.equal(history.rows[1][historyHeaders.indexOf('OldFirstName')], 'มะลิ');
+  assert.equal(history.rows[1][historyHeaders.indexOf('NewFirstName')], 'กัลยาณี');
+  assert.equal(history.rows[1][historyHeaders.indexOf('EffectiveDate')], '2026-10-22');
+  c.ensureStudentNameHistorySheet();
+  assert.equal(history.rows.length, 2, 'schema checks must preserve existing name history');
+
+  const list = c.getStudentsData();
+  assert.equal(list.data[0].formerNameTH, 'นางสาวมะลิ ใจดี');
+  assert.equal(list.data[0].nameHistoryCount, 1);
+  assert.equal(c.getStudentByStipNo('MBS_001').data.NameHistory.length, 1);
+
+  const selfChange = c.updateStudentData({
+    StipNo:'MBS_001', FirstName:'ชื่อใหม่ทั้งหมด', LastName:'นามสกุลใหม่ทั้งหมด',
+    SavedBy:'MBS_001', _NameChangeActorRole:'Student'
+  });
+  assert.equal(selfChange.code, 'NAME_CHANGE_REVIEW_REQUIRED');
+  const correction = c.updateStudentData({
+    StipNo:'MBS_001', FirstName:'แก้คำสะกดยาว', LastName:'แก้คำสะกดนามสกุล', NameChangeMode:'correction',
+    SavedBy:'manager', _NameChangeAuthorized:true, _NameChangeActorRole:'Manager'
+  });
+  assert.equal(correction.status, 'success');
+  assert.equal(history.rows.length, 2, 'a spelling correction must not create official name history');
+});
+
 test('dynamic schema setup remains additive and defines stable value records', () => {
   const source = fs.readFileSync(path.join(root, 'databasesetup.gs'), 'utf8');
   const backend = fs.readFileSync(path.join(root, 'Code.gs'), 'utf8');

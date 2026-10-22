@@ -1258,12 +1258,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.16"></script>
-<script src="assets/js/i18n.js?v=2.6.16"></script>
-<script src="assets/js/api.js?v=2.6.16"></script>
-<script src="assets/js/auth.js?v=2.6.16"></script>
-<script src="assets/js/rbac.js?v=2.6.16"></script>
-<script src="assets/js/dynamic-fields.js?v=2.6.16"></script>
+<script src="assets/js/config.js?v=2.6.17"></script>
+<script src="assets/js/i18n.js?v=2.6.17"></script>
+<script src="assets/js/api.js?v=2.6.17"></script>
+<script src="assets/js/auth.js?v=2.6.17"></script>
+<script src="assets/js/rbac.js?v=2.6.17"></script>
+<script src="assets/js/dynamic-fields.js?v=2.6.17"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
@@ -1503,6 +1503,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const editStipNo = urlParams.get('stipNo');
 let ocrStream = null;
 let dynamicStudentContext = {};
+let originalStudentName = null;
 
 function getDynamicCoreContext() {
   const value = id => document.getElementById(id)?.value || '';
@@ -1782,6 +1783,11 @@ async function loadStudentForEdit(stipNo) {
 
 function fillForm(d) {
   dynamicStudentContext = d || {};
+  originalStudentName = {
+    title:String(d.Title || ''), firstName:String(d.FirstName || ''), lastName:String(d.LastName || ''),
+    engTitle:String(d.EngTitle || ''), engFirstName:String(d.EngFirstName || ''), engLastName:String(d.EngLastName || ''),
+    hasNoSurname:String(d.HasNoSurname || '')
+  };
   // sv() only sets value when val is a non-empty string/number,
   // so that missing DB fields don't clear select defaults (e.g. f_entryTerm)
   const sv = (id, val) => {
@@ -2626,6 +2632,55 @@ async function collectForm() {
   };
 }
 
+function studentNameEditDistance(left, right) {
+  const a=Array.from(String(left||'').trim().replace(/\s+/g,' ').toLowerCase());
+  const b=Array.from(String(right||'').trim().replace(/\s+/g,' ').toLowerCase());
+  if(!a.length)return b.length;if(!b.length)return a.length;
+  let previous=Array.from({length:b.length+1},(_,index)=>index);
+  a.forEach((char,row)=>{const current=[row+1];b.forEach((other,column)=>current.push(Math.min(current[column]+1,previous[column+1]+1,previous[column]+(char===other?0:1))));previous=current;});
+  return previous[b.length];
+}
+
+function studentThaiName(identity) {
+  return `${identity?.title||''}${identity?.firstName||''} ${identity?.lastName||''}`.trim().replace(/\s+/g,' ');
+}
+
+function studentNameEscape(value) {
+  return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+
+async function confirmLargeStudentNameChange(data) {
+  if(!originalStudentName)return true;
+  const next={title:data.Title,firstName:data.FirstName,lastName:data.LastName,engTitle:data.EngTitle,engFirstName:data.EngFirstName,engLastName:data.EngLastName,hasNoSurname:data.HasNoSurname};
+  const oldText=studentThaiName(originalStudentName),newText=studentThaiName(next);
+  const oldEnglish=[originalStudentName.engTitle,originalStudentName.engFirstName,originalStudentName.engLastName].filter(Boolean).join(' ').trim();
+  const newEnglish=[next.engTitle,next.engFirstName,next.engLastName].filter(Boolean).join(' ').trim();
+  const distance=Math.max(studentNameEditDistance(oldText,newText),studentNameEditDistance(oldEnglish,newEnglish));
+  if((oldText===newText&&oldEnglish===newEnglish)||distance<=5)return true;
+  if(RBAC.isStudent()){
+    await Swal.fire(t('nameChangeReviewTitle'),t('nameChangeStudentReviewRequired'),'warning');
+    return false;
+  }
+  const decision=await Swal.fire({
+    icon:'question',title:t('nameChangeConfirmTitle'),
+    html:`<div class="text-left text-sm"><p class="text-gray-500 mb-2">${t('nameChangeConfirmDesc')}</p><p><b>${t('nameChangeCurrent')}:</b> ${studentNameEscape(oldText||'—')}</p><p><b>${t('nameChangeNew')}:</b> ${studentNameEscape(newText||'—')}</p></div>`,
+    showCancelButton:true,showDenyButton:true,confirmButtonText:t('nameChangeOfficial'),denyButtonText:t('nameChangeCorrection'),cancelButtonText:t('cancel'),
+    confirmButtonColor:'#7c3aed',denyButtonColor:'#2563eb'
+  });
+  if(decision.isDismissed)return false;
+  if(decision.isDenied){data.NameChangeMode='correction';return true;}
+  const today=new Date(Date.now()+7*60*60*1000).toISOString().slice(0,10);
+  const details=await Swal.fire({
+    title:t('nameChangeDetailsTitle'),
+    html:`<div class="text-left space-y-3"><label class="block text-xs font-semibold text-gray-600">${t('nameChangeEffectiveDate')} *</label><input id="nameChangeEffectiveDate" type="date" value="${today}" class="swal2-input" style="width:100%;margin:0"><label class="block text-xs font-semibold text-gray-600">${t('nameChangeReason')}</label><textarea id="nameChangeReason" maxlength="500" class="swal2-textarea" style="width:100%;margin:0" placeholder="${t('nameChangeReasonPlaceholder')}"></textarea></div>`,
+    showCancelButton:true,confirmButtonText:t('nameChangeSave'),cancelButtonText:t('cancel'),confirmButtonColor:'#7c3aed',
+    preConfirm:()=>{const effectiveDate=document.getElementById('nameChangeEffectiveDate')?.value||'';if(!effectiveDate){Swal.showValidationMessage(t('nameChangeDateRequired'));return false;}return{effectiveDate,reason:document.getElementById('nameChangeReason')?.value||''};}
+  });
+  if(!details.isConfirmed)return false;
+  data.NameChangeMode='official';data.NameChangeEffectiveDate=details.value.effectiveDate;data.NameChangeReason=details.value.reason;
+  return true;
+}
+
 // ── Save ──
 async function saveStudent() {
   await DynamicFields.ready();
@@ -2637,6 +2692,7 @@ async function saveStudent() {
   const data = await collectForm();
   if (!data) return;
   const isEdit = document.getElementById('f_editMode').value === 'edit';
+  if(isEdit&&!(await confirmLargeStudentNameChange(data)))return;
   // showLoader is called AFTER all confirmation dialogs to avoid loader + popup overlap
   try {
     // ── Profile completion check — role-based ──

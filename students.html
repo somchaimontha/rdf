@@ -242,6 +242,53 @@
   </div>
 </footer>
 
+<!-- ─── Official Name Change Modal ─── -->
+<div id="nameChangeModal" class="hidden fixed inset-0 flex items-center justify-center p-2 sm:p-4"
+     style="background:rgba(15,23,42,.58);z-index:240" role="dialog" aria-modal="true" aria-labelledby="nameChangeModalTitle">
+  <div class="bg-white rounded-2xl shadow-2xl w-full flex flex-col" style="max-width:760px;max-height:94vh">
+    <div class="flex items-center gap-2 px-4 sm:px-5 py-3.5 rounded-t-2xl text-white flex-shrink-0" style="background:#7c3aed">
+      <i data-lucide="user-round-pen" class="w-5 h-5"></i>
+      <h3 id="nameChangeModalTitle" class="font-bold" data-t="nameChangeTitle">เปลี่ยนชื่อ/นามสกุล</h3>
+      <button type="button" onclick="closeNameChangeModal()" class="ml-auto opacity-75 hover:opacity-100" data-t-aria-label="close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="p-4 sm:p-5 overflow-y-auto space-y-4">
+      <input id="nameChangeStipNo" type="hidden">
+      <section class="rounded-xl border border-violet-200 bg-violet-50 p-3">
+        <p class="text-xs font-semibold text-violet-700" data-t="nameChangeCurrent">ชื่อปัจจุบัน</p>
+        <p id="nameChangeCurrentTH" class="font-bold text-slate-800 mt-1"></p>
+        <p id="nameChangeCurrentEN" class="text-xs text-slate-500"></p>
+      </section>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeThaiTitle">คำนำหน้าชื่อ (ไทย)</span><input id="nameChangeTitleTH" class="field-input mt-1 w-full" maxlength="30"></label>
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeThaiFirst">ชื่อใหม่ (ไทย)</span><input id="nameChangeFirstTH" class="field-input mt-1 w-full" maxlength="100" required></label>
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeThaiLast">นามสกุลใหม่ (ไทย)</span><input id="nameChangeLastTH" class="field-input mt-1 w-full" maxlength="100"></label>
+      </div>
+      <label class="inline-flex items-center gap-2 text-xs text-slate-600"><input id="nameChangeNoSurname" type="checkbox" onchange="syncNameChangeSurname()" class="rounded accent-violet-600"><span data-t="nameChangeNoSurname">ไม่มีนามสกุล</span></label>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeEnglishTitle">คำนำหน้าชื่อ (อังกฤษ)</span><input id="nameChangeTitleEN" class="field-input mt-1 w-full" maxlength="30"></label>
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeEnglishFirst">ชื่อใหม่ (อังกฤษ)</span><input id="nameChangeFirstEN" class="field-input mt-1 w-full" maxlength="100"></label>
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeEnglishLast">นามสกุลใหม่ (อังกฤษ)</span><input id="nameChangeLastEN" class="field-input mt-1 w-full" maxlength="100"></label>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeEffectiveDate">วันที่มีผล</span><input id="nameChangeDate" type="date" class="field-input mt-1 w-full" required></label>
+        <label class="block"><span class="text-xs font-semibold text-slate-600" data-t="nameChangeReason">เหตุผล/หมายเหตุ</span><textarea id="nameChangeReasonInput" class="field-textarea mt-1 w-full" maxlength="500" rows="2" data-t-placeholder="nameChangeReasonPlaceholder"></textarea></label>
+      </div>
+      <section id="nameChangeHistorySection" class="hidden rounded-xl border border-slate-200 p-3">
+        <h4 class="text-xs font-bold text-slate-700 mb-2" data-t="nameChangeHistory">ประวัติชื่อ</h4>
+        <div id="nameChangeHistoryList" class="space-y-2"></div>
+      </section>
+    </div>
+    <div class="px-4 sm:px-5 py-3 border-t flex flex-col-reverse sm:flex-row justify-end gap-2 flex-shrink-0">
+      <button type="button" onclick="closeNameChangeModal()" class="btn btn-secondary" data-t="cancel">ยกเลิก</button>
+      <button id="nameChangeSaveBtn" type="button" onclick="saveOfficialNameChange()" class="btn text-white" style="background:#7c3aed;border-color:#7c3aed">
+        <i data-lucide="save" class="w-4 h-4"></i><span data-t="nameChangeSave">บันทึกการเปลี่ยนชื่อ</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Grade History Modal ─── -->
 <div id="gradeModal" class="hidden fixed inset-0 flex items-center justify-center p-3"
      style="background:rgba(0,0,0,.5);z-index:200">
@@ -622,12 +669,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.16"></script>
+<script src="assets/js/config.js?v=2.6.17"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.16"></script>
-<script src="assets/js/api.js?v=2.6.16"></script>
-<script src="assets/js/auth.js?v=2.6.16"></script>
-<script src="assets/js/rbac.js?v=2.6.16"></script>
+<script src="assets/js/i18n.js?v=2.6.17"></script>
+<script src="assets/js/api.js?v=2.6.17"></script>
+<script src="assets/js/auth.js?v=2.6.17"></script>
+<script src="assets/js/rbac.js?v=2.6.17"></script>
 <script>
 lucide.createIcons();
 const user = requireAuth();
@@ -658,6 +705,10 @@ function toggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
 document.addEventListener('rdf:languagechange', () => {
   populateFilterOptions();
   applyFilters(); // re-render dynamic options, filters, and table labels
+  // Re-format cached history in the open dialog without another API request.
+  if (!document.getElementById('nameChangeModal')?.classList.contains('hidden')) {
+    renderNameChangeHistory();
+  }
 });
 
 // ── Sort key: extract trailing number from StipNo (MBS_350 → 350) ──
@@ -672,6 +723,10 @@ function instLabelBi(code) {
   if (!code) return '—';
   if (LANG === 'en') return (RDF.INSTITUTION_LABELS[code] || code);
   return (RDF.INSTITUTION_LABELS_TH && RDF.INSTITUTION_LABELS_TH[code]) || RDF.INSTITUTION_LABELS[code] || code;
+}
+
+function escapeStudentsHtml(value) {
+  return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 }
 
 // ── Level label (bilingual, shortened) ────────────────────────
@@ -788,7 +843,7 @@ function applyFilters() {
   filteredStudents = allStudents.filter(s => {
     // Text search
     if (q) {
-      const hay = [s.name, s.engTitle, s.engFname, s.engLname, s.stipNo, s.idCard, s.studentId, s.phone].join(' ').toLowerCase();
+      const hay = [s.name, s.engTitle, s.engFname, s.engLname, s.formerNameTH, s.formerNameEN, s.stipNo, s.idCard, s.studentId, s.phone].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     // Institution
@@ -860,6 +915,9 @@ function renderTable() {
     return;
   }
   noData.classList.add('hidden');
+  const canEditStudents=RBAC.has('editStudents');
+  const canDeleteStudents=RBAC.has('deleteStudents');
+  const canRunPromotion=RBAC.has('runPromotion');
 
   pageData.forEach(s => {
     const _avatarName = encodeURIComponent(((s.fname||s.engFname||'?')+' '+(s.lname||s.engLname||'')).trim());
@@ -890,6 +948,7 @@ function renderTable() {
                 ? `<div class="text-xs font-semibold leading-snug" style="color:#2563eb">${eng}</div>`
                 : `<div class="text-xs leading-snug" style="color:#d1d5db">— (${bi('ไม่มีชื่อภาษาอังกฤษ','No English name')})</div>`;
             })()}
+            ${s.formerNameTH ? `<div class="text-xs leading-snug mt-0.5" style="color:#7c3aed"><span class="font-semibold">${t('nameChangeFormer')}:</span> ${escapeStudentsHtml(s.formerNameTH)}${s.formerNameEN ? ` · ${escapeStudentsHtml(s.formerNameEN)}` : ''}${s.nameHistoryCount>1 ? ` <span class="text-slate-400">(+${s.nameHistoryCount-1})</span>` : ''}</div>` : ''}
             <div class="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
               <span>${fmtIDCard(s.idCard)}</span>
               ${(() => { const _cp = calcProfileCompletion(_studentToCompletionObj(s)); return _cp.pct < 100 ? `<span style="font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;background:${_cp.pct>=80?'#dcfce7':_cp.pct>=50?'#fef3c7':'#fee2e2'};color:${_cp.pct>=80?'#15803d':_cp.pct>=50?'#92400e':'#dc2626'}" title="${t('profileCompletion')}: ${_cp.pct}%">${_cp.pct}%</span>` : ''; })()}
@@ -958,10 +1017,10 @@ function renderTable() {
              class="btn btn-icon" style="background:#eff6ff;color:#1d4ed8">
             <i data-lucide="eye" class="w-3.5 h-3.5"></i>
           </a>
+          ${canEditStudents ? `<button type="button" onclick="openNameChangeModal('${escapeStudentsHtml(s.stipNo)}')" title="${t('nameChangeTitle')}"
+             class="btn" style="background:#f5f3ff;color:#7c3aed;padding:4px 7px;font-size:10px"><i data-lucide="user-round-pen" class="w-3.5 h-3.5"></i><span class="hide-mobile">${t('nameChangeTitle')}</span></button>
           <a href="student-form.html?stipNo=${encodeURIComponent(s.stipNo)}" title="${t('edit')}"
-             class="btn btn-icon btn-warning">
-            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-          </a>
+             class="btn btn-icon btn-warning"><i data-lucide="edit" class="w-3.5 h-3.5"></i></a>` : ''}
           <button onclick="openGradeModal('${s.stipNo}')" title="${t('arGradeHeader')}"
                   class="btn btn-icon" style="background:#faf5ff;color:#7c3aed">
             <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
@@ -970,7 +1029,7 @@ function renderTable() {
              class="btn btn-icon btn-secondary">
             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
           </a>
-          ${s.status === 'Graduated' && s.uniName && (s.uniScholarship||'').toLowerCase() !== 'no'
+          ${canRunPromotion && s.status === 'Graduated' && s.uniName && (s.uniScholarship||'').toLowerCase() !== 'no'
             ? `<button onclick="confirmMoveToUni('${s.stipNo}','${(s.uniName||'').replace(/'/g,"&#39;")}')"
                        title="${bi('ย้ายสถานะไปทุนมหาวิทยาลัย (อนุมัติทุน RDF ต่อมหาวิทยาลัย)','Approve RDF university scholarship and move to University status')}"
                        style="background:#ede9fe;color:#6d28d9;border:1.5px solid #c4b5fd;border-radius:8px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1.3;white-space:nowrap">
@@ -978,10 +1037,10 @@ function renderTable() {
                  <span>${bi('อนุมัติทุน ม.','Approve university')}</span>
                </button>`
             : ''}
-          <button onclick="confirmDelete('${s.stipNo}')" title="${t('delete')}"
+          ${canDeleteStudents ? `<button onclick="confirmDelete('${escapeStudentsHtml(s.stipNo)}')" title="${t('delete')}"
                   class="btn btn-icon btn-danger">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
+          </button>` : ''}
         </div>
       </td>`;
     tbody.appendChild(tr);
@@ -998,6 +1057,70 @@ function renderTable() {
   // Pagination
   if (perPage > 0) renderPagination(total, perPage);
   else document.getElementById('paginationWrap').innerHTML = '';
+}
+
+let activeNameChangeStudent=null;
+let activeNameHistory=[];
+
+function syncNameChangeSurname(){
+  const checked=document.getElementById('nameChangeNoSurname').checked;
+  const input=document.getElementById('nameChangeLastTH');
+  input.disabled=checked;input.required=!checked;if(checked)input.value='';
+}
+
+function renderNameChangeHistory(){
+  const section=document.getElementById('nameChangeHistorySection');
+  const list=document.getElementById('nameChangeHistoryList');
+  section.classList.toggle('hidden',activeNameHistory.length===0);list.replaceChildren();
+  activeNameHistory.forEach(item=>{
+    const article=document.createElement('article');article.className='rounded-lg bg-slate-50 border border-slate-100 p-2.5 text-xs';
+    const names=document.createElement('p');names.className='font-semibold text-slate-700';names.textContent=`${item.oldNameTH||'—'} → ${item.newNameTH||'—'}`;article.appendChild(names);
+    if(item.oldNameEN||item.newNameEN){const english=document.createElement('p');english.className='text-slate-500 mt-0.5';english.textContent=`${item.oldNameEN||'—'} → ${item.newNameEN||'—'}`;article.appendChild(english);}
+    const meta=[];if(item.effectiveDate)meta.push(`${t('nameChangeEffectiveDate')}: ${formatAppDate(item.effectiveDate)}`);if(item.changedBy)meta.push(`${t('nameChangeChangedBy')}: ${item.changedBy}`);if(item.changedAt)meta.push(formatAppDateTime(item.changedAt));
+    const details=document.createElement('p');details.className='text-[10px] text-slate-400 mt-1';details.textContent=meta.join(' · ');article.appendChild(details);
+    if(item.reason){const reason=document.createElement('p');reason.className='text-slate-600 mt-1 whitespace-pre-wrap';reason.textContent=`${t('nameChangeReason')}: ${item.reason}`;article.appendChild(reason);}
+    list.appendChild(article);
+  });
+}
+
+async function openNameChangeModal(stipNo){
+  if(!RBAC.has('editStudents'))return Swal.fire(t('error'),t('dfErrorAccessDenied'),'error');
+  const student=allStudents.find(item=>String(item.stipNo)===String(stipNo));if(!student)return;
+  activeNameChangeStudent=student;activeNameHistory=[];
+  document.getElementById('nameChangeStipNo').value=student.stipNo||'';
+  document.getElementById('nameChangeCurrentTH').textContent=student.name||'—';
+  document.getElementById('nameChangeCurrentEN').textContent=[student.engTitle,student.engFname,student.engLname].filter(Boolean).join(' ');
+  document.getElementById('nameChangeTitleTH').value=student.title||'';document.getElementById('nameChangeFirstTH').value=student.fname||'';document.getElementById('nameChangeLastTH').value=student.lname||'';
+  document.getElementById('nameChangeTitleEN').value=student.engTitle||'';document.getElementById('nameChangeFirstEN').value=student.engFname||'';document.getElementById('nameChangeLastEN').value=student.engLname||'';
+  document.getElementById('nameChangeNoSurname').checked=String(student.hasNoSurname)==='true';syncNameChangeSurname();
+  document.getElementById('nameChangeDate').value=new Date(Date.now()+7*60*60*1000).toISOString().slice(0,10);document.getElementById('nameChangeReasonInput').value='';
+  renderNameChangeHistory();document.getElementById('nameChangeModal').classList.remove('hidden');document.body.style.overflow='hidden';lucide.createIcons();
+  try{const result=await API.getStudent(stipNo);if(result.status==='success'){activeNameHistory=Array.isArray(result.data?.NameHistory)?result.data.NameHistory:[];renderNameChangeHistory();}}catch(error){console.warn('Unable to load student name history',error);}
+}
+
+function closeNameChangeModal(){document.getElementById('nameChangeModal').classList.add('hidden');document.body.style.overflow='';activeNameChangeStudent=null;activeNameHistory=[];}
+
+async function saveOfficialNameChange(){
+  if(!RBAC.has('editStudents')||!activeNameChangeStudent)return;
+  const firstName=document.getElementById('nameChangeFirstTH').value.trim();
+  const noSurname=document.getElementById('nameChangeNoSurname').checked;
+  const lastName=noSurname?'':document.getElementById('nameChangeLastTH').value.trim();
+  const effectiveDate=document.getElementById('nameChangeDate').value;
+  if(!firstName||(!noSurname&&!lastName)||!effectiveDate)return Swal.fire(t('warning'),t('nameChangeRequiredFields'),'warning');
+  const payload={
+    StipNo:activeNameChangeStudent.stipNo,Title:document.getElementById('nameChangeTitleTH').value.trim(),FirstName:firstName,LastName:lastName,HasNoSurname:String(noSurname),
+    EngTitle:document.getElementById('nameChangeTitleEN').value.trim(),EngFirstName:document.getElementById('nameChangeFirstEN').value.trim(),EngLastName:document.getElementById('nameChangeLastEN').value.trim(),
+    NameChangeMode:'official',NameChangeEffectiveDate:effectiveDate,NameChangeReason:document.getElementById('nameChangeReasonInput').value.trim()
+  };
+  const oldName=activeNameChangeStudent.name||'—',newName=`${payload.Title}${payload.FirstName} ${payload.LastName}`.trim();
+  const confirm=await Swal.fire({icon:'question',title:t('nameChangeConfirmSaveTitle'),html:`<div class="text-left text-sm"><p><b>${t('nameChangeCurrent')}:</b> ${escapeStudentsHtml(oldName)}</p><p><b>${t('nameChangeNew')}:</b> ${escapeStudentsHtml(newName)}</p><p class="mt-2 text-slate-500">${t('nameChangeKeepsStipNo').replace('{stipNo}',escapeStudentsHtml(payload.StipNo))}</p></div>`,showCancelButton:true,confirmButtonText:t('nameChangeSave'),cancelButtonText:t('cancel'),confirmButtonColor:'#7c3aed'});
+  if(!confirm.isConfirmed)return;
+  showLoader(true,t('saving'));
+  try{
+    const result=await API.updateStudent(payload);showLoader(false);
+    if(result.status!=='success')throw new Error(result.message||t('nameChangeSaveError'));
+    API.clearReadCache();closeNameChangeModal();await loadStudents();Swal.fire({icon:'success',title:t('nameChangeSaved'),timer:1800,showConfirmButton:false});
+  }catch(error){showLoader(false);Swal.fire(t('error'),localizeApiMessage(error.message)||t('nameChangeSaveError'),'error');}
 }
 
 function renderPagination(total, perPage) {

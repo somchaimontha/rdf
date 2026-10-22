@@ -29,7 +29,7 @@ window.fetch = async (url, options) => {
  const action = requestBody ? requestBody.action : requestUrl.searchParams.get('action');
  __calls.push(action);
  if (action==='getStudents' && location.pathname.endsWith('/dashboard.html')) await new Promise(resolve=>setTimeout(resolve,3000));
- const student = {stipNo:'MBS_001',fname:'ทดสอบ',lname:'นักเรียน',engFname:'Test',engLname:'Student',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active',scholarshipYear:2025,entryYear:2025,phone:'0800000000',idCard:'1234567890123'};
+ const student = {stipNo:'MBS_001',title:'นาย',fname:'ทดสอบ',lname:'นักเรียน',name:'นายทดสอบ นักเรียน',engTitle:'Mr.',engFname:'Test',engLname:'Student',formerNameTH:'นายชื่อเดิม นามสกุลเดิม',formerNameEN:'Mr. Former Student',nameHistoryCount:1,hasNoSurname:'false',institution:'MBS',level:'มัธยมศึกษาปีที่ 4 (Grade 10)',status:'Active',scholarshipYear:2025,entryYear:2025,phone:'0800000000',idCard:'1234567890123'};
  let data = {status:'success',data:[],rows:[],students:[],pending:[],sessions:{},stats:{Total:1,MBS:1}};
  if (action==='ping') data.status='ok';
  if (action==='getDashboardStats') data.stats={MBS:28,VC:15,UNI:3,Alumni:128,Total:174};
@@ -58,7 +58,7 @@ window.fetch = async (url, options) => {
    {BatchID:'2568_PROMO',Date:'Fri May 01 2026 00:00:00 GMT+0700 (Indochina Time)',AcademicYear:'2568',OldLevel:'',ActionTaken:'',NewLevel:'',NewStatus:'Graduated',UniName:'มหาวิทยาลัยราชภัฏเชียงใหม่',UniNameEN:'Chiang Mai Rajabhat University',UniFaculty:'มนุษยศาสตร์และสังคมศาสตร์',UniFacultyEN:'Humanities and Social Sciences',UniMajor:'รัฐประศาสนศาสตร์',UniMajorEN:'Public Administration',Notes:''},
    {BatchID:'UNKNOWN_PROMO',Date:'Sun May 31 2026 00:00:00 GMT+0700 (Indochina Time)',AcademicYear:'UNKNOWN',OldLevel:'',ActionTaken:'',NewLevel:'',NewStatus:'Active',UniName:'',UniNameEN:'',Notes:''}
  ];
- if (action==='getStudent') data.data={StipNo:'MBS_001',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:location.pathname.endsWith('/student-form.html')?'Graduated':'Active',ScholarshipYear:2025,UniScholarship:location.pathname.endsWith('/student-form.html')?'No':''};
+ if (action==='getStudent') data.data={StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngTitle:'Mr.',EngFirstName:'Test',EngLastName:'Student',Institution:'MBS',CurrentLevel:student.level,Status:location.pathname.endsWith('/student-form.html')?'Graduated':'Active',ScholarshipYear:2025,UniScholarship:location.pathname.endsWith('/student-form.html')?'No':'',NameHistory:[{historyId:'SNH_fixture',stipNo:'MBS_001',oldNameTH:'นายชื่อเดิม นามสกุลเดิม',oldNameEN:'Mr. Former Student',newNameTH:'นายทดสอบ นักเรียน',newNameEN:'Mr. Test Student',effectiveDate:'2026-10-11',reason:'Legal name change',changedBy:'Test Admin',changedAt:'2026-10-11T07:30:00Z'}]};
  if (action==='getAdmins') data.data=[{Username:'test',FirstName:'Test',LastName:'Admin',Role:'SuperAdmin',Status:'Active',LoginCount:1}];
  if (action==='generateStipNo') data.stipNo='MBS_002';
  const volunteer={volunteerId:'vol_fixture',prefix:'นางสาว',firstName:'อาสา',lastName:'ทดสอบ',engFirstName:'Test',engLastName:'Volunteer',nickname:'อาย',birthDate:'2000-02-03',phone:'0812345678',email:'volunteer@example.com',lineId:'rdf-volunteer',facebook:'rdf.volunteer',instagram:'rdf_volunteer',otherSocial:'',educationLevel:'ปริญญาตรี',educationInstitution:'มหาวิทยาลัยเชียงใหม่',fieldOfStudy:'สังคมศาสตร์',addressLine:'123 ถนนตัวอย่าง',subdistrict:'สุเทพ',district:'เมืองเชียงใหม่',province:'เชียงใหม่',postalCode:'50200',volunteerStartDate:'2026-10-01',volunteerEndDate:'',availability:'วันเสาร์',skills:'ประสานงาน',emergencyContactName:'ผู้ติดต่อ',emergencyContactPhone:'0890000000',photoUrl:'',photoFileId:'',status:'active',notes:'',updatedAt:'2026-10-19T08:00:00Z'};
@@ -687,6 +687,19 @@ const server = http.createServer((req,res)=>{
      assert.equal(alumniShortcut.href,'reports.html?view=employment&source=alumni','alumni shortcut must deep-link to the employment report');
      assert.equal(alumniShortcut.title,alumniShortcut.expectedTitle,'alumni shortcut title must match the destination');
      assert.equal(alumniShortcut.button,alumniShortcut.expectedButton,'alumni shortcut action must be explicit');
+     const nameChange=await evaluate(`(async()=>{document.getElementById('searchInput').value='';document.getElementById('filterStatus').value='';applyFilters();const row=document.querySelector('#studentTableBody tr'),button=row?.querySelector('button[onclick^="openNameChangeModal"]');await openNameChangeModal('MBS_001');return{rowText:row?.textContent||'',button:!!button,visible:getComputedStyle(document.getElementById('nameChangeModal')).display!=='none',current:document.getElementById('nameChangeCurrentTH').textContent,history:document.getElementById('nameChangeHistoryList').textContent,label:t('nameChangeFormer'),date:formatAppDate('2026-10-11')};})()`);
+     assert.match(nameChange.rowText,/ชื่อเดิม นามสกุลเดิม/,'student list must show the latest former name');
+     assert.equal(nameChange.button,true,'authorized staff must receive a dedicated name-change action');
+     assert.equal(nameChange.visible,true,'name-change action must open a responsive modal');
+     assert.match(nameChange.current,/ทดสอบ นักเรียน/,'name-change modal must show the current name read-only');
+     assert.match(nameChange.history,new RegExp(nameChange.date),'name history must use the shared date formatter');
+     const nameChangeLanguage=await evaluate(`(()=>{const initial=LANG,target=initial==='th'?'en':'th',beforeCalls=__calls.filter(action=>action==='getStudent').length,input=document.getElementById('nameChangeFirstTH');input.value='ค่าที่ยังไม่บันทึก';setLang(target);const switched={value:input.value,history:document.getElementById('nameChangeHistoryList').textContent,date:formatAppDate('2026-10-11',target),calls:__calls.filter(action=>action==='getStudent').length-beforeCalls};setLang(initial);return switched;})()`);
+     assert.equal(nameChangeLanguage.value,'ค่าที่ยังไม่บันทึก','language switching must preserve an unsaved name-change form');
+     assert.match(nameChangeLanguage.history,new RegExp(nameChangeLanguage.date),'language switching must re-format cached name-history dates');
+     assert.equal(nameChangeLanguage.calls,0,'language switching must not reload name history');
+     await evaluate(`closeNameChangeModal()`);
+     const readOnlyActions=await evaluate(`(()=>{const stored=localStorage.getItem('rdfUser');localStorage.setItem('rdfUser',JSON.stringify({...JSON.parse(stored),role:'Finance'}));renderTable();const row=document.querySelector('#studentTableBody tr'),result={nameChange:!!row?.querySelector('button[onclick^="openNameChangeModal"]'),edit:!!row?.querySelector('a[href^="student-form.html"]'),remove:!!row?.querySelector('button[onclick^="confirmDelete"]')};localStorage.setItem('rdfUser',stored);renderTable();return result;})()`);
+     assert.deepEqual(readOnlyActions,{nameChange:false,edit:false,remove:false},'read-only roles must not see student mutation actions');
    }
    if(initialLang==='en' && file==='academic-results.html') {
      const dynamic=await evaluate(`(()=>{document.getElementById('fltYear').value='2568';document.getElementById('fltSem').value='1';applyFilters();return document.getElementById('entryGroupsContainer').textContent;})()`);
@@ -712,6 +725,10 @@ const server = http.createServer((req,res)=>{
      assert.match(promotionHistory.text,new RegExp(promotionHistory.label),'legacy university history must receive a meaningful action label');
      assert.match(promotionHistory.text,initialLang==='th'?/พฤษภาคม 1 2569/:/May 1 2026/,'promotion history date must use the shared unambiguous formatter');
      assert.doesNotMatch(promotionHistory.text,/UNKNOWN|GMT\+0700/,'raw history metadata must not reach the UI');
+     const formerName=await evaluate(`({visible:!document.getElementById('profileFormerName').classList.contains('hidden'),text:document.getElementById('profileFormerName').textContent,label:t('nameChangeFormer')})`);
+     assert.equal(formerName.visible,true,'student profile must show the latest former name');
+     assert.match(formerName.text,new RegExp(formerName.label),'former-name label must follow the active language');
+     assert.match(formerName.text,/ชื่อเดิม นามสกุลเดิม/,'student profile must retain the former identity for recognition');
    }
    if(file==='student-form.html') {
      const selfFunded=await evaluate(`(()=>{
