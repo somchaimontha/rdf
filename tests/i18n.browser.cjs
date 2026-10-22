@@ -411,6 +411,12 @@ const server = http.createServer((req,res)=>{
      assert.equal(dynamic,true,'async labels, attributes, and icons');
    }
    if(file==='reports.html') {
+     const sharedIdentity=await evaluate(`(()=>{const previousCycles=_TRACKING_CYCLES,previousReady=_TRACKING_CYCLES_READY;_TRACKING_CYCLES=[];_TRACKING_CYCLES_READY=true;const empty=employmentTrackingPeriods().length;_TRACKING_CYCLES=previousCycles;_TRACKING_CYCLES_READY=previousReady;const cell=employmentPersonCell({stipNo:'MBS_001',nameTH:'มะลิ ใจดี',nameEN:'Mali Jaidee',photoUrl:'https://example.com/mali.jpg',institution:'MBS',studentStatus:'Graduated'});return{empty,text:cell.textContent,photo:cell.querySelector('img')?.getAttribute('src'),profile:cell.querySelector('a')?.getAttribute('href')};})()`);
+     assert.equal(sharedIdentity.empty,0,'empty canonical cycles must not resurrect legacy settings');
+     assert.match(sharedIdentity.text,/มะลิ ใจดี/,'alumni identity must show Thai name in both screen languages');
+     assert.match(sharedIdentity.text,/Mali Jaidee/,'alumni identity must also show English name');
+     assert.equal(sharedIdentity.photo,'https://example.com/mali.jpg','alumni identity must use the main profile photo');
+     assert.equal(sharedIdentity.profile,'student-profile.html?stipNo=MBS_001','alumni identity must link to the main profile');
      await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
      const primaryView=await evaluate(`(()=>{const tabs=[...document.querySelectorAll('.report-view-tab')];return {view:document.getElementById('reportsWorkspace').dataset.reportView,employment:getComputedStyle(document.getElementById('employmentReportSection')).display,scholarship:getComputedStyle(document.getElementById('scholarshipReports')).display,print:getComputedStyle(document.querySelector('[data-report-action="scholarship"]')).display,widths:tabs.map(tab=>tab.getBoundingClientRect().width),heights:tabs.map(tab=>tab.getBoundingClientRect().height),labels:tabs.map(tab=>tab.textContent),source:document.getElementById('scholarshipDataSummary').textContent};})()`);
      assert.equal(primaryView.view,'scholarship','scholarship statistics must be the default primary view');

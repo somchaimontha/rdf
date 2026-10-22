@@ -704,6 +704,7 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
           <p id="empPeriodSummary" class="emp-period-summary"></p>
           <p class="mt-1 text-[10px] text-slate-500" data-t="empPeriodHint">ช่วงวันที่จะตรวจทั้งวันที่ติดต่อและวันติดตามครั้งถัดไป</p>
           <div id="empSavedPeriods" class="emp-period-groups"></div>
+          <p class="mt-2 text-xs text-slate-500" data-t="trackingSharedSourceHint">ใช้รอบเดียวกับรายงานภาวะการทำงานของศิษย์เก่า จัดการวันติดตามและเลือกแบบสอบถามได้จากหน้าจัดการรอบกลาง</p>
         </section>
 
         <div class="emp-coverage">
@@ -1207,12 +1208,12 @@ body:has(#rdfLocalAuditBanner) #rptPrintModal { bottom:30px; }
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.15"></script>
+<script src="assets/js/config.js?v=2.6.16"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.15"></script>
-<script src="assets/js/auth.js?v=2.6.15"></script>
-<script src="assets/js/rbac.js?v=2.6.15"></script>
-<script src="assets/js/api.js?v=2.6.15"></script>
+<script src="assets/js/i18n.js?v=2.6.16"></script>
+<script src="assets/js/auth.js?v=2.6.16"></script>
+<script src="assets/js/rbac.js?v=2.6.16"></script>
+<script src="assets/js/api.js?v=2.6.16"></script>
 <script>
 // Scholarship reports and alumni-employment reports have separate permissions.
 RBAC.enforcePage(['viewReports','viewAlumniEmployment']);
@@ -1336,9 +1337,10 @@ function statusLabel(key, lang=LANG) {
 let _SETTINGS = {};
 const EMPLOYMENT_TRACKING_PERIODS_KEY='EMPLOYMENT_TRACKING_PERIODS';
 let _TRACKING_CYCLES=[];
+let _TRACKING_CYCLES_READY=false;
 
 function employmentTrackingPeriods(){
-  if(_TRACKING_CYCLES.length)return _TRACKING_CYCLES.map(cycle=>({periodId:cycle.cycleId,startDate:cycle.startDate,endDate:cycle.endDate||'',asOfMonth:cycle.asOfMonth,label:LANG==='en'?(cycle.nameEN||cycle.nameTH):(cycle.nameTH||cycle.nameEN),active:true}));
+  if(_TRACKING_CYCLES_READY)return _TRACKING_CYCLES.map(cycle=>({periodId:cycle.cycleId,startDate:cycle.startDate,endDate:cycle.endDate||'',asOfMonth:cycle.asOfMonth,label:LANG==='en'?(cycle.nameEN||cycle.nameTH):(cycle.nameTH||cycle.nameEN),active:true}));
   const stored=_SETTINGS[EMPLOYMENT_TRACKING_PERIODS_KEY];
   if(!stored||!Array.isArray(stored.periods))return [];
   return stored.periods.filter(period=>period&&period.active!==false&&/^\d{4}-\d{2}-\d{2}$/.test(period.startDate||'')&&/^\d{4}-\d{2}$/.test(period.asOfMonth||''))
@@ -1357,7 +1359,7 @@ function employmentPeriodRangeLabel(period){
 
 function renderEmploymentSavedPeriods(){
   const holder=document.getElementById('empSavedPeriods');if(!holder)return;
-  document.getElementById('empPeriodSaveBtn')?.classList.toggle('hidden',!(RBAC.has('manageNotifications')||RBAC.has('manageSurveys')));
+  document.getElementById('empPeriodSaveBtn')?.classList.toggle('hidden',!RBAC.has('manageTrackingCycles'));
   holder.replaceChildren();const periods=employmentTrackingPeriods();
   if(!periods.length){const empty=document.createElement('p');empty.className='text-[10px] text-slate-400';empty.textContent=t('empPeriodSavedEmpty');holder.appendChild(empty);return;}
   const groups=new Map();periods.forEach(period=>{const year=period.startDate.slice(0,4);if(!groups.has(year))groups.set(year,[]);groups.get(year).push(period);});
@@ -1377,7 +1379,7 @@ function renderEmploymentSavedPeriods(){
 
 function openTrackingCycleManager(){const url=new URL('tracking-management.html',location.href);url.searchParams.set('embed','1');const localMode=new URLSearchParams(location.search).get('localMode');if(localMode)url.searchParams.set('localMode',localMode);url.searchParams.set('v',RDF.VERSION);document.getElementById('trackingCycleManagerFrame').src=url.href;document.getElementById('trackingCycleManagerModal').classList.remove('hidden');document.body.style.overflow='hidden';}
 function closeTrackingCycleManager(event){if(event&&event.target!==document.getElementById('trackingCycleManagerModal'))return;document.getElementById('trackingCycleManagerModal').classList.add('hidden');document.body.style.overflow='';}
-async function reloadTrackingCycles(){try{const result=await API.getTrackingCycleData();if(result.status==='success'&&!result.setupRequired)_TRACKING_CYCLES=result.cycles||[];else _TRACKING_CYCLES=[];}catch(error){_TRACKING_CYCLES=[];}renderEmploymentSavedPeriods();}
+async function reloadTrackingCycles(){try{const result=await API.getTrackingCycleData();if(result.status==='success'){_TRACKING_CYCLES_READY=!result.setupRequired;_TRACKING_CYCLES=result.cycles||[];}}catch(error){console.warn('Unable to refresh tracking cycles',error);}renderEmploymentSavedPeriods();}
 
 async function useEmploymentSavedPeriod(periodId){
   const period=employmentTrackingPeriods().find(item=>item.periodId===periodId);if(!period)return;
@@ -1501,7 +1503,8 @@ async function loadReportData() {
 
     _CACHE.raw = studRes.data || [];
     _SETTINGS  = settRes.data || {};
-    _TRACKING_CYCLES = cycleRes.status==='success'&&!cycleRes.setupRequired ? (cycleRes.cycles||[]) : [];
+    _TRACKING_CYCLES_READY = cycleRes.status==='success'&&!cycleRes.setupRequired;
+    _TRACKING_CYCLES = _TRACKING_CYCLES_READY ? (cycleRes.cycles||[]) : [];
     _CACHE.loadedAt = new Date().toISOString();
     if (_EMP_CACHE.loaded && _EMP_CACHE.response && !_EMP_CACHE.response.setupRequired) renderEmploymentRows();
     renderEmploymentSavedPeriods();
@@ -2185,6 +2188,19 @@ function employmentCell(lines, className) {
   return cell;
 }
 
+function employmentPersonCell(person) {
+  const cell=document.createElement('td');cell.className='px-3 py-2 align-top';
+  const holder=document.createElement('div');holder.style.cssText='display:flex;align-items:flex-start;gap:10px;min-width:210px';
+  const avatar=document.createElement('span');avatar.style.cssText='position:relative;display:flex;align-items:center;justify-content:center;width:42px;height:42px;flex-shrink:0;border-radius:50%;overflow:hidden;background:#ecfdf5;color:#047857;font-weight:700';
+  avatar.textContent=Array.from(employmentName(person)||'?').slice(0,2).join('');
+  if(person.photoUrl){const url=String(person.photoUrl);if(/^https?:\/\//i.test(url)){const img=document.createElement('img');img.src=driveImgUrl(url);img.alt=employmentName(person);img.loading='lazy';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover';img.addEventListener('error',()=>img.remove(),{once:true});avatar.appendChild(img);}}
+  const copy=document.createElement('div');copy.style.minWidth='0';
+  const link=document.createElement('a');link.href='student-profile.html?stipNo='+encodeURIComponent(person.stipNo);link.className='emp-cell-line font-semibold text-blue-800';link.textContent=person.nameTH||person.nameEN||person.stipNo;copy.appendChild(link);
+  if(person.nameEN&&person.nameEN!==person.nameTH){const english=document.createElement('span');english.className='emp-cell-line emp-cell-muted';english.textContent=person.nameEN;copy.appendChild(english);}
+  [ [person.stipNo,person.institution].filter(Boolean).join(' · '),statusLabel(person.studentStatus)].forEach(text=>{const line=document.createElement('span');line.className='emp-cell-line emp-cell-muted';line.textContent=text;copy.appendChild(line);});
+  holder.append(avatar,copy);cell.appendChild(holder);return cell;
+}
+
 function employmentFollowUpActionCell(person, history) {
   const cell = document.createElement('td');
   cell.className = 'px-3 py-2 align-top text-center no-print';
@@ -2357,11 +2373,7 @@ function renderEmploymentRows() {
       row.className = 'hover:bg-gray-50';
       row.style.borderBottom = '1px solid #f1f5f9';
       if (index === 0) {
-        const personCell = employmentCell([
-          { text:employmentName(person), strong:true },
-          { text:[person.stipNo, person.institution].filter(Boolean).join(' · '), muted:true },
-          { text:statusLabel(person.studentStatus), muted:true },
-        ]);
+        const personCell = employmentPersonCell(person);
         personCell.rowSpan = histories.length;
         row.appendChild(personCell);
 
@@ -3164,7 +3176,7 @@ function printEmploymentReport(){document.querySelectorAll('input[name="empCompo
 // ═══════════════════════════════════════════════════════════
 function rptToggleLang() { setLang(LANG === 'th' ? 'en' : 'th'); }
 
-window.addEventListener('message',event=>{if(event.origin===location.origin&&event.data?.type==='rdf:tracking-cycles-updated')reloadTrackingCycles();});
+window.addEventListener('message',event=>{if(event.origin===location.origin&&event.data?.type==='rdf:tracking-cycles-updated'){API.clearReadCache();reloadTrackingCycles();}});
 document.addEventListener('rdf:languagechange', () => {
   const btn = document.getElementById('langBtn');
   if (btn) btn.textContent = LANG === 'th' ? 'EN' : 'TH';

@@ -107,6 +107,17 @@ test('survey schema setup is additive and idempotent', () => {
   assert.equal(formSheet.rows.length, 2, 'setup rerun must preserve existing rows');
 });
 
+test('legacy tracking periods merge into the shared list once per date range', () => {
+  const { context:c } = loadSurveyBackend();
+  const admin = { username:'admin', role:'SuperAdmin' };
+  c.setupSurveySchemaForUser(admin);
+  const period = { periodId:'legacy_1', startDate:'2026-01-01', endDate:'2026-12-31', asOfMonth:'2026-12', active:true };
+  c._legacyTrackingPeriods = () => [period, { ...period, periodId:'legacy_2' }];
+  assert.equal(c._migrateLegacyTrackingPeriods(admin), 1);
+  assert.equal(c._migrateLegacyTrackingPeriods(admin), 0);
+  assert.equal(c.getTrackingCycleData(admin).cycles.length, 1);
+});
+
 test('survey authoring validates matrix questions and locks published forms', () => {
   const { context:c } = loadSurveyBackend();
   const admin = { username:'admin', role:'SuperAdmin' };

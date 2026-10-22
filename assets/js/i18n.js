@@ -518,7 +518,8 @@ const T = {
     volunteerSave: "บันทึกอาสาสมัคร", volunteerSaved: "บันทึกข้อมูลอาสาสมัครแล้ว", volunteerArchive: "ปิดข้อมูล", volunteerArchiveConfirm: "ข้อมูลจะไม่แสดงในรายชื่อ แต่ยังเก็บไว้ในฐานข้อมูล", volunteerUpdatedAt: "อัปเดตล่าสุด", volunteerServicePeriod: "ช่วงเวลาปฏิบัติงาน", volunteerRequiredHint: "ช่องที่มี * จำเป็นต้องกรอก",
     volunteerSetupPreviewError: "ตรวจสอบโครงสร้างข้อมูลอาสาสมัครไม่สำเร็จ", volunteerSetupError: "ติดตั้งระบบอาสาสมัครไม่สำเร็จ", volunteerSetupRequired: "กรุณาติดตั้งระบบอาสาสมัครก่อน", volunteerLoadError: "โหลดข้อมูลอาสาสมัครไม่สำเร็จ", volunteerNotFound: "ไม่พบข้อมูลอาสาสมัคร", volunteerValidationError: "กรุณาตรวจชื่อ นามสกุล อีเมล วันที่เริ่ม และช่วงวันที่ให้ถูกต้อง", volunteerSaveError: "บันทึกข้อมูลอาสาสมัครไม่สำเร็จ", volunteerArchiveError: "ปิดข้อมูลอาสาสมัครไม่สำเร็จ", volunteerPhotoInvalid: "กรุณาเลือกรูป JPG, PNG หรือ WEBP ขนาดไม่เกิน 4 MB", volunteerPhotoUploadError: "อัปโหลดรูปอาสาสมัครไม่สำเร็จ",
     /* Alumni surveys */
-    surveyManageTitle: "จัดการแบบสอบถามศิษย์เก่า", surveyManageSubtitle: "สร้างแบบสอบถาม กำหนดรอบ และติดตามผลตอบกลับ",
+    surveyManageTitle: "จัดการแบบสอบถามศิษย์เก่า", surveyManageSubtitle: "สร้างแบบสอบถาม เชื่อมกับรอบรายงานและการติดตามกลาง และติดตามผลตอบกลับ",
+    trackingSharedSourceHint: "ใช้รอบเดียวกับรายงานภาวะการทำงานของศิษย์เก่า จัดการวันติดตามและเลือกแบบสอบถามได้จากหน้าจัดการรอบกลาง",
     surveyShortcut: "แบบสอบถามศิษย์เก่า", surveyShortcutDesc: "จัดการแบบสอบถามและดูอัตราการตอบ",
     surveySetupTitle: "ยังไม่ได้ติดตั้งโครงสร้างแบบสอบถาม", surveySetupDesc: "ระบบจะเพิ่มเฉพาะชีตและหัวคอลัมน์ที่ขาด โดยไม่เปลี่ยนข้อมูลนักเรียนหรือข้อมูลเดิม",
     surveyInstall: "ติดตั้งระบบแบบสอบถาม", surveyInstalling: "กำลังติดตั้งระบบแบบสอบถาม...",
@@ -2039,7 +2040,8 @@ const T = {
     volunteerSave: "Save Volunteer", volunteerSaved: "Volunteer profile saved", volunteerArchive: "Archive", volunteerArchiveConfirm: "The profile will be hidden from the list but retained in storage.", volunteerUpdatedAt: "Last updated", volunteerServicePeriod: "Service period", volunteerRequiredHint: "Fields marked * are required",
     volunteerSetupPreviewError: "Unable to inspect volunteer storage", volunteerSetupError: "Unable to install the volunteer system", volunteerSetupRequired: "Install the volunteer system first", volunteerLoadError: "Unable to load volunteers", volunteerNotFound: "Volunteer not found", volunteerValidationError: "Check the name, email, start date, and date range", volunteerSaveError: "Unable to save the volunteer profile", volunteerArchiveError: "Unable to archive the volunteer profile", volunteerPhotoInvalid: "Choose a JPG, PNG, or WEBP image up to 4 MB", volunteerPhotoUploadError: "Unable to upload the volunteer photo",
     /* Alumni surveys */
-    surveyManageTitle: "Alumni Survey Management", surveyManageSubtitle: "Create surveys, schedule campaigns, and monitor responses",
+    surveyManageTitle: "Alumni Survey Management", surveyManageSubtitle: "Create surveys, link shared reporting and tracking cycles, and monitor responses",
+    trackingSharedSourceHint: "Uses the same cycles as alumni employment reports. Manage tracking dates and select a survey in the shared cycle manager.",
     surveyShortcut: "Alumni Surveys", surveyShortcutDesc: "Manage surveys and review response rates",
     surveySetupTitle: "Survey storage is not installed", surveySetupDesc: "Only missing sheets and headers will be added. Student and existing data will not be changed.",
     surveyInstall: "Install Survey System", surveyInstalling: "Installing survey system...",

@@ -431,9 +431,9 @@ test('employment report joins profile identity without copying it into work valu
   assert.equal(c.setupEmploymentHistorySchema(admin).ready, true);
 
   const students = spreadsheet.getSheetByName('Students');
-  students.rows[0].push('Title', 'FirstName', 'LastName', 'Institution', 'ScholarshipYear');
+  students.rows[0].push('Title', 'FirstName', 'LastName', 'Institution', 'ScholarshipYear', 'EngFirstName', 'EngLastName', 'ProfilePicURL');
   students.rows[1][1] = 'Graduated';
-  students.rows[1].push('นางสาว', 'มะลิ', 'ใจดี', 'MBS', '2020');
+  students.rows[1].push('นางสาว', 'มะลิ', 'ใจดี', 'MBS', '2020', 'Mali', 'Jaidee', 'https://example.com/mali.jpg');
 
   const fields = c.DynamicFieldRepository.readTable('CustomFieldDefinitions').objects;
   const byKey = Object.fromEntries(fields.map(field => [field.FieldKey, field.FieldID]));
@@ -458,6 +458,8 @@ test('employment report joins profile identity without copying it into work valu
   assert.equal(report.summary.reportedPeople, 1);
   assert.equal(report.summary.employmentRecords, 1);
   assert.equal(report.data[0].nameTH, 'นางสาวมะลิ ใจดี');
+  assert.equal(report.data[0].nameEN, 'Mali Jaidee');
+  assert.equal(report.data[0].photoUrl, 'https://example.com/mali.jpg');
   assert.equal(report.data[0].histories[0].employerName, 'RDF Foundation');
   assert.equal(report.data[0].histories[0].durationMonths, 15);
   assert.equal(report.data[0].histories[0].current, true);
