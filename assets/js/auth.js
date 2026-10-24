@@ -681,10 +681,10 @@ async function finishStudentOrPasswordLogin(result, username) {
   window.location.href = authLoginDestination();
 }
 
-async function handleGoogleLogin(idToken) {
+async function handleGoogleLogin(idToken, accountType) {
   showLoader(true, t('googleChecking'));
   try {
-    const result = await API.loginWithGoogle(idToken);
+    const result = await API.loginWithGoogle(idToken, accountType || 'admin');
     showLoader(false);
     if (result.status === 'success') {
       setUser({

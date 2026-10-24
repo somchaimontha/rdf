@@ -73,8 +73,11 @@ const _API_CODE_I18N_KEYS = {
   STUDENT_PASSWORD_POLICY:'studentSetupPasswordPolicy', STUDENT_ACCOUNT_NOT_FOUND:'studentAccountNotFound',
   STUDENT_BIRTH_DATE_MISMATCH:'studentBirthDateMismatch', STUDENT_EMAIL_IN_USE:'studentEmailInUse',
   STUDENT_EMAIL_MISMATCH:'studentEmailMismatch',
-  STUDENT_EMAIL_SEND_FAILED:'studentEmailSendFailed', STUDENT_VERIFICATION_EXPIRED:'studentVerificationExpired',
-  STUDENT_VERIFICATION_LOCKED:'studentVerificationLocked', STUDENT_VERIFICATION_INVALID:'studentVerificationInvalid'
+  STUDENT_EMAIL_SEND_FAILED:'studentEmailSendFailed', STUDENT_EMAIL_QUOTA_EXHAUSTED:'studentEmailQuotaExhausted',
+  STUDENT_VERIFICATION_EXPIRED:'studentVerificationExpired',
+  STUDENT_VERIFICATION_LOCKED:'studentVerificationLocked', STUDENT_VERIFICATION_INVALID:'studentVerificationInvalid',
+  STUDENT_GOOGLE_EMAIL_NOT_LINKED:'studentGoogleEmailNotLinked', GOOGLE_EMAIL_UNVERIFIED:'googleEmailUnverified',
+  GOOGLE_AUDIENCE_INVALID:'googleLoginFailed'
 };
 
 function _localizeStructuredApiData(data) {
@@ -332,7 +335,9 @@ const API = {
   },
   async getAdmins()               { return apiGet({ action: 'getAdmins' }, _API_TIMEOUT_SETTINGS_MS); },
   async saveAdmin(data)            { return apiPost({ action: 'saveAdmin',   admin: data,   reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
-  async loginWithGoogle(idToken)   { return apiPost({ action: 'loginWithGoogle', idToken }); },
+  async loginWithGoogle(idToken, accountType) {
+    return apiPost({ action:'loginWithGoogle', idToken, accountType:accountType || 'admin' });
+  },
   async deleteAdmin(username)      { return apiPost({ action: 'deleteAdmin', username,      reqUser: (getUser()||{}).username||'' }, _API_TIMEOUT_SETTINGS_MS); },
   async getSystemSettings()        { return apiGet({ action: 'getSystemSettings' }, _API_TIMEOUT_SETTINGS_MS); },
   async getNotificationFeed(force) { return apiGet({ action: 'getNotificationFeed', ...(force ? { force:'1' } : {}) }, _API_TIMEOUT_SETTINGS_MS); },
@@ -383,6 +388,9 @@ const API = {
       birthDateConfirmed:confirmations.birthDateConfirmed === true,
       nonGmailConfirmed:confirmations.nonGmailConfirmed === true
     }, _API_TIMEOUT_SETTINGS_MS);
+  },
+  async resendStudentFirstLoginCode(setupToken) {
+    return apiPost({ action:'resendStudentFirstLoginCode', setupToken }, _API_TIMEOUT_SETTINGS_MS);
   },
   async completeStudentFirstLogin(setupToken, verificationCode) {
     return apiPost({ action:'completeStudentFirstLogin', setupToken, verificationCode }, _API_TIMEOUT_SETTINGS_MS);

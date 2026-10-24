@@ -62,6 +62,7 @@ function setup() {
   const properties = new Map();
   const cache = new Map();
   const emails = [];
+  const mailState = { quota:100, fail:false };
   let uuid = 0;
   const props = {
     getProperty(key) { return properties.has(key) ? properties.get(key) : null; },
@@ -81,12 +82,18 @@ function setup() {
       getUuid() { uuid += 1; return crypto.createHash('sha256').update(`uuid-${uuid}`).digest('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12}).*/, '$1-$2-$3-$4-$5'); },
       formatDate(value) { return new Date(value).toISOString(); },
     },
-    MailApp:{ sendEmail(to, subject, body) { emails.push({ to, subject, body }); }, getRemainingDailyQuota() { return 100; } },
+    MailApp:{
+      sendEmail(to, subject, body) {
+        if (mailState.fail) throw new Error('simulated mail failure');
+        emails.push({ to, subject, body });
+      },
+      getRemainingDailyQuota() { return mailState.quota; }
+    },
     Logger:{ log() {} }, console,
   };
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(root, 'Code.gs'), 'utf8'), context);
-  return { c:context, sheets, properties, emails };
+  return { c:context, sheets, properties, emails, mailState };
 }
 
 function emailCode(message) {
@@ -196,6 +203,57 @@ test('student password recovery uses only the verified email and rotates the sto
   assert.equal(c.handleLogin('1111111111111', 'NewSecure2', 'student').status, 'success');
 });
 
+test('student OTP can be resent and mail delivery failures are reported safely', () => {
+  const { c, emails, mailState, sheets } = setup();
+  const legacy = c.handleLogin('1111111111111', '2005', 'student');
+  const begun = beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
+  assert.equal(begun.status, 'success');
+  const firstCode = emailCode(emails[0]);
+  const resent = c.resendStudentFirstLoginCode(legacy.setupToken);
+  assert.equal(resent.status, 'success');
+  assert.equal(emails.length, 2);
+  const secondCode = emailCode(emails[1]);
+  assert.notEqual(secondCode, firstCode);
+  assert.equal(c.completeStudentFirstLogin(legacy.setupToken, firstCode).code, 'STUDENT_VERIFICATION_INVALID');
+  assert.equal(c.completeStudentFirstLogin(legacy.setupToken, secondCode).status, 'success');
+
+  const quotaSetup = setup();
+  const quotaLegacy = quotaSetup.c.handleLogin('1111111111111', '2005', 'student');
+  quotaSetup.mailState.quota = 0;
+  const quotaResult = beginEnrollment(quotaSetup.c, quotaLegacy.setupToken, 'quota@gmail.com', '2005-05-10', 'SecurePass1');
+  assert.equal(quotaResult.code, 'STUDENT_EMAIL_QUOTA_EXHAUSTED');
+  assert.equal(quotaSetup.emails.length, 0);
+  const logRows = quotaSetup.sheets.get('Logs').rows.flat().join(' ');
+  assert.match(logRows, /STUDENT_FIRST_LOGIN_EMAIL_FAILED/);
+
+  quotaSetup.mailState.quota = 100;
+  quotaSetup.mailState.fail = true;
+  const failed = beginEnrollment(quotaSetup.c, quotaLegacy.setupToken, 'quota@gmail.com', '2005-05-10', 'SecurePass1');
+  assert.equal(failed.code, 'STUDENT_EMAIL_SEND_FAILED');
+  assert.equal(JSON.stringify(sheets.get('StudentAuth')?.rows || []).includes(firstCode), false, 'OTP must never be stored in plain text');
+});
+
+test('Google student sign-in requires a Google-verified email linked to completed student setup', () => {
+  const { c, emails } = setup();
+  let tokenInfo = { email:'mali@example.com', email_verified:'true' };
+  c.UrlFetchApp = { fetch() { return { getContentText() { return JSON.stringify(tokenInfo); } }; } };
+
+  assert.equal(c.loginWithGoogle('token-before-setup', 'student').code, 'STUDENT_GOOGLE_EMAIL_NOT_LINKED');
+  const legacy = c.handleLogin('1111111111111', '2005', 'student');
+  beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
+  c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
+
+  const signedIn = c.loginWithGoogle('valid-token', 'student');
+  assert.equal(signedIn.status, 'success');
+  assert.equal(signedIn.role, 'Student');
+  assert.equal(signedIn.stipNo, 'MBS_001');
+  assert.equal(signedIn.email, 'mali@example.com');
+  assert.ok(signedIn.sessionToken);
+
+  tokenInfo = { email:'mali@example.com', email_verified:'false' };
+  assert.equal(c.loginWithGoogle('unverified-token', 'student').code, 'GOOGLE_EMAIL_UNVERIFIED');
+});
+
 test('authorized staff can manage the recovery email without resetting the password', () => {
   const { c, sheets, properties, emails } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
@@ -254,6 +312,11 @@ test('first-login UI exposes identity, full-width email, dual-calendar birth dat
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /data-t="studentLoginIdentifier"/);
   assert.match(html, /role === 'student' \? 'studentLoginIdentifier' : 'username'/);
+  assert.match(html, /id="googleLoginSection"[\s\S]*?data-t="studentLoginWithGoogle"/);
+  assert.match(html, /handleGoogleLogin\(response\.credential, _currentRole\)/);
+  assert.match(html, /API\.resendStudentFirstLoginCode\(setupToken\)/);
+  assert.match(html, /studentPasswordResetEmailLabel/);
+  assert.match(html, /id="fpIdentifier"[\s\S]*?width:100%/);
   assert.match(html, /studentSetupProfileCard\(loginResult\)/);
   assert.match(html, /studentSetupExistingEmail/);
   assert.match(html, /\.student-setup-input\s*\{[\s\S]*?width:100%/);
