@@ -577,11 +577,38 @@
         </div>
       </div>
       <div class="mb-4">
-        <label class="field-label"><span data-t="emailField">อีเมล (สำหรับเข้าสู่ระบบ) / Email (for login)</span></label>
+        <label class="field-label"><span data-t="emailField">อีเมลติดต่อในโปรไฟล์</span></label>
         <div class="relative">
           <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
           <input type="email" id="f_email" class="field-input" style="padding-left:38px"
                  placeholder="example@gmail.com" autocomplete="off">
+        </div>
+      </div>
+      <div id="studentAccountEmailAdmin" class="hidden mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <div class="flex flex-col gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-bold text-blue-900" data-t="studentAccountEmailAdminTitle">จัดการอีเมลบัญชีนักเรียน</p>
+              <span id="studentAccountEmailStatus" class="rounded-full bg-white px-2 py-1 text-xs font-semibold text-blue-700"></span>
+            </div>
+            <p class="mt-1 text-xs leading-5 text-blue-800" data-t="studentAccountEmailAdminDesc">อีเมลนี้ใช้สำหรับกู้คืนรหัสผ่าน ระบบจะปรับอีเมลในโปรไฟล์ให้ตรงกัน การบันทึกจะไม่เปลี่ยนหรือรีเซ็ตรหัสผ่าน</p>
+            <p id="studentAccountEmailPendingNote" class="hidden mt-1 text-xs leading-5 text-amber-700" data-t="studentAccountEmailPendingDesc">อีเมลจะบันทึกในโปรไฟล์ และนักเรียนต้องยืนยันอีเมลนี้เมื่อเข้าสู่ระบบครั้งแรก</p>
+          </div>
+          <div>
+            <label for="studentAccountRecoveryEmail" class="field-label" data-t="studentAccountRecoveryEmail">อีเมลกู้คืนที่ใช้งานจริง</label>
+            <input type="email" id="studentAccountRecoveryEmail" class="field-input w-full" style="width:100%"
+                   placeholder="example@gmail.com" autocomplete="off">
+          </div>
+          <div id="studentAccountEmailMeta" class="hidden grid grid-cols-1 gap-2 text-xs text-blue-800 md:grid-cols-2">
+            <p><span data-t="studentAccountEmailUpdatedAt">แก้ไขอีเมลล่าสุด</span>: <span id="studentAccountEmailUpdatedAt">—</span></p>
+            <p><span data-t="studentAccountEmailManagedBy">ผู้แก้ไขล่าสุด</span>: <span id="studentAccountEmailManagedBy">—</span></p>
+          </div>
+          <div>
+            <button type="button" id="studentAccountEmailSaveBtn" class="btn btn-primary btn-sm" onclick="saveStudentAccountEmail()">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+              <span data-t="studentAccountEmailSave">บันทึกอีเมลบัญชี</span>
+            </button>
+          </div>
         </div>
       </div>
       <!-- Address split -->
@@ -1283,12 +1310,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.20"></script>
-<script src="assets/js/i18n.js?v=2.6.20"></script>
-<script src="assets/js/api.js?v=2.6.20"></script>
-<script src="assets/js/auth.js?v=2.6.20"></script>
-<script src="assets/js/rbac.js?v=2.6.20"></script>
-<script src="assets/js/dynamic-fields.js?v=2.6.20"></script>
+<script src="assets/js/config.js?v=2.6.21"></script>
+<script src="assets/js/i18n.js?v=2.6.21"></script>
+<script src="assets/js/api.js?v=2.6.21"></script>
+<script src="assets/js/auth.js?v=2.6.21"></script>
+<script src="assets/js/rbac.js?v=2.6.21"></script>
+<script src="assets/js/dynamic-fields.js?v=2.6.21"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
@@ -1344,6 +1371,7 @@ document.addEventListener('rdf:languagechange', () => {
     option.textContent = levelLabel(option.value);
   });
   renderGradeFormTable();
+  renderStudentAccountEmailAdmin();
   if (officialNameChangeMode) renderOfficialNameChangeMode();
   if (typeof _csvRows !== 'undefined' && _csvRows.length) {
     _csvRows.forEach(row => {
@@ -1532,6 +1560,7 @@ let dynamicStudentContext = {};
 let originalStudentName = null;
 let officialNameChangeMode = false;
 let officialNameChangeStartValues = null;
+let studentAccountAdminData = null;
 
 function getDynamicCoreContext() {
   const value = id => document.getElementById(id)?.value || '';
@@ -1799,6 +1828,7 @@ async function loadStudentForEdit(stipNo) {
       return;
     }
     fillForm(result.data);
+    if (RBAC.has('editStudents')) loadStudentAccountEmailAdmin(stipNo);
     // Load grade records for this student (separate call to avoid slowing form load)
     loadGradesForStudent(stipNo);
   } catch(e) {
@@ -2761,6 +2791,98 @@ async function confirmLargeStudentNameChange(data) {
   if(!details.isConfirmed)return false;
   data.NameChangeMode='official';data.NameChangeEffectiveDate=details.value.effectiveDate;data.NameChangeReason=details.value.reason;
   return true;
+}
+
+async function loadStudentAccountEmailAdmin(stipNo) {
+  const panel = document.getElementById('studentAccountEmailAdmin');
+  const profileEmail = document.getElementById('f_email');
+  if (!panel || !RBAC.has('editStudents') || !stipNo) return;
+  panel.classList.remove('hidden');
+  if (profileEmail) {
+    profileEmail.readOnly = true;
+    profileEmail.setAttribute('aria-readonly', 'true');
+    profileEmail.classList.add('bg-gray-100');
+  }
+  try {
+    const result = await API.getStudentAccount(stipNo);
+    if (result.status !== 'success') throw new Error(result.message || t('studentAccountEmailLoadError'));
+    studentAccountAdminData = result.data || {};
+    const input = document.getElementById('studentAccountRecoveryEmail');
+    if (input) input.value = studentAccountAdminData.recoveryEmail || studentAccountAdminData.profileEmail || '';
+    renderStudentAccountEmailAdmin();
+  } catch (error) {
+    studentAccountAdminData = null;
+    RDF.logError('student-form.html', 'loadStudentAccountEmailAdmin()', error.message || t('studentAccountEmailLoadError'));
+    const status = document.getElementById('studentAccountEmailStatus');
+    if (status) status.textContent = t('studentAccountEmailLoadError');
+    const saveButton = document.getElementById('studentAccountEmailSaveBtn');
+    if (saveButton) saveButton.disabled = true;
+  }
+}
+
+function renderStudentAccountEmailAdmin() {
+  const data = studentAccountAdminData;
+  const panel = document.getElementById('studentAccountEmailAdmin');
+  if (!panel || panel.classList.contains('hidden') || !data) return;
+  const status = document.getElementById('studentAccountEmailStatus');
+  const pendingNote = document.getElementById('studentAccountEmailPendingNote');
+  if (status) status.textContent = t(data.accountConfigured ? 'studentAccountEmailConfigured' : 'studentAccountEmailPending');
+  pendingNote?.classList.toggle('hidden', !!data.accountConfigured);
+  const updatedAt = document.getElementById('studentAccountEmailUpdatedAt');
+  const managedBy = document.getElementById('studentAccountEmailManagedBy');
+  const meta = document.getElementById('studentAccountEmailMeta');
+  if (updatedAt) updatedAt.textContent = data.emailUpdatedAt ? formatAppDateTime(data.emailUpdatedAt, LANG) : '—';
+  if (managedBy) managedBy.textContent = data.emailManagedBy || '—';
+  meta?.classList.toggle('hidden', !data.emailUpdatedAt && !data.emailManagedBy);
+}
+
+async function saveStudentAccountEmail() {
+  if (!RBAC.has('editStudents') || !editStipNo || !studentAccountAdminData) return;
+  const input = document.getElementById('studentAccountRecoveryEmail');
+  const email = String(input?.value || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 180) {
+    await Swal.fire(t('warning'), t('studentSetupEmailInvalid'), 'warning');
+    input?.focus();
+    return;
+  }
+  const descriptionKey = studentAccountAdminData.accountConfigured
+    ? 'studentAccountEmailConfirmDesc'
+    : 'studentAccountEmailConfirmPendingDesc';
+  const confirmationDescription = t(descriptionKey).replace('{email}', email) +
+    (!/@(gmail\.com|googlemail\.com)$/i.test(email) ? ' ' + t('studentSetupNonGmailDesc') : '');
+  const confirmation = await Swal.fire({
+    icon:'question',
+    title:t('studentAccountEmailConfirmTitle'),
+    html:`<div class="text-left text-sm leading-6">${studentNameEscape(confirmationDescription)}</div>`,
+    showCancelButton:true,
+    confirmButtonText:t('studentAccountEmailSave'),
+    cancelButtonText:t('cancel'),
+    confirmButtonColor:'#1e3a8a'
+  });
+  if (!confirmation.isConfirmed) return;
+  const button = document.getElementById('studentAccountEmailSaveBtn');
+  if (button) button.disabled = true;
+  showLoader(true, t('saving'));
+  try {
+    const result = await API.updateStudentAccountEmail(editStipNo, email);
+    showLoader(false);
+    if (result.status !== 'success') {
+      await Swal.fire(t('error'), localizeApiMessage(result.message || t('studentAccountEmailLoadError')), 'error');
+      return;
+    }
+    studentAccountAdminData = result.data || studentAccountAdminData;
+    const profileEmail = document.getElementById('f_email');
+    if (profileEmail) profileEmail.value = studentAccountAdminData.profileEmail || email;
+    if (input) input.value = studentAccountAdminData.recoveryEmail || studentAccountAdminData.profileEmail || email;
+    renderStudentAccountEmailAdmin();
+    await Swal.fire(t('studentAccountEmailSaved'), t('studentAccountEmailSavedDesc'), 'success');
+  } catch (error) {
+    showLoader(false);
+    RDF.logError('student-form.html', 'saveStudentAccountEmail()', error.message || 'Account email update failed');
+    await Swal.fire(t('error'), localizeApiMessage(error.message || t('studentAccountEmailLoadError')), 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 // ── Save ──

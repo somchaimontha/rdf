@@ -268,6 +268,7 @@ const API = {
   async getDashboardStats()     { return apiGet({ action: 'getDashboardStats' }); },
   async getStudents()          { return apiGet({ action: 'getStudents' }); },
   async getStudent(stipNo)     { return apiGet({ action: 'getStudent', stipNo }); },
+  async getStudentAccount(stipNo) { return apiGet({ action:'getStudentAccount', stipNo }); },
   async previewVolunteerSetup() { return apiGet({ action:'previewVolunteerSetup' }, _API_TIMEOUT_SETTINGS_MS); },
   async setupVolunteerSchema() { return apiPost({ action:'setupVolunteerSchema' }, _API_TIMEOUT_SETUP_MS); },
   async getVolunteers() { return apiGet({ action:'getVolunteers' }, _API_TIMEOUT_SETTINGS_MS); },
@@ -283,6 +284,9 @@ const API = {
   async getUniNames()          { return apiGet({ action: 'getUniNames' }); },
   async saveStudent(data)      { return apiPost({ action: 'saveStudent',   student: data }); },
   async updateStudent(data)    { return apiPost({ action: 'updateStudent', student: data }); },
+  async updateStudentAccountEmail(stipNo, email) {
+    return apiPost({ action:'updateStudentAccountEmail', stipNo, email });
+  },
   async getDynamicFormSchema(entityType, entityId) {
     return apiGet({ action: 'getDynamicFormSchema', entityType: entityType || 'student', entityId: entityId || '' });
   },

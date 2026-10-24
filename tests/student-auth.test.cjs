@@ -65,6 +65,7 @@ function setup() {
   let uuid = 0;
   const props = {
     getProperty(key) { return properties.has(key) ? properties.get(key) : null; },
+    getProperties() { return Object.fromEntries(properties); },
     setProperty(key, value) { properties.set(key, String(value)); },
     deleteProperty(key) { properties.delete(key); },
   };
@@ -184,6 +185,58 @@ test('student password recovery uses only the verified email and rotates the sto
   assert.equal(c.handleLogin('1111111111111', 'NewSecure2', 'student').status, 'success');
 });
 
+test('authorized staff can manage the recovery email without resetting the password', () => {
+  const { c, sheets, properties, emails } = setup();
+  const legacy = c.handleLogin('1111111111111', '2005', 'student');
+  beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
+  c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
+
+  c.requestPasswordReset('mali@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
+  assert.ok([...properties.keys()].some(key => key.startsWith('RESET_')), 'an outstanding reset token should exist before the email change');
+
+  const authSheet = sheets.get('StudentAuth');
+  const authHeaders = authSheet.rows[0];
+  const authRow = authSheet.rows[1];
+  const passwordHash = authRow[authHeaders.indexOf('PasswordHash')];
+  const passwordSalt = authRow[authHeaders.indexOf('PasswordSalt')];
+  const manager = { username:'staff@example.com', role:'Manager' };
+  const summary = c.getStudentAccountForAdmin(manager, 'MBS_001');
+  assert.equal(summary.status, 'success');
+  assert.equal(summary.data.accountConfigured, true);
+  assert.equal(summary.data.recoveryEmail, 'mali@example.com');
+  assert.equal(JSON.stringify(summary).includes(passwordHash), false, 'account summary must never expose password hashes');
+
+  const emailCountBeforeUpdate = emails.length;
+  const updated = c.updateStudentAccountEmail(manager, 'MBS_001', 'NewRecovery@Gmail.com');
+  assert.equal(updated.status, 'success');
+  assert.equal(updated.passwordChanged, false);
+  assert.equal(updated.resetEmailSent, false);
+  assert.equal(updated.data.profileEmail, 'newrecovery@gmail.com');
+  assert.equal(updated.data.recoveryEmail, 'newrecovery@gmail.com');
+  assert.equal(emails.length, emailCountBeforeUpdate, 'admin email management must not send a password-reset email');
+  assert.equal([...properties.keys()].some(key => key.startsWith('RESET_')), false, 'outstanding reset links must be revoked');
+  assert.equal(authRow[authHeaders.indexOf('PasswordHash')], passwordHash);
+  assert.equal(authRow[authHeaders.indexOf('PasswordSalt')], passwordSalt);
+  assert.equal(authRow[authHeaders.indexOf('EmailManagedBy')], 'staff@example.com');
+  assert.equal(c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'success');
+
+  c.requestPasswordReset('mali@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
+  assert.equal(emails.length, emailCountBeforeUpdate, 'the previous email must no longer receive recovery mail');
+  c.requestPasswordReset('newrecovery@gmail.com', 'https://somchaimontha.github.io/rdf/', 'student');
+  assert.equal(emails.length, emailCountBeforeUpdate + 1, 'future recovery requests must use the new email');
+
+  const denied = c.updateStudentAccountEmail({ username:'MBS_001', role:'Student' }, 'MBS_001', 'other@gmail.com');
+  assert.equal(denied.code, 'ACCESS_DENIED');
+  assert.equal(c.updateStudentAccountEmail(manager, 'MBS_001', 'used@example.com').code, 'STUDENT_EMAIL_IN_USE');
+
+  const pending = c.updateStudentAccountEmail(manager, 'MBS_002', 'pending@gmail.com');
+  assert.equal(pending.status, 'success');
+  assert.equal(pending.data.accountConfigured, false);
+  assert.equal(pending.data.profileEmail, 'pending@gmail.com');
+  assert.equal(pending.data.recoveryEmail, '', 'pre-enrollment email remains subject to first-login verification');
+  assert.equal(authSheet.rows.filter(row => row[0] === 'MBS_002').length, 0, 'email management must not create a password account');
+});
+
 test('first-login UI exposes identity, full-width email, dual-calendar birth date, password visibility, and review', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /studentSetupProfileCard\(loginResult\)/);
@@ -195,4 +248,14 @@ test('first-login UI exposes identity, full-width email, dual-calendar birth dat
   assert.match(html, /studentSetupBindPasswordToggle/);
   assert.match(html, /reviewStudentFirstLogin/);
   assert.match(html, /studentSetupReviewPasswordStored/);
+});
+
+test('student edit UI provides a separate admin account-email control', () => {
+  const html = fs.readFileSync(path.join(root, 'student-form.html'), 'utf8');
+  const api = fs.readFileSync(path.join(root, 'assets/js/api.js'), 'utf8');
+  assert.match(html, /id="studentAccountEmailAdmin"/);
+  assert.match(html, /id="studentAccountRecoveryEmail"[\s\S]*?style="width:100%"/);
+  assert.match(html, /API\.updateStudentAccountEmail\(editStipNo, email\)/);
+  assert.match(html, /formatAppDateTime\(data\.emailUpdatedAt, LANG\)/);
+  assert.match(api, /updateStudentAccountEmail\(stipNo, email\)/);
 });
