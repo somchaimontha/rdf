@@ -644,22 +644,16 @@ async function handleLogin() {
       result.message = localizeApiMessage(result.message, 'loginFailed');
     }
     showLoader(false);
-    if (result.status === 'success') {
-      setUser({
-        name: result.name, role: result.role,
-        stipNo: result.stipNo || '', pic: result.pic || '',
-        username: id, loginTime: Date.now(),
-        loginCount: result.loginCount || 0,
-        lastLogin: result.lastLogin || '',
-        sessionToken: result.sessionToken || ''
-      });
-      if (result.duplicateSession) {
-        await Swal.fire({
-          icon: 'warning', title: t('warning'),
-          text: t('duplicateLogin'), confirmButtonText: t('confirm')
-        });
+    if (result.status === 'setup_required' && role === 'student') {
+      if (typeof handleStudentFirstLoginSetup === 'function') {
+        await handleStudentFirstLoginSetup(result, id);
+      } else {
+        Swal.fire(t('error'), t('studentSetupUnavailable'), 'error');
       }
-      window.location.href = authLoginDestination();
+      return;
+    }
+    if (result.status === 'success') {
+      await finishStudentOrPasswordLogin(result, id);
     } else {
       Swal.fire(t('error'), result.message || t('loginFailed'), 'error');
     }
@@ -668,6 +662,23 @@ async function handleLogin() {
     const msg = e.name === 'AbortError' ? t('connectionTimeout') : (t('network_error') || e.message);
     Swal.fire(t('error'), msg, 'error');
   }
+}
+
+async function finishStudentOrPasswordLogin(result, username) {
+  setUser({
+    name:result.name, role:result.role,
+    stipNo:result.stipNo || '', pic:result.pic || '',
+    username:result.username || username || result.stipNo || '', loginTime:Date.now(),
+    loginCount:result.loginCount || 0, lastLogin:result.lastLogin || '',
+    sessionToken:result.sessionToken || ''
+  });
+  if (result.duplicateSession) {
+    await Swal.fire({
+      icon:'warning', title:t('warning'), text:t('duplicateLogin'),
+      confirmButtonText:t('confirm')
+    });
+  }
+  window.location.href = authLoginDestination();
 }
 
 async function handleGoogleLogin(idToken) {

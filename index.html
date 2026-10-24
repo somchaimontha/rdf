@@ -265,7 +265,7 @@
           <span data-t="loginBtn">เข้าสู่ระบบ</span>
         </button>
 
-        <!-- Forgot password — admin tab only -->
+        <!-- Password recovery for student and admin accounts -->
         <div id="forgotPwdRow" style="display:none;text-align:center;margin-top:10px">
           <button type="button" onclick="forgotPassword()"
             style="background:none;border:none;cursor:pointer;font-size:12px;color:#6b7280;text-decoration:underline;font-family:inherit">
@@ -276,7 +276,7 @@
 
       <!-- Hint -->
       <div class="login-hint" id="loginHintBox">
-        <span id="hintStudent" data-t="loginHint">นักเรียน: เลขบัตร/รหัสนักเรียน/เบอร์โทร | รหัสผ่าน: ปีเกิด ค.ศ.</span>
+        <span id="hintStudent" data-t="loginHint">นักเรียนเข้าสู่ระบบครั้งแรกด้วยปีเกิด ค.ศ. แล้วตั้งรหัสผ่านใหม่</span>
         <span id="hintAdmin" style="display:none" data-t="loginHintAdmin">ผู้ดูแล: Username และรหัสผ่านที่ตั้งค่าในระบบ หรือเข้าด้วย Google Account ที่ผูกไว้</span>
         <span id="adminContactWrap" style="display:block;margin-top:4px">
           <a id="adminContactLink" href="#" target="_blank" rel="noopener"
@@ -296,13 +296,15 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.18"></script>
-<script src="assets/js/i18n.js?v=2.6.18"></script>
-<script src="assets/js/api.js?v=2.6.18"></script>
-<script src="assets/js/auth.js?v=2.6.18"></script>
+<script src="assets/js/config.js?v=2.6.19"></script>
+<script src="assets/js/i18n.js?v=2.6.19"></script>
+<script src="assets/js/api.js?v=2.6.19"></script>
+<script src="assets/js/auth.js?v=2.6.19"></script>
 <script>
 document.getElementById('appVersion').textContent = RDF.VERSION;
-if (getUser()) window.location.href = authLoginDestination();
+const _passwordResetToken = new URLSearchParams(window.location.search).get('rt');
+if (_passwordResetToken) clearUser();
+if (getUser() && !_passwordResetToken) window.location.href = authLoginDestination();
 
 // ═══════════════════════════════════════════
 // ROLE TOGGLE
@@ -331,9 +333,9 @@ function setLoginRole(role) {
 
   // Re-apply i18n (in case language is EN)
   setLang(LANG);
-  // Show forgot-password link only for admin tab
+  // Both account types support email password recovery.
   const fp = document.getElementById('forgotPwdRow');
-  if (fp) fp.style.display = role === 'admin' ? 'block' : 'none';
+  if (fp) fp.style.display = 'block';
 }
 
 // ═══════════════════════════════════════════
@@ -430,8 +432,7 @@ async function handleGoogleCredential(response) {
   setLang(readSavedLang());
   setLoginRole('student');
 
-  const _rt = new URLSearchParams(window.location.search).get('rt');
-  if (_rt) handleResetToken(_rt);
+  if (_passwordResetToken) handleResetToken(_passwordResetToken);
 
   async function loadLoginSettings() {
     try {
@@ -470,42 +471,130 @@ async function handleGoogleCredential(response) {
 })();
 
 // ═══════════════════════════════════════════
+// STUDENT FIRST-LOGIN ENROLLMENT
+// ═══════════════════════════════════════════
+function studentPasswordPolicyMessage(value) {
+  if (value.length < 8) return t('passwordMinLength');
+  if (value.length > 128) return t('passwordMaxLength');
+  if (!/[A-Z]/.test(value)) return t('passwordNeedUppercase');
+  if (!/[a-z]/.test(value)) return t('passwordNeedLowercase');
+  if (!/[0-9]/.test(value)) return t('passwordNeedNumber');
+  return '';
+}
+
+async function handleStudentFirstLoginSetup(loginResult, loginId) {
+  const setupToken = loginResult?.setupToken || '';
+  if (!setupToken) {
+    Swal.fire(t('error'), t('studentSetupUnavailable'), 'error');
+    return;
+  }
+
+  let enrollment;
+  while (!enrollment) {
+    const modal = await Swal.fire({
+      icon:'info', title:t('studentSetupTitle'),
+      html:`
+        <p style="font-size:12px;color:#64748b;line-height:1.6;margin-bottom:12px">${t('studentSetupDesc')}</p>
+        <label for="studentSetupEmail" style="display:block;text-align:left;font-size:12px;font-weight:700;color:#475569">${t('studentSetupEmail')}</label>
+        <input id="studentSetupEmail" type="email" class="swal2-input" autocomplete="email" placeholder="${t('studentSetupEmailPlaceholder')}" style="font-size:13px;margin-top:5px">
+        <label for="studentSetupBirthDate" style="display:block;text-align:left;font-size:12px;font-weight:700;color:#475569;margin-top:10px">${t('studentSetupBirthDate')}</label>
+        <input id="studentSetupBirthDate" type="date" class="swal2-input" autocomplete="bday" style="font-size:13px;margin-top:5px">
+        <label for="studentSetupPassword" style="display:block;text-align:left;font-size:12px;font-weight:700;color:#475569;margin-top:10px">${t('studentSetupNewPassword')}</label>
+        <input id="studentSetupPassword" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupNewPassword')}" style="font-size:13px;margin-top:5px">
+        <input id="studentSetupPasswordConfirm" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupConfirmPassword')}" style="font-size:13px">
+        <p style="font-size:11px;color:#64748b;text-align:left;line-height:1.5;margin-top:8px">${t('studentSetupPasswordPolicy')}</p>`,
+      confirmButtonText:t('studentSetupSendCode'), cancelButtonText:t('cancel'),
+      confirmButtonColor:'#1e3a8a', showCancelButton:true, allowOutsideClick:false,
+      focusConfirm:false,
+      preConfirm:() => {
+        const email=document.getElementById('studentSetupEmail')?.value?.trim() || '';
+        const birthDate=document.getElementById('studentSetupBirthDate')?.value || '';
+        const password=document.getElementById('studentSetupPassword')?.value || '';
+        const confirmation=document.getElementById('studentSetupPasswordConfirm')?.value || '';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { Swal.showValidationMessage(t('studentSetupEmailInvalid')); return false; }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) { Swal.showValidationMessage(t('studentSetupBirthDateRequired')); return false; }
+        const policyMessage=studentPasswordPolicyMessage(password);
+        if (policyMessage) { Swal.showValidationMessage(policyMessage); return false; }
+        if (password !== confirmation) { Swal.showValidationMessage(t('passwordMismatch')); return false; }
+        return { email, birthDate, password };
+      }
+    });
+    if (!modal.value) return;
+    Swal.fire({title:t('studentSetupSendingCode'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+      const result=await API.beginStudentFirstLogin(setupToken,modal.value.email,modal.value.birthDate,modal.value.password);
+      if (result.status === 'success') enrollment=result;
+      else await Swal.fire(t('error'),result.message || t('studentSetupError'),'error');
+    } catch(e) {
+      await Swal.fire(t('error'),e.message || t('network_error'),'error');
+    }
+  }
+
+  while (true) {
+    const codeModal=await Swal.fire({
+      icon:'info', title:t('studentSetupVerifyTitle'),
+      html:`<p style="font-size:12px;color:#64748b;line-height:1.6">${t('studentSetupVerifyDesc').replace('{email}',enrollment.maskedEmail || '')}</p>
+        <input id="studentSetupCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="swal2-input" placeholder="${t('studentSetupCodePlaceholder')}" style="font-size:20px;text-align:center;letter-spacing:.25em">`,
+      confirmButtonText:t('studentSetupVerify'), cancelButtonText:t('cancel'),
+      confirmButtonColor:'#16a34a', showCancelButton:true, allowOutsideClick:false,
+      focusConfirm:false,
+      preConfirm:() => {
+        const code=document.getElementById('studentSetupCode')?.value?.trim() || '';
+        if (!/^\d{6}$/.test(code)) { Swal.showValidationMessage(t('studentSetupCodeInvalid')); return false; }
+        return code;
+      }
+    });
+    if (!codeModal.value) return;
+    Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+      const completed=await API.completeStudentFirstLogin(setupToken,codeModal.value);
+      if (completed.status === 'success') {
+        await Swal.fire({icon:'success',title:t('studentSetupSuccess'),confirmButtonColor:'#1e3a8a'});
+        await finishStudentOrPasswordLogin(completed,loginId);
+        return;
+      }
+      await Swal.fire(t('error'),completed.message || t('studentSetupError'),'error');
+      if (['STUDENT_SETUP_EXPIRED','STUDENT_SETUP_ALREADY_COMPLETED','STUDENT_VERIFICATION_EXPIRED','STUDENT_VERIFICATION_LOCKED'].includes(completed.code)) return;
+    } catch(e) {
+      await Swal.fire(t('error'),e.message || t('network_error'),'error');
+      return;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
 // FORGOT PASSWORD
 // ═══════════════════════════════════════════
 async function forgotPassword() {
-  const isEN = LANG === 'en';
+  const isStudent = _currentRole === 'student';
   const { value: identifier } = await Swal.fire({
-    title: isEN ? 'Reset Password' : 'รีเซ็ตรหัสผ่าน',
-    html: `<p style="font-size:13px;color:#6b7280;margin-bottom:12px">${
-      isEN ? 'Enter your username or email address. A reset link will be sent if the account exists.'
-           : 'กรอก Username หรืออีเมล — ระบบจะส่งลิงก์รีเซ็ตไปยังอีเมลที่ผูกกับบัญชี'
-    }</p>
-    <input id="fpIdentifier" class="swal2-input" placeholder="${isEN ? 'username or email' : 'username หรือ email'}" style="font-size:13px">`,
-    confirmButtonText: isEN ? 'Send Reset Link' : 'ส่งลิงก์รีเซ็ต',
+    title:t('passwordResetTitle'),
+    html:`<p style="font-size:13px;color:#6b7280;margin-bottom:12px">${t(isStudent?'studentPasswordResetDesc':'adminPasswordResetDesc')}</p>
+    <input id="fpIdentifier" type="${isStudent?'email':'text'}" class="swal2-input" placeholder="${t(isStudent?'studentPasswordResetPlaceholder':'adminPasswordResetPlaceholder')}" style="font-size:13px">`,
+    confirmButtonText:t('passwordResetSend'),
     confirmButtonColor: '#1e3a8a',
     showCancelButton: true,
-    cancelButtonText: isEN ? 'Cancel' : 'ยกเลิก',
+    cancelButtonText:t('cancel'),
     focusConfirm: false,
     preConfirm: () => {
       const v = document.getElementById('fpIdentifier')?.value?.trim();
-      if (!v) { Swal.showValidationMessage(isEN ? 'Please enter a value' : 'กรุณากรอกข้อมูล'); return false; }
+      if (!v) { Swal.showValidationMessage(t('fillRequired')); return false; }
+      if (isStudent && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { Swal.showValidationMessage(t('studentSetupEmailInvalid')); return false; }
       return v;
     },
   });
   if (!identifier) return;
 
-  Swal.fire({ title: isEN ? 'Sending...' : 'กำลังส่ง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  Swal.fire({title:t('passwordResetSending'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try {
     const baseUrl = window.location.href.split('?')[0];
-    await API.requestPasswordReset(identifier, baseUrl);
+    await API.requestPasswordReset(identifier,baseUrl,isStudent?'student':'admin');
   } catch(e) {}
   // Always show success to prevent enumeration
   Swal.fire({
     icon: 'success',
-    title: isEN ? 'Email Sent' : 'ส่งอีเมลแล้ว',
-    text: isEN
-      ? 'If an account with that username or email exists, a reset link has been sent. Check your inbox.'
-      : 'หากพบบัญชีที่ตรงกัน ระบบส่งลิงก์รีเซ็ตไปยังอีเมลของบัญชีนั้นแล้ว กรุณาตรวจสอบ inbox',
+    title:t('passwordResetEmailSent'),
+    text:t('passwordResetGenericSuccess'),
     confirmButtonColor: '#1e3a8a',
   });
 }
@@ -514,58 +603,50 @@ async function forgotPassword() {
 // HANDLE RESET TOKEN (?rt=...)
 // ═══════════════════════════════════════════
 async function handleResetToken(token) {
-  const isEN = LANG === 'en';
-
   // Clear ?rt= from URL (clean up before showing form)
   const cleanUrl = window.location.href.split('?')[0];
   window.history.replaceState({}, '', cleanUrl);
 
   // Show "set new password" dialog
   const { value: formData } = await Swal.fire({
-    title: isEN ? 'Set New Password' : 'ตั้งรหัสผ่านใหม่',
+    title:t('passwordResetSetNew'),
     html: `
-      <p style="font-size:12px;color:#6b7280;margin-bottom:10px">${
-        isEN ? '8+ chars · uppercase (A–Z) · lowercase (a–z) · number (0–9)'
-             : '8+ ตัวอักษร · พิมพ์ใหญ่ (A–Z) · พิมพ์เล็ก (a–z) · ตัวเลข (0–9)'
-      }</p>
-      <input id="rpPass1" type="password" class="swal2-input" placeholder="${isEN ? 'New password' : 'รหัสผ่านใหม่'}" style="font-size:13px">
-      <input id="rpPass2" type="password" class="swal2-input" placeholder="${isEN ? 'Confirm password' : 'ยืนยันรหัสผ่าน'}" style="font-size:13px">`,
-    confirmButtonText: isEN ? 'Save Password' : 'บันทึกรหัสผ่าน',
+      <p style="font-size:12px;color:#6b7280;margin-bottom:10px">${t('studentSetupPasswordPolicy')}</p>
+      <input id="rpPass1" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupNewPassword')}" style="font-size:13px">
+      <input id="rpPass2" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupConfirmPassword')}" style="font-size:13px">`,
+    confirmButtonText:t('passwordResetSave'),
     confirmButtonColor: '#16a34a',
     showCancelButton: true,
-    cancelButtonText: isEN ? 'Cancel' : 'ยกเลิก',
+    cancelButtonText:t('cancel'),
     allowOutsideClick: false,
     focusConfirm: false,
     preConfirm: () => {
       const p1 = document.getElementById('rpPass1')?.value || '';
       const p2 = document.getElementById('rpPass2')?.value || '';
-      if (!p1) { Swal.showValidationMessage(isEN ? 'Please enter a password' : 'กรุณากรอกรหัสผ่าน'); return false; }
-      if (p1 !== p2) { Swal.showValidationMessage(isEN ? 'Passwords do not match' : 'รหัสผ่านไม่ตรงกัน'); return false; }
-      // Client-side policy check
-      if (p1.length < 8) { Swal.showValidationMessage(isEN ? 'Min 8 characters' : 'ต้องมีอย่างน้อย 8 ตัวอักษร'); return false; }
-      if (!/[A-Z]/.test(p1)) { Swal.showValidationMessage(isEN ? 'Add an uppercase letter' : 'ต้องมีตัวพิมพ์ใหญ่ (A–Z)'); return false; }
-      if (!/[a-z]/.test(p1)) { Swal.showValidationMessage(isEN ? 'Add a lowercase letter' : 'ต้องมีตัวพิมพ์เล็ก (a–z)'); return false; }
-      if (!/[0-9]/.test(p1)) { Swal.showValidationMessage(isEN ? 'Add a number' : 'ต้องมีตัวเลข (0–9)'); return false; }
+      if (!p1) { Swal.showValidationMessage(t('studentSetupPasswordRequired')); return false; }
+      if (p1 !== p2) { Swal.showValidationMessage(t('passwordMismatch')); return false; }
+      const policyMessage=studentPasswordPolicyMessage(p1);
+      if (policyMessage) { Swal.showValidationMessage(policyMessage); return false; }
       return p1;
     },
   });
   if (!formData) return;
 
-  Swal.fire({ title: isEN ? 'Saving...' : 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try {
     const r = await API.confirmPasswordReset(token, formData);
     if (r.status === 'success') {
       Swal.fire({
         icon: 'success',
-        title: isEN ? 'Password Updated' : 'เปลี่ยนรหัสผ่านแล้ว',
-        text: isEN ? 'Your password has been updated. Please log in.' : 'รหัสผ่านถูกเปลี่ยนแล้ว กรุณาเข้าสู่ระบบ',
+        title:t('passwordResetUpdated'),
+        text:t('passwordResetLoginAgain'),
         confirmButtonColor: '#1e3a8a',
-      }).then(() => { setLoginRole('admin'); });
+      }).then(() => { setLoginRole(r.accountType === 'student' ? 'student' : 'admin'); });
     } else {
-      Swal.fire({ icon: 'error', title: isEN ? 'Error' : 'ข้อผิดพลาด', text: r.message || (isEN ? 'Failed to reset password.' : 'ไม่สามารถรีเซ็ตรหัสผ่านได้'), confirmButtonColor: '#1e3a8a' });
+      Swal.fire({icon:'error',title:t('error'),text:r.message || t('passwordResetFailed'),confirmButtonColor:'#1e3a8a'});
     }
   } catch(e) {
-    Swal.fire({ icon: 'error', title: isEN ? 'Network Error' : 'เครือข่ายขัดข้อง', text: isEN ? 'Please try again.' : 'กรุณาลองใหม่', confirmButtonColor: '#1e3a8a' });
+    Swal.fire({icon:'error',title:t('error'),text:t('network_error'),confirmButtonColor:'#1e3a8a'});
   }
 }
 </script>

@@ -2100,7 +2100,7 @@
         </div>
         <div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
           <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i>
-          <span data-t="stRolesStudentProtected">ช่องที่ล็อคเสมอ (Always Protected): รหัสทุน (StipNo) — ไม่สามารถอนุญาตให้นักเรียนแก้ไขได้ไม่ว่ากรณีใด</span>
+          <span data-t="stRolesStudentProtected">ช่องที่ล็อคเสมอสำหรับนักเรียน: รหัสทุน (StipNo) และอีเมลโปรไฟล์ — อีเมลกู้คืนที่ยืนยันแล้วเก็บแยกและต้องเปลี่ยนผ่านขั้นตอนยืนยันโดยเฉพาะ</span>
         </div>
       </div>
     </div>
@@ -2273,12 +2273,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.6.18"></script>
+<script src="assets/js/config.js?v=2.6.19"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.18"></script>
-<script src="assets/js/api.js?v=2.6.18"></script>
-<script src="assets/js/auth.js?v=2.6.18"></script>
-<script src="assets/js/rbac.js?v=2.6.18"></script>
+<script src="assets/js/i18n.js?v=2.6.19"></script>
+<script src="assets/js/api.js?v=2.6.19"></script>
+<script src="assets/js/auth.js?v=2.6.19"></script>
+<script src="assets/js/rbac.js?v=2.6.19"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -4035,7 +4035,7 @@ const STUDENT_FIELD_OPTIONS = [
   // ── D: ข้อมูลติดต่อ (contact) ──
   ['f_phone1',            'หมายเลขโทรศัพท์ 1',                'Phone 1',                        'contact'],
   ['f_phone2',            'หมายเลขโทรศัพท์ 2 (ผู้ปกครอง)',   'Phone 2 (Parent)',                'contact'],
-  ['f_email',             'อีเมล (สำหรับเข้าสู่ระบบ)',         'Email (for login)',               'contact'],
+  ['f_email',             'อีเมล (นักเรียนเปลี่ยนเองไม่ได้)',  'Email (student cannot change)',   'contact'],
 
   // ── D: ที่อยู่ (address) ──
   ['f_village',           'ชื่อหมู่บ้าน / ชุมชน',             'Village / Community',            'address'],

@@ -130,7 +130,7 @@ test('student self-update is limited to the server-configured allowlist', () => 
   );
   assert.equal(own.StipNo, 'MBS_001');
   assert.equal(own.Phone1, '0800000000');
-  assert.equal(own.Email, 'student@example.com');
+  assert.equal(Object.hasOwn(own, 'Email'), false, 'verified recovery email must not change through profile updates');
   assert.equal(Object.hasOwn(own, 'Status'), false);
   assert.equal(own.SavedBy, 'MBS_001');
   assert.equal(c._prepareStudentUpdate({ username: 'MBS_001', role: 'Student' }, { StipNo: 'MBS_002', Phone1: 'x' }), null);

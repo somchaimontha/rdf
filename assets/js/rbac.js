@@ -71,6 +71,9 @@ const RBAC_MAP = {
   Student:     ['viewOwnProfile','editOwnProfile','respondOwnSurveys'],
 };
 const RBAC_PERMISSIONS_SCHEMA_VERSION = '2.0.0';
+const STUDENT_DASHBOARD_ALUMNI_STATUSES = new Set([
+  'Graduated', 'Resigned', 'WithdrawnScholarship', 'Incomplete', 'University'
+]);
 
 function _rbacUpgradePermissionMap(input) {
   const map = { ...(input || {}) };
@@ -111,18 +114,18 @@ let _rbacDynamicMap = null;
 // FIELDS: student-form.html field-level control
 // ─────────────────────────────────────────────
 
-// These fields are ALWAYS read-only for Students — cannot be overridden by admin
-// Only รหัสทุน (StipNo) is unconditionally locked.
-// All other academic/identity fields are now admin-configurable via settings.html → สิทธิ์ผู้ใช้
+// These fields are ALWAYS read-only for Students — cannot be overridden by admin.
+// Scholarship ID identifies the account, while recovery email changes require a
+// separate verification flow rather than an ordinary profile update.
 const STUDENT_PROTECTED_FIELDS = new Set([
-  'f_stipNo',
+  'f_stipNo', 'f_email',
 ]);
 
 // Default editable fields for Students (admin can change in settings)
 // Add new field IDs here when adding new form fields to student-form.html
 const STUDENT_EDITABLE_DEFAULTS = [
   // D: Contact
-  'f_phone1', 'f_phone2', 'f_email',
+  'f_phone1', 'f_phone2',
   // D: Address
   'f_village', 'f_houseNo', 'f_moo', 'f_tambon', 'f_amphoe', 'f_province',
   // C: Personal (self-updatable)
@@ -176,6 +179,25 @@ const RBAC = {
   isStudent() {
     const user = (typeof getUser === 'function') ? getUser() : null;
     return !!(user && user.role === 'Student');
+  },
+
+  /** True when a learner status belongs to the alumni follow-up scope. */
+  isStudentAlumniStatus(status) {
+    return STUDENT_DASHBOARD_ALUMNI_STATUSES.has(String(status || '').trim());
+  },
+
+  /** Resolve student-dashboard visibility from permission and record state. */
+  getStudentDashboardAccess(user, student, assignments) {
+    const isStudent = !!(user && user.role === 'Student');
+    const status = String(student?.Status || student?.status || '').trim();
+    const assignedSurveys = Array.isArray(assignments) ? assignments : [];
+    return {
+      showProfile: isStudent && !!user.stipNo && this.has('viewOwnProfile'),
+      canEditProfile: isStudent && this.has('editOwnProfile'),
+      showSurveys: isStudent && this.has('respondOwnSurveys') &&
+        this.isStudentAlumniStatus(status) && assignedSurveys.length > 0,
+      status,
+    };
   },
 
   /** True only for SuperAdmin. */
@@ -421,6 +443,10 @@ const RBAC = {
       // Hide all admin menu cards
       document.querySelectorAll('.menu-card').forEach(c => { c.style.display = 'none'; });
 
+      // Aggregate counts describe other learners and link to pages students
+      // cannot browse, so they are not part of the student dashboard.
+      document.getElementById('dashboardStatsRow')?.classList.add('hidden');
+
       // Disable stat card clicks (students can't browse student list)
       document.querySelectorAll('.stat-card').forEach(c => {
         c.style.cursor = 'default';
@@ -428,23 +454,8 @@ const RBAC = {
         c.style.pointerEvents = 'none';
       });
 
-      // Insert "My Profile" card
-      const grid = document.querySelector('.menu-cards-grid');
-      if (grid) {
-        const isEN = (localStorage.getItem('rdfLang') || 'th') === 'en';
-        const card = document.createElement('div');
-        card.className = 'menu-card';
-        card.style.cssText = 'border-top-color:#0ea5e9;max-width:380px';
-        card.setAttribute('onclick', `window.location.href='student-profile.html?stipNo=${encodeURIComponent(user.stipNo||'')}' `);
-        card.innerHTML = `
-          <div class="menu-icon" style="background:#f0f9ff">
-            <i data-lucide="user-circle-2" class="w-7 h-7" style="color:#0ea5e9"></i>
-          </div>
-          <h4 class="font-bold text-gray-800 text-base mb-1">${isEN ? 'My Profile' : 'โปรไฟล์ของฉัน'}</h4>
-          <p class="text-xs text-gray-500">${isEN ? 'View and update your personal information' : 'ดูและอัปเดตข้อมูลส่วนตัวของคุณ'}</p>`;
-        grid.appendChild(card);
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }
+      document.getElementById('studentGuide')?.classList.remove('hidden');
+      this.renderStudentDashboardUI(user, null, []);
     } else {
       // Admin: dim/disable restricted cards
       if (!this.has('viewStudents')) {
@@ -482,6 +493,56 @@ const RBAC = {
         }
       });
     }
+    document.body?.classList.add('dashboard-access-ready');
+  },
+
+  /** Render only student actions that are currently usable. */
+  renderStudentDashboardUI(user, student, assignments) {
+    if (!user || user.role !== 'Student') return;
+    const grid = document.querySelector('.menu-cards-grid');
+    if (!grid) return;
+    grid.querySelectorAll('[data-student-dashboard-card]').forEach(card => card.remove());
+
+    const access = this.getStudentDashboardAccess(user, student, assignments);
+    if (access.showProfile) {
+      const profile = document.createElement('a');
+      profile.id = 'studentProfileMenuCard';
+      profile.href = `student-profile.html?stipNo=${encodeURIComponent(user.stipNo)}`;
+      profile.className = 'menu-card';
+      profile.dataset.studentDashboardCard = 'profile';
+      profile.style.cssText = 'border-top-color:#0ea5e9;max-width:380px;text-decoration:none';
+      const descriptionKey = access.canEditProfile ? 'studentDashboardProfileEditDesc' : 'studentDashboardProfileViewDesc';
+      profile.innerHTML = `
+        <div class="menu-icon" style="background:#f0f9ff">
+          <i data-lucide="user-circle-2" class="w-7 h-7" style="color:#0ea5e9"></i>
+        </div>
+        <h4 class="font-bold text-gray-800 text-base mb-1" data-t="studentDashboardProfile">โปรไฟล์ของฉัน</h4>
+        <p class="text-xs text-gray-500"></p>`;
+      const profileDescription = profile.querySelector('p');
+      profileDescription.setAttribute('data-t', descriptionKey);
+      profileDescription.textContent = typeof t === 'function' ? t(descriptionKey) : '';
+      grid.appendChild(profile);
+    }
+
+    if (access.showSurveys) {
+      const surveys = document.createElement('a');
+      surveys.id = 'studentSurveyMenuCard';
+      surveys.href = 'survey-response.html';
+      surveys.className = 'menu-card';
+      surveys.dataset.studentDashboardCard = 'surveys';
+      surveys.style.cssText = 'border-top-color:#047857;max-width:380px;text-decoration:none';
+      surveys.innerHTML = `
+        <div class="menu-icon" style="background:#ecfdf5">
+          <i data-lucide="clipboard-list" class="w-7 h-7" style="color:#047857"></i>
+        </div>
+        <h4 class="font-bold text-gray-800 text-base mb-1" data-t="surveyMyTitle">แบบสอบถามของฉัน</h4>
+        <p class="text-xs text-gray-500" data-t="surveyMySubtitle">แบบสอบถามสำหรับการติดตามศิษย์เก่า</p>`;
+      grid.appendChild(surveys);
+    }
+
+    grid.classList.toggle('hidden', !access.showProfile && !access.showSurveys);
+    if (typeof applyTranslations === 'function') applyTranslations(grid);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   },
 
   // ── Utility ──────────────────────────────────

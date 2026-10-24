@@ -12,6 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   .menu-cards-grid { display:grid;grid-template-columns:minmax(0,1fr);gap:16px; }
+  .dashboard-access-gated { visibility:hidden; }
+  .dashboard-access-ready .dashboard-access-gated { visibility:visible; }
   .menu-card-report {
     padding: 14px 11px;
   }
@@ -177,7 +179,7 @@
   </div>
 
   <!-- Stats -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div id="dashboardStatsRow" class="dashboard-access-gated grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card fade-in-up delay-1" onclick="window.location.href='students.html?inst=MBS'">
       <div class="stat-icon" style="background:#eff6ff">
         <i data-lucide="school" class="w-6 h-6" style="color:#1d4ed8"></i>
@@ -209,7 +211,7 @@
   </div>
 
   <!-- Menu Cards -->
-  <div class="menu-cards-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 fade-in-up delay-3">
+  <div class="dashboard-access-gated menu-cards-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 fade-in-up delay-3">
     <div id="studentsMenuCard" class="menu-card" style="border-top-color:#1e3a8a" onclick="window.location.href='students.html'">
       <div class="menu-icon" style="background:#eff6ff">
         <i data-lucide="users" class="w-7 h-7" style="color:#1e3a8a"></i>
@@ -440,12 +442,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.6.18"></script>
+<script src="assets/js/config.js?v=2.6.19"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.18"></script>
-<script src="assets/js/api.js?v=2.6.18"></script>
-<script src="assets/js/auth.js?v=2.6.18"></script>
-<script src="assets/js/rbac.js?v=2.6.18"></script>
+<script src="assets/js/i18n.js?v=2.6.19"></script>
+<script src="assets/js/api.js?v=2.6.19"></script>
+<script src="assets/js/auth.js?v=2.6.19"></script>
+<script src="assets/js/rbac.js?v=2.6.19"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -471,22 +473,26 @@ if (user) {
 function configureSurveyShortcut(currentUser) {
   const link = document.getElementById('surveyDashboardLink');
   if (!link) return;
+  if (currentUser?.role === 'Student') {
+    const card = document.getElementById('reportMenuCard');
+    if (card) card.style.display = 'none';
+    return;
+  }
   const canManage = RBAC.has('manageSurveys') || RBAC.has('viewSurveyResults');
-  const canRespond = currentUser?.role === 'Student' && RBAC.has('respondOwnSurveys');
   const canScholarship = RBAC.has('viewReports');
   const canEmployment = RBAC.has('viewAlumniEmployment');
   const scholarshipLink = document.getElementById('scholarshipReportLink');
   const employmentLink = document.getElementById('employmentReportLink');
   scholarshipLink?.classList.toggle('hidden', !canScholarship);
-  employmentLink?.closest('.report-menu-option-employment')?.classList.toggle('hidden', !canEmployment && !canManage && !canRespond);
+  employmentLink?.closest('.report-menu-option-employment')?.classList.toggle('hidden', !canEmployment && !canManage);
   employmentLink?.classList.toggle('hidden', !canEmployment);
-  link.classList.toggle('hidden', !canManage && !canRespond);
-  link.href = canRespond ? 'survey-response.html' : 'survey-management.html';
-  const label=link.querySelector('span');label.dataset.t=canRespond?'surveyMyTitle':'surveyShortcut';label.textContent=t(canRespond?'surveyMyTitle':'surveyShortcut');
+  link.classList.toggle('hidden', !canManage);
+  link.href = 'survey-management.html';
+  const label=link.querySelector('span');label.dataset.t='surveyShortcut';label.textContent=t('surveyShortcut');
   const card=document.getElementById('reportMenuCard');
-  const hasAny = canScholarship || canEmployment || canManage || canRespond;
+  const hasAny = canScholarship || canEmployment || canManage;
   if(card){card.style.display=hasAny?'block':'none';card.onclick=canScholarship?()=>{window.location.href='reports.html';}:canEmployment?()=>{window.location.href='reports.html?view=employment';}:null;}
-  const visiblePrimaryCount = Number(canScholarship) + Number(canEmployment || canManage || canRespond);
+  const visiblePrimaryCount = Number(canScholarship) + Number(canEmployment || canManage);
   const options=document.querySelector('.report-menu-options');if(options&&visiblePrimaryCount<=1)options.style.gridTemplateColumns='1fr';
 }
 
@@ -526,6 +532,10 @@ async function loadQuickStats() {
 }
 
 async function loadDashboardProgressively() {
+  if (user?.role === 'Student') {
+    await loadStudentDashboard(user);
+    return;
+  }
   await loadQuickStats();
   const loadDetails = () => {
     if (RBAC.has('viewStudents')) loadStats();
@@ -536,6 +546,32 @@ async function loadDashboardProgressively() {
   } else {
     setTimeout(loadDetails, 0);
   }
+}
+
+async function loadStudentDashboard(currentUser) {
+  document.getElementById('studentGuide')?.classList.remove('hidden');
+  if (!currentUser?.stipNo) {
+    RBAC.renderStudentDashboardUI(currentUser, null, []);
+    return;
+  }
+
+  let student = null;
+  let assignments = [];
+  try {
+    const studentResult = await API.getStudent(currentUser.stipNo);
+    if (studentResult?.status === 'success') student = studentResult.data || studentResult.student || null;
+
+    const status = student?.Status || student?.status || '';
+    if (RBAC.isStudentAlumniStatus(status) && RBAC.has('respondOwnSurveys')) {
+      const assignmentResult = await API.getMySurveyAssignments();
+      if (assignmentResult?.status === 'success') assignments = assignmentResult.assignments || [];
+    }
+  } catch(e) {
+    // Keep the always-available profile card; status-specific menus stay hidden
+    // when the eligibility data cannot be verified.
+  }
+  RBAC.renderStudentDashboardUI(currentUser, student, assignments);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function loadNotifications() {

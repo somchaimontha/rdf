@@ -63,7 +63,15 @@ const _API_CODE_I18N_KEYS = {
   VOLUNTEER_SETUP_PREVIEW_FAILED:'volunteerSetupPreviewError', VOLUNTEER_SETUP_FAILED:'volunteerSetupError',
   VOLUNTEER_SETUP_REQUIRED:'volunteerSetupRequired', VOLUNTEER_LOAD_FAILED:'volunteerLoadError',
   VOLUNTEER_NOT_FOUND:'volunteerNotFound', VOLUNTEER_VALIDATION_ERROR:'volunteerValidationError',
-  VOLUNTEER_SAVE_FAILED:'volunteerSaveError', VOLUNTEER_ARCHIVE_FAILED:'volunteerArchiveError'
+  VOLUNTEER_SAVE_FAILED:'volunteerSaveError', VOLUNTEER_ARCHIVE_FAILED:'volunteerArchiveError',
+  STUDENT_SETUP_EXPIRED:'studentSetupExpired', STUDENT_SETUP_EMAIL_LIMIT:'studentSetupEmailLimit',
+  STUDENT_SETUP_ALREADY_COMPLETED:'studentSetupAlreadyCompleted',
+  STUDENT_EMAIL_INVALID:'studentSetupEmailInvalid', STUDENT_BIRTH_DATE_INVALID:'studentBirthDateInvalid',
+  STUDENT_PASSWORD_POLICY:'studentSetupPasswordPolicy', STUDENT_ACCOUNT_NOT_FOUND:'studentAccountNotFound',
+  STUDENT_BIRTH_DATE_MISMATCH:'studentBirthDateMismatch', STUDENT_EMAIL_IN_USE:'studentEmailInUse',
+  STUDENT_EMAIL_MISMATCH:'studentEmailMismatch',
+  STUDENT_EMAIL_SEND_FAILED:'studentEmailSendFailed', STUDENT_VERIFICATION_EXPIRED:'studentVerificationExpired',
+  STUDENT_VERIFICATION_LOCKED:'studentVerificationLocked', STUDENT_VERIFICATION_INVALID:'studentVerificationInvalid'
 };
 
 function _localizeStructuredApiData(data) {
@@ -361,8 +369,14 @@ const API = {
   async changeAdminPassword(username, currentPassword, newPassword) {
     return apiPost({ action: 'changeAdminPassword', username, currentPassword, newPassword });
   },
-  async requestPasswordReset(identifier, baseUrl) {
-    return apiPost({ action: 'requestPasswordReset', identifier, baseUrl });
+  async beginStudentFirstLogin(setupToken, email, birthDate, newPassword) {
+    return apiPost({ action:'beginStudentFirstLogin', setupToken, email, birthDate, newPassword }, _API_TIMEOUT_SETTINGS_MS);
+  },
+  async completeStudentFirstLogin(setupToken, verificationCode) {
+    return apiPost({ action:'completeStudentFirstLogin', setupToken, verificationCode }, _API_TIMEOUT_SETTINGS_MS);
+  },
+  async requestPasswordReset(identifier, baseUrl, accountType) {
+    return apiPost({ action:'requestPasswordReset', identifier, baseUrl, accountType:accountType || 'admin' });
   },
   async confirmPasswordReset(token, newPassword) {
     return apiPost({ action: 'confirmPasswordReset', token, newPassword });
