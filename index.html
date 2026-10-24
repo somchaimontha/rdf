@@ -333,10 +333,10 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.23"></script>
-<script src="assets/js/i18n.js?v=2.6.23"></script>
-<script src="assets/js/api.js?v=2.6.23"></script>
-<script src="assets/js/auth.js?v=2.6.23"></script>
+<script src="assets/js/config.js?v=2.6.24"></script>
+<script src="assets/js/i18n.js?v=2.6.24"></script>
+<script src="assets/js/api.js?v=2.6.24"></script>
+<script src="assets/js/auth.js?v=2.6.24"></script>
 <script>
 document.getElementById('appVersion').textContent = RDF.VERSION;
 const _passwordResetToken = new URLSearchParams(window.location.search).get('rt');
@@ -645,8 +645,7 @@ async function handleStudentFirstLoginSetup(loginResult, loginId) {
     password:'', confirmation:'', identityConfirmed:false,
     birthDateConfirmed:false, nonGmailConfirmed:false
   };
-  let enrollment;
-  while (!enrollment) {
+  while (true) {
     const modal = await Swal.fire({
       icon:'info', title:t('studentSetupTitle'), width:'min(720px, calc(100vw - 20px))',
       html:`<div class="student-setup-content">
@@ -682,7 +681,7 @@ async function handleStudentFirstLoginSetup(loginResult, loginId) {
           <p class="student-setup-note">${studentSetupEscapeHtml(t('studentSetupPasswordPolicy'))}</p>
         </div>
       </div>`,
-      confirmButtonText:t('studentSetupSendCode'), cancelButtonText:t('cancel'),
+      confirmButtonText:t('studentSetupCreateAccount'), cancelButtonText:t('cancel'),
       confirmButtonColor:'#1e3a8a', showCancelButton:true, allowOutsideClick:false,
       focusConfirm:false,
       didOpen:() => {
@@ -738,7 +737,7 @@ async function handleStudentFirstLoginSetup(loginResult, loginId) {
     if (!modal.value) return;
     draft=modal.value;
     if (!await reviewStudentFirstLogin(loginResult,draft)) continue;
-    Swal.fire({title:t('studentSetupSendingCode'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
     try {
       const result=await API.beginStudentFirstLogin(setupToken,draft.email,draft.birthDate,draft.password,{
         identityConfirmed:draft.identityConfirmed,
@@ -746,61 +745,18 @@ async function handleStudentFirstLoginSetup(loginResult, loginId) {
         nonGmailConfirmed:draft.nonGmailConfirmed
       });
       if (result.status === 'success') {
-        enrollment=result;
         draft.password=''; draft.confirmation='';
+        await Swal.fire({
+          icon:'success', title:t('studentSetupSuccess'),
+          html:`<p style="font-size:13px;line-height:1.65;color:#475569">${studentSetupEscapeHtml(t('studentSetupSuccessDesc'))}</p>`,
+          confirmButtonColor:'#1e3a8a'
+        });
+        await finishStudentOrPasswordLogin(result,loginId);
+        return;
       }
       else await Swal.fire(t('error'),result.message || t('studentSetupError'),'error');
     } catch(e) {
       await Swal.fire(t('error'),e.message || t('network_error'),'error');
-    }
-  }
-
-  while (true) {
-    const codeModal=await Swal.fire({
-      icon:'info', title:t('studentSetupVerifyTitle'),
-      html:`<p style="font-size:12px;color:#64748b;line-height:1.6">${t('studentSetupVerifyDesc').replace('{email}',enrollment.maskedEmail || '')}</p>
-        <input id="studentSetupCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="swal2-input" placeholder="${t('studentSetupCodePlaceholder')}" style="font-size:20px;text-align:center;letter-spacing:.25em">
-        <p style="font-size:11px;color:#64748b;line-height:1.6;margin-top:10px">${t('studentSetupDeliveryHelp')}</p>`,
-      confirmButtonText:t('studentSetupVerify'), cancelButtonText:t('cancel'),
-      denyButtonText:t('studentSetupResendCode'), showDenyButton:true,
-      confirmButtonColor:'#16a34a', denyButtonColor:'#2563eb', showCancelButton:true, allowOutsideClick:false,
-      focusConfirm:false,
-      preConfirm:() => {
-        const code=document.getElementById('studentSetupCode')?.value?.trim() || '';
-        if (!/^\d{6}$/.test(code)) { Swal.showValidationMessage(t('studentSetupCodeInvalid')); return false; }
-        return code;
-      }
-    });
-    if (codeModal.isDenied) {
-      Swal.fire({title:t('studentSetupSendingCode'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-      try {
-        const resent=await API.resendStudentFirstLoginCode(setupToken);
-        if (resent.status === 'success') {
-          enrollment=resent;
-          await Swal.fire({icon:'success',title:t('studentSetupResendSuccess'),confirmButtonColor:'#1e3a8a'});
-        } else {
-          await Swal.fire(t('error'),resent.message || t('studentSetupError'),'error');
-          if (resent.code === 'STUDENT_SETUP_EXPIRED') return;
-        }
-      } catch(e) {
-        await Swal.fire(t('error'),e.message || t('network_error'),'error');
-      }
-      continue;
-    }
-    if (!codeModal.value) return;
-    Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-    try {
-      const completed=await API.completeStudentFirstLogin(setupToken,codeModal.value);
-      if (completed.status === 'success') {
-        await Swal.fire({icon:'success',title:t('studentSetupSuccess'),confirmButtonColor:'#1e3a8a'});
-        await finishStudentOrPasswordLogin(completed,loginId);
-        return;
-      }
-      await Swal.fire(t('error'),completed.message || t('studentSetupError'),'error');
-      if (['STUDENT_SETUP_EXPIRED','STUDENT_SETUP_ALREADY_COMPLETED','STUDENT_VERIFICATION_EXPIRED','STUDENT_VERIFICATION_LOCKED'].includes(completed.code)) return;
-    } catch(e) {
-      await Swal.fire(t('error'),e.message || t('network_error'),'error');
-      return;
     }
   }
 }

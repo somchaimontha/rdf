@@ -395,6 +395,12 @@ const API = {
   async completeStudentFirstLogin(setupToken, verificationCode) {
     return apiPost({ action:'completeStudentFirstLogin', setupToken, verificationCode }, _API_TIMEOUT_SETTINGS_MS);
   },
+  async requestStudentEmailVerification() {
+    return apiPost({ action:'requestStudentEmailVerification' }, _API_TIMEOUT_SETTINGS_MS);
+  },
+  async verifyStudentEmail(verificationCode) {
+    return apiPost({ action:'verifyStudentEmail', verificationCode }, _API_TIMEOUT_SETTINGS_MS);
+  },
   async requestPasswordReset(identifier, baseUrl, accountType) {
     return apiPost({ action:'requestPasswordReset', identifier, baseUrl, accountType:accountType || 'admin' });
   },

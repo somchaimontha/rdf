@@ -91,7 +91,117 @@ function renderNavUser(user) {
   if (role) role.textContent = user.role;
   const logoutBtn = document.getElementById('btnLogout');
   if (logoutBtn) logoutBtn.classList.remove('hidden');
+  _renderStudentEmailVerificationBanner(user);
   _initNotifBell(user);
+}
+
+function _renderStudentEmailVerificationBanner(user = getUser()) {
+  const existing = document.getElementById('studentEmailVerificationBanner');
+  if (existing) existing.remove();
+  if (!user || user.role !== 'Student' || user.emailVerified !== false) return;
+  const main = document.querySelector('main');
+  if (!main) return;
+  if (!document.getElementById('studentEmailVerificationStyle')) {
+    const style = document.createElement('style');
+    style.id = 'studentEmailVerificationStyle';
+    style.textContent = `
+      #studentEmailVerificationBanner{margin:0 auto 16px;max-width:1280px;padding:13px 15px;border:1px solid #f59e0b;border-radius:12px;background:#fffbeb;color:#78350f;display:flex;align-items:center;gap:12px;box-shadow:0 4px 14px rgba(146,64,14,.08)}
+      #studentEmailVerificationBanner .student-email-warning-copy{flex:1;min-width:0;font-size:12px;line-height:1.55}
+      #studentEmailVerificationBanner strong{display:block;font-size:13px;margin-bottom:2px}
+      #studentEmailVerificationBanner button{border:0;border-radius:8px;background:#b45309;color:#fff;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+      #studentEmailVerificationBanner button:hover,#studentEmailVerificationBanner button:focus-visible{background:#92400e;outline:2px solid #fbbf24;outline-offset:2px}
+      @media(max-width:640px){#studentEmailVerificationBanner{align-items:flex-start;flex-wrap:wrap}#studentEmailVerificationBanner button{width:100%}}
+    `;
+    document.head.appendChild(style);
+  }
+  const banner = document.createElement('section');
+  banner.id = 'studentEmailVerificationBanner';
+  banner.setAttribute('role', 'status');
+  banner.innerHTML = `<i data-lucide="mail-warning" style="width:22px;height:22px;flex:0 0 auto"></i>
+    <div class="student-email-warning-copy"><strong>${_notifEscape(t('studentEmailUnverifiedTitle'))}</strong><span>${_notifEscape(t('studentEmailUnverifiedWarning'))}</span></div>
+    <button type="button" id="studentEmailVerificationButton">${_notifEscape(t('studentEmailVerifyNow'))}</button>`;
+  main.prepend(banner);
+  banner.querySelector('button')?.addEventListener('click', beginStudentEmailVerification);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  if (!window.__rdfStudentEmailLanguageListener) {
+    window.__rdfStudentEmailLanguageListener = true;
+    document.addEventListener('rdf:languagechange', () => _renderStudentEmailVerificationBanner(getUser()));
+  }
+}
+
+async function beginStudentEmailVerification() {
+  const user = getUser();
+  if (!user || user.role !== 'Student') return;
+  const choice = await Swal.fire({
+    icon:'info', title:t('studentEmailVerifyTitle'),
+    html:`<p style="font-size:13px;line-height:1.65;color:#475569">${_notifEscape(t('studentEmailVerifyPrompt').replace('{email}', user.email || '—'))}</p>`,
+    confirmButtonText:t('studentEmailSendOtp'), cancelButtonText:t('studentEmailVerifyLater'),
+    confirmButtonColor:'#b45309', showCancelButton:true
+  });
+  if (!choice.isConfirmed) return;
+
+  let delivery;
+  while (true) {
+    Swal.fire({title:t('studentEmailVerificationSending'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+      delivery = await API.requestStudentEmailVerification();
+    } catch(e) {
+      await Swal.fire(t('error'), e.message || t('network_error'), 'error');
+      return;
+    }
+    if (delivery.status !== 'success') {
+      await Swal.fire(t('error'), delivery.message || t('studentEmailSendFailed'), 'error');
+      return;
+    }
+    if (delivery.alreadyVerified) {
+      user.emailVerified = true;
+      user.emailVerifiedAt = delivery.emailVerifiedAt || user.emailVerifiedAt || '';
+      setUser(user);
+      _renderStudentEmailVerificationBanner(user);
+      await Swal.fire({icon:'success',title:t('studentEmailVerificationSuccess'),confirmButtonColor:'#16a34a'});
+      return;
+    }
+
+    while (true) {
+      const codeModal = await Swal.fire({
+      icon:'info', title:t('studentEmailVerifyTitle'),
+      html:`<p style="font-size:12px;color:#64748b;line-height:1.6">${_notifEscape(t('studentEmailVerificationCodeDesc').replace('{email}', delivery.maskedEmail || ''))}</p>
+        <input id="studentEmailVerificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="swal2-input" placeholder="${_notifEscape(t('studentSetupCodePlaceholder'))}" style="font-size:20px;text-align:center;letter-spacing:.25em">
+        <p style="font-size:11px;color:#64748b;line-height:1.6;margin-top:10px">${_notifEscape(t('studentSetupDeliveryHelp'))}</p>`,
+      confirmButtonText:t('studentSetupVerify'), cancelButtonText:t('studentEmailVerifyLater'),
+      denyButtonText:t('studentSetupResendCode'), showDenyButton:true,
+      confirmButtonColor:'#16a34a', denyButtonColor:'#2563eb', showCancelButton:true,
+      preConfirm:() => {
+        const code=document.getElementById('studentEmailVerificationCode')?.value?.trim() || '';
+        if (!/^\d{6}$/.test(code)) { Swal.showValidationMessage(t('studentSetupCodeInvalid')); return false; }
+        return code;
+      }
+    });
+      if (codeModal.isDenied) break;
+      if (!codeModal.value) return;
+      Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+      try {
+        const verified = await API.verifyStudentEmail(codeModal.value);
+        if (verified.status !== 'success') {
+          await Swal.fire(t('error'), verified.message || t('studentVerificationInvalid'), 'error');
+          if (verified.code === 'STUDENT_VERIFICATION_INVALID') continue;
+          return;
+        }
+        const refreshed = getUser() || user;
+        refreshed.email = verified.email || refreshed.email || '';
+        refreshed.emailVerified = true;
+        refreshed.emailVerifiedAt = verified.emailVerifiedAt || '';
+        setUser(refreshed);
+        _renderStudentEmailVerificationBanner(refreshed);
+        if (_notifSource) { _notifSource.user = refreshed; _rebuildNotifItems(); _renderNotifPanel(); }
+        await Swal.fire({icon:'success',title:t('studentEmailVerificationSuccess'),confirmButtonColor:'#16a34a'});
+        return;
+      } catch(e) {
+        await Swal.fire(t('error'), e.message || t('network_error'), 'error');
+        return;
+      }
+    }
+  }
 }
 
 // ── Notification Center (permission-aware) ───────────────────────────────────
@@ -410,6 +520,14 @@ function _buildStudentNotifications(user, student) {
   const stipNo = user.stipNo || student.StipNo || student.stipNo || '';
   const status = student.Status || student.status || '';
   const profileHref = `student-profile.html?stipNo=${encodeURIComponent(stipNo)}`;
+  if (user.emailVerified === false) {
+    items.push(_notifItem({
+      id:_notifStableId('student-email-unverified',[stipNo,user.email || '']),
+      kindKey:'studentEmailNotificationKind', title:t('studentEmailUnverifiedTitle'),
+      description:t('studentEmailUnverifiedWarning'), meta:user.email || '',
+      href:`${profileHref}#email-verification`, icon:'mail-warning', color:'#b45309', bg:'#fffbeb'
+    }));
+  }
   if (status === 'Suspended') {
     items.push(_notifItem({
       id:_notifStableId('own-status',[stipNo,status]), kindKey:'navNotifOwnStatusTitle',
@@ -670,6 +788,8 @@ async function finishStudentOrPasswordLogin(result, username) {
     stipNo:result.stipNo || '', pic:result.pic || '',
     username:result.username || username || result.stipNo || '', loginTime:Date.now(),
     loginCount:result.loginCount || 0, lastLogin:result.lastLogin || '',
+    email:result.email || '', emailVerified:result.emailVerified !== false,
+    emailVerifiedAt:result.emailVerifiedAt || '',
     sessionToken:result.sessionToken || ''
   });
   if (result.duplicateSession) {
@@ -697,6 +817,9 @@ async function handleGoogleLogin(idToken, accountType) {
         loginCount:   result.loginCount   || 0,
         lastLogin:    result.lastLogin    || '',
         authMethod:   'google',
+        email:        result.email        || '',
+        emailVerified:true,
+        emailVerifiedAt:result.emailVerifiedAt || '',
         sessionToken: result.sessionToken || ''
       });
       if (result.duplicateSession) {

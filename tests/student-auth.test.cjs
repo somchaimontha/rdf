@@ -111,7 +111,7 @@ function beginEnrollment(c, setupToken, email, birthDate, password, confirmation
   );
 }
 
-test('legacy student login requires verified first-login enrollment before issuing a session', () => {
+test('first login creates a usable password account without sending or requiring an email OTP', () => {
   const { c, sheets, emails } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   assert.equal(legacy.status, 'setup_required');
@@ -147,24 +147,21 @@ test('legacy student login requires verified first-login enrollment before issui
 
   const begun = beginEnrollment(c, legacy.setupToken, 'Mali@Example.com', '2005-05-10', 'SecurePass1');
   assert.equal(begun.status, 'success');
-  assert.equal(emails.length, 1);
-  const completed = c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
-  assert.equal(completed.status, 'success');
-  assert.equal(completed.role, 'Student');
-  assert.ok(completed.sessionToken);
+  assert.equal(begun.role, 'Student');
+  assert.ok(begun.sessionToken);
+  assert.equal(begun.email, 'mali@example.com');
+  assert.equal(begun.emailVerified, false);
+  assert.equal(emails.length, 0, 'first-login setup must not consume email quota');
 
   const studentRows = sheets.get('Students').rows;
   assert.equal(studentRows[1][studentRows[0].indexOf('Email')], 'mali@example.com');
   const authRows = sheets.get('StudentAuth').rows;
   const hash = authRows[1][authRows[0].indexOf('PasswordHash')];
   assert.equal(authRows[1][authRows[0].indexOf('VerifiedEmail')], 'mali@example.com');
-  assert.ok(c._findStudentAuthByVerifiedEmail('MALI@EXAMPLE.COM'), 'verified email lookup must be case-insensitive');
   const emailVerifiedAtIndex = authRows[0].indexOf('EmailVerifiedAt');
-  const emailVerifiedAt = authRows[1][emailVerifiedAtIndex];
-  authRows[1][emailVerifiedAtIndex] = '';
+  assert.equal(authRows[1][emailVerifiedAtIndex], '');
   assert.equal(c._findStudentAuthByVerifiedEmail('mali@example.com'), null,
     'email sign-in must remain disabled until email verification is recorded');
-  authRows[1][emailVerifiedAtIndex] = emailVerifiedAt;
   studentRows[1][studentRows[0].indexOf('Email')] = 'changed-by-staff@example.com';
   assert.equal(
     beginEnrollment(c, c.handleLogin('3333333333333', '2004', 'student').setupToken, 'mali@example.com', '2004-04-09', 'FormerPass3').code,
@@ -174,10 +171,21 @@ test('legacy student login requires verified first-login enrollment before issui
   assert.equal(beginEnrollment(c, concurrentSetup.setupToken, 'other@example.com', '2005-05-10', 'OtherPass2').code, 'STUDENT_SETUP_ALREADY_COMPLETED');
   assert.match(hash, /^hmac-sha256:/);
   assert.equal(hash.includes('SecurePass1'), false);
-  assert.equal(c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0])).code, 'STUDENT_SETUP_EXPIRED');
+  assert.equal(c.completeStudentFirstLogin(legacy.setupToken, '000000').code, 'STUDENT_SETUP_EXPIRED');
 
   assert.equal(c.handleLogin('1111111111111', '2005', 'student').status, 'error');
-  assert.equal(c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'success');
+  const passwordLogin = c.handleLogin('1111111111111', 'SecurePass1', 'student');
+  assert.equal(passwordLogin.status, 'success');
+  assert.equal(passwordLogin.emailVerified, false);
+  assert.equal(c.handleLogin('MALI@EXAMPLE.COM', 'SecurePass1', 'student').status, 'error');
+
+  const verification = c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
+  assert.equal(verification.status, 'success');
+  assert.equal(emails.length, 1);
+  const verified = c.verifyStudentEmail({ username:'MBS_001', role:'Student' }, emailCode(emails[0]));
+  assert.equal(verified.status, 'success');
+  assert.equal(verified.emailVerified, true);
+  assert.ok(c._findStudentAuthByVerifiedEmail('MALI@EXAMPLE.COM'), 'verified email lookup must be case-insensitive');
   assert.equal(c.handleLogin('MALI@EXAMPLE.COM', 'SecurePass1', 'student').status, 'success');
 });
 
@@ -185,7 +193,8 @@ test('student password recovery uses only the verified email and rotates the sto
   const { c, emails } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
-  c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
+  c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
+  c.verifyStudentEmail({ username:'MBS_001', role:'Student' }, emailCode(emails[0]));
 
   const unknown = c.requestPasswordReset('missing@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
   assert.equal(unknown.status, 'success');
@@ -203,32 +212,37 @@ test('student password recovery uses only the verified email and rotates the sto
   assert.equal(c.handleLogin('1111111111111', 'NewSecure2', 'student').status, 'success');
 });
 
-test('student OTP can be resent and mail delivery failures are reported safely', () => {
+test('deferred student email OTP can be resent and delivery failures do not block account access', () => {
   const { c, emails, mailState, sheets } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   const begun = beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
   assert.equal(begun.status, 'success');
+  assert.equal(emails.length, 0);
+  const session = { username:'MBS_001', role:'Student' };
+  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
   const firstCode = emailCode(emails[0]);
-  const resent = c.resendStudentFirstLoginCode(legacy.setupToken);
+  const resent = c.requestStudentEmailVerification(session);
   assert.equal(resent.status, 'success');
   assert.equal(emails.length, 2);
   const secondCode = emailCode(emails[1]);
   assert.notEqual(secondCode, firstCode);
-  assert.equal(c.completeStudentFirstLogin(legacy.setupToken, firstCode).code, 'STUDENT_VERIFICATION_INVALID');
-  assert.equal(c.completeStudentFirstLogin(legacy.setupToken, secondCode).status, 'success');
+  assert.equal(c.verifyStudentEmail(session, firstCode).code, 'STUDENT_VERIFICATION_INVALID');
+  assert.equal(c.verifyStudentEmail(session, secondCode).status, 'success');
 
   const quotaSetup = setup();
   const quotaLegacy = quotaSetup.c.handleLogin('1111111111111', '2005', 'student');
+  assert.equal(beginEnrollment(quotaSetup.c, quotaLegacy.setupToken, 'quota@gmail.com', '2005-05-10', 'SecurePass1').status, 'success');
   quotaSetup.mailState.quota = 0;
-  const quotaResult = beginEnrollment(quotaSetup.c, quotaLegacy.setupToken, 'quota@gmail.com', '2005-05-10', 'SecurePass1');
+  const quotaResult = quotaSetup.c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
   assert.equal(quotaResult.code, 'STUDENT_EMAIL_QUOTA_EXHAUSTED');
   assert.equal(quotaSetup.emails.length, 0);
   const logRows = quotaSetup.sheets.get('Logs').rows.flat().join(' ');
-  assert.match(logRows, /STUDENT_FIRST_LOGIN_EMAIL_FAILED/);
+  assert.match(logRows, /STUDENT_EMAIL_VERIFICATION_FAILED/);
+  assert.equal(quotaSetup.c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'success');
 
   quotaSetup.mailState.quota = 100;
   quotaSetup.mailState.fail = true;
-  const failed = beginEnrollment(quotaSetup.c, quotaLegacy.setupToken, 'quota@gmail.com', '2005-05-10', 'SecurePass1');
+  const failed = quotaSetup.c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
   assert.equal(failed.code, 'STUDENT_EMAIL_SEND_FAILED');
   assert.equal(JSON.stringify(sheets.get('StudentAuth')?.rows || []).includes(firstCode), false, 'OTP must never be stored in plain text');
 });
@@ -241,7 +255,9 @@ test('Google student sign-in requires a Google-verified email linked to complete
   assert.equal(c.loginWithGoogle('token-before-setup', 'student').code, 'STUDENT_GOOGLE_EMAIL_NOT_LINKED');
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
-  c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
+  assert.equal(c.loginWithGoogle('token-before-verification', 'student').code, 'STUDENT_GOOGLE_EMAIL_NOT_LINKED');
+  c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
+  c.verifyStudentEmail({ username:'MBS_001', role:'Student' }, emailCode(emails[0]));
 
   const signedIn = c.loginWithGoogle('valid-token', 'student');
   assert.equal(signedIn.status, 'success');
@@ -258,7 +274,8 @@ test('authorized staff can manage the recovery email without resetting the passw
   const { c, sheets, properties, emails } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
-  c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
+  c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
+  c.verifyStudentEmail({ username:'MBS_001', role:'Student' }, emailCode(emails[0]));
 
   c.requestPasswordReset('mali@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
   assert.ok([...properties.keys()].some(key => key.startsWith('RESET_')), 'an outstanding reset token should exist before the email change');
@@ -308,13 +325,19 @@ test('authorized staff can manage the recovery email without resetting the passw
   assert.equal(authSheet.rows.filter(row => row[0] === 'MBS_002').length, 0, 'email management must not create a password account');
 });
 
-test('first-login UI exposes identity, full-width email, dual-calendar birth date, password visibility, and review', () => {
+test('first-login UI defers email OTP and exposes persistent verification reminders', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const auth = fs.readFileSync(path.join(root, 'assets/js/auth.js'), 'utf8');
   assert.match(html, /data-t="studentLoginIdentifier"/);
   assert.match(html, /role === 'student' \? 'studentLoginIdentifier' : 'username'/);
   assert.match(html, /id="googleLoginSection"[\s\S]*?data-t="studentLoginWithGoogle"/);
   assert.match(html, /handleGoogleLogin\(response\.credential, _currentRole\)/);
-  assert.match(html, /API\.resendStudentFirstLoginCode\(setupToken\)/);
+  assert.doesNotMatch(html, /API\.resendStudentFirstLoginCode\(setupToken\)/);
+  assert.match(html, /studentSetupCreateAccount/);
+  assert.match(auth, /API\.requestStudentEmailVerification\(\)/);
+  assert.match(auth, /API\.verifyStudentEmail\(codeModal\.value\)/);
+  assert.match(auth, /studentEmailVerificationBanner/);
+  assert.match(auth, /student-email-unverified/);
   assert.match(html, /studentPasswordResetEmailLabel/);
   assert.match(html, /id="fpIdentifier"[\s\S]*?width:100%/);
   assert.match(html, /studentSetupProfileCard\(loginResult\)/);
