@@ -281,11 +281,11 @@
         <input type="hidden" id="loginRole" value="student">
 
         <div>
-          <label class="field-label-login" data-t="username">ชื่อผู้ใช้ / เลขบัตรประชาชน</label>
+          <label id="loginIdentifierLabel" class="field-label-login" data-t="studentLoginIdentifier">อีเมลที่ยืนยันแล้ว / เลขบัตรประชาชน / รหัสนักเรียน / โทรศัพท์</label>
           <div class="input-group mb-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <input type="text" id="loginId" class="login-input"
-                   data-t="username" data-t-attr="placeholder" required autocomplete="username">
+                   data-t="studentLoginIdentifier" data-t-attr="placeholder" required autocomplete="username">
           </div>
         </div>
         <div style="margin-top:12px">
@@ -313,7 +313,7 @@
 
       <!-- Hint -->
       <div class="login-hint" id="loginHintBox">
-        <span id="hintStudent" data-t="loginHint">นักเรียนเข้าสู่ระบบครั้งแรกด้วยปีเกิด ค.ศ. แล้วตั้งรหัสผ่านใหม่</span>
+        <span id="hintStudent" data-t="loginHint">ครั้งแรกให้ใช้เลขบัตรประชาชน รหัสนักเรียน หรือโทรศัพท์กับปีเกิด ค.ศ. หลังยืนยันอีเมลแล้ว สามารถใช้อีเมลที่ยืนยันแล้วกับรหัสผ่านใหม่ได้</span>
         <span id="hintAdmin" style="display:none" data-t="loginHintAdmin">ผู้ดูแล: Username และรหัสผ่านที่ตั้งค่าในระบบ หรือเข้าด้วย Google Account ที่ผูกไว้</span>
         <span id="adminContactWrap" style="display:block;margin-top:4px">
           <a id="adminContactLink" href="#" target="_blank" rel="noopener"
@@ -333,10 +333,10 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.21"></script>
-<script src="assets/js/i18n.js?v=2.6.21"></script>
-<script src="assets/js/api.js?v=2.6.21"></script>
-<script src="assets/js/auth.js?v=2.6.21"></script>
+<script src="assets/js/config.js?v=2.6.22"></script>
+<script src="assets/js/i18n.js?v=2.6.22"></script>
+<script src="assets/js/api.js?v=2.6.22"></script>
+<script src="assets/js/auth.js?v=2.6.22"></script>
 <script>
 document.getElementById('appVersion').textContent = RDF.VERSION;
 const _passwordResetToken = new URLSearchParams(window.location.search).get('rt');
@@ -367,6 +367,13 @@ function setLoginRole(role) {
   // Update hints
   document.getElementById('hintStudent').style.display = role === 'student' ? '' : 'none';
   document.getElementById('hintAdmin').style.display   = role === 'admin'   ? '' : 'none';
+
+  // Student accounts may use a verified email after first-login setup.
+  const identifierKey = role === 'student' ? 'studentLoginIdentifier' : 'username';
+  const identifierLabel = document.getElementById('loginIdentifierLabel');
+  const identifierInput = document.getElementById('loginId');
+  if (identifierLabel) identifierLabel.setAttribute('data-t', identifierKey);
+  if (identifierInput) identifierInput.setAttribute('data-t', identifierKey);
 
   // Re-apply i18n (in case language is EN)
   setLang(LANG);

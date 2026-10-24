@@ -125,6 +125,9 @@ test('legacy student login requires verified first-login enrollment before issui
   const existingProfile = c.handleLogin('2222222222222', '2005', 'student');
   assert.equal(existingProfile.existingEmail, 'used@example.com');
   assert.equal(existingProfile.birthDate, '');
+  assert.equal(c.handleLogin('used@example.com', '2005', 'student').status, 'error',
+    'an email stored only in the student profile must not be accepted for sign-in');
+  assert.equal(c._findStudentAuthByVerifiedEmail('used@example.com'), null);
 
   assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1', { identityConfirmed:false }).code, 'STUDENT_IDENTITY_CONFIRM_REQUIRED');
   assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1', { nonGmailConfirmed:false }).code, 'STUDENT_NON_GMAIL_CONFIRM_REQUIRED');
@@ -148,6 +151,13 @@ test('legacy student login requires verified first-login enrollment before issui
   const authRows = sheets.get('StudentAuth').rows;
   const hash = authRows[1][authRows[0].indexOf('PasswordHash')];
   assert.equal(authRows[1][authRows[0].indexOf('VerifiedEmail')], 'mali@example.com');
+  assert.ok(c._findStudentAuthByVerifiedEmail('MALI@EXAMPLE.COM'), 'verified email lookup must be case-insensitive');
+  const emailVerifiedAtIndex = authRows[0].indexOf('EmailVerifiedAt');
+  const emailVerifiedAt = authRows[1][emailVerifiedAtIndex];
+  authRows[1][emailVerifiedAtIndex] = '';
+  assert.equal(c._findStudentAuthByVerifiedEmail('mali@example.com'), null,
+    'email sign-in must remain disabled until email verification is recorded');
+  authRows[1][emailVerifiedAtIndex] = emailVerifiedAt;
   studentRows[1][studentRows[0].indexOf('Email')] = 'changed-by-staff@example.com';
   assert.equal(
     beginEnrollment(c, c.handleLogin('3333333333333', '2004', 'student').setupToken, 'mali@example.com', '2004-04-09', 'FormerPass3').code,
@@ -161,6 +171,7 @@ test('legacy student login requires verified first-login enrollment before issui
 
   assert.equal(c.handleLogin('1111111111111', '2005', 'student').status, 'error');
   assert.equal(c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'success');
+  assert.equal(c.handleLogin('MALI@EXAMPLE.COM', 'SecurePass1', 'student').status, 'success');
 });
 
 test('student password recovery uses only the verified email and rotates the stored password', () => {
@@ -219,6 +230,8 @@ test('authorized staff can manage the recovery email without resetting the passw
   assert.equal(authRow[authHeaders.indexOf('PasswordSalt')], passwordSalt);
   assert.equal(authRow[authHeaders.indexOf('EmailManagedBy')], 'staff@example.com');
   assert.equal(c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'success');
+  assert.equal(c.handleLogin('mali@example.com', 'SecurePass1', 'student').status, 'error');
+  assert.equal(c.handleLogin('NEWRECOVERY@GMAIL.COM', 'SecurePass1', 'student').status, 'success');
 
   c.requestPasswordReset('mali@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
   assert.equal(emails.length, emailCountBeforeUpdate, 'the previous email must no longer receive recovery mail');
@@ -239,6 +252,8 @@ test('authorized staff can manage the recovery email without resetting the passw
 
 test('first-login UI exposes identity, full-width email, dual-calendar birth date, password visibility, and review', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /data-t="studentLoginIdentifier"/);
+  assert.match(html, /role === 'student' \? 'studentLoginIdentifier' : 'username'/);
   assert.match(html, /studentSetupProfileCard\(loginResult\)/);
   assert.match(html, /studentSetupExistingEmail/);
   assert.match(html, /\.student-setup-input\s*\{[\s\S]*?width:100%/);
