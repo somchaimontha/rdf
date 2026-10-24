@@ -400,6 +400,22 @@ const server = http.createServer((req,res)=>{
        'index.html?next='+encodeURIComponent('report-verification.html?token='+'a'.repeat(64)));const valid=authLoginDestination();history.replaceState({},'','index.html?next='+encodeURIComponent('https://attacker.example/'));const blocked=authLoginDestination();history.replaceState({},'',original);return {valid,blocked};})()`);
      assert.match(loginReturn.valid,/^report-verification\.html\?token=/,'login may return to the same-origin verification page');
      assert.equal(loginReturn.blocked,'dashboard.html','login return must reject external redirects');
+     const setupUi=await evaluate(`(()=>{
+       const holder=document.createElement('div');holder.style.width='420px';
+       holder.innerHTML=studentSetupProfileCard({name:'<img id="studentSetupAttack">',stipNo:'MBS_001',pic:'https://example.com/student.jpg'})+
+         '<input id="setupEmailProbe" class="student-setup-input"><input id="setupPassA" type="password"><input id="setupPassB" type="password"><button id="setupToggle" type="button"></button>';
+       document.body.appendChild(holder);studentSetupBindPasswordToggle('setupToggle',['setupPassA','setupPassB']);
+       const before=[document.getElementById('setupPassA').type,document.getElementById('setupPassB').type];document.getElementById('setupToggle').click();
+       const after=[document.getElementById('setupPassA').type,document.getElementById('setupPassB').type];
+       const result={photo:holder.querySelector('.student-setup-photo')?.getAttribute('src'),escaped:!holder.querySelector('#studentSetupAttack'),before,after,emailWidth:document.getElementById('setupEmailProbe').getBoundingClientRect().width,holderWidth:holder.getBoundingClientRect().width,birth:studentSetupBirthDateText('2009-01-21')};holder.remove();return result;
+     })()`);
+     assert.equal(setupUi.photo,'https://example.com/student.jpg','first-login identity card must show the student photo');
+     assert.equal(setupUi.escaped,true,'student identity text must be HTML escaped');
+     assert.deepEqual(setupUi.before,['password','password'],'new passwords start hidden');
+     assert.deepEqual(setupUi.after,['text','text'],'the eye control must reveal both password fields');
+     assert.ok(Math.abs(setupUi.emailWidth-setupUi.holderWidth)<=1,'recovery email input must use the full available width');
+     assert.match(setupUi.birth,/Jan\. 21 2009/,'birth-date confirmation must show the C.E. text date');
+     assert.match(setupUi.birth,/มกราคม 21 2552/,'birth-date confirmation must also show the B.E. text date');
      const dynamic=await evaluate(`(async()=>{
        const holder=document.createElement('div');
        holder.innerHTML='<button><i id="test-icon"></i><span data-t="save">initial</span></button><input value="Keep ไทย" data-t-placeholder="searchPlaceholder" data-t-title="save">';

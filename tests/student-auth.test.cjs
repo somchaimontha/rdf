@@ -47,7 +47,7 @@ function setup() {
   const sheets = new Map([
     ['Students', new Sheet('Students', [
       ['StipNo','IDCard','BirthYear','BirthMonth','BirthDay','StudentID','Status','FirstName','LastName','EngFirstName','EngLastName','Phone1','Email','ProfilePicURL','UpdatedAt'],
-      ['MBS_001','1111111111111','2005','5','10','S001','Active','มะลิ','ใจดี','Mali','Jaidee','0811111111','','',''],
+      ['MBS_001','1111111111111','2005','5','10','S001','Active','มะลิ','ใจดี','Mali','Jaidee','0811111111','','https://example.com/mali.jpg',''],
       ['MBS_002','2222222222222','2005','','','S002','Active','มานะ','ดี','Mana','Dee','0822222222','used@example.com','',''],
       ['MBS_003','3333333333333','2004','4','9','S003','Resigned','สายใจ','มั่นคง','Saijai','Mankhong','0833333333','','',''],
       ['MBS_004','4444444444444','2003','3','8','S004','Incomplete','กล้า','เรียนรู้','Kla','Rianru','0844444444','','',''],
@@ -94,24 +94,47 @@ function emailCode(message) {
   return match[1];
 }
 
+function beginEnrollment(c, setupToken, email, birthDate, password, confirmations = {}) {
+  return c.beginStudentFirstLogin(
+    setupToken, email, birthDate, password,
+    confirmations.identityConfirmed !== false,
+    confirmations.birthDateConfirmed !== false,
+    confirmations.nonGmailConfirmed !== false
+  );
+}
+
 test('legacy student login requires verified first-login enrollment before issuing a session', () => {
   const { c, sheets, emails } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   assert.equal(legacy.status, 'setup_required');
   assert.ok(legacy.setupToken);
   assert.equal(legacy.sessionToken, undefined);
+  assert.equal(legacy.name, 'มะลิ ใจดี');
+  assert.equal(legacy.pic, 'https://example.com/mali.jpg');
+  assert.equal(legacy.existingEmail, '');
+  assert.equal(legacy.birthDate, '2005-05-10');
+  assert.equal(legacy.birthYear, '2005');
+  assert.equal(c._isGmailAddress('mali@gmail.com'), true);
+  assert.equal(c._isGmailAddress('mali@googlemail.com'), true);
+  assert.equal(c._isGmailAddress('mali@example.com'), false);
   const concurrentSetup = c.handleLogin('1111111111111', '2005', 'student');
   assert.equal(concurrentSetup.status, 'setup_required');
   assert.equal(c.handleLogin('3333333333333', '2004', 'student').status, 'setup_required', 'former students remain eligible');
   assert.equal(c.handleLogin('4444444444444', '2003', 'student').status, 'setup_required', 'students with incomplete records can fix their profile');
+  const existingProfile = c.handleLogin('2222222222222', '2005', 'student');
+  assert.equal(existingProfile.existingEmail, 'used@example.com');
+  assert.equal(existingProfile.birthDate, '');
 
-  const mismatch = c.beginStudentFirstLogin(legacy.setupToken, 'mali@example.com', '2005-05-11', 'SecurePass1');
+  assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1', { identityConfirmed:false }).code, 'STUDENT_IDENTITY_CONFIRM_REQUIRED');
+  assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1', { nonGmailConfirmed:false }).code, 'STUDENT_NON_GMAIL_CONFIRM_REQUIRED');
+  assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1', { birthDateConfirmed:false }).code, 'STUDENT_BIRTH_DATE_CONFIRM_REQUIRED');
+  const mismatch = beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-11', 'SecurePass1');
   assert.equal(mismatch.code, 'STUDENT_BIRTH_DATE_MISMATCH');
-  assert.equal(c.beginStudentFirstLogin(legacy.setupToken, 'mali@example.com', '2005-05-10', `A1${'a'.repeat(127)}`).code, 'STUDENT_PASSWORD_POLICY');
-  const duplicate = c.beginStudentFirstLogin(legacy.setupToken, 'used@example.com', '2005-05-10', 'SecurePass1');
+  assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', `A1${'a'.repeat(127)}`).code, 'STUDENT_PASSWORD_POLICY');
+  const duplicate = beginEnrollment(c, legacy.setupToken, 'used@example.com', '2005-05-10', 'SecurePass1');
   assert.equal(duplicate.code, 'STUDENT_EMAIL_IN_USE');
 
-  const begun = c.beginStudentFirstLogin(legacy.setupToken, 'Mali@Example.com', '2005-05-10', 'SecurePass1');
+  const begun = beginEnrollment(c, legacy.setupToken, 'Mali@Example.com', '2005-05-10', 'SecurePass1');
   assert.equal(begun.status, 'success');
   assert.equal(emails.length, 1);
   const completed = c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
@@ -126,11 +149,11 @@ test('legacy student login requires verified first-login enrollment before issui
   assert.equal(authRows[1][authRows[0].indexOf('VerifiedEmail')], 'mali@example.com');
   studentRows[1][studentRows[0].indexOf('Email')] = 'changed-by-staff@example.com';
   assert.equal(
-    c.beginStudentFirstLogin(c.handleLogin('3333333333333', '2004', 'student').setupToken, 'mali@example.com', '2004-04-09', 'FormerPass3').code,
+    beginEnrollment(c, c.handleLogin('3333333333333', '2004', 'student').setupToken, 'mali@example.com', '2004-04-09', 'FormerPass3').code,
     'STUDENT_EMAIL_IN_USE',
     'verified recovery email remains unique even if staff later changes the profile email'
   );
-  assert.equal(c.beginStudentFirstLogin(concurrentSetup.setupToken, 'other@example.com', '2005-05-10', 'OtherPass2').code, 'STUDENT_SETUP_ALREADY_COMPLETED');
+  assert.equal(beginEnrollment(c, concurrentSetup.setupToken, 'other@example.com', '2005-05-10', 'OtherPass2').code, 'STUDENT_SETUP_ALREADY_COMPLETED');
   assert.match(hash, /^hmac-sha256:/);
   assert.equal(hash.includes('SecurePass1'), false);
   assert.equal(c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0])).code, 'STUDENT_SETUP_EXPIRED');
@@ -142,7 +165,7 @@ test('legacy student login requires verified first-login enrollment before issui
 test('student password recovery uses only the verified email and rotates the stored password', () => {
   const { c, emails } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
-  c.beginStudentFirstLogin(legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
+  beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
   c.completeStudentFirstLogin(legacy.setupToken, emailCode(emails[0]));
 
   const unknown = c.requestPasswordReset('missing@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
@@ -159,4 +182,17 @@ test('student password recovery uses only the verified email and rotates the sto
   assert.equal(c.confirmPasswordReset(token, 'AnotherPass3').status, 'error', 'reset token must be single-use');
   assert.equal(c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'error');
   assert.equal(c.handleLogin('1111111111111', 'NewSecure2', 'student').status, 'success');
+});
+
+test('first-login UI exposes identity, full-width email, dual-calendar birth date, password visibility, and review', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /studentSetupProfileCard\(loginResult\)/);
+  assert.match(html, /studentSetupExistingEmail/);
+  assert.match(html, /\.student-setup-input\s*\{[\s\S]*?width:100%/);
+  assert.match(html, /studentSetupBirthDateText\(existingBirthDate\)/);
+  assert.match(html, /formatAppDate\(isoDate, 'en'\)/);
+  assert.match(html, /formatAppDate\(isoDate, 'th'\)/);
+  assert.match(html, /studentSetupBindPasswordToggle/);
+  assert.match(html, /reviewStudentFirstLogin/);
+  assert.match(html, /studentSetupReviewPasswordStored/);
 });

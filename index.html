@@ -164,6 +164,43 @@
   background:#faf5ff; border:1px dashed #ddd6fe;
   border-radius:8px; padding:8px 12px; display:flex; align-items:center; justify-content:center; gap:6px;
 }
+
+/* ── Student first-login setup ── */
+.student-setup-content { text-align:left; color:#334155; }
+.student-setup-profile {
+  display:flex; align-items:center; gap:14px; padding:13px;
+  border:1px solid #bfdbfe; border-radius:14px; background:#eff6ff; margin-bottom:12px;
+}
+.student-setup-photo {
+  width:64px; height:64px; border-radius:50%; object-fit:cover; flex:0 0 auto;
+  border:3px solid #fff; box-shadow:0 2px 8px rgba(30,58,138,.16); background:#dbeafe;
+}
+.student-setup-photo-fallback {
+  display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; color:#1e3a8a;
+}
+.student-setup-field { margin-top:13px; }
+.student-setup-label { display:block; font-size:12px; font-weight:800; color:#475569; margin-bottom:6px; }
+.student-setup-input {
+  box-sizing:border-box; display:block; width:100%; min-width:0; margin:0; padding:11px 12px;
+  border:1.5px solid #cbd5e1; border-radius:10px; background:#fff; color:#0f172a; font:inherit;
+}
+.student-setup-input:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+.student-setup-input[readonly] { background:#f1f5f9; color:#334155; }
+.student-setup-note { margin-top:6px; font-size:11.5px; line-height:1.55; color:#64748b; }
+.student-setup-alert { margin-top:8px; padding:10px; border-radius:10px; font-size:11.5px; line-height:1.55; }
+.student-setup-alert-warning { color:#92400e; background:#fffbeb; border:1px solid #fde68a; }
+.student-setup-alert-info { color:#1e40af; background:#eff6ff; border:1px solid #bfdbfe; }
+.student-setup-check { display:flex; align-items:flex-start; gap:8px; margin-top:8px; font-size:12px; line-height:1.5; color:#334155; }
+.student-setup-check input { width:16px; height:16px; margin-top:2px; flex:0 0 auto; }
+.student-password-tools { display:flex; justify-content:flex-end; margin-top:6px; }
+.student-password-toggle {
+  border:0; background:transparent; color:#1d4ed8; cursor:pointer; font:inherit; font-size:12px;
+  font-weight:700; padding:3px 0;
+}
+.student-review-row { padding:10px 0; border-bottom:1px solid #e2e8f0; }
+.student-review-row:last-child { border-bottom:0; }
+.student-review-key { font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
+.student-review-value { margin-top:3px; color:#0f172a; font-size:13px; font-weight:650; overflow-wrap:anywhere; }
 </style>
 </head>
 <body>
@@ -296,10 +333,10 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.19"></script>
-<script src="assets/js/i18n.js?v=2.6.19"></script>
-<script src="assets/js/api.js?v=2.6.19"></script>
-<script src="assets/js/auth.js?v=2.6.19"></script>
+<script src="assets/js/config.js?v=2.6.20"></script>
+<script src="assets/js/i18n.js?v=2.6.20"></script>
+<script src="assets/js/api.js?v=2.6.20"></script>
+<script src="assets/js/auth.js?v=2.6.20"></script>
 <script>
 document.getElementById('appVersion').textContent = RDF.VERSION;
 const _passwordResetToken = new URLSearchParams(window.location.search).get('rt');
@@ -482,6 +519,103 @@ function studentPasswordPolicyMessage(value) {
   return '';
 }
 
+function studentSetupEscapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+  })[char]);
+}
+
+function studentSetupTemplate(key, replacements = {}) {
+  let value = t(key);
+  Object.entries(replacements).forEach(([name, replacement]) => {
+    value = value.replaceAll(`{${name}}`, String(replacement));
+  });
+  return value;
+}
+
+function studentSetupSafePhotoUrl(value) {
+  try {
+    const url = new URL(String(value || ''), window.location.href);
+    return url.protocol === 'https:' ? url.href : '';
+  } catch (_) { return ''; }
+}
+
+function studentSetupProfileCard(loginResult) {
+  const name = String(loginResult?.name || loginResult?.stipNo || '').trim();
+  const stipNo = String(loginResult?.stipNo || '').trim();
+  const photo = studentSetupSafePhotoUrl(loginResult?.pic);
+  const avatar = photo
+    ? `<img class="student-setup-photo" src="${studentSetupEscapeHtml(photo)}" alt="${studentSetupEscapeHtml(t('studentSetupPhotoAlt'))}" referrerpolicy="no-referrer">`
+    : `<div class="student-setup-photo student-setup-photo-fallback" role="img" aria-label="${studentSetupEscapeHtml(t('studentSetupPhotoAlt'))}">${studentSetupEscapeHtml((name || '?').charAt(0))}</div>`;
+  return `<div class="student-setup-profile">${avatar}<div style="min-width:0">
+    <div style="font-size:11px;font-weight:800;color:#2563eb;margin-bottom:3px">${studentSetupEscapeHtml(t('studentSetupIdentityTitle'))}</div>
+    <div style="font-size:16px;font-weight:800;color:#0f172a;overflow-wrap:anywhere">${studentSetupEscapeHtml(name)}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:3px">${studentSetupEscapeHtml(t('studentSetupStipNo'))}: ${studentSetupEscapeHtml(stipNo)}</div>
+  </div></div>`;
+}
+
+function studentSetupIsGmail(email) {
+  const domain = String(email || '').trim().toLowerCase().split('@').pop();
+  return domain === 'gmail.com' || domain === 'googlemail.com';
+}
+
+function studentSetupBirthDateText(isoDate) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(isoDate || ''))) return '';
+  return studentSetupTemplate('studentSetupBirthDateDual', {
+    ceDate:formatAppDate(isoDate, 'en'),
+    beDate:formatAppDate(isoDate, 'th')
+  });
+}
+
+function studentSetupBindPasswordToggle(buttonId, inputIds) {
+  const button = document.getElementById(buttonId);
+  const inputs = inputIds.map(id => document.getElementById(id)).filter(Boolean);
+  if (!button || !inputs.length) return;
+  let visible = false;
+  const render = () => {
+    inputs.forEach(input => { input.type = visible ? 'text' : 'password'; });
+    const label = t(visible ? 'studentSetupHidePassword' : 'studentSetupShowPassword');
+    button.textContent = `${visible ? '🙈' : '👁'} ${label}`;
+    button.setAttribute('aria-label', label);
+  };
+  button.addEventListener('click', () => { visible = !visible; render(); });
+  render();
+}
+
+async function reviewStudentFirstLogin(loginResult, formData) {
+  const review = await Swal.fire({
+    icon:'question', title:t('studentSetupReviewTitle'),
+    width:'min(680px, calc(100vw - 20px))',
+    html:`<div class="student-setup-content">
+      <p class="student-setup-note" style="margin:0 0 12px">${studentSetupEscapeHtml(t('studentSetupReviewDesc'))}</p>
+      ${studentSetupProfileCard(loginResult)}
+      <div class="student-review-row"><div class="student-review-key">${studentSetupEscapeHtml(t('studentSetupReviewEmail'))}</div><div class="student-review-value">${studentSetupEscapeHtml(formData.email)}</div></div>
+      <div class="student-review-row"><div class="student-review-key">${studentSetupEscapeHtml(t('studentSetupReviewBirthDate'))}</div><div class="student-review-value">${studentSetupEscapeHtml(studentSetupBirthDateText(formData.birthDate))}</div></div>
+      <div class="student-review-row"><div class="student-review-key">${studentSetupEscapeHtml(t('studentSetupReviewPassword'))}</div>
+        <div class="student-review-value"><span id="studentReviewPassword"></span></div>
+        <button id="studentReviewPasswordToggle" type="button" class="student-password-toggle"></button>
+      </div>
+      <div class="student-setup-alert student-setup-alert-info">${studentSetupEscapeHtml(t('studentSetupReviewPasswordStored'))}</div>
+    </div>`,
+    confirmButtonText:t('studentSetupConfirmAndSend'), cancelButtonText:t('studentSetupBackEdit'),
+    confirmButtonColor:'#1e3a8a', showCancelButton:true, allowOutsideClick:false,
+    didOpen:() => {
+      const passwordText = document.getElementById('studentReviewPassword');
+      const toggle = document.getElementById('studentReviewPasswordToggle');
+      let visible = false;
+      const render = () => {
+        passwordText.textContent = visible ? formData.password : '•'.repeat(Math.min(formData.password.length, 16));
+        const label = t(visible ? 'studentSetupHidePassword' : 'studentSetupShowPassword');
+        toggle.textContent = `${visible ? '🙈' : '👁'} ${label}`;
+        toggle.setAttribute('aria-label', label);
+      };
+      toggle.addEventListener('click', () => { visible = !visible; render(); });
+      render();
+    }
+  });
+  return review.isConfirmed;
+}
+
 async function handleStudentFirstLoginSetup(loginResult, loginId) {
   const setupToken = loginResult?.setupToken || '';
   if (!setupToken) {
@@ -489,41 +623,123 @@ async function handleStudentFirstLoginSetup(loginResult, loginId) {
     return;
   }
 
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const rawExistingEmail = String(loginResult?.existingEmail || '').trim();
+  const validExistingEmail = emailPattern.test(rawExistingEmail) ? rawExistingEmail : '';
+  const existingBirthDate = /^\d{4}-\d{2}-\d{2}$/.test(String(loginResult?.birthDate || ''))
+    ? String(loginResult.birthDate) : '';
+  const knownBirthYear = /^\d{4}$/.test(String(loginResult?.birthYear || ''))
+    ? Number(loginResult.birthYear) : 0;
+  let draft = {
+    email:validExistingEmail,
+    birthDate:existingBirthDate,
+    password:'', confirmation:'', identityConfirmed:false,
+    birthDateConfirmed:false, nonGmailConfirmed:false
+  };
   let enrollment;
   while (!enrollment) {
     const modal = await Swal.fire({
-      icon:'info', title:t('studentSetupTitle'),
-      html:`
-        <p style="font-size:12px;color:#64748b;line-height:1.6;margin-bottom:12px">${t('studentSetupDesc')}</p>
-        <label for="studentSetupEmail" style="display:block;text-align:left;font-size:12px;font-weight:700;color:#475569">${t('studentSetupEmail')}</label>
-        <input id="studentSetupEmail" type="email" class="swal2-input" autocomplete="email" placeholder="${t('studentSetupEmailPlaceholder')}" style="font-size:13px;margin-top:5px">
-        <label for="studentSetupBirthDate" style="display:block;text-align:left;font-size:12px;font-weight:700;color:#475569;margin-top:10px">${t('studentSetupBirthDate')}</label>
-        <input id="studentSetupBirthDate" type="date" class="swal2-input" autocomplete="bday" style="font-size:13px;margin-top:5px">
-        <label for="studentSetupPassword" style="display:block;text-align:left;font-size:12px;font-weight:700;color:#475569;margin-top:10px">${t('studentSetupNewPassword')}</label>
-        <input id="studentSetupPassword" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupNewPassword')}" style="font-size:13px;margin-top:5px">
-        <input id="studentSetupPasswordConfirm" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupConfirmPassword')}" style="font-size:13px">
-        <p style="font-size:11px;color:#64748b;text-align:left;line-height:1.5;margin-top:8px">${t('studentSetupPasswordPolicy')}</p>`,
+      icon:'info', title:t('studentSetupTitle'), width:'min(720px, calc(100vw - 20px))',
+      html:`<div class="student-setup-content">
+        <p class="student-setup-note" style="margin:0 0 12px">${studentSetupEscapeHtml(t('studentSetupDesc'))}</p>
+        ${studentSetupProfileCard(loginResult)}
+        <label class="student-setup-check"><input id="studentSetupIdentityConfirm" type="checkbox"><span>${studentSetupEscapeHtml(t('studentSetupIdentityConfirm'))}</span></label>
+        <p class="student-setup-note">${studentSetupEscapeHtml(t('studentSetupIdentityIncorrect'))}</p>
+
+        <div class="student-setup-field">
+          <label for="studentSetupEmail" class="student-setup-label">${studentSetupEscapeHtml(t('studentSetupEmail'))}</label>
+          ${rawExistingEmail ? `<div class="student-setup-note" style="margin-bottom:6px"><strong>${studentSetupEscapeHtml(t('studentSetupExistingEmail'))}:</strong> ${studentSetupEscapeHtml(rawExistingEmail)}</div>` : `<div class="student-setup-note" style="margin-bottom:6px">${studentSetupEscapeHtml(t('studentSetupNoExistingEmail'))}</div>`}
+          <input id="studentSetupEmail" type="email" class="student-setup-input" autocomplete="email" placeholder="${studentSetupEscapeHtml(t('studentSetupEmailPlaceholder'))}">
+          <div class="student-setup-note">${studentSetupEscapeHtml(validExistingEmail ? t('studentSetupEmailReadOnly') : (rawExistingEmail ? t('studentSetupExistingEmailInvalid') : t('studentSetupEmailGmailRecommended')))}</div>
+          <div id="studentSetupNonGmail" class="student-setup-alert student-setup-alert-warning" style="display:none">
+            <strong>${studentSetupEscapeHtml(t('studentSetupNonGmailTitle'))}</strong><br>${studentSetupEscapeHtml(t('studentSetupNonGmailDesc'))}
+            <label class="student-setup-check"><input id="studentSetupNonGmailConfirm" type="checkbox"><span>${studentSetupEscapeHtml(t('studentSetupNonGmailConfirm'))}</span></label>
+          </div>
+        </div>
+
+        <div class="student-setup-field">
+          <label for="studentSetupBirthDate" class="student-setup-label">${studentSetupEscapeHtml(t('studentSetupBirthDate'))}</label>
+          ${existingBirthDate ? `<div class="student-setup-note" style="margin-bottom:6px"><strong>${studentSetupEscapeHtml(t('studentSetupExistingBirthDate'))}:</strong> ${studentSetupEscapeHtml(studentSetupBirthDateText(existingBirthDate))}</div>` : (knownBirthYear ? `<div class="student-setup-note" style="margin-bottom:6px">${studentSetupEscapeHtml(studentSetupTemplate('studentSetupKnownBirthYear',{ceYear:knownBirthYear,beYear:knownBirthYear+543}))}</div>` : '')}
+          <input id="studentSetupBirthDate" type="date" class="student-setup-input" autocomplete="bday">
+          <div id="studentSetupBirthDateText" class="student-setup-alert student-setup-alert-info" style="display:none"></div>
+          ${existingBirthDate ? `<label class="student-setup-check"><input id="studentSetupBirthDateConfirm" type="checkbox"><span>${studentSetupEscapeHtml(t('studentSetupBirthDateConfirm'))}</span></label>` : ''}
+        </div>
+
+        <div class="student-setup-field">
+          <label for="studentSetupPassword" class="student-setup-label">${studentSetupEscapeHtml(t('studentSetupNewPassword'))}</label>
+          <input id="studentSetupPassword" type="password" class="student-setup-input" autocomplete="new-password" placeholder="${studentSetupEscapeHtml(t('studentSetupNewPassword'))}">
+          <input id="studentSetupPasswordConfirm" type="password" class="student-setup-input" autocomplete="new-password" placeholder="${studentSetupEscapeHtml(t('studentSetupConfirmPassword'))}" style="margin-top:8px">
+          <div class="student-password-tools"><button id="studentSetupPasswordToggle" type="button" class="student-password-toggle"></button></div>
+          <p class="student-setup-note">${studentSetupEscapeHtml(t('studentSetupPasswordPolicy'))}</p>
+        </div>
+      </div>`,
       confirmButtonText:t('studentSetupSendCode'), cancelButtonText:t('cancel'),
       confirmButtonColor:'#1e3a8a', showCancelButton:true, allowOutsideClick:false,
       focusConfirm:false,
+      didOpen:() => {
+        const email=document.getElementById('studentSetupEmail');
+        const birthDate=document.getElementById('studentSetupBirthDate');
+        const birthDateText=document.getElementById('studentSetupBirthDateText');
+        const nonGmailPanel=document.getElementById('studentSetupNonGmail');
+        const nonGmailConfirm=document.getElementById('studentSetupNonGmailConfirm');
+        email.value=draft.email;
+        email.readOnly=!!validExistingEmail;
+        birthDate.value=draft.birthDate;
+        birthDate.readOnly=!!existingBirthDate;
+        document.getElementById('studentSetupPassword').value=draft.password;
+        document.getElementById('studentSetupPasswordConfirm').value=draft.confirmation;
+        document.getElementById('studentSetupIdentityConfirm').checked=draft.identityConfirmed;
+        if (document.getElementById('studentSetupBirthDateConfirm')) document.getElementById('studentSetupBirthDateConfirm').checked=draft.birthDateConfirmed;
+        nonGmailConfirm.checked=draft.nonGmailConfirmed;
+        const updateEmailState=() => {
+          const value=email.value.trim();
+          const show=emailPattern.test(value) && !studentSetupIsGmail(value);
+          nonGmailPanel.style.display=show?'block':'none';
+          if (!show) nonGmailConfirm.checked=false;
+        };
+        const updateBirthDateText=() => {
+          const value=birthDate.value;
+          birthDateText.textContent=studentSetupBirthDateText(value);
+          birthDateText.style.display=birthDateText.textContent?'block':'none';
+        };
+        email.addEventListener('input',updateEmailState);
+        birthDate.addEventListener('change',updateBirthDateText);
+        updateEmailState(); updateBirthDateText();
+        studentSetupBindPasswordToggle('studentSetupPasswordToggle',['studentSetupPassword','studentSetupPasswordConfirm']);
+      },
       preConfirm:() => {
         const email=document.getElementById('studentSetupEmail')?.value?.trim() || '';
         const birthDate=document.getElementById('studentSetupBirthDate')?.value || '';
         const password=document.getElementById('studentSetupPassword')?.value || '';
         const confirmation=document.getElementById('studentSetupPasswordConfirm')?.value || '';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { Swal.showValidationMessage(t('studentSetupEmailInvalid')); return false; }
+        const identityConfirmed=document.getElementById('studentSetupIdentityConfirm')?.checked === true;
+        const birthDateConfirmed=document.getElementById('studentSetupBirthDateConfirm')?.checked === true;
+        const nonGmailConfirmed=document.getElementById('studentSetupNonGmailConfirm')?.checked === true;
+        if (!identityConfirmed) { Swal.showValidationMessage(t('studentIdentityConfirmRequired')); return false; }
+        if (!emailPattern.test(email)) { Swal.showValidationMessage(t('studentSetupEmailInvalid')); return false; }
+        if (!studentSetupIsGmail(email) && !nonGmailConfirmed) { Swal.showValidationMessage(t('studentNonGmailConfirmRequired')); return false; }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) { Swal.showValidationMessage(t('studentSetupBirthDateRequired')); return false; }
+        if (existingBirthDate && !birthDateConfirmed) { Swal.showValidationMessage(t('studentBirthDateConfirmRequired')); return false; }
         const policyMessage=studentPasswordPolicyMessage(password);
         if (policyMessage) { Swal.showValidationMessage(policyMessage); return false; }
         if (password !== confirmation) { Swal.showValidationMessage(t('passwordMismatch')); return false; }
-        return { email, birthDate, password };
+        return { email, birthDate, password, confirmation, identityConfirmed, birthDateConfirmed, nonGmailConfirmed };
       }
     });
     if (!modal.value) return;
+    draft=modal.value;
+    if (!await reviewStudentFirstLogin(loginResult,draft)) continue;
     Swal.fire({title:t('studentSetupSendingCode'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
     try {
-      const result=await API.beginStudentFirstLogin(setupToken,modal.value.email,modal.value.birthDate,modal.value.password);
-      if (result.status === 'success') enrollment=result;
+      const result=await API.beginStudentFirstLogin(setupToken,draft.email,draft.birthDate,draft.password,{
+        identityConfirmed:draft.identityConfirmed,
+        birthDateConfirmed:draft.birthDateConfirmed,
+        nonGmailConfirmed:draft.nonGmailConfirmed
+      });
+      if (result.status === 'success') {
+        enrollment=result;
+        draft.password=''; draft.confirmation='';
+      }
       else await Swal.fire(t('error'),result.message || t('studentSetupError'),'error');
     } catch(e) {
       await Swal.fire(t('error'),e.message || t('network_error'),'error');
@@ -613,13 +829,15 @@ async function handleResetToken(token) {
     html: `
       <p style="font-size:12px;color:#6b7280;margin-bottom:10px">${t('studentSetupPasswordPolicy')}</p>
       <input id="rpPass1" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupNewPassword')}" style="font-size:13px">
-      <input id="rpPass2" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupConfirmPassword')}" style="font-size:13px">`,
+      <input id="rpPass2" type="password" class="swal2-input" autocomplete="new-password" placeholder="${t('studentSetupConfirmPassword')}" style="font-size:13px">
+      <div class="student-password-tools" style="margin:4px 2.5em 0"><button id="resetPasswordToggle" type="button" class="student-password-toggle"></button></div>`,
     confirmButtonText:t('passwordResetSave'),
     confirmButtonColor: '#16a34a',
     showCancelButton: true,
     cancelButtonText:t('cancel'),
     allowOutsideClick: false,
     focusConfirm: false,
+    didOpen:() => studentSetupBindPasswordToggle('resetPasswordToggle',['rpPass1','rpPass2']),
     preConfirm: () => {
       const p1 = document.getElementById('rpPass1')?.value || '';
       const p2 = document.getElementById('rpPass2')?.value || '';

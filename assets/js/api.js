@@ -67,6 +67,9 @@ const _API_CODE_I18N_KEYS = {
   STUDENT_SETUP_EXPIRED:'studentSetupExpired', STUDENT_SETUP_EMAIL_LIMIT:'studentSetupEmailLimit',
   STUDENT_SETUP_ALREADY_COMPLETED:'studentSetupAlreadyCompleted',
   STUDENT_EMAIL_INVALID:'studentSetupEmailInvalid', STUDENT_BIRTH_DATE_INVALID:'studentBirthDateInvalid',
+  STUDENT_IDENTITY_CONFIRM_REQUIRED:'studentIdentityConfirmRequired',
+  STUDENT_BIRTH_DATE_CONFIRM_REQUIRED:'studentBirthDateConfirmRequired',
+  STUDENT_NON_GMAIL_CONFIRM_REQUIRED:'studentNonGmailConfirmRequired',
   STUDENT_PASSWORD_POLICY:'studentSetupPasswordPolicy', STUDENT_ACCOUNT_NOT_FOUND:'studentAccountNotFound',
   STUDENT_BIRTH_DATE_MISMATCH:'studentBirthDateMismatch', STUDENT_EMAIL_IN_USE:'studentEmailInUse',
   STUDENT_EMAIL_MISMATCH:'studentEmailMismatch',
@@ -369,8 +372,13 @@ const API = {
   async changeAdminPassword(username, currentPassword, newPassword) {
     return apiPost({ action: 'changeAdminPassword', username, currentPassword, newPassword });
   },
-  async beginStudentFirstLogin(setupToken, email, birthDate, newPassword) {
-    return apiPost({ action:'beginStudentFirstLogin', setupToken, email, birthDate, newPassword }, _API_TIMEOUT_SETTINGS_MS);
+  async beginStudentFirstLogin(setupToken, email, birthDate, newPassword, confirmations = {}) {
+    return apiPost({
+      action:'beginStudentFirstLogin', setupToken, email, birthDate, newPassword,
+      identityConfirmed:confirmations.identityConfirmed === true,
+      birthDateConfirmed:confirmations.birthDateConfirmed === true,
+      nonGmailConfirmed:confirmations.nonGmailConfirmed === true
+    }, _API_TIMEOUT_SETTINGS_MS);
   },
   async completeStudentFirstLogin(setupToken, verificationCode) {
     return apiPost({ action:'completeStudentFirstLogin', setupToken, verificationCode }, _API_TIMEOUT_SETTINGS_MS);
