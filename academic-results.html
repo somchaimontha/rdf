@@ -187,6 +187,7 @@
         <option value="" data-t="arAllSem">— ทุกภาคเรียน —</option>
         <option value="1" data-t="arSem1">ภาคเรียนที่ 1</option>
         <option value="2" data-t="arSem2">ภาคเรียนที่ 2</option>
+        <option value="3" data-t="arSem3">ภาคเรียนที่ 3</option>
         <option value="summer" data-t="arSemSummer">ภาคฤดูร้อน</option>
       </select>
     </div>
@@ -364,6 +365,7 @@
           <option value="" data-t="uiAllTerms">— ทุกภาคเรียน / All Terms —</option>
           <option value="1" data-t="uiSemester1">ภาคเรียนที่ 1 / Semester 1</option>
           <option value="2" data-t="uiSemester2">ภาคเรียนที่ 2 / Semester 2</option>
+          <option value="3" data-t="arSem3">ภาคเรียนที่ 3</option>
           <option value="summer" data-t="uiSummer">ภาคฤดูร้อน / Summer</option>
         </select>
       </div>
@@ -444,12 +446,12 @@
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.24"></script>
-<script src="assets/js/i18n.js?v=2.6.24"></script>
-<script src="assets/js/auth.js?v=2.6.24"></script>
-<script src="assets/js/rbac.js?v=2.6.24"></script>
-<script src="assets/js/api.js?v=2.6.24"></script>
-<script src="assets/js/report-registry.js?v=2.6.24"></script>
+<script src="assets/js/config.js?v=2.6.25"></script>
+<script src="assets/js/i18n.js?v=2.6.25"></script>
+<script src="assets/js/auth.js?v=2.6.25"></script>
+<script src="assets/js/rbac.js?v=2.6.25"></script>
+<script src="assets/js/api.js?v=2.6.25"></script>
+<script src="assets/js/report-registry.js?v=2.6.25"></script>
 <script>
 RBAC.enforcePage(['viewStudents']);
 
@@ -491,6 +493,7 @@ function semLabel(val, isEN) {
   const L = isEN ? 'en' : 'th';
   if (val === '1')      return T[L].arSem1;
   if (val === '2')      return T[L].arSem2;
+  if (val === '3')      return T[L].arSem3;
   if (val === 'summer') return T[L].arSemSummer;
   const term = _TERMS.find(x => x.semester === val);
   return term ? (isEN ? term.labelEN : term.labelTH) : val;
@@ -1353,6 +1356,7 @@ document.addEventListener('rdf:languagechange', () => {
       `<option value="" data-t="arAllSem">${t('arAllSem')}</option>
        <option value="1" data-t="arSem1">${t('arSem1')}</option>
        <option value="2" data-t="arSem2">${t('arSem2')}</option>
+       <option value="3" data-t="arSem3">${t('arSem3')}</option>
        <option value="summer" data-t="arSemSummer">${t('arSemSummer')}</option>`;
     populateTermDropdown();
     sel.value = curr;

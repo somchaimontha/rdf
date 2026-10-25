@@ -777,7 +777,7 @@
         <i data-lucide="book-open" class="w-4 h-4"></i>
         <span data-t="arSectionH">7. ผลการเรียน / Academic Results</span>
       </div>
-      <a href="academic-results.html" target="_blank"
+      <a href="academic-results.html" target="_blank" data-student-hidden
          style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px">
         <i data-lucide="external-link" class="w-3 h-3"></i>
         <span data-t="arManageAllGrades">จัดการผลการเรียนทั้งหมด</span>
@@ -789,8 +789,9 @@
       <div class="flex flex-wrap gap-3 items-end mb-4 p-3 bg-purple-50 border border-purple-100 rounded-xl">
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af"><span data-t="arAcadYearLabel">ปีการศึกษา (พ.ศ.)</span> <span style="color:#ef4444">*</span></label>
-          <input type="number" id="ng_year" placeholder="2568" min="2560" max="2600"
-                 class="field-input" style="width:110px">
+          <select id="ng_year" class="field-select" style="width:130px" onchange="populateGradeSemesterOptions()">
+            <option value="" data-t="gradeSelectYear">-- เลือกปี --</option>
+          </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af"><span data-t="arSemLabel">ภาคเรียน</span> <span style="color:#ef4444">*</span></label>
@@ -798,6 +799,7 @@
             <option value="" data-t="arSelectSem">-- เลือกภาคเรียน --</option>
             <option value="1" data-t="arSem1">ภาคเรียนที่ 1</option>
             <option value="2" data-t="arSem2">ภาคเรียนที่ 2</option>
+            <option value="3" data-t="arSem3">ภาคเรียนที่ 3</option>
             <option value="summer" data-t="arSemSummer">ภาคฤดูร้อน</option>
           </select>
         </div>
@@ -1310,12 +1312,12 @@
   </div>
 </div>
 
-<script src="assets/js/config.js?v=2.6.24"></script>
-<script src="assets/js/i18n.js?v=2.6.24"></script>
-<script src="assets/js/api.js?v=2.6.24"></script>
-<script src="assets/js/auth.js?v=2.6.24"></script>
-<script src="assets/js/rbac.js?v=2.6.24"></script>
-<script src="assets/js/dynamic-fields.js?v=2.6.24"></script>
+<script src="assets/js/config.js?v=2.6.25"></script>
+<script src="assets/js/i18n.js?v=2.6.25"></script>
+<script src="assets/js/api.js?v=2.6.25"></script>
+<script src="assets/js/auth.js?v=2.6.25"></script>
+<script src="assets/js/rbac.js?v=2.6.25"></script>
+<script src="assets/js/dynamic-fields.js?v=2.6.25"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
 <script>
 lucide.createIcons();
@@ -1371,6 +1373,7 @@ document.addEventListener('rdf:languagechange', () => {
     option.textContent = levelLabel(option.value);
   });
   renderGradeFormTable();
+  populateGradePeriodControls();
   renderStudentAccountEmailAdmin();
   if (officialNameChangeMode) renderOfficialNameChangeMode();
   if (typeof _csvRows !== 'undefined' && _csvRows.length) {
@@ -1588,13 +1591,120 @@ document.getElementById('studentForm').addEventListener('change', () => DynamicF
 let _formGrades   = [];   // full array from system settings
 let _formStipNo   = '';   // current student's StipNo
 let _gradesDirty  = false;
+let _formAcademicTerms = [];
+
+function gradeSemesterKey(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['1','2','3','summer'].includes(normalized) ? normalized : '';
+}
+
+function gradeSemesterOrder(value) {
+  return ({ '1':1, '2':2, '3':3, summer:4 })[gradeSemesterKey(value)] || 0;
+}
+
+function gradeAcademicYearBE(value) {
+  const year = Number(value);
+  if (!Number.isInteger(year)) return 0;
+  return year < 2400 ? year + 543 : year;
+}
+
+function gradePeriodKey(year, semester) {
+  return `${gradeAcademicYearBE(year)}__${gradeSemesterKey(semester)}`;
+}
+
+function gradePeriodAtOrAfterEntry(year, semester) {
+  const entryYear = gradeAcademicYearBE(dynamicStudentContext.EntryYear || document.getElementById('f_entryYear')?.value);
+  const entrySemester = gradeSemesterKey(dynamicStudentContext.EntryTerm || document.getElementById('f_entryTerm')?.value) || '1';
+  if (!entryYear) return true;
+  const normalizedYear = gradeAcademicYearBE(year);
+  return normalizedYear > entryYear ||
+    (normalizedYear === entryYear && gradeSemesterOrder(semester) >= gradeSemesterOrder(entrySemester));
+}
+
+function availableGradePeriods() {
+  const institution = String(dynamicStudentContext.Institution || document.getElementById('f_institution')?.value || '').trim();
+  const relevantTerms = _formAcademicTerms.filter(term => {
+    const termInstitution = String(term?.institution || '').trim();
+    return !termInstitution || termInstitution === institution;
+  });
+  const configuredPeriods = relevantTerms.map(term => ({
+    year:gradeAcademicYearBE(term?.acadYear), semester:gradeSemesterKey(term?.semester),
+    labelTH:String(term?.labelTH || ''), labelEN:String(term?.labelEN || '')
+  })).filter(period => period.year && period.semester);
+  const periods = [];
+  const entryYear = gradeAcademicYearBE(dynamicStudentContext.EntryYear || document.getElementById('f_entryYear')?.value);
+  const currentYear = new Date().getFullYear() + 543;
+  const firstYear = entryYear || currentYear;
+  const configuredLastYear = configuredPeriods.reduce((latest, period) => Math.max(latest, period.year), 0);
+  const lastYear = Math.max(firstYear, currentYear, configuredLastYear);
+
+  for (let year = firstYear; year <= lastYear; year++) {
+    const configuredForYear = configuredPeriods.filter(period => period.year === year);
+    const yearPeriods = configuredForYear.length
+      ? configuredForYear
+      : ['1','2'].map(semester => ({ year, semester, labelTH:'', labelEN:'' }));
+    yearPeriods.forEach(period => {
+      if (gradePeriodAtOrAfterEntry(period.year, period.semester)) periods.push(period);
+    });
+  }
+
+  // Existing records remain selectable even if staff later archives a term.
+  _formGrades.filter(grade => String(grade.stipNo || '') === _formStipNo).forEach(grade => {
+    const year = gradeAcademicYearBE(grade.acadYear);
+    const semester = gradeSemesterKey(grade.semester);
+    if (year && semester && !periods.some(period => period.year === year && period.semester === semester)) {
+      periods.push({ year, semester, labelTH:'', labelEN:'' });
+    }
+  });
+
+  return periods.filter((period, index, all) =>
+    all.findIndex(item => item.year === period.year && item.semester === period.semester) === index
+  ).sort((left, right) => left.year - right.year || gradeSemesterOrder(left.semester) - gradeSemesterOrder(right.semester));
+}
+
+function populateGradeSemesterOptions(preferredSemester = '') {
+  const yearEl = document.getElementById('ng_year');
+  const semEl = document.getElementById('ng_sem');
+  if (!yearEl || !semEl) return;
+  const year = Number(yearEl.value);
+  const periods = availableGradePeriods().filter(period => period.year === year);
+  const previous = gradeSemesterKey(preferredSemester || semEl.value);
+  semEl.innerHTML = `<option value="">${t('arSelectSem')}</option>` + periods.map(period => {
+    const configuredLabel = LANG === 'en' ? period.labelEN : period.labelTH;
+    const label = configuredLabel || semesterLabel(period.semester);
+    return `<option value="${period.semester}">${label}</option>`;
+  }).join('');
+  if (previous && periods.some(period => period.semester === previous)) semEl.value = previous;
+  else if (periods.length) semEl.value = periods[0].semester;
+  semEl.disabled = periods.length === 0;
+}
+
+function populateGradePeriodControls() {
+  const yearEl = document.getElementById('ng_year');
+  if (!yearEl) return;
+  const previousYear = Number(yearEl.value);
+  const previousSemester = document.getElementById('ng_sem')?.value || '';
+  const periods = availableGradePeriods();
+  const years = [...new Set(periods.map(period => period.year))];
+  yearEl.innerHTML = `<option value="">${t('gradeSelectYear')}</option>` +
+    years.map(year => `<option value="${year}">${year}</option>`).join('');
+
+  const ownKeys = new Set(_formGrades.filter(grade => String(grade.stipNo || '') === _formStipNo)
+    .map(grade => gradePeriodKey(grade.acadYear, grade.semester)));
+  const nextPeriod = periods.find(period => !ownKeys.has(gradePeriodKey(period.year, period.semester))) || periods[0];
+  const selectedYear = years.includes(previousYear) ? previousYear : (nextPeriod?.year || years[0] || '');
+  yearEl.value = selectedYear;
+  yearEl.disabled = years.length === 0;
+  populateGradeSemesterOptions(previousYear === selectedYear ? previousSemester : (nextPeriod?.semester || ''));
+}
 
 function semesterLabel(value) {
-  return LANG === 'en' ? (String(value).toLowerCase() === 'summer' ? 'Summer' : 'Semester ' + value) : semLabelTH(value);
+  return LANG === 'en' ? (gradeSemesterKey(value) === 'summer' ? 'Summer' : 'Semester ' + value) : semLabelTH(gradeSemesterKey(value));
 }
 function semLabelTH(v) {
   if (v === '1')      return 'ภาคเรียนที่ 1';
   if (v === '2')      return 'ภาคเรียนที่ 2';
+  if (v === '3')      return 'ภาคเรียนที่ 3';
   if (v === 'summer') return 'ภาคฤดูร้อน';
   return v || '—';
 }
@@ -1615,10 +1725,12 @@ async function loadGradesForStudent(stipNo) {
     const res  = await API.getSystemSettings();
     const sett = res.data || {};
     _formGrades = Array.isArray(sett.STUDENT_GRADES) ? sett.STUDENT_GRADES : [];
+    _formAcademicTerms = Array.isArray(sett.ACADEMIC_TERMS) ? sett.ACADEMIC_TERMS : [];
     RBAC.cacheStudentFields(sett);   // keep cache in sync
-    RBAC.applyFieldGuards();         // re-apply with actual settings (fixes timing vs window.load)
 
     renderGradeFormTable();
+    populateGradePeriodControls();
+    RBAC.applyFieldGuards();         // re-apply with actual settings (fixes timing vs window.load)
 
     const section  = document.getElementById('sectionGrades');
     const canEdit  = RBAC.canStudentEditGrades();
@@ -1630,7 +1742,7 @@ async function loadGradesForStudent(stipNo) {
       // Student, grade editing disabled → show read-only view
       _applyGradeReadOnly(section, true);
     } else if (isStudent && canEdit) {
-      // Student, editing enabled → show full section, applyFieldGuards will fine-tune
+      // Student, editing enabled → show the self-entry controls.
     }
     // Admin: full access, no restrictions
 
@@ -1721,13 +1833,17 @@ function addGradeRow() {
   const raw  = gpaEl.value.trim();
 
   // Validation
-  if (!year || year < 2560 || year > 2600) {
+  if (!year || year < 2400 || year > 3000) {
     Swal.fire(t('warning'), t('gradeYearInvalid'), 'warning');
     yearEl.focus(); return;
   }
   if (!sem) {
     Swal.fire(t('warning'), t('gradeSemesterRequired'), 'warning');
     semEl.focus(); return;
+  }
+  if (!availableGradePeriods().some(period => period.year === year && period.semester === gradeSemesterKey(sem))) {
+    Swal.fire(t('warning'), t('gradePeriodNotAllowed'), 'warning');
+    return;
   }
   if (!raw) {
     Swal.fire(t('warning'), t('gradeGpaRequired'), 'warning');
@@ -1766,6 +1882,7 @@ function addGradeRow() {
   noteEl.value  = '';
 
   renderGradeFormTable();
+  populateGradePeriodControls();
   const action = existed ? t('gradeUpdated') : t('gradeAdded');
   Swal.fire({ icon:'success', title:action, text:`${t('academicYear')} ${year} ${semesterLabel(sem)} — GPA ${gpa.toFixed(2)}`, timer:1800, showConfirmButton:false });
 }
@@ -1783,6 +1900,7 @@ function removeGradeRow(stipNo, acadYear, semester) {
     );
     _gradesDirty = true;
     renderGradeFormTable();
+    populateGradePeriodControls();
   });
 }
 

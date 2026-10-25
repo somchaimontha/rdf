@@ -46,11 +46,23 @@ class Sheet {
 function setup() {
   const sheets = new Map([
     ['Students', new Sheet('Students', [
-      ['StipNo','IDCard','BirthYear','BirthMonth','BirthDay','StudentID','Status','FirstName','LastName','EngFirstName','EngLastName','Phone1','Email','ProfilePicURL','UpdatedAt'],
-      ['MBS_001','1111111111111','2005','5','10','S001','Active','มะลิ','ใจดี','Mali','Jaidee','0811111111','','https://example.com/mali.jpg',''],
-      ['MBS_002','2222222222222','2005','','','S002','Active','มานะ','ดี','Mana','Dee','0822222222','used@example.com','',''],
-      ['MBS_003','3333333333333','2004','4','9','S003','Resigned','สายใจ','มั่นคง','Saijai','Mankhong','0833333333','','',''],
-      ['MBS_004','4444444444444','2003','3','8','S004','Incomplete','กล้า','เรียนรู้','Kla','Rianru','0844444444','','',''],
+      ['StipNo','IDCard','BirthYear','BirthMonth','BirthDay','StudentID','Status','FirstName','LastName','EngFirstName','EngLastName','Phone1','Email','ProfilePicURL','UpdatedAt','Institution','EntryYear','EntryTerm'],
+      ['MBS_001','1111111111111','2005','5','10','S001','Active','มะลิ','ใจดี','Mali','Jaidee','0811111111','','https://example.com/mali.jpg','','MBS','2025','2'],
+      ['MBS_002','2222222222222','2005','','','S002','Active','มานะ','ดี','Mana','Dee','0822222222','used@example.com','','','MBS','2025','1'],
+      ['MBS_003','3333333333333','2004','4','9','S003','Resigned','สายใจ','มั่นคง','Saijai','Mankhong','0833333333','','','','MBS','2024','1'],
+      ['MBS_004','4444444444444','2003','3','8','S004','Incomplete','กล้า','เรียนรู้','Kla','Rianru','0844444444','','','','MBS','2023','1'],
+    ])],
+    ['SystemSettings', new Sheet('SystemSettings', [
+      ['Key','Value','UpdatedAt'],
+      ['STUDENT_EDITABLE_FIELDS', JSON.stringify(['f_gradeEdit']), ''],
+      ['ACADEMIC_TERMS', JSON.stringify([
+        { id:'T1', institution:'MBS', acadYear:2568, semester:'1', labelTH:'ภาคเรียนที่ 1', labelEN:'Semester 1' },
+        { id:'T2', institution:'MBS', acadYear:2568, semester:'2', labelTH:'ภาคเรียนที่ 2', labelEN:'Semester 2' },
+        { id:'T3', institution:'MBS', acadYear:2568, semester:'3', labelTH:'ภาคเรียนที่ 3', labelEN:'Semester 3' },
+      ]), ''],
+      ['STUDENT_GRADES', JSON.stringify([
+        { stipNo:'MBS_002', acadYear:2568, semester:'1', gpa:3.25, notes:'existing' },
+      ]), ''],
     ])],
     ['Admins', new Sheet('Admins', [['Username','Password','Role','FirstName','LastName','Email','Status']])],
     ['Logs', new Sheet('Logs', [['Timestamp','User','Action','Details']])],
@@ -247,6 +259,39 @@ test('deferred student email OTP can be resent and delivery failures do not bloc
   assert.equal(JSON.stringify(sheets.get('StudentAuth')?.rows || []).includes(firstCode), false, 'OTP must never be stored in plain text');
 });
 
+test('student grade self-entry starts at enrollment and accepts configured semester 3', () => {
+  const { c } = setup();
+  const session = { username:'MBS_001', role:'Student' };
+  const otherStudent = { stipNo:'MBS_002', acadYear:2568, semester:'1', gpa:4, notes:'tampered' };
+
+  assert.equal(c._prepareGradeSettings(session, [
+    { stipNo:'MBS_001', acadYear:2568, semester:'1', gpa:3.1 }
+  ]), null, 'a student cannot add a grade before the enrollment term');
+
+  const prepared = c._prepareGradeSettings(session, [
+    { stipNo:'MBS_001', acadYear:2568, semester:'2', gpa:3.4, notes:'normal term' },
+    { stipNo:'MBS_001', acadYear:2568, semester:'3', gpa:3.6, notes:'special term' },
+    { stipNo:'MBS_001', acadYear:2568, semester:'3', gpa:3.7, notes:'latest duplicate wins' },
+    otherStudent,
+  ]);
+  assert.ok(Array.isArray(prepared));
+  const own = prepared.filter(grade => grade.stipNo === 'MBS_001');
+  assert.equal(own.length, 2, 'duplicate year/semester records must be upserted');
+  assert.equal(own.find(grade => grade.semester === '3').gpa, 3.7);
+  assert.equal(prepared.find(grade => grade.stipNo === 'MBS_002').gpa, 3.25,
+    'student input must not modify another student grade');
+
+  assert.equal(c._prepareGradeSettings(session, [
+    { stipNo:'MBS_001', acadYear:2568, semester:'summer', gpa:3.2 }
+  ]), null, 'summer must be configured before use');
+  assert.ok(c._prepareGradeSettings(session, [
+    { stipNo:'MBS_001', acadYear:2569, semester:'1', gpa:3.2 }
+  ]), 'normal terms remain available when no central calendar exists for that year');
+  assert.equal(c._prepareGradeSettings(session, [
+    { stipNo:'MBS_001', acadYear:2569, semester:'3', gpa:3.2 }
+  ]), null, 'semester 3 must be configured for the selected year');
+});
+
 test('Google student sign-in requires a Google-verified email linked to completed student setup', () => {
   const { c, emails } = setup();
   let tokenInfo = { email:'mali@example.com', email_verified:'true' };
@@ -359,4 +404,22 @@ test('student edit UI provides a separate admin account-email control', () => {
   assert.match(html, /API\.updateStudentAccountEmail\(editStipNo, email\)/);
   assert.match(html, /formatAppDateTime\(data\.emailUpdatedAt, LANG\)/);
   assert.match(api, /updateStudentAccountEmail\(stipNo, email\)/);
+});
+
+test('student grade UI uses enrollment-aware periods and enables only configured self-entry', () => {
+  const html = fs.readFileSync(path.join(root, 'student-form.html'), 'utf8');
+  const terms = fs.readFileSync(path.join(root, 'academic-terms.html'), 'utf8');
+  const results = fs.readFileSync(path.join(root, 'academic-results.html'), 'utf8');
+  const rbac = fs.readFileSync(path.join(root, 'assets/js/rbac.js'), 'utf8');
+  assert.match(html, /data-student-hidden/);
+  assert.match(html, /function gradePeriodAtOrAfterEntry/);
+  assert.match(html, /dynamicStudentContext\.EntryYear/);
+  assert.match(html, /dynamicStudentContext\.EntryTerm/);
+  assert.match(html, /sett\.ACADEMIC_TERMS/);
+  assert.match(html, /configuredForYear\.length[\s\S]*?\['1','2'\]/);
+  assert.match(html, /value="3" data-t="arSem3"/);
+  assert.match(terms, /value="3" data-t="arSem3"/);
+  assert.match(results, /value="3" data-t="arSem3"/);
+  assert.match(rbac, /if \(canEditGrades\)[\s\S]*?el\.disabled = false/);
+  assert.match(rbac, /else \{[\s\S]*?gradeSection\.style\.display = 'none'/);
 });

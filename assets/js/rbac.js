@@ -342,31 +342,22 @@ const RBAC = {
     const gradeSection  = document.getElementById('sectionGrades');
     if (gradeSection) {
       if (canEditGrades) {
-        // Show section but make it read-only: hide add/delete controls
+        gradeSection.style.display = '';
+        // Grade self-entry is an explicit administrator-controlled field.
+        // When enabled, students may add, update, and remove only their own
+        // records; the server independently enforces the same ownership rule.
         gradeSection.querySelectorAll(
           '#ng_year,#ng_sem,#ng_gpa,#ng_notes,button[onclick="addGradeRow()"],button[onclick="saveGradesFromForm()"]'
         ).forEach(el => {
-          el.disabled = true;
-          el.style.opacity = '0.4';
-          el.style.cursor  = 'not-allowed';
-          el.title = (typeof LANG !== 'undefined' && LANG === 'en')
-            ? 'Students can view grades but cannot edit them.'
-            : 'นักเรียนสามารถดูผลการเรียนได้ แต่ไม่สามารถแก้ไขได้';
+          el.disabled = false;
+          el.style.opacity = '';
+          el.style.cursor  = '';
+          el.removeAttribute('title');
         });
-        // Hide delete buttons within grade table
         gradeSection.querySelectorAll('button[onclick*="removeGradeRow"]').forEach(el => {
-          el.style.display = 'none';
+          el.style.display = '';
         });
-        // Add read-only badge to section header
-        const hdr = gradeSection.querySelector('.form-section-header');
-        if (hdr && !hdr.querySelector('.grade-readonly-badge')) {
-          const badge = document.createElement('span');
-          badge.className = 'grade-readonly-badge';
-          badge.style.cssText = 'background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:auto';
-          const isEN = (localStorage.getItem('rdfLang') || 'th') === 'en';
-          badge.textContent = isEN ? 'View Only' : 'ดูได้เท่านั้น';
-          hdr.appendChild(badge);
-        }
+        gradeSection.querySelectorAll('.grade-readonly-badge,.ro-badge').forEach(el => el.remove());
       } else {
         // Hide grade section entirely
         gradeSection.style.display = 'none';
