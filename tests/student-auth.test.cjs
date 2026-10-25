@@ -271,6 +271,44 @@ test('deferred student email OTP can be resent and delivery failures do not bloc
   assert.equal(JSON.stringify(sheets.get('StudentAuth')?.rows || []).includes(firstCode), false, 'OTP must never be stored in plain text');
 });
 
+test('student email OTP enforces 3-per-hour and 5-per-24-hour persistent limits', () => {
+  const { c, emails, properties } = setup();
+  const legacy = c.handleLogin('1111111111111', '2005', 'student');
+  assert.equal(beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1').status, 'success');
+  const session = { username:'MBS_001', role:'Student' };
+  const verificationKey = c._studentEmailVerificationPropertyKey('MBS_001');
+  const rateKey = c._studentEmailRateLimitPropertyKey('MBS_001');
+  const expireCooldown = () => {
+    const pending = JSON.parse(properties.get(verificationKey));
+    pending.resendAvailableAt = Date.now() - 1;
+    properties.set(verificationKey, JSON.stringify(pending));
+  };
+
+  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
+  expireCooldown();
+  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
+  expireCooldown();
+  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
+  expireCooldown();
+  const hourly = c.requestStudentEmailVerification(session);
+  assert.equal(hourly.code, 'STUDENT_EMAIL_HOURLY_LIMIT');
+  assert.ok(Date.parse(hourly.retryAvailableAt) > Date.now());
+  assert.equal(emails.length, 3);
+
+  const nextHour = JSON.parse(properties.get(rateKey));
+  nextHour.hourStartedAt = Date.now() - (60 * 60 * 1000) - 1;
+  properties.set(rateKey, JSON.stringify(nextHour));
+  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
+  expireCooldown();
+  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
+  expireCooldown();
+  const daily = c.requestStudentEmailVerification(session);
+  assert.equal(daily.code, 'STUDENT_EMAIL_DAILY_LIMIT');
+  assert.ok(Date.parse(daily.retryAvailableAt) > Date.now());
+  assert.ok(daily.retryAfterSeconds > 0 && daily.retryAfterSeconds <= 24 * 60 * 60);
+  assert.equal(emails.length, 5, 'only five OTP emails may be sent within the persistent 24-hour window');
+});
+
 test('student grade self-entry starts at enrollment and accepts configured semester 3', () => {
   const { c } = setup();
   const session = { username:'MBS_001', role:'Student' };
@@ -397,6 +435,7 @@ test('first-login UI defers email OTP and exposes persistent verification remind
   assert.match(auth, /studentEmailOtpHelpStep1/);
   assert.match(auth, /studentEmailResendCountdown/);
   assert.match(auth, /denyButton\.disabled = seconds > 0/);
+  assert.match(auth, /studentEmailLimitRetryAt/);
   assert.match(auth, /studentEmailVerificationBanner/);
   assert.match(auth, /student-email-unverified/);
   assert.match(html, /studentPasswordResetEmailLabel/);

@@ -75,6 +75,7 @@ const _API_CODE_I18N_KEYS = {
   STUDENT_EMAIL_MISMATCH:'studentEmailMismatch',
   STUDENT_EMAIL_SEND_FAILED:'studentEmailSendFailed', STUDENT_EMAIL_QUOTA_EXHAUSTED:'studentEmailQuotaExhausted',
   STUDENT_EMAIL_RESEND_WAIT:'studentEmailResendServerWait',
+  STUDENT_EMAIL_HOURLY_LIMIT:'studentEmailHourlyLimit', STUDENT_EMAIL_DAILY_LIMIT:'studentEmailDailyLimit',
   STUDENT_VERIFICATION_EXPIRED:'studentVerificationExpired',
   STUDENT_VERIFICATION_LOCKED:'studentVerificationLocked', STUDENT_VERIFICATION_INVALID:'studentVerificationInvalid',
   STUDENT_GOOGLE_EMAIL_NOT_LINKED:'studentGoogleEmailNotLinked', GOOGLE_EMAIL_UNVERIFIED:'googleEmailUnverified',

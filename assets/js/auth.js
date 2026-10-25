@@ -157,6 +157,13 @@ function _studentEmailOtpHelpHtml() {
   </div>`;
 }
 
+function _studentEmailRequestErrorMessage(result) {
+  const message = result?.message || t('studentEmailSendFailed');
+  if (!result?.retryAvailableAt || typeof formatAppDateTime !== 'function') return message;
+  const retryAt = formatAppDateTime(result.retryAvailableAt, LANG);
+  return `${message}\n${t('studentEmailLimitRetryAt').replace('{date}', retryAt)}`;
+}
+
 async function beginStudentEmailVerification() {
   const user = getUser();
   if (!user || user.role !== 'Student') return;
@@ -178,7 +185,7 @@ async function beginStudentEmailVerification() {
       return;
     }
     if (delivery.status !== 'success') {
-      await Swal.fire(t('error'), delivery.message || t('studentEmailSendFailed'), 'error');
+      await Swal.fire(t('error'), _studentEmailRequestErrorMessage(delivery), 'error');
       return;
     }
     if (delivery.alreadyVerified) {
@@ -245,7 +252,7 @@ async function beginStudentEmailVerification() {
             delivery = _prepareStudentEmailDelivery({ ...delivery, ...resent }, resent.retryAfterSeconds || 1);
             continue;
           }
-          await Swal.fire(t('error'), resent.message || t('studentEmailSendFailed'), 'error');
+          await Swal.fire(t('error'), _studentEmailRequestErrorMessage(resent), 'error');
           return;
         }
         if (resent.alreadyVerified) {
