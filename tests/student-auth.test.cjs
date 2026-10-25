@@ -225,14 +225,26 @@ test('student password recovery uses only the verified email and rotates the sto
 });
 
 test('deferred student email OTP can be resent and delivery failures do not block account access', () => {
-  const { c, emails, mailState, sheets } = setup();
+  const { c, emails, mailState, sheets, properties } = setup();
   const legacy = c.handleLogin('1111111111111', '2005', 'student');
   const begun = beginEnrollment(c, legacy.setupToken, 'mali@example.com', '2005-05-10', 'SecurePass1');
   assert.equal(begun.status, 'success');
   assert.equal(emails.length, 0);
   const session = { username:'MBS_001', role:'Student' };
-  assert.equal(c.requestStudentEmailVerification(session).status, 'success');
+  const firstDelivery = c.requestStudentEmailVerification(session);
+  assert.equal(firstDelivery.status, 'success');
+  assert.equal(firstDelivery.resendAfterSeconds, 120);
+  assert.ok(Date.parse(firstDelivery.resendAvailableAt) > Date.now());
   const firstCode = emailCode(emails[0]);
+  const tooSoon = c.requestStudentEmailVerification(session);
+  assert.equal(tooSoon.code, 'STUDENT_EMAIL_RESEND_WAIT');
+  assert.ok(tooSoon.retryAfterSeconds > 0 && tooSoon.retryAfterSeconds <= 120);
+  assert.equal(emails.length, 1, 'the server must block resend attempts during the two-minute cooldown');
+
+  const verificationKey = c._studentEmailVerificationPropertyKey('MBS_001');
+  const pending = JSON.parse(properties.get(verificationKey));
+  pending.resendAvailableAt = Date.now() - 1;
+  properties.set(verificationKey, JSON.stringify(pending));
   const resent = c.requestStudentEmailVerification(session);
   assert.equal(resent.status, 'success');
   assert.equal(emails.length, 2);
@@ -381,6 +393,10 @@ test('first-login UI defers email OTP and exposes persistent verification remind
   assert.match(html, /studentSetupCreateAccount/);
   assert.match(auth, /API\.requestStudentEmailVerification\(\)/);
   assert.match(auth, /API\.verifyStudentEmail\(codeModal\.value\)/);
+  assert.match(auth, /STUDENT_EMAIL_RESEND_COOLDOWN_SECONDS = 120/);
+  assert.match(auth, /studentEmailOtpHelpStep1/);
+  assert.match(auth, /studentEmailResendCountdown/);
+  assert.match(auth, /denyButton\.disabled = seconds > 0/);
   assert.match(auth, /studentEmailVerificationBanner/);
   assert.match(auth, /student-email-unverified/);
   assert.match(html, /studentPasswordResetEmailLabel/);

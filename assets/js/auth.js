@@ -129,6 +129,34 @@ function _renderStudentEmailVerificationBanner(user = getUser()) {
   }
 }
 
+const STUDENT_EMAIL_RESEND_COOLDOWN_SECONDS = 120;
+
+function _prepareStudentEmailDelivery(delivery, fallbackSeconds = STUDENT_EMAIL_RESEND_COOLDOWN_SECONDS) {
+  const waitSeconds = Math.max(0, Number(delivery?.retryAfterSeconds || delivery?.resendAfterSeconds || fallbackSeconds));
+  return { ...(delivery || {}), _resendAtMs:Date.now() + (waitSeconds * 1000) };
+}
+
+function _studentEmailResendRemaining(delivery) {
+  return Math.max(0, Math.ceil((Number(delivery?._resendAtMs || 0) - Date.now()) / 1000));
+}
+
+function _studentEmailCountdown(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
+}
+
+function _studentEmailOtpHelpHtml() {
+  return `<div style="text-align:left;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:11px 13px;margin-top:12px;color:#475569;font-size:11px;line-height:1.6">
+    <strong style="display:block;color:#334155;margin-bottom:4px">${_notifEscape(t('studentEmailOtpHelpTitle'))}</strong>
+    <ol style="margin:0;padding-left:18px">
+      <li>${_notifEscape(t('studentEmailOtpHelpStep1'))}</li>
+      <li>${_notifEscape(t('studentEmailOtpHelpStep2'))}</li>
+      <li>${_notifEscape(t('studentEmailOtpHelpStep3'))}</li>
+    </ol>
+  </div>`;
+}
+
 async function beginStudentEmailVerification() {
   const user = getUser();
   if (!user || user.role !== 'Student') return;
@@ -161,45 +189,101 @@ async function beginStudentEmailVerification() {
       await Swal.fire({icon:'success',title:t('studentEmailVerificationSuccess'),confirmButtonColor:'#16a34a'});
       return;
     }
+    delivery = _prepareStudentEmailDelivery(delivery);
+    break;
+  }
 
-    while (true) {
-      const codeModal = await Swal.fire({
+  while (true) {
+    let countdownTimer = null;
+    const codeModal = await Swal.fire({
       icon:'info', title:t('studentEmailVerifyTitle'),
       html:`<p style="font-size:12px;color:#64748b;line-height:1.6">${_notifEscape(t('studentEmailVerificationCodeDesc').replace('{email}', delivery.maskedEmail || ''))}</p>
         <input id="studentEmailVerificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="swal2-input" placeholder="${_notifEscape(t('studentSetupCodePlaceholder'))}" style="font-size:20px;text-align:center;letter-spacing:.25em">
-        <p style="font-size:11px;color:#64748b;line-height:1.6;margin-top:10px">${_notifEscape(t('studentSetupDeliveryHelp'))}</p>`,
+        ${delivery._resent ? `<p style="font-size:11px;color:#15803d;font-weight:700;margin-top:8px">${_notifEscape(t('studentSetupResendSuccess'))}</p>` : ''}
+        ${_studentEmailOtpHelpHtml()}
+        <p id="studentEmailResendStatus" aria-live="polite" style="font-size:11px;color:#64748b;line-height:1.6;margin-top:10px"></p>`,
       confirmButtonText:t('studentSetupVerify'), cancelButtonText:t('studentEmailVerifyLater'),
       denyButtonText:t('studentSetupResendCode'), showDenyButton:true,
       confirmButtonColor:'#16a34a', denyButtonColor:'#2563eb', showCancelButton:true,
+      didOpen:() => {
+        const updateCountdown = () => {
+          const seconds = _studentEmailResendRemaining(delivery);
+          const denyButton = Swal.getDenyButton();
+          const status = document.getElementById('studentEmailResendStatus');
+          if (denyButton) {
+            denyButton.disabled = seconds > 0;
+            denyButton.style.opacity = seconds > 0 ? '.55' : '';
+            denyButton.style.cursor = seconds > 0 ? 'not-allowed' : '';
+            denyButton.textContent = seconds > 0
+              ? t('studentEmailResendCountdown').replace('{time}', _studentEmailCountdown(seconds))
+              : t('studentSetupResendCode');
+          }
+          if (status) status.textContent = seconds > 0
+            ? t('studentEmailResendWait').replace('{time}', _studentEmailCountdown(seconds))
+            : t('studentEmailResendReady');
+          if (seconds <= 0 && countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+          }
+        };
+        updateCountdown();
+        if (_studentEmailResendRemaining(delivery) > 0) countdownTimer = setInterval(updateCountdown, 1000);
+      },
+      willClose:() => { if (countdownTimer) clearInterval(countdownTimer); },
       preConfirm:() => {
         const code=document.getElementById('studentEmailVerificationCode')?.value?.trim() || '';
         if (!/^\d{6}$/.test(code)) { Swal.showValidationMessage(t('studentSetupCodeInvalid')); return false; }
         return code;
       }
     });
-      if (codeModal.isDenied) break;
-      if (!codeModal.value) return;
-      Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    if (codeModal.isDenied) {
+      Swal.fire({title:t('studentEmailVerificationSending'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
       try {
-        const verified = await API.verifyStudentEmail(codeModal.value);
-        if (verified.status !== 'success') {
-          await Swal.fire(t('error'), verified.message || t('studentVerificationInvalid'), 'error');
-          if (verified.code === 'STUDENT_VERIFICATION_INVALID') continue;
+        const resent = await API.requestStudentEmailVerification();
+        if (resent.status !== 'success') {
+          if (resent.code === 'STUDENT_EMAIL_RESEND_WAIT') {
+            delivery = _prepareStudentEmailDelivery({ ...delivery, ...resent }, resent.retryAfterSeconds || 1);
+            continue;
+          }
+          await Swal.fire(t('error'), resent.message || t('studentEmailSendFailed'), 'error');
           return;
         }
-        const refreshed = getUser() || user;
-        refreshed.email = verified.email || refreshed.email || '';
-        refreshed.emailVerified = true;
-        refreshed.emailVerifiedAt = verified.emailVerifiedAt || '';
-        setUser(refreshed);
-        _renderStudentEmailVerificationBanner(refreshed);
-        if (_notifSource) { _notifSource.user = refreshed; _rebuildNotifItems(); _renderNotifPanel(); }
-        await Swal.fire({icon:'success',title:t('studentEmailVerificationSuccess'),confirmButtonColor:'#16a34a'});
-        return;
+        if (resent.alreadyVerified) {
+          user.emailVerified = true;
+          user.emailVerifiedAt = resent.emailVerifiedAt || user.emailVerifiedAt || '';
+          setUser(user);
+          _renderStudentEmailVerificationBanner(user);
+          await Swal.fire({icon:'success',title:t('studentEmailVerificationSuccess'),confirmButtonColor:'#16a34a'});
+          return;
+        }
+        delivery = _prepareStudentEmailDelivery({ ...resent, _resent:true });
       } catch(e) {
         await Swal.fire(t('error'), e.message || t('network_error'), 'error');
         return;
       }
+      continue;
+    }
+    if (!codeModal.value) return;
+    Swal.fire({title:t('studentSetupSaving'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+      const verified = await API.verifyStudentEmail(codeModal.value);
+      if (verified.status !== 'success') {
+        await Swal.fire(t('error'), verified.message || t('studentVerificationInvalid'), 'error');
+        if (verified.code === 'STUDENT_VERIFICATION_INVALID') continue;
+        return;
+      }
+      const refreshed = getUser() || user;
+      refreshed.email = verified.email || refreshed.email || '';
+      refreshed.emailVerified = true;
+      refreshed.emailVerifiedAt = verified.emailVerifiedAt || '';
+      setUser(refreshed);
+      _renderStudentEmailVerificationBanner(refreshed);
+      if (_notifSource) { _notifSource.user = refreshed; _rebuildNotifItems(); _renderNotifPanel(); }
+      await Swal.fire({icon:'success',title:t('studentEmailVerificationSuccess'),confirmButtonColor:'#16a34a'});
+      return;
+    } catch(e) {
+      await Swal.fire(t('error'), e.message || t('network_error'), 'error');
+      return;
     }
   }
 }
