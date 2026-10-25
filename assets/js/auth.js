@@ -117,9 +117,10 @@ function _renderStudentEmailVerificationBanner(user = getUser()) {
   const banner = document.createElement('section');
   banner.id = 'studentEmailVerificationBanner';
   banner.setAttribute('role', 'status');
+  const pendingDelivery = _readStudentEmailPendingDelivery(user);
   banner.innerHTML = `<i data-lucide="mail-warning" style="width:22px;height:22px;flex:0 0 auto"></i>
     <div class="student-email-warning-copy"><strong>${_notifEscape(t('studentEmailUnverifiedTitle'))}</strong><span>${_notifEscape(t('studentEmailUnverifiedWarning'))}</span></div>
-    <button type="button" id="studentEmailVerificationButton">${_notifEscape(t('studentEmailVerifyNow'))}</button>`;
+    <button type="button" id="studentEmailVerificationButton">${_notifEscape(t(pendingDelivery ? 'studentEmailEnterOtp' : 'studentEmailVerifyNow'))}</button>`;
   main.prepend(banner);
   banner.querySelector('button')?.addEventListener('click', beginStudentEmailVerification);
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -130,10 +131,56 @@ function _renderStudentEmailVerificationBanner(user = getUser()) {
 }
 
 const STUDENT_EMAIL_RESEND_COOLDOWN_SECONDS = 120;
+const STUDENT_EMAIL_OTP_TTL_MS = 10 * 60 * 1000;
+
+function _studentEmailPendingStorageKey(user = getUser()) {
+  const account = String(user?.username || '').trim();
+  return account ? `rdfStudentEmailOtpPending:${account}` : '';
+}
+
+function _storeStudentEmailPendingDelivery(delivery, user = getUser()) {
+  const key = _studentEmailPendingStorageKey(user);
+  if (!key || !delivery) return;
+  const sentAt = delivery.sentAt || new Date().toISOString();
+  const expiresAt = delivery.expiresAt || new Date(Date.parse(sentAt) + STUDENT_EMAIL_OTP_TTL_MS).toISOString();
+  try {
+    sessionStorage.setItem(key, JSON.stringify({
+      maskedEmail:String(delivery.maskedEmail || ''), sentAt,
+      resendAvailableAt:String(delivery.resendAvailableAt || ''), expiresAt
+    }));
+  } catch (_) {}
+}
+
+function _clearStudentEmailPendingDelivery(user = getUser()) {
+  const key = _studentEmailPendingStorageKey(user);
+  if (!key) return;
+  try { sessionStorage.removeItem(key); } catch (_) {}
+}
+
+function _readStudentEmailPendingDelivery(user = getUser()) {
+  const key = _studentEmailPendingStorageKey(user);
+  if (!key) return null;
+  try {
+    const pending = JSON.parse(sessionStorage.getItem(key) || 'null');
+    const expiry = Date.parse(pending?.expiresAt || '');
+    if (!pending || !Number.isFinite(expiry) || expiry <= Date.now()) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return _prepareStudentEmailDelivery(pending, 0);
+  } catch (_) {
+    try { sessionStorage.removeItem(key); } catch (_) {}
+    return null;
+  }
+}
 
 function _prepareStudentEmailDelivery(delivery, fallbackSeconds = STUDENT_EMAIL_RESEND_COOLDOWN_SECONDS) {
-  const waitSeconds = Math.max(0, Number(delivery?.retryAfterSeconds || delivery?.resendAfterSeconds || fallbackSeconds));
-  return { ...(delivery || {}), _resendAtMs:Date.now() + (waitSeconds * 1000) };
+  const absoluteResendAt = Date.parse(delivery?.resendAvailableAt || '');
+  const configuredWait = delivery?.retryAfterSeconds ?? delivery?.resendAfterSeconds ?? fallbackSeconds;
+  const resendAtMs = Number.isFinite(absoluteResendAt)
+    ? absoluteResendAt
+    : Date.now() + (Math.max(0, Number(configuredWait) || 0) * 1000);
+  return { ...(delivery || {}), _resendAtMs:resendAtMs };
 }
 
 function _studentEmailResendRemaining(delivery) {
@@ -167,16 +214,16 @@ function _studentEmailRequestErrorMessage(result) {
 async function beginStudentEmailVerification() {
   const user = getUser();
   if (!user || user.role !== 'Student') return;
-  const choice = await Swal.fire({
-    icon:'info', title:t('studentEmailVerifyTitle'),
-    html:`<p style="font-size:13px;line-height:1.65;color:#475569">${_notifEscape(t('studentEmailVerifyPrompt').replace('{email}', user.email || '—'))}</p>`,
-    confirmButtonText:t('studentEmailSendOtp'), cancelButtonText:t('studentEmailVerifyLater'),
-    confirmButtonColor:'#b45309', showCancelButton:true
-  });
-  if (!choice.isConfirmed) return;
+  let delivery = _readStudentEmailPendingDelivery(user);
+  if (!delivery) {
+    const choice = await Swal.fire({
+      icon:'info', title:t('studentEmailVerifyTitle'),
+      html:`<p style="font-size:13px;line-height:1.65;color:#475569">${_notifEscape(t('studentEmailVerifyPrompt').replace('{email}', user.email || '—'))}</p>`,
+      confirmButtonText:t('studentEmailSendOtp'), cancelButtonText:t('studentEmailVerifyLater'),
+      confirmButtonColor:'#b45309', showCancelButton:true
+    });
+    if (!choice.isConfirmed) return;
 
-  let delivery;
-  while (true) {
     Swal.fire({title:t('studentEmailVerificationSending'),allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
     try {
       delivery = await API.requestStudentEmailVerification();
@@ -185,10 +232,13 @@ async function beginStudentEmailVerification() {
       return;
     }
     if (delivery.status !== 'success') {
-      await Swal.fire(t('error'), _studentEmailRequestErrorMessage(delivery), 'error');
-      return;
+      if (!(delivery.code === 'STUDENT_EMAIL_RESEND_WAIT' && delivery.otpPending)) {
+        await Swal.fire(t('error'), _studentEmailRequestErrorMessage(delivery), 'error');
+        return;
+      }
     }
     if (delivery.alreadyVerified) {
+      _clearStudentEmailPendingDelivery(user);
       user.emailVerified = true;
       user.emailVerifiedAt = delivery.emailVerifiedAt || user.emailVerifiedAt || '';
       setUser(user);
@@ -197,7 +247,10 @@ async function beginStudentEmailVerification() {
       return;
     }
     delivery = _prepareStudentEmailDelivery(delivery);
-    break;
+    _storeStudentEmailPendingDelivery(delivery, user);
+    _renderStudentEmailVerificationBanner(user);
+    if (typeof Swal.close === 'function') Swal.close();
+    await new Promise(resolve => setTimeout(resolve, 0));
   }
 
   while (true) {
@@ -209,7 +262,7 @@ async function beginStudentEmailVerification() {
         ${delivery._resent ? `<p style="font-size:11px;color:#15803d;font-weight:700;margin-top:8px">${_notifEscape(t('studentSetupResendSuccess'))}</p>` : ''}
         ${_studentEmailOtpHelpHtml()}
         <p id="studentEmailResendStatus" aria-live="polite" style="font-size:11px;color:#64748b;line-height:1.6;margin-top:10px"></p>`,
-      confirmButtonText:t('studentSetupVerify'), cancelButtonText:t('studentEmailVerifyLater'),
+      confirmButtonText:t('studentEmailConfirmOtp'), cancelButtonText:t('studentEmailVerifyLater'),
       denyButtonText:t('studentSetupResendCode'), showDenyButton:true,
       confirmButtonColor:'#16a34a', denyButtonColor:'#2563eb', showCancelButton:true,
       didOpen:() => {
@@ -256,6 +309,7 @@ async function beginStudentEmailVerification() {
           return;
         }
         if (resent.alreadyVerified) {
+          _clearStudentEmailPendingDelivery(user);
           user.emailVerified = true;
           user.emailVerifiedAt = resent.emailVerifiedAt || user.emailVerifiedAt || '';
           setUser(user);
@@ -264,6 +318,8 @@ async function beginStudentEmailVerification() {
           return;
         }
         delivery = _prepareStudentEmailDelivery({ ...resent, _resent:true });
+        _storeStudentEmailPendingDelivery(delivery, user);
+        _renderStudentEmailVerificationBanner(user);
       } catch(e) {
         await Swal.fire(t('error'), e.message || t('network_error'), 'error');
         return;
@@ -277,12 +333,17 @@ async function beginStudentEmailVerification() {
       if (verified.status !== 'success') {
         await Swal.fire(t('error'), verified.message || t('studentVerificationInvalid'), 'error');
         if (verified.code === 'STUDENT_VERIFICATION_INVALID') continue;
+        if (['STUDENT_VERIFICATION_EXPIRED','STUDENT_VERIFICATION_LOCKED','STUDENT_EMAIL_MISMATCH'].includes(verified.code)) {
+          _clearStudentEmailPendingDelivery(user);
+          _renderStudentEmailVerificationBanner(user);
+        }
         return;
       }
       const refreshed = getUser() || user;
       refreshed.email = verified.email || refreshed.email || '';
       refreshed.emailVerified = true;
       refreshed.emailVerifiedAt = verified.emailVerifiedAt || '';
+      _clearStudentEmailPendingDelivery(refreshed);
       setUser(refreshed);
       _renderStudentEmailVerificationBanner(refreshed);
       if (_notifSource) { _notifSource.user = refreshed; _rebuildNotifItems(); _renderNotifPanel(); }

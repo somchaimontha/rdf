@@ -238,6 +238,9 @@ test('deferred student email OTP can be resent and delivery failures do not bloc
   const firstCode = emailCode(emails[0]);
   const tooSoon = c.requestStudentEmailVerification(session);
   assert.equal(tooSoon.code, 'STUDENT_EMAIL_RESEND_WAIT');
+  assert.equal(tooSoon.otpPending, true);
+  assert.equal(tooSoon.maskedEmail, 'ma***@example.com');
+  assert.ok(Date.parse(tooSoon.expiresAt) > Date.now());
   assert.ok(tooSoon.retryAfterSeconds > 0 && tooSoon.retryAfterSeconds <= 120);
   assert.equal(emails.length, 1, 'the server must block resend attempts during the two-minute cooldown');
 
@@ -437,6 +440,8 @@ test('first-login UI defers email OTP and exposes persistent verification remind
   assert.match(auth, /denyButton\.disabled = seconds > 0/);
   assert.match(auth, /studentEmailLimitRetryAt/);
   assert.match(auth, /studentEmailVerificationBanner/);
+  assert.match(auth, /rdfStudentEmailOtpPending/);
+  assert.match(auth, /studentEmailEnterOtp/);
   assert.match(auth, /student-email-unverified/);
   assert.match(html, /studentPasswordResetEmailLabel/);
   assert.match(html, /id="fpIdentifier"[\s\S]*?width:100%/);
@@ -449,6 +454,68 @@ test('first-login UI defers email OTP and exposes persistent verification remind
   assert.match(html, /studentSetupBindPasswordToggle/);
   assert.match(html, /reviewStudentFirstLogin/);
   assert.match(html, /studentSetupReviewPasswordStored/);
+});
+
+test('student can reopen the OTP entry popup without sending another email', async () => {
+  const authSource = fs.readFileSync(path.join(root, 'assets/js/auth.js'), 'utf8');
+  const localData = new Map([['rdfUser', JSON.stringify({
+    username:'MBS_001', role:'Student', email:'mali@example.com', emailVerified:false
+  })]]);
+  const sessionData = new Map();
+  const storage = data => ({
+    getItem:key => data.has(key) ? data.get(key) : null,
+    setItem(key, value) { data.set(key, String(value)); },
+    removeItem(key) { data.delete(key); }
+  });
+  const modalCalls = [];
+  let requestCount = 0;
+  const context = {
+    console, Date, JSON, URL, URLSearchParams,
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    localStorage:storage(localData), sessionStorage:storage(sessionData),
+    document:{
+      addEventListener() {}, getElementById() { return null; },
+      querySelector() { return null; }
+    },
+    t:key => key, LANG:'th', formatAppDateTime:value => String(value),
+    API:{
+      async requestStudentEmailVerification() {
+        requestCount += 1;
+        const sentAt = new Date().toISOString();
+        return {
+          status:'success', maskedEmail:'ma***@example.com', sentAt,
+          resendAfterSeconds:120,
+          resendAvailableAt:new Date(Date.now() + 120000).toISOString(),
+          expiresAt:new Date(Date.now() + 600000).toISOString()
+        };
+      }
+    },
+    Swal:{
+      async fire(options) {
+        modalCalls.push(options);
+        if (options?.confirmButtonText === 'studentEmailSendOtp') return { isConfirmed:true };
+        return {};
+      },
+      showLoading() {}, close() {}, getDenyButton() { return null; }, showValidationMessage() {}
+    }
+  };
+  context.window = context;
+  context.window.location = { search:'', origin:'https://example.com', href:'https://example.com/dashboard.html', pathname:'/dashboard.html' };
+  vm.createContext(context);
+  vm.runInContext(authSource, context);
+
+  await context.beginStudentEmailVerification();
+  assert.equal(requestCount, 1);
+  assert.ok([...sessionData.keys()].some(key => key.includes('rdfStudentEmailOtpPending:MBS_001')));
+  assert.ok(modalCalls.some(options => String(options?.html || '').includes('id="studentEmailVerificationCode"')),
+    'the OTP input must open immediately after the email is sent');
+
+  modalCalls.length = 0;
+  await context.beginStudentEmailVerification();
+  assert.equal(requestCount, 1, 'reopening the OTP input must not send another email');
+  assert.equal(modalCalls.length, 1);
+  assert.match(String(modalCalls[0].html || ''), /id="studentEmailVerificationCode"/);
+  assert.equal(modalCalls[0].confirmButtonText, 'studentEmailConfirmOtp');
 });
 
 test('student edit UI provides a separate admin account-email control', () => {
