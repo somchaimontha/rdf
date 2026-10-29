@@ -18,10 +18,15 @@ test('academic results show complete bilingual student identity and use the sele
   assert.match(academicResults, /function academicThaiName/);
   assert.match(academicResults, /function academicEnglishName/);
   assert.match(academicResults, /function academicStudentMajor/);
+  assert.match(academicResults, /function academicProgramName/);
+  assert.match(academicResults, /_SETTINGS\.ACADEMIC_PROGRAMS/);
   assert.match(academicResults, /function academicStudentPhotoSrc/);
   assert.match(academicResults, /data-t="arColNo">ที่</);
   assert.match(academicResults, /T\[lang\]\.arColNo/);
   assert.match(academicResults, /T\[lang\]\.arColMajor/);
+  assert.match(academicResults, /T\[lang\]\.arColPhoto/);
+  assert.match(academicResults, /width:42px;white-space:nowrap/);
+  assert.match(academicResults, /width:54px;white-space:nowrap/);
   assert.match(academicResults, /bi\('ปีการศึกษา ','Academic Year ',lang\)/);
   assert.match(academicResults, /formatLevel\(r\.level,lang\)/);
   assert.match(academicResults, /const L = T\[lang\]/);
