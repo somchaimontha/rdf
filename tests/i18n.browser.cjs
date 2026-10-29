@@ -54,6 +54,11 @@ window.fetch = async (url, options) => {
      {role:'Data Reviewer',name:'Review Officer',position:'Reviewer',signatureDataUrl:''}
    ]
  };
+ if (action==='getSystemSettings') Object.assign(data.data, window.__fixtureSystemSettings || {});
+ if (action==='saveSetting') {
+   window.__fixtureSystemSettings ||= {};
+   window.__fixtureSystemSettings[requestBody.key] = JSON.parse(JSON.stringify(requestBody.values));
+ }
  if (action==='getNotificationFeed') data={status:'success',schemaVersion:'1.0.0',data:[{eventId:'employment.followup_due_soon.fixture',moduleId:'employment',eventType:'followup_due_soon',count:1,sampleTH:'นายทดสอบ นักเรียน',sampleEN:'Mr Test Student',dateFrom:'2026-03-20',dateTo:'2026-03-27',href:'reports.html?view=employment&source=notification&followUp=due_soon'}]};
  if (action==='getStudentPromoHistory') data.rows=[
    {BatchID:'2568_PROMO',Date:'Fri May 01 2026 00:00:00 GMT+0700 (Indochina Time)',AcademicYear:'2568',OldLevel:'',ActionTaken:'',NewLevel:'',NewStatus:'Graduated',UniName:'มหาวิทยาลัยราชภัฏเชียงใหม่',UniNameEN:'Chiang Mai Rajabhat University',UniFaculty:'มนุษยศาสตร์และสังคมศาสตร์',UniFacultyEN:'Humanities and Social Sciences',UniMajor:'รัฐประศาสนศาสตร์',UniMajorEN:'Public Administration',Notes:''},
@@ -215,9 +220,12 @@ const server = http.createServer((req,res)=>{
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
    if(file==='settings.html') {
-     const academicPrograms=await evaluate(`(async()=>{await apLoad();const program=_apState.find(item=>item.id==='ap_fixture');return {english:program?.nameEN||'',table:document.getElementById('apTableBody').textContent};})()`);
-     assert.equal(academicPrograms.english,'Science-Mathematics','settings must repair legacy Thai text stored in the English academic-program field');
-     assert.match(academicPrograms.table,/Science-Mathematics/,'settings must display the repaired English academic-program name');
+     const academicPrograms=await evaluate(`(async()=>{await apLoad();const repaired=_apState.find(item=>item.id==='ap_fixture')?.nameEN||'',before=__calls.filter(action=>action==='saveSetting').length,previousAuditMode=RDF.LOCAL_AUDIT_MODE;RDF.LOCAL_AUDIT_MODE=false;apOpenEdit('ap_fixture');document.getElementById('apModalNameEN').value='Science and Mathematics';await apSaveEntry();const modalClosed=document.getElementById('apModal').classList.contains('hidden');await apLoad();RDF.LOCAL_AUDIT_MODE=previousAuditMode;const program=_apState.find(item=>item.id==='ap_fixture');return {repaired,english:program?.nameEN||'',table:document.getElementById('apTableBody').textContent,saves:__calls.filter(action=>action==='saveSetting').length-before,modalClosed};})()`);
+     assert.equal(academicPrograms.repaired,'Science-Mathematics','settings must repair legacy Thai text stored in the English academic-program field');
+     assert.equal(academicPrograms.english,'Science and Mathematics','settings must retain the administrator\'s edited English program name');
+     assert.match(academicPrograms.table,/Science and Mathematics/,'settings must display the saved English academic-program name after reloading it from the API');
+     assert.equal(academicPrograms.saves,1,'saving an academic-program modal must persist immediately without a second Save All action');
+     assert.equal(academicPrograms.modalClosed,true,'academic-program modal must close only after persistence succeeds');
      const signaturePad=await evaluate(`(async()=>{await loadGeneralSettings();sigBlockState=[{role:'Data Recorder',name:'Stored Account Name',position:'Administrator',signatureDataUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WQAAAABJRU5ErkJggg=='},{role:'Data Reviewer',name:'Review Officer',position:'Reviewer',signatureDataUrl:''}];renderSigEditor();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const canvas=document.getElementById('sigCanvas_0');canvas.setPointerCapture=()=>{};canvas.releasePointerCapture=()=>{};const initial=reportSignatureDataUrl(sigBlockState[0]).startsWith('data:image/png;base64,');clearSignaturePad(0);const cleared=!sigBlockState[0].signatureDataUrl;canvas.dispatchEvent(new PointerEvent('pointerdown',{clientX:5,clientY:10,pointerId:1,bubbles:true}));canvas.dispatchEvent(new PointerEvent('pointermove',{clientX:50,clientY:30,pointerId:1,bubbles:true}));canvas.dispatchEvent(new PointerEvent('pointerup',{clientX:50,clientY:30,pointerId:1,bubbles:true}));const redrawn=reportSignatureDataUrl(sigBlockState[0]).startsWith('data:image/png;base64,');clearSignaturePad(0,true);return {pads:document.querySelectorAll('.signature-pad-canvas').length,initial,cleared,redrawn,retryFocused:document.activeElement===canvas,clearLabel:[...document.querySelectorAll('.signature-pad-actions button')].some(button=>button.textContent.trim()===t('stSigClear')),retryLabel:[...document.querySelectorAll('.signature-pad-actions button')].some(button=>button.textContent.trim()===t('stSigRetry'))};})()`);
      assert.equal(signaturePad.pads,2,'shared signature settings must render one drawing pad per signatory');
      assert.equal(signaturePad.initial,true,'saved PNG signatures must load from the shared setting');
