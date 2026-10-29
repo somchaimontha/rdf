@@ -121,6 +121,25 @@ test('server validation rejects invalid types, unsafe patterns, and unknown opti
   assert.equal(c._dfSanitizeValue('=IMPORTXML("x")', 'text').startsWith("'="), true);
 });
 
+test('academic structure settings follow student-edit permission without granting all settings', () => {
+  const c = loadBackend();
+  const manager = { username:'manager', role:'Manager' };
+  const finance = { username:'finance', role:'Finance' };
+  const superAdmin = { username:'owner', role:'SuperAdmin' };
+
+  for (const key of ['ACADEMIC_TERMS','ACADEMIC_PROGRAMS','UNIVERSITY_LIST','UNI_FACULTIES']) {
+    assert.equal(c._serverCanSaveSetting(manager, key), true, `${key} should follow editStudents`);
+    assert.equal(c._serverCanSaveSetting(finance, key), false, `${key} must remain denied without editStudents`);
+  }
+  assert.equal(c._serverCanSaveSetting(manager, 'SYSTEM_NOTICE'), false, 'student edit access must not grant arbitrary settings');
+  assert.equal(c._serverCanSaveSetting(superAdmin, 'SYSTEM_NOTICE'), true, 'SuperAdmin retains unrestricted settings access');
+
+  c.getSystemSettings = () => ({ status:'success', data:{ RBAC_PERMISSIONS:{
+    _schemaVersion:'2.0.0', Manager:['viewStudents','viewSettings'],
+  } } });
+  assert.equal(c._serverCanSaveSetting(manager, 'ACADEMIC_PROGRAMS'), false, 'an explicit permission-map revocation must be authoritative');
+});
+
 test('student self-update is limited to the server-configured allowlist', () => {
   const c = loadBackend();
   c.getSystemSettings = () => ({ status: 'success', data: { STUDENT_EDITABLE_FIELDS: ['f_phone1', 'f_email'] } });

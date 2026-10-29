@@ -33,6 +33,8 @@ test('academic results show complete bilingual student identity and use the sele
   assert.match(settings, /async function apSaveEntry/);
   assert.match(settings, /await _apPersistPrograms\(t\('stSaveSuccess'\)\)/);
   assert.match(settings, /if \(!saved\) \{[\s\S]*_apState = previousState/);
+  assert.match(settings, /\.swal2-container \{ z-index:11000 !important; \}/);
+  assert.match(code, /STUDENT_ACADEMIC_SETTING_KEYS[\s\S]*'ACADEMIC_PROGRAMS'[\s\S]*'UNIVERSITY_LIST'[\s\S]*'UNI_FACULTIES'/);
   assert.match(academicResults, /bi\('ปีการศึกษา ','Academic Year ',lang\)/);
   assert.match(academicResults, /formatLevel\(r\.level,lang\)/);
   assert.match(academicResults, /const L = T\[lang\]/);
