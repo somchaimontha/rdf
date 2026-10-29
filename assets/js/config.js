@@ -24,7 +24,7 @@ const RDF = {
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.6.34",
+  VERSION: "2.6.35",
   DEFAULT_LANG: "th",
   // Localhost is read-only by default. An explicit ?localMode=live opt-in is
   // stored only for the current browser tab and routes requests to staging.
