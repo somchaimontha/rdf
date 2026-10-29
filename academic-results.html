@@ -297,10 +297,11 @@
       <table class="ar-table">
         <thead>
           <tr>
-            <th style="width:32px">#</th>
-            <th data-t="gradeColName">ชื่อ-สกุล</th>
+            <th style="width:42px" data-t="arColNo">ที่</th>
+            <th data-t="arColStudentName">ชื่อ-สกุล (ไทย / อังกฤษ)</th>
             <th data-t="gradeColInst">สถานศึกษา</th>
             <th data-t="arColLevel">ชั้น/ระดับ</th>
+            <th data-t="arColMajor">สาขาวิชา</th>
             <th data-t="arColAcadYear">ปีการศึกษา</th>
             <th data-t="arColSemester">ภาคเรียน</th>
             <th class="text-center" data-t="gradeColGPA">GPA</th>
@@ -310,7 +311,7 @@
           </tr>
         </thead>
         <tbody id="historyTableBody">
-          <tr><td colspan="10" class="text-center text-gray-400 py-10 text-xs"><span data-t="stLoading">กำลังโหลด...</span></td></tr>
+          <tr><td colspan="11" class="text-center text-gray-400 py-10 text-xs"><span data-t="stLoading">กำลังโหลด...</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -446,12 +447,12 @@
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.28"></script>
-<script src="assets/js/i18n.js?v=2.6.28"></script>
-<script src="assets/js/auth.js?v=2.6.28"></script>
-<script src="assets/js/rbac.js?v=2.6.28"></script>
-<script src="assets/js/api.js?v=2.6.28"></script>
-<script src="assets/js/report-registry.js?v=2.6.28"></script>
+<script src="assets/js/config.js?v=2.6.29"></script>
+<script src="assets/js/i18n.js?v=2.6.29"></script>
+<script src="assets/js/auth.js?v=2.6.29"></script>
+<script src="assets/js/rbac.js?v=2.6.29"></script>
+<script src="assets/js/api.js?v=2.6.29"></script>
+<script src="assets/js/report-registry.js?v=2.6.29"></script>
 <script>
 RBAC.enforcePage(['viewStudents']);
 
@@ -474,8 +475,8 @@ const INST_BG     = { MBS:'#eff6ff', VC:'#fff7ed', UNI:'#faf5ff', OTHER:'#f9fafb
 const INST_LABEL  = { MBS:'MBS — โรงเรียนแม่สะเรียงฯ', VC:'VC — วิทยาลัยการอาชีพ', UNI:'University / มหาวิทยาลัย', OTHER:'อื่นๆ' };
 const INST_ORDER  = { MBS:0, VC:1, UNI:2, OTHER:3 };
 
-function academicInstLabel(code) {
-  if (LANG === 'en') return ({ MBS:'MBS — Maesariang Boripat Suksa School', VC:'VC — Maesariang Industrial and Community Education College', UNI:'University', OTHER:'Other' })[code] || code;
+function academicInstLabel(code, lang = LANG) {
+  if (lang === 'en') return ({ MBS:'MBS — Maesariang Boripat Suksa School', VC:'VC — Maesariang Industrial and Community Education College', UNI:'University', OTHER:'Other' })[code] || code;
   return INST_LABEL[code] || code;
 }
 
@@ -512,6 +513,75 @@ function gpaClass(gpa) {
 
 function findStudent(stipNo) {
   return _STUDENTS.find(s => s.StipNo === stipNo) || null;
+}
+
+function academicEscape(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[ch]);
+}
+
+function academicThaiName(student) {
+  if (!student) return '';
+  return `${student.Title||''}${student.FirstName||''} ${student.LastName||''}`.replace(/\s+/g,' ').trim();
+}
+
+function academicEnglishName(student) {
+  if (!student) return '';
+  return `${student.EngTitle||''} ${student.EngFirstName||''} ${student.EngLastName||''}`.replace(/\s+/g,' ').trim();
+}
+
+function academicStudentMajor(student, lang = LANG) {
+  if (!student) return '';
+  const isEN = lang === 'en';
+  if (student.Institution === 'UNI') {
+    return isEN
+      ? (student.UniMajorEN || student.UniMajor || student.Major || student.Department || '')
+      : (student.UniMajor || student.Major || student.UniMajorEN || student.Department || '');
+  }
+  return student.Major || student.Department || student.UniMajor || student.UniMajorEN || '';
+}
+
+function academicStudentIdentity(student, lang = LANG) {
+  const thaiName = academicThaiName(student);
+  const englishName = academicEnglishName(student);
+  const primaryName = lang === 'en' ? (englishName || thaiName) : (thaiName || englishName);
+  const secondaryName = lang === 'en' ? thaiName : englishName;
+  return { thaiName, englishName, primaryName, secondaryName };
+}
+
+function academicInitialsAvatar(name, size = 40) {
+  const words = String(name || '?').replace(/[^\u0E00-\u0E7Fa-zA-Z]/g,' ').trim().split(/\s+/).filter(Boolean);
+  const initials = words.length >= 2
+    ? (words[0][0] + words[words.length-1][0]).toUpperCase()
+    : String(name || '?')[0].toUpperCase();
+  const colors = ['#1d4ed8','#16a34a','#ea580c','#7c3aed','#0891b2','#be185d','#b45309','#0f766e'];
+  const color = colors[(String(name || '?').charCodeAt(0) || 0) % colors.length];
+  const fontSize = Math.round(size * 0.38);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2}" fill="${color}"/><text x="${size/2}" y="${size/2}" text-anchor="middle" dominant-baseline="central" font-family="Sarabun,Arial,sans-serif" font-size="${fontSize}px" font-weight="700" fill="#fff">${academicEscape(initials)}</text></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function academicStudentPhotoSrc(student, size = 'w80') {
+  const identity = academicStudentIdentity(student);
+  if (student?.ProfilePicURL) return driveImgUrl(student.ProfilePicURL, size);
+  return academicInitialsAvatar(identity.primaryName || student?.StipNo || '?', 40);
+}
+
+function academicStudentNameHtml(student, lang = LANG, imageSize = 'w80') {
+  const identity = academicStudentIdentity(student, lang);
+  const fallback = academicInitialsAvatar(identity.primaryName || student?.StipNo || '?', 40);
+  const photo = academicStudentPhotoSrc(student, imageSize);
+  return `<div style="display:flex;align-items:center;gap:9px;min-width:210px">
+    <img src="${academicEscape(photo)}" alt="${academicEscape(T[lang].arStudentPhotoAlt)}"
+      onerror="this.onerror=null;this.src='${academicEscape(fallback)}'"
+      style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb;flex:0 0 auto">
+    <div style="min-width:0">
+      <div class="font-semibold text-gray-800" style="font-size:12px">${academicEscape(identity.primaryName || student?.StipNo || '—')}</div>
+      ${identity.secondaryName ? `<div style="font-size:10px;color:#6b7280">${academicEscape(identity.secondaryName)}</div>` : ''}
+      <div style="font-size:10px;color:#9ca3af">${academicEscape(student?.StipNo || '')}</div>
+    </div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -688,9 +758,10 @@ function buildEntryGroups(year, sem, inst) {
 }
 
 function buildGroupCard(grpKey, students, year, sem, isEN) {
+  const lang  = isEN ? 'en' : 'th';
   const color = INST_COLORS[grpKey] || '#6b7280';
   const bg    = INST_BG[grpKey]    || '#f9fafb';
-  const label = academicInstLabel(grpKey);
+  const label = academicInstLabel(grpKey, lang);
 
   const gradedCount = students.filter(s =>
     _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === year && g.semester === sem)
@@ -698,19 +769,17 @@ function buildGroupCard(grpKey, students, year, sem, isEN) {
 
   const rows = students.map((s, i) => {
     const existing = _GRADES.find(g => g.stipNo === s.StipNo && g.acadYear === year && g.semester === sem);
-    const name = isEN
-      ? (`${s.EngFirstName||''} ${s.EngLastName||''}`.trim() || `${s.Title||''}${s.FirstName||''} ${s.LastName||''}`.trim())
-      : `${s.Title||''}${s.FirstName||''} ${s.LastName||''}`.trim();
+    const identity = academicStudentIdentity(s, lang);
+    const name = identity.primaryName || s.StipNo;
+    const major = academicStudentMajor(s, lang) || '—';
     const gpaVal  = existing != null && existing.gpa != null ? existing.gpa : '';
     const noteVal = existing ? (existing.notes || '') : '';
 
-    return `<tr class="entry-row${existing?' graded':''}" data-search="${name.toLowerCase()} ${s.StipNo.toLowerCase()}" style="border-bottom:1px solid #f1f5f9">
+    return `<tr class="entry-row${existing?' graded':''}" data-search="${academicEscape(`${identity.thaiName} ${identity.englishName} ${major} ${s.StipNo}`.toLowerCase())}" style="border-bottom:1px solid #f1f5f9">
       <td style="color:#9ca3af;font-size:11px;padding-left:12px;width:32px">${i+1}</td>
-      <td>
-        <div class="font-semibold text-gray-800" style="font-size:12px">${name}</div>
-        <div style="font-size:10px;color:#9ca3af">${s.StipNo}</div>
-      </td>
-      <td style="font-size:11px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${formatLevel(s.CurrentLevel)}</td>
+      <td>${academicStudentNameHtml(s, lang)}</td>
+      <td style="font-size:11px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${academicEscape(formatLevel(s.CurrentLevel, lang))}</td>
+      <td style="font-size:11px;color:#4b5563;max-width:180px">${academicEscape(major)}</td>
       <td style="text-align:center">
         <input type="number" step="0.01" min="0" max="4"
                id="gpa_${s.StipNo}" value="${gpaVal}"
@@ -754,9 +823,10 @@ function buildGroupCard(grpKey, students, year, sem, isEN) {
       <table class="ar-table">
         <thead>
           <tr>
-            <th style="width:32px">#</th>
-            <th>${isEN?'Name':'ชื่อ-สกุล'}</th>
-            <th>${isEN?'Class / Level':'ชั้น/ระดับ'}</th>
+            <th style="width:42px">${T[lang].arColNo}</th>
+            <th>${T[lang].arColStudentName}</th>
+            <th>${T[lang].arColLevel}</th>
+            <th>${T[lang].arColMajor}</th>
             <th style="text-align:center;width:100px">GPA (0–4)</th>
             <th>${isEN?'Notes':'หมายเหตุ'}</th>
             <th class="no-print" style="width:40px"></th>
@@ -810,7 +880,7 @@ function buildHistoryTable(year, sem, inst) {
   if (countEl) countEl.textContent = `${filtered.length} ${isEN?'record(s)':'รายการ'}`;
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-10 text-xs">${bi('ไม่พบข้อมูลผลการเรียน','No grade records found')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center text-gray-400 py-10 text-xs">${bi('ไม่พบข้อมูลผลการเรียน','No grade records found')}</td></tr>`;
     return;
   }
 
@@ -822,23 +892,17 @@ function buildHistoryTable(year, sem, inst) {
 
   tbody.innerHTML = filtered.map((g, i) => {
     const stu   = findStudent(g.stipNo);
-    const name  = stu
-      ? (isEN
-          ? (`${stu.EngFirstName||''} ${stu.EngLastName||''}`.trim() || `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
-          : `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
-      : g.stipNo;
     const inst2 = stu?.Institution || '—';
-    const level = formatLevel(stu?.CurrentLevel);
+    const level = formatLevel(stu?.CurrentLevel, isEN ? 'en' : 'th');
+    const major = academicStudentMajor(stu, isEN ? 'en' : 'th') || '—';
     const gpaV  = g.gpa != null ? parseFloat(g.gpa).toFixed(2) : '—';
     const upd   = g.updatedAt ? formatAppDate(g.updatedAt) : '—';
     return `<tr style="border-bottom:1px solid #f1f5f9">
       <td style="color:#9ca3af;font-size:11px;padding-left:12px">${i+1}</td>
-      <td>
-        <div class="font-semibold text-gray-800" style="font-size:12px">${name}</div>
-        <div style="font-size:10px;color:#9ca3af">${g.stipNo}</div>
-      </td>
+      <td>${stu ? academicStudentNameHtml(stu, isEN ? 'en' : 'th') : academicEscape(g.stipNo)}</td>
       <td><span class="text-xs font-bold" style="color:${INST_COLORS[inst2]||'#374151'}">${inst2}</span></td>
-      <td style="font-size:11px;color:#6b7280">${level}</td>
+      <td style="font-size:11px;color:#6b7280">${academicEscape(level)}</td>
+      <td style="font-size:11px;color:#4b5563;max-width:180px">${academicEscape(major)}</td>
       <td style="font-size:11px;font-weight:600;color:#374151">${g.acadYear||'—'}</td>
       <td style="font-size:11px;color:#374151">${semLabel(g.semester, isEN)}</td>
       <td style="text-align:center">
@@ -960,11 +1024,15 @@ function collectAcademicReportRows({ acad = '', sem = '', inst = '', isEN = fals
   const instOrd = { MBS:0, VC:1, UNI:2, OTHER:3 };
   const rows = filtered.map(g => {
     const stu = findStudent(g.stipNo);
+    const lang = isEN ? 'en' : 'th';
+    const identity = academicStudentIdentity(stu, lang);
     return {
       stipNo: g.stipNo,
-      name: stu ? (isEN
-        ? (`${stu.EngFirstName||''} ${stu.EngLastName||''}`.trim() || `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim())
-        : `${stu.Title||''}${stu.FirstName||''} ${stu.LastName||''}`.trim()) : g.stipNo,
+      name: identity.primaryName || g.stipNo,
+      thaiName: identity.thaiName,
+      englishName: identity.englishName,
+      major: academicStudentMajor(stu, lang),
+      photoUrl: stu?.ProfilePicURL || '',
       inst: stu?.Institution || '—', level: stu?.CurrentLevel || '—',
       acadYear: g.acadYear, semester: g.semester,
       gpa: g.gpa != null && g.gpa !== '' ? parseFloat(g.gpa) : null,
@@ -1027,15 +1095,16 @@ async function registerAcademicReport({ rows, lang, acad, sem, inst, subject, so
     reportType: 'academic_results', language: lang,
     subjectTH: subjects.subjectTH, subjectEN: subjects.subjectEN,
     scope: { academicYear: acad || '', semester: sem || '', institution: inst || '', sortBy: sortBy || 'inst' },
-    fieldKeys: ['stipNo','name','institution','level','academicYear','semester','gpa','notes','updatedBy'],
+    fieldKeys: ['stipNo','thaiName','englishName','major','photoUrl','institution','level','academicYear','semester','gpa','notes','updatedBy'],
     rowCount: rows.length,
-    content: { schema:'academic-results-v1', language:lang, subjects, academicYear:acad||'', semester:sem||'', institution:inst||'', sortBy:sortBy||'inst', rows, signatures },
+    content: { schema:'academic-results-v2', language:lang, subjects, academicYear:acad||'', semester:sem||'', institution:inst||'', sortBy:sortBy||'inst', rows, signatures },
   });
 }
 
 async function exportToExcel() {
   const lang = LANG === 'en' ? 'en' : 'th';
   const isEN = lang === 'en';
+  const L = T[lang];
   const year = document.getElementById('fltYear').value || '';
   const sem  = document.getElementById('fltSem').value;
   const inst = document.getElementById('fltInst').value;
@@ -1054,14 +1123,16 @@ async function exportToExcel() {
     _ACADEMIC_REPORT_REGISTRATION = registration;
     updateAcademicReportQrUi();
     const data = rows.map((row, i) => ({
-      [t('exportNo')]: i+1, [t('stipNo')]: row.stipNo, [t('gradeColName')]: row.name,
-      [t('gradeColInst')]: row.inst, [t('arColLevel')]: formatLevel(row.level),
-      [t('arAcadYearLabel')]: row.acadYear, [t('arColSemester')]: semLabel(row.semester, isEN),
-      GPA: row.gpa ?? '', [t('gradeColNotes')]: row.notes, [t('arColRecordedBy')]: row.updatedBy,
+      [L.arColNo]: i+1, [L.stipNo]: row.stipNo,
+      [L.arColThaiName]: row.thaiName, [L.arColEnglishName]: row.englishName,
+      [L.arColMajor]: row.major, [L.gradeColInst]: row.inst,
+      [L.arColLevel]: formatLevel(row.level, lang), [L.arAcadYearLabel]: row.acadYear,
+      [L.arColSemester]: semLabel(row.semester, isEN), GPA: row.gpa ?? '',
+      [L.gradeColNotes]: row.notes, [L.arColRecordedBy]: row.updatedBy,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [{wch:6},{wch:12},{wch:30},{wch:12},{wch:20},{wch:18},{wch:18},{wch:8},{wch:25},{wch:20}];
+    ws['!cols'] = [{wch:6},{wch:14},{wch:30},{wch:30},{wch:26},{wch:12},{wch:22},{wch:18},{wch:18},{wch:8},{wch:25},{wch:20}];
     const verify = XLSX.utils.aoa_to_sheet(ReportRegistryClient.verificationRows(registration, lang));
     verify['!cols'] = [{wch:28},{wch:90}];
     const wb = XLSX.utils.book_new();
@@ -1194,9 +1265,12 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
     lowest:   isEN ? 'Lowest GPA' : 'GPA ต่ำสุด',
     below2:   isEN ? 'Below 2.00' : 'ต่ำกว่า 2.00',
     signDate: isEN ? 'Date' : 'วันที่',
+    no:       T[lang].arColNo,
+    photo:    T[lang].arStudentPhotoAlt,
     name:     isEN ? 'Name' : 'ชื่อ-สกุล',
     stipNo:   isEN ? 'Scholarship ID' : 'รหัสทุน',
     level:    isEN ? 'Level' : 'ชั้น/ระดับ',
+    major:    T[lang].arColMajor,
     gpa:      'GPA',
     notes:    isEN ? 'Notes' : 'หมายเหตุ',
     summary:  isEN ? 'Summary Statistics' : 'สรุปสถิติ',
@@ -1211,7 +1285,7 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
   const lowest  = gpas.length ? Math.min(...gpas).toFixed(2) : '—';
   const below2  = gpas.filter(v=>v<2).length;
 
-  const autoSubject = subject || `${inst?inst:SL.allInst}${acad?' — '+bi('ปีการศึกษา ','Academic Year ')+acad:''}${sem?' ('+semLabel(sem,isEN)+')':''}`;
+  const autoSubject = subject || `${inst?inst:SL.allInst}${acad?' — '+bi('ปีการศึกษา ','Academic Year ',lang)+acad:''}${sem?' ('+semLabel(sem,isEN)+')':''}`;
   const reference = registration?.report?.referenceNo || '—';
   const qrVersion = registration?.report?.qrVersion || 1;
   const exportedBy = (getUser()||{}).name || (getUser()||{}).username || '—';
@@ -1227,17 +1301,23 @@ function generateGradeReportHTML({ lang, isEN, acad, pDate, sem, inst, subject, 
   };
 
   const tableRows = rows.length === 0
-    ? `<tr><td colspan="7" style="text-align:center;padding:20px;color:#9ca3af;font-style:italic">${SL.noData}</td></tr>`
+    ? `<tr><td colspan="9" style="text-align:center;padding:20px;color:#9ca3af;font-style:italic">${SL.noData}</td></tr>`
     : rows.map((r,i) => {
         const gpaStr = r.gpa!=null ? r.gpa.toFixed(2) : '—';
+        const primaryName = isEN ? (r.englishName || r.thaiName || r.name) : (r.thaiName || r.englishName || r.name);
+        const secondaryName = isEN ? r.thaiName : r.englishName;
+        const fallback = academicInitialsAvatar(primaryName || r.stipNo || '?', 40);
+        const photoSrc = r.photoUrl ? driveImgUrl(r.photoUrl, 'w120') : fallback;
         return `<tr>
           <td class="tc" style="color:#9ca3af">${i+1}</td>
-          <td>${r.name}</td>
-          <td style="font-size:7.5pt;color:#6b7280">${r.stipNo}</td>
-          <td style="font-weight:700;color:${INST_COLORS[r.inst]||'#374151'}">${r.inst}</td>
-          <td style="font-size:8pt">${r.level}</td>
+          <td class="tc"><img src="${academicEscape(photoSrc)}" alt="${academicEscape(SL.photo)}" onerror="this.onerror=null;this.src='${academicEscape(fallback)}'" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid #d1d5db"></td>
+          <td><b>${academicEscape(primaryName || '—')}</b>${secondaryName?`<div style="font-size:7pt;color:#6b7280;margin-top:1px">${academicEscape(secondaryName)}</div>`:''}</td>
+          <td style="font-size:7.5pt;color:#6b7280">${academicEscape(r.stipNo)}</td>
+          <td style="font-weight:700;color:${INST_COLORS[r.inst]||'#374151'}">${academicEscape(r.inst)}</td>
+          <td style="font-size:8pt">${academicEscape(formatLevel(r.level,lang))}</td>
+          <td style="font-size:7.5pt">${academicEscape(r.major||'—')}</td>
           <td class="tc"><b style="font-size:10pt;color:${gpaColor(r.gpa)}">${gpaStr}</b></td>
-          <td style="font-size:8pt;color:#6b7280">${r.notes||'—'}</td>
+          <td style="font-size:8pt;color:#6b7280">${academicEscape(r.notes||'—')}</td>
         </tr>`;
       }).join('');
 
@@ -1313,12 +1393,14 @@ tr:nth-child(even) td{background:#faf5ff}
 
 <table>
   <thead><tr>
-    <th style="width:28px">#</th>
+    <th style="width:28px">${SL.no}</th>
+    <th style="width:40px">${SL.photo}</th>
     <th style="text-align:left">${SL.name}</th>
-    <th style="text-align:left;font-size:7.5pt">${SL.stipNo}</th>
-    <th>${SL.inst}</th>
+    <th style="text-align:left;font-size:7.5pt;width:64px">${SL.stipNo}</th>
+    <th style="width:46px">${SL.inst}</th>
     <th style="text-align:left">${SL.level}</th>
-    <th style="width:60px">${SL.gpa}</th>
+    <th style="text-align:left">${SL.major}</th>
+    <th style="width:48px">${SL.gpa}</th>
     <th style="text-align:left">${SL.notes}</th>
   </tr></thead>
   <tbody>${tableRows}</tbody>

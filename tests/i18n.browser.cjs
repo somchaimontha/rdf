@@ -34,7 +34,7 @@ window.fetch = async (url, options) => {
  if (action==='ping') data.status='ok';
  if (action==='getDashboardStats') data.stats={MBS:28,VC:15,UNI:3,Alumni:128,Total:174};
  if (action==='getStudents') data.data=[student];
- if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngFirstName:'Test',EngLastName:'Student'}]}];
+ if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngTitle:'Mr.',EngFirstName:'Test',EngLastName:'Student',Major:'วิทยาศาสตร์-คณิตศาสตร์',ProfilePicURL:'https://example.test/student.jpg'}]}];
  if (action==='getSystemSettings') data.data={
    STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}],
    EMPLOYMENT_TRACKING_PERIODS:{schemaVersion:'1.0.0',periods:[
@@ -660,7 +660,7 @@ const server = http.createServer((req,res)=>{
      assert.notEqual(verification.regenerateVisible,'none','authorized report viewers with export permission can conditionally regenerate any report QR');
    }
    if(file==='academic-results.html') {
-     const academicReport=await evaluate(`(async()=>{const lang=LANG,isEN=lang==='en',rows=collectAcademicReportRows({acad:'2568',sem:'1',inst:'',isEN,sortBy:'inst'}),registration=await registerAcademicReport({rows,lang,acad:'2568',sem:'1',inst:'',sortBy:'inst'}),html=generateGradeReportHTML({lang,isEN,acad:'2568',pDate:'2026-03-20',sem:'1',inst:'',subject:'',sortBy:'inst',orientation:'portrait',selSigs:[],rows,registration,qrDataUrl:'data:image/png;base64,AA=='});return {rows:rows.length,type:registration.report.reportType,reference:registration.report.referenceNo,url:registration.verificationUrl,page:html.includes('@page{size:A4 portrait'),fixed:html.includes('table-layout:fixed'),qr:html.includes('class="rpt-qr"'),footerUser:html.includes('Test Admin'),footerReference:html.includes('RDF-ACA-20260320-44444444'),orientations:document.querySelectorAll('input[name="arPrOrientation"]').length,defaultOrientation:document.querySelector('input[name="arPrOrientation"]:checked')?.value};})()`);
+     const academicReport=await evaluate(`(async()=>{buildEntryGroups('2568','1','');const screenLang=LANG,lang=screenLang==='th'?'en':'th',isEN=lang==='en',rows=collectAcademicReportRows({acad:'2568',sem:'1',inst:'',isEN,sortBy:'inst'}),registration=await registerAcademicReport({rows,lang,acad:'2568',sem:'1',inst:'',sortBy:'inst'}),html=generateGradeReportHTML({lang,isEN,acad:'2568',pDate:'2026-03-20',sem:'1',inst:'',subject:'',sortBy:'inst',orientation:'portrait',selSigs:[],rows,registration,qrDataUrl:'data:image/png;base64,AA=='}),pageText=document.getElementById('entryGroupsContainer').textContent;return {rows:rows.length,type:registration.report.reportType,reference:registration.report.referenceNo,url:registration.verificationUrl,page:html.includes('@page{size:A4 portrait'),fixed:html.includes('table-layout:fixed'),qr:html.includes('class="rpt-qr"'),footerUser:html.includes('Test Admin'),footerReference:html.includes('RDF-ACA-20260320-44444444'),selectedLanguage:new URL(registration.verificationUrl).searchParams.get('lang'),expectedLanguage:lang,languageHeader:html.includes(lang==='en'?'>No.<':'>ที่<'),languageSubject:html.includes(lang==='en'?'Academic Year 2568':'ปีการศึกษา 2568'),thaiName:html.includes('นายทดสอบ นักเรียน'),englishName:html.includes('Mr. Test Student'),major:html.includes('วิทยาศาสตร์-คณิตศาสตร์'),photo:html.includes('example.test/student.jpg'),pageThaiName:pageText.includes('นายทดสอบ นักเรียน'),pageEnglishName:pageText.includes('Mr. Test Student'),pageMajor:pageText.includes('วิทยาศาสตร์-คณิตศาสตร์'),pagePhoto:!!document.querySelector('#entryGroupsContainer img'),orientations:document.querySelectorAll('input[name="arPrOrientation"]').length,defaultOrientation:document.querySelector('input[name="arPrOrientation"]:checked')?.value};})()`);
      assert.equal(academicReport.rows,1,'academic report must use the selected source records without copying them into a second database');
      assert.equal(academicReport.type,'academic_results','academic results must use the central report registry');
      assert.equal(academicReport.reference,'RDF-ACA-20260320-44444444','academic report must receive a central reference');
@@ -670,6 +670,17 @@ const server = http.createServer((req,res)=>{
      assert.equal(academicReport.qr,true,'academic report must place QR in the left header');
      assert.equal(academicReport.footerUser,true,'academic report footer must stamp the exporting user');
      assert.equal(academicReport.footerReference,true,'academic report footer must contain its reference');
+     assert.equal(academicReport.selectedLanguage,academicReport.expectedLanguage,'academic report registration must use the selected report language independently of the screen');
+     assert.equal(academicReport.languageHeader,true,'academic report sequence heading must follow the selected report language');
+     assert.equal(academicReport.languageSubject,true,'academic report subject must follow the selected report language');
+     assert.equal(academicReport.thaiName,true,'academic report must include the Thai name with title');
+     assert.equal(academicReport.englishName,true,'academic report must include the English name with title');
+     assert.equal(academicReport.major,true,'academic report must include the student major');
+     assert.equal(academicReport.photo,true,'academic report must include the student photo');
+     assert.equal(academicReport.pageThaiName,true,'academic results page must show the Thai name with title');
+     assert.equal(academicReport.pageEnglishName,true,'academic results page must show the English name with title');
+     assert.equal(academicReport.pageMajor,true,'academic results page must show the major');
+     assert.equal(academicReport.pagePhoto,true,'academic results page must show a student photo');
      assert.equal(academicReport.orientations,2,'academic formal report must offer landscape and portrait');
      assert.equal(academicReport.defaultOrientation,'landscape','academic formal report must default to landscape');
    }
@@ -721,7 +732,9 @@ const server = http.createServer((req,res)=>{
    }
    if(initialLang==='en' && file==='academic-results.html') {
      const dynamic=await evaluate(`(()=>{document.getElementById('fltYear').value='2568';document.getElementById('fltSem').value='1';applyFilters();return document.getElementById('entryGroupsContainer').textContent;})()`);
-     assert.equal(/[ก-๙]/.test(dynamic),false,'grade-entry dynamic UI must be English');
+     assert.match(dynamic,/Name \(English \/ Thai\)/,'grade-entry name heading must be English while bilingual names remain visible');
+     assert.match(dynamic,/Major \/ Program/,'grade-entry major heading must be English');
+     assert.doesNotMatch(dynamic,/ชื่อ-สกุล \(ไทย \/ อังกฤษ\)|ชั้น\/ระดับ|หมายเหตุ/,'grade-entry interface labels must be English');
    }
    if(initialLang==='en' && file==='student-profile.html') {
      const dynamic=await evaluate(`document.getElementById('academicInfo').textContent`);

@@ -32,7 +32,7 @@
   </form>
 </main>
 <footer class="rdf-footer"><span data-t="appName">ระบบจัดการข้อมูลทุนการศึกษา</span> © <span id="footerYear"></span></footer>
-<script src="assets/js/config.js?v=2.6.28"></script><script src="assets/js/i18n.js?v=2.6.28"></script><script src="assets/js/api.js?v=2.6.28"></script><script src="assets/js/auth.js?v=2.6.28"></script><script src="assets/js/rbac.js?v=2.6.28"></script><script src="assets/js/dynamic-fields.js?v=2.6.28"></script>
+<script src="assets/js/config.js?v=2.6.29"></script><script src="assets/js/i18n.js?v=2.6.29"></script><script src="assets/js/api.js?v=2.6.29"></script><script src="assets/js/auth.js?v=2.6.29"></script><script src="assets/js/rbac.js?v=2.6.29"></script><script src="assets/js/dynamic-fields.js?v=2.6.29"></script>
 <script>
 const currentUser=requireAuth();if(currentUser)renderNavUser(currentUser);if(currentUser)RBAC.enforcePage(['manageVolunteers']);document.getElementById('footerYear').textContent=new Date().getFullYear();lucide.createIcons();initDBStatus();
 const volunteerId=new URLSearchParams(location.search).get('volunteerId')||'';let volunteerRecord={volunteerId:'',photoUrl:'',photoFileId:''},pendingPhoto=null;

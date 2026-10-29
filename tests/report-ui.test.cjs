@@ -10,6 +10,23 @@ const settings = fs.readFileSync(path.join(root, 'settings.html'), 'utf8');
 const auth = fs.readFileSync(path.join(root, 'assets/js/auth.js'), 'utf8');
 const tracking = fs.readFileSync(path.join(root, 'tracking-management.html'), 'utf8');
 const rbac = fs.readFileSync(path.join(root, 'assets/js/rbac.js'), 'utf8');
+const academicResults = fs.readFileSync(path.join(root, 'academic-results.html'), 'utf8');
+const code = fs.readFileSync(path.join(root, 'Code.gs'), 'utf8');
+
+test('academic results show complete bilingual student identity and use the selected report language', () => {
+  assert.match(code, /EngTitle:\s+_c\(row, 'EngTitle'\)/);
+  assert.match(academicResults, /function academicThaiName/);
+  assert.match(academicResults, /function academicEnglishName/);
+  assert.match(academicResults, /function academicStudentMajor/);
+  assert.match(academicResults, /function academicStudentPhotoSrc/);
+  assert.match(academicResults, /data-t="arColNo">ที่</);
+  assert.match(academicResults, /T\[lang\]\.arColNo/);
+  assert.match(academicResults, /T\[lang\]\.arColMajor/);
+  assert.match(academicResults, /bi\('ปีการศึกษา ','Academic Year ',lang\)/);
+  assert.match(academicResults, /formatLevel\(r\.level,lang\)/);
+  assert.match(academicResults, /const L = T\[lang\]/);
+  assert.doesNotMatch(academicResults, /<th[^>]*>#<\/th>/);
+});
 
 test('employment report keeps grouped columns compact and follow-up notes last', () => {
   const fields = reports.slice(reports.indexOf('const EMPLOYMENT_REPORT_FIELDS'), reports.indexOf('function employmentReportText'));
