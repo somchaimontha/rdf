@@ -12,6 +12,7 @@ const tracking = fs.readFileSync(path.join(root, 'tracking-management.html'), 'u
 const rbac = fs.readFileSync(path.join(root, 'assets/js/rbac.js'), 'utf8');
 const academicResults = fs.readFileSync(path.join(root, 'academic-results.html'), 'utf8');
 const code = fs.readFileSync(path.join(root, 'Code.gs'), 'utf8');
+const config = fs.readFileSync(path.join(root, 'assets/js/config.js'), 'utf8');
 
 test('academic results show complete bilingual student identity and use the selected report language', () => {
   assert.match(code, /EngTitle:\s+_c\(row, 'EngTitle'\)/);
@@ -20,6 +21,8 @@ test('academic results show complete bilingual student identity and use the sele
   assert.match(academicResults, /function academicStudentMajor/);
   assert.match(academicResults, /function academicProgramName/);
   assert.match(academicResults, /_SETTINGS\.ACADEMIC_PROGRAMS/);
+  assert.match(academicResults, /RDF\.ACADEMIC_PROGRAM_NAMES_EN/);
+  assert.match(config, /'วิทยาศาสตร์-คณิตศาสตร์': 'Science-Mathematics'/);
   assert.match(academicResults, /function academicStudentPhotoSrc/);
   assert.match(academicResults, /data-t="arColNo">ที่</);
   assert.match(academicResults, /T\[lang\]\.arColNo/);

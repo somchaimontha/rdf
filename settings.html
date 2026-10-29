@@ -876,7 +876,7 @@
               <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap"><span data-t="stMajColInst">สถานศึกษา</span></th>
               <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;white-space:nowrap"><span data-t="stLogColType">ประเภท</span></th>
               <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151"><span data-t="uiThaiNameUniversityProgramFacultyProvince">ชื่อ (ไทย) / มหาวิทยาลัย · สาขา · คณะ · จังหวัด</span></th>
-              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151">English Name / University · Major · Faculty</th>
+              <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151" data-t="stMajColNameEN">ชื่อภาษาอังกฤษ</th>
               <th style="padding:10px 14px;text-align:center;font-weight:700;color:#374151;white-space:nowrap"><span data-t="stMajColManage">จัดการ</span></th>
             </tr>
           </thead>
@@ -1024,7 +1024,7 @@
               <input type="text" id="apModalNameTH" class="field-input" placeholder="เช่น วิทยาศาสตร์-คณิตศาสตร์" data-t-placeholder="hintEGScienceMathematics">
             </div>
             <div>
-              <label class="field-label">English Name <span class="text-red-500">*</span></label>
+              <label class="field-label"><span data-t="stMajColNameEN">ชื่อภาษาอังกฤษ</span> <span class="text-red-500">*</span></label>
               <input type="text" id="apModalNameEN" class="field-input" placeholder="e.g. Science-Mathematics">
             </div>
           </div>
@@ -2273,12 +2273,12 @@
   </div>
 </footer>
 
-<script src="assets/js/config.js?v=2.6.30"></script>
+<script src="assets/js/config.js?v=2.6.31"></script>
 <script src="assets/js/tamper-guard.js" defer></script>
-<script src="assets/js/i18n.js?v=2.6.30"></script>
-<script src="assets/js/api.js?v=2.6.30"></script>
-<script src="assets/js/auth.js?v=2.6.30"></script>
-<script src="assets/js/rbac.js?v=2.6.30"></script>
+<script src="assets/js/i18n.js?v=2.6.31"></script>
+<script src="assets/js/api.js?v=2.6.31"></script>
+<script src="assets/js/auth.js?v=2.6.31"></script>
+<script src="assets/js/rbac.js?v=2.6.31"></script>
 <script>
 lucide.createIcons();
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -3083,6 +3083,20 @@ let _apState = [];  // full list
 let _apInst  = '';  // current institution filter ('' = all)
 let _apCat   = '';  // current category filter ('' = all)
 
+function _apEnglishName(nameTH, nameEN = '') {
+  const english = String(nameEN || '').trim();
+  if (english && !/[\u0E00-\u0E7F]/.test(english)) return english;
+  return RDF.ACADEMIC_PROGRAM_NAMES_EN?.[String(nameTH || '').trim()] || '';
+}
+
+function _apNormalizeProgram(program) {
+  if (!program || typeof program !== 'object') return program;
+  const repairedEnglish = _apEnglishName(program.nameTH, program.nameEN);
+  return repairedEnglish && repairedEnglish !== program.nameEN
+    ? { ...program, nameEN: repairedEnglish }
+    : program;
+}
+
 function _genApId() {
   return 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6);
 }
@@ -3095,14 +3109,16 @@ async function apLoad() {
     const r = await API.getSystemSettings();
     if (r.status === 'success' && r.data) {
       if (Array.isArray(r.data.ACADEMIC_PROGRAMS) && r.data.ACADEMIC_PROGRAMS.length > 0) {
-        _apState = r.data.ACADEMIC_PROGRAMS;
+        _apState = r.data.ACADEMIC_PROGRAMS.map(_apNormalizeProgram);
       } else {
         // Migrate old string arrays → unified objects
         const migrateOld = (arr, institution, category) =>
           (arr || []).filter(Boolean).map(name => ({
             id: _genApId(), institution, category,
             nameTH: typeof name === 'string' ? name : (name.nameTH || name.nameEN || ''),
-            nameEN: typeof name === 'string' ? name : (name.nameEN || name.nameTH || '')
+            nameEN: typeof name === 'string'
+              ? _apEnglishName(name)
+              : _apEnglishName(name.nameTH, name.nameEN)
           }));
         const oldMBS   = r.data.MAJORS_MBS     || RDF.MAJORS?.MBS     || [];
         const oldVC    = r.data.MAJORS_VC      || RDF.MAJORS?.VC      || [];
@@ -3408,9 +3424,9 @@ function apSaveEntry() {
   // Validation
   if (inst === 'UNI') {
     if (!uniName && !uniNameEN) { Swal.fire('⚠️', bi('กรุณากรอกชื่อมหาวิทยาลัย','Enter a university name.'), 'warning'); return; }
-    if (!nameTH  && !nameEN)   { Swal.fire('⚠️', bi('กรุณากรอกสาขาวิชา','Enter a program name.'), 'warning'); return; }
+    if (!nameTH || !nameEN) { Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return; }
   } else {
-    if (!nameTH && !nameEN) { Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return; }
+    if (!nameTH || !nameEN) { Swal.fire(t('warning'), t('stMajFillName'), 'warning'); return; }
   }
 
   // Duplicate check: for UNI use uniName+nameTH+faculty combo; for others inst+cat+name
@@ -3487,14 +3503,14 @@ function apHandleCSVFile(event) {
         const inst = getCol(row, 'institution');
         const cat  = getCol(row, 'category') || (inst === 'MBS' ? 'plan' : 'program');
         const nameTH    = getCol(row, 'nameTH');
-        const nameEN    = getCol(row, 'nameEN');
+        const nameEN    = getCol(row, 'nameEN') || _apEnglishName(nameTH);
         const uniName   = getCol(row, 'uniName');
         const uniNameEN = getCol(row, 'uniNameEN');
         const faculty    = getCol(row, 'faculty');
         const facultyEN  = getCol(row, 'facultyEN');
         const province   = getCol(row, 'province');
         const provinceEN = getCol(row, 'provinceEN') || _PROV_EN[province] || '';
-        if (!inst || (!nameTH && !nameEN && !uniName)) { skipped++; return; }
+        if (!inst || !nameTH || !nameEN) { skipped++; return; }
 
         // Find existing (match by inst+cat+uniName+nameTH for UNI; inst+cat+nameTH for others)
         const existIdx = _apState.findIndex(p => {

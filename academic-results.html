@@ -447,12 +447,12 @@
 </footer>
 
 <!-- Scripts -->
-<script src="assets/js/config.js?v=2.6.30"></script>
-<script src="assets/js/i18n.js?v=2.6.30"></script>
-<script src="assets/js/auth.js?v=2.6.30"></script>
-<script src="assets/js/rbac.js?v=2.6.30"></script>
-<script src="assets/js/api.js?v=2.6.30"></script>
-<script src="assets/js/report-registry.js?v=2.6.30"></script>
+<script src="assets/js/config.js?v=2.6.31"></script>
+<script src="assets/js/i18n.js?v=2.6.31"></script>
+<script src="assets/js/auth.js?v=2.6.31"></script>
+<script src="assets/js/rbac.js?v=2.6.31"></script>
+<script src="assets/js/api.js?v=2.6.31"></script>
+<script src="assets/js/report-registry.js?v=2.6.31"></script>
 <script>
 RBAC.enforcePage(['viewStudents']);
 
@@ -543,7 +543,11 @@ function academicProgramName(value, institution, lang = LANG, categories = []) {
       .some(name => String(name || '').replace(/\s+/g,' ').trim().toLocaleLowerCase(lang === 'en' ? 'en' : 'th') === normalized);
   });
   if (lang === 'en') {
-    if (match?.nameEN) return match.nameEN;
+    const configuredEnglish = String(match?.nameEN || '').trim();
+    if (configuredEnglish && !/[\u0E00-\u0E7F]/.test(configuredEnglish)) return configuredEnglish;
+    const defaultEnglish = RDF.ACADEMIC_PROGRAM_NAMES_EN?.[match?.nameTH || raw]
+      || RDF.ACADEMIC_PROGRAM_NAMES_EN?.[raw] || '';
+    if (defaultEnglish) return defaultEnglish;
     return /[\u0E00-\u0E7F]/.test(raw) ? '' : raw;
   }
   return match?.nameTH || raw;

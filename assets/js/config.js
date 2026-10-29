@@ -24,7 +24,7 @@ const RDF = {
   LOGO_URL: "https://raw.githubusercontent.com/somchaimontha/rdf/refs/heads/main/RDF%20original%20s%20(2).png",
   FOUNDATION_TH: "มูลนิธิ ดร.โรเบิร์ต ไดเกอร์ฮอฟฟ์ ประเทศไทย",
   FOUNDATION_EN: "Dr. Robert Dyckerhoff Foundation — Thailand",
-  VERSION: "2.6.30",
+  VERSION: "2.6.31",
   DEFAULT_LANG: "th",
   // Localhost is read-only by default. An explicit ?localMode=live opt-in is
   // stored only for the current browser tab and routes requests to staging.
@@ -99,7 +99,23 @@ const RDF = {
       'เทคโนโลยีสารสนเทศ',
       'การบัญชี'
     ]
-  }
+  },
+  ACADEMIC_PROGRAM_NAMES_EN: Object.freeze({
+    'วิทยาศาสตร์-คณิตศาสตร์': 'Science-Mathematics',
+    'วิทยาศาสตร์': 'Science',
+    'ภาษาอังกฤษ': 'English',
+    'ดิจิทัล': 'Digital',
+    'ศิลป์คำนวณ': 'Arts-Mathematics',
+    'ศิลป์ภาษาอังกฤษ': 'Arts-English',
+    'ศิลป์ภาษาจีน': 'Arts-Chinese',
+    'ศิลป์ภาษาญี่ปุ่น': 'Arts-Japanese',
+    'ศิลป์ทั่วไป': 'General Arts',
+    'ช่างยนต์': 'Automotive Technology',
+    'ช่างไฟฟ้า': 'Electrical Technology',
+    'ช่างก่อสร้าง': 'Construction Technology',
+    'เทคโนโลยีสารสนเทศ': 'Information Technology',
+    'การบัญชี': 'Accounting'
+  })
 };
 
 /* ── Profile Completion Sections ── */

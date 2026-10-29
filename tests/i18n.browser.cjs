@@ -37,7 +37,7 @@ window.fetch = async (url, options) => {
  if (action==='getStudentsForPromotion') data.groups=[{institution:'MBS',level:student.level,students:[{StipNo:'MBS_001',Title:'นาย',FirstName:'ทดสอบ',LastName:'นักเรียน',EngTitle:'Mr.',EngFirstName:'Test',EngLastName:'Student',Major:'วิทยาศาสตร์-คณิตศาสตร์',ProfilePicURL:'https://example.test/student.jpg'}]}];
  if (action==='getSystemSettings') data.data={
    STUDENT_GRADES:[{stipNo:'MBS_001',acadYear:2568,semester:'1',gpa:3.5,updatedAt:'2026-01-15T12:00:00Z'}],
-   ACADEMIC_PROGRAMS:[{id:'ap_fixture',institution:'MBS',category:'plan',nameTH:'วิทยาศาสตร์-คณิตศาสตร์',nameEN:'Science-Mathematics'}],
+   ACADEMIC_PROGRAMS:[{id:'ap_fixture',institution:'MBS',category:'plan',nameTH:'วิทยาศาสตร์-คณิตศาสตร์',nameEN:'วิทยาศาสตร์-คณิตศาสตร์'}],
    EMPLOYMENT_TRACKING_PERIODS:{schemaVersion:'1.0.0',periods:[
      {periodId:'period_2026_a',startDate:'2026-01-01',endDate:'2026-03-31',asOfMonth:'2026-03',label:'Q1',active:true},
      {periodId:'period_2026_b',startDate:'2026-04-01',endDate:'',asOfMonth:'2026-12',label:'Ongoing',active:true},
@@ -215,6 +215,9 @@ const server = http.createServer((req,res)=>{
    assert.deepEqual(result.enInputs,result.beforeInputs,file+' form values must remain unchanged');
    assert.deepEqual(result.missing,[],file+' stale translations');
    if(file==='settings.html') {
+     const academicPrograms=await evaluate(`(async()=>{await apLoad();const program=_apState.find(item=>item.id==='ap_fixture');return {english:program?.nameEN||'',table:document.getElementById('apTableBody').textContent};})()`);
+     assert.equal(academicPrograms.english,'Science-Mathematics','settings must repair legacy Thai text stored in the English academic-program field');
+     assert.match(academicPrograms.table,/Science-Mathematics/,'settings must display the repaired English academic-program name');
      const signaturePad=await evaluate(`(async()=>{await loadGeneralSettings();sigBlockState=[{role:'Data Recorder',name:'Stored Account Name',position:'Administrator',signatureDataUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WQAAAABJRU5ErkJggg=='},{role:'Data Reviewer',name:'Review Officer',position:'Reviewer',signatureDataUrl:''}];renderSigEditor();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const canvas=document.getElementById('sigCanvas_0');canvas.setPointerCapture=()=>{};canvas.releasePointerCapture=()=>{};const initial=reportSignatureDataUrl(sigBlockState[0]).startsWith('data:image/png;base64,');clearSignaturePad(0);const cleared=!sigBlockState[0].signatureDataUrl;canvas.dispatchEvent(new PointerEvent('pointerdown',{clientX:5,clientY:10,pointerId:1,bubbles:true}));canvas.dispatchEvent(new PointerEvent('pointermove',{clientX:50,clientY:30,pointerId:1,bubbles:true}));canvas.dispatchEvent(new PointerEvent('pointerup',{clientX:50,clientY:30,pointerId:1,bubbles:true}));const redrawn=reportSignatureDataUrl(sigBlockState[0]).startsWith('data:image/png;base64,');clearSignaturePad(0,true);return {pads:document.querySelectorAll('.signature-pad-canvas').length,initial,cleared,redrawn,retryFocused:document.activeElement===canvas,clearLabel:[...document.querySelectorAll('.signature-pad-actions button')].some(button=>button.textContent.trim()===t('stSigClear')),retryLabel:[...document.querySelectorAll('.signature-pad-actions button')].some(button=>button.textContent.trim()===t('stSigRetry'))};})()`);
      assert.equal(signaturePad.pads,2,'shared signature settings must render one drawing pad per signatory');
      assert.equal(signaturePad.initial,true,'saved PNG signatures must load from the shared setting');
