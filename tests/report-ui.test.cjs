@@ -39,6 +39,10 @@ test('academic results show complete bilingual student identity and use the sele
   assert.match(academicResults, /formatLevel\(r\.level,lang\)/);
   assert.match(academicResults, /const L = T\[lang\]/);
   assert.doesNotMatch(academicResults, /<th[^>]*>#<\/th>/);
+  assert.match(academicResults, /async function waitForAcademicReportPrintReady/);
+  assert.match(academicResults, /await waitForAcademicReportPrintReady\(win\)/);
+  assert.match(academicResults, /thead\{display:table-header-group;break-inside:avoid;page-break-inside:avoid\}/);
+  assert.match(academicResults, /thead tr,tbody tr\{break-inside:avoid;page-break-inside:avoid;-webkit-region-break-inside:avoid\}/);
 });
 
 test('employment report keeps grouped columns compact and follow-up notes last', () => {
