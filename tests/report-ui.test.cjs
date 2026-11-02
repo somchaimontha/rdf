@@ -125,7 +125,7 @@ test('volunteer UI permissions expose alumni workflows without exposing scholars
   assert.match(reports, /RBAC\.enforcePage\(\['viewReports','viewAlumniEmployment'\]\)/);
   assert.match(reports, /CAN_VIEW_SCHOLARSHIP_REPORTS \? API\.getStudents\(\)/);
   assert.match(reports, /CAN_EXPORT_EMPLOYMENT_REPORTS/);
-  assert.match(rbac, /RBAC_PERMISSIONS_SCHEMA_VERSION = '2\.0\.0'/);
+  assert.match(rbac, /RBAC_PERMISSIONS_SCHEMA_VERSION = '2\.1\.0'/);
   assert.match(rbac, /_rbacUpgradePermissionMap/);
   assert.match(tracking, /'manageTrackingCycles'/);
   assert.match(auth, /_notifHas\('viewAlumniEmployment'\)/);

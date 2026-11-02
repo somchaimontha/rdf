@@ -14,6 +14,7 @@
  * PERMISSION KEYS:
  *  viewStudents      — view the student list page (students.html)
  *  editStudents      — add / edit student records
+ *  manageStudentAccountEmail — maintain a student's pending recovery email
  *  deleteStudents    — delete student records
  *  importStudents    — CSV import
  *  viewPromotion     — access promotion.html
@@ -54,7 +55,7 @@
 // ─────────────────────────────────────────────
 const RBAC_MAP = {
   SuperAdmin:  ['*'],
-  Manager:     ['viewStudents','editStudents','deleteStudents','importStudents',
+  Manager:     ['viewStudents','editStudents','manageStudentAccountEmail','deleteStudents','importStudents',
                 'viewAlumni','viewAlumniEmployment','manageAlumniEmployment','manageAlumniFollowUps','manageTrackingCycles','exportAlumniReports',
                 'viewVolunteers','manageVolunteers',
                 'viewPromotion','runPromotion','viewSchApprovalPanel',
@@ -65,12 +66,12 @@ const RBAC_MAP = {
                 'viewUniHistory'],
   Finance:     ['viewStudents','viewAlumni','viewAlumniEmployment','viewReports','exportData','exportAlumniReports','printProfile'],
   Committee:   ['viewStudents','viewAlumni','viewAlumniEmployment','viewReports','printProfile','viewSurveyResults'],
-  DormTeacher: ['viewStudents','viewAlumni','editStudents','manageAlumniEmployment','printProfile','viewUniHistory'],
-  Volunteer:   ['viewAlumni','viewAlumniEmployment','manageAlumniEmployment','manageAlumniFollowUps','manageTrackingCycles',
+  DormTeacher: ['viewStudents','viewAlumni','editStudents','manageStudentAccountEmail','manageAlumniEmployment','printProfile','viewUniHistory'],
+  Volunteer:   ['viewAlumni','viewAlumniEmployment','manageStudentAccountEmail','manageAlumniEmployment','manageAlumniFollowUps','manageTrackingCycles',
                 'manageSurveys','viewSurveyResults','exportSurveyResults','exportAlumniReports','printProfile'],
   Student:     ['viewOwnProfile','editOwnProfile','respondOwnSurveys'],
 };
-const RBAC_PERMISSIONS_SCHEMA_VERSION = '2.0.0';
+const RBAC_PERMISSIONS_SCHEMA_VERSION = '2.1.0';
 const STUDENT_DASHBOARD_ALUMNI_STATUSES = new Set([
   'Graduated', 'Resigned', 'WithdrawnScholarship', 'Incomplete', 'University'
 ]);
@@ -81,7 +82,7 @@ function _rbacUpgradePermissionMap(input) {
     if (Array.isArray(map[role])) map[role] = [...new Set(map[role])];
   });
   if (map._schemaVersion !== RBAC_PERMISSIONS_SCHEMA_VERSION) {
-    ['Manager','Finance','Committee','DormTeacher'].forEach(role => {
+    ['Manager','Finance','Committee','DormTeacher','Volunteer'].forEach(role => {
       const permissions = new Set(map[role] || RBAC_MAP[role] || []);
       if (permissions.has('viewStudents')) permissions.add('viewAlumni');
       if (permissions.has('viewReports') && permissions.has('viewStudents')) permissions.add('viewAlumniEmployment');
@@ -89,6 +90,8 @@ function _rbacUpgradePermissionMap(input) {
       if (permissions.has('viewReports') && permissions.has('editStudents')) permissions.add('manageAlumniFollowUps');
       if (permissions.has('manageNotifications') || permissions.has('manageSurveys')) permissions.add('manageTrackingCycles');
       if (permissions.has('viewReports') && permissions.has('exportData')) permissions.add('exportAlumniReports');
+      if (permissions.has('editStudents') || (role === 'Volunteer' && permissions.has('manageAlumniEmployment')))
+        permissions.add('manageStudentAccountEmail');
       map[role] = [...permissions];
     });
   }

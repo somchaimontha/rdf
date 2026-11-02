@@ -402,14 +402,23 @@ test('authorized staff can manage the recovery email without resetting the passw
   assert.equal(authRow[authHeaders.indexOf('PasswordHash')], passwordHash);
   assert.equal(authRow[authHeaders.indexOf('PasswordSalt')], passwordSalt);
   assert.equal(authRow[authHeaders.indexOf('EmailManagedBy')], 'staff@example.com');
+  assert.equal(authRow[authHeaders.indexOf('EmailVerifiedAt')], '', 'staff changes must require the student to verify the new email');
   assert.equal(c.handleLogin('1111111111111', 'SecurePass1', 'student').status, 'success');
   assert.equal(c.handleLogin('mali@example.com', 'SecurePass1', 'student').status, 'error');
-  assert.equal(c.handleLogin('NEWRECOVERY@GMAIL.COM', 'SecurePass1', 'student').status, 'success');
+  assert.equal(c.handleLogin('NEWRECOVERY@GMAIL.COM', 'SecurePass1', 'student').status, 'error',
+    'email sign-in remains disabled until the student verifies the staff-supplied address');
 
   c.requestPasswordReset('mali@example.com', 'https://somchaimontha.github.io/rdf/', 'student');
   assert.equal(emails.length, emailCountBeforeUpdate, 'the previous email must no longer receive recovery mail');
   c.requestPasswordReset('newrecovery@gmail.com', 'https://somchaimontha.github.io/rdf/', 'student');
-  assert.equal(emails.length, emailCountBeforeUpdate + 1, 'future recovery requests must use the new email');
+  assert.equal(emails.length, emailCountBeforeUpdate, 'an unverified staff-supplied email must not receive recovery mail');
+
+  c.requestStudentEmailVerification({ username:'MBS_001', role:'Student' });
+  assert.equal(emails.length, emailCountBeforeUpdate + 1, 'verification is sent only when the student requests it');
+  c.verifyStudentEmail({ username:'MBS_001', role:'Student' }, emailCode(emails.at(-1)));
+  assert.equal(c.handleLogin('NEWRECOVERY@GMAIL.COM', 'SecurePass1', 'student').status, 'success');
+  c.requestPasswordReset('newrecovery@gmail.com', 'https://somchaimontha.github.io/rdf/', 'student');
+  assert.equal(emails.length, emailCountBeforeUpdate + 2, 'recovery activates after student verification');
 
   const denied = c.updateStudentAccountEmail({ username:'MBS_001', role:'Student' }, 'MBS_001', 'other@gmail.com');
   assert.equal(denied.code, 'ACCESS_DENIED');
@@ -421,6 +430,13 @@ test('authorized staff can manage the recovery email without resetting the passw
   assert.equal(pending.data.profileEmail, 'pending@gmail.com');
   assert.equal(pending.data.recoveryEmail, '', 'pre-enrollment email remains subject to first-login verification');
   assert.equal(authSheet.rows.filter(row => row[0] === 'MBS_002').length, 0, 'email management must not create a password account');
+
+  const volunteer = { username:'volunteer@example.com', role:'Volunteer' };
+  assert.equal(c.updateStudentAccountEmail(volunteer, 'MBS_003', 'alumni@gmail.com').status, 'success',
+    'volunteers may manage email for alumni they are authorized to view');
+  assert.equal(c.updateStudentAccountEmail(volunteer, 'MBS_002', 'active@gmail.com').code, 'ACCESS_DENIED',
+    'volunteers must not gain access to active student records');
+  assert.equal(c.updateStudentAccountEmail({ username:'finance@example.com', role:'Finance' }, 'MBS_002', 'finance@gmail.com').code, 'ACCESS_DENIED');
 });
 
 test('first-login UI defers email OTP and exposes persistent verification reminders', () => {
@@ -520,11 +536,15 @@ test('student can reopen the OTP entry popup without sending another email', asy
 
 test('student edit UI provides a separate admin account-email control', () => {
   const html = fs.readFileSync(path.join(root, 'student-form.html'), 'utf8');
+  const profile = fs.readFileSync(path.join(root, 'student-profile.html'), 'utf8');
   const api = fs.readFileSync(path.join(root, 'assets/js/api.js'), 'utf8');
   assert.match(html, /id="studentAccountEmailAdmin"/);
   assert.match(html, /id="studentAccountRecoveryEmail"[\s\S]*?style="width:100%"/);
+  assert.match(html, /RBAC\.has\('manageStudentAccountEmail'\)/);
   assert.match(html, /API\.updateStudentAccountEmail\(editStipNo, email\)/);
   assert.match(html, /formatAppDateTime\(data\.emailUpdatedAt, LANG\)/);
+  assert.match(profile, /id="manageStudentEmailBtn"/);
+  assert.match(profile, /API\.updateStudentAccountEmail\(stipNo,email\)/);
   assert.match(api, /updateStudentAccountEmail\(stipNo, email\)/);
 });
 

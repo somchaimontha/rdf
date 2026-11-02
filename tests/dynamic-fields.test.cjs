@@ -874,6 +874,7 @@ test('volunteer role is limited to alumni employment, follow-ups, surveys, and r
 
   assert.equal(c._serverHasPermission(volunteer, 'viewAlumniEmployment'), true);
   assert.equal(c._serverHasPermission(volunteer, 'editStudents'), false);
+  assert.equal(c._serverHasPermission(volunteer, 'manageStudentAccountEmail'), true);
   assert.equal(c._serverCanReadStudent(volunteer, 'MBS_001'), true);
   assert.equal(c._serverCanReadStudent(volunteer, 'MBS_002'), false);
   assert.equal(c.getAlumniStudentsData().data.length, 1);
@@ -908,9 +909,10 @@ test('volunteer role is limited to alumni employment, follow-ups, surveys, and r
   assert.equal(migrated.Manager.includes('viewAlumniEmployment'), true, 'legacy permission maps gain equivalent granular permissions once');
   assert.equal(migrated.Manager.includes('manageAlumniFollowUps'), true);
   assert.equal(migrated.Manager.includes('manageTrackingCycles'), true);
+  assert.equal(migrated.Manager.includes('manageStudentAccountEmail'), true);
 
   c.getSystemSettings = () => ({ status:'success', data:{ RBAC_PERMISSIONS:{
-    _schemaVersion:'2.0.0', Manager:['viewStudents','editStudents','viewReports'],
+    _schemaVersion:'2.1.0', Manager:['viewStudents','editStudents','viewReports'],
   } } });
   const restrictedManager = { username:'restricted.manager', role:'Manager' };
   assert.equal(c.getEmploymentReport(restrictedManager, {}).code, 'ACCESS_DENIED', 'current permission maps must not regain a revoked alumni-report permission through legacy rights');
