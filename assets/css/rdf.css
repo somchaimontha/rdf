@@ -369,6 +369,44 @@ h1,h2,h3,h4 { font-weight: 700; line-height: 1.3; }
 .csv-row-warn:hover { background: #fef3c7; }
 .csv-row-dup:hover  { background: #fee2e2; }
 
+/* CSV preview table: fixed column widths so the inline edit row cannot stretch columns */
+.csv-table { table-layout: fixed; min-width: 960px; }
+.csv-col-check { width: 36px; }
+.csv-col-no { width: 44px; }
+.csv-col-stip { width: 96px; }
+.csv-col-name { width: 16%; }
+.csv-col-by { width: 84px; }
+.csv-col-id { width: 140px; }
+.csv-col-inst { width: 64px; }
+.csv-col-year { width: 76px; }
+.csv-col-sstatus { width: 80px; }
+.csv-table td { overflow-wrap: anywhere; vertical-align: top; }
+.csv-table .csv-c-stip { word-break: break-all; }
+.csv-table .csv-c-id { overflow-wrap: normal; white-space: nowrap; }
+.csv-table .csv-m-no { display: none; }
+.csv-edit-grid input, .csv-edit-grid select { min-width: 0; }
+@media (max-width: 1023px) {
+  .csv-table { min-width: 0; }
+  .csv-table colgroup, .csv-table thead { display: none; }
+  .csv-table, .csv-table tbody { display: block; width: 100%; }
+  .csv-table tr.csv-data-row {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px 12px; padding: 10px 44px 10px 12px; position: relative;
+  }
+  .csv-table tr.csv-data-row > td { display: block; padding: 0; text-align: left; min-width: 0; }
+  .csv-table tr.csv-data-row > td[data-label]::before {
+    content: attr(data-label); display: block; font-size: 10px; font-weight: 600;
+    color: #9ca3af; margin-bottom: 1px;
+  }
+  .csv-table .csv-c-check { position: absolute; top: 10px; right: 12px; }
+  .csv-table tr.csv-data-row > td.csv-c-no { display: none; }
+  .csv-table .csv-c-name, .csv-table .csv-c-status { grid-column: 1 / -1; }
+  .csv-table .csv-c-name { order: -2; }
+  .csv-table .csv-c-status { order: -1; }
+  .csv-table .csv-m-no { display: inline; color: #9ca3af; font-weight: 400; }
+  .csv-table tr.csv-edit-row, .csv-table tr.csv-edit-row > td { display: block; width: 100%; }
+}
+
 /* Import Result Modal rows */
 .crm-row { transition: opacity 0.3s, max-height 0.4s ease; }
 .crm-row + .crm-row { border-top: 1px solid #fee2e2; }

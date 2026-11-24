@@ -1193,20 +1193,29 @@
         <button onclick="csvSetFilter('fail')" id="csvFFail" class="csv-filter-btn hidden" style="border-color:#ef4444;color:#ef4444"><span data-t="uiFailed">❌ ล้มเหลว</span> <span id="csvFailCnt" class="font-bold"></span></button>
         <button onclick="csvSetFilter('cancelled')" id="csvFCancelled" class="csv-filter-btn hidden" style="border-color:#9ca3af;color:#6b7280"><span data-t="uiCancelled">⛔ ยกเลิก</span> <span id="csvCancelledCnt" class="font-bold"></span></button>
       </div>
+      <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 cursor-pointer" title="ข้อมูลที่ไม่มีปีเกิดจะนำเข้าได้ นักเรียนจะเข้าสู่ระบบได้หลังเพิ่มปีเกิด" data-t-title="uiSkipBirthYearHint">
+        <input type="checkbox" id="csvSkipBirthYear" onchange="csvToggleSkipBirthYear(this.checked)" class="rounded accent-amber-600">
+        <span data-t="uiSkipBirthYear">ข้ามปีเกิด (รอข้อมูลนักเรียน)</span>
+      </label>
       <input type="text" id="csvSearch" placeholder="ค้นหา ชื่อ / บัตร ปชช. / StipNo..." oninput="csvRenderTable()"
-        class="ml-auto border rounded-lg px-3 py-1.5 text-xs w-52 focus:outline-none focus:ring-2 focus:ring-blue-300" data-t-placeholder="hintSearchNameIdCardStipno">
+        class="w-full sm:w-52 sm:ml-auto border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" data-t-placeholder="hintSearchNameIdCardStipno">
     </div>
     <!-- Table -->
     <div class="overflow-auto flex-1">
-      <table class="w-full text-xs">
+      <table id="csvTable" class="csv-table w-full text-xs">
+        <colgroup>
+          <col class="csv-col-check"><col class="csv-col-no"><col class="csv-col-stip"><col class="csv-col-status">
+          <col class="csv-col-name"><col class="csv-col-by"><col class="csv-col-id"><col class="csv-col-inst">
+          <col class="csv-col-year"><col class="csv-col-sstatus">
+        </colgroup>
         <thead class="sticky top-0 bg-white z-10 shadow-sm">
           <tr class="border-b">
-            <th class="p-2 w-8"></th>
-            <th id="csvThNo" class="p-2 text-left text-gray-500 font-semibold w-8"><span data-t="exportNo">ลำดับ</span></th>
-            <th id="csvThStipNo" class="p-2 text-left text-gray-500 font-semibold whitespace-nowrap"><span data-t="uiScholarshipNumber">หมายเลขทุน</span></th>
+            <th class="p-2"></th>
+            <th id="csvThNo" class="p-2 text-left text-gray-500 font-semibold"><span data-t="exportNo">ลำดับ</span></th>
+            <th id="csvThStipNo" class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiScholarshipNumber">หมายเลขทุน</span></th>
             <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="stAdminStatus">สถานะ</span></th>
             <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="stSigNameLabel">ชื่อ-นามสกุล</span></th>
-            <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiBirthYearCELabel">ปีเกิด ค.ศ. 🔑</span></th>
+            <th class="p-2 text-center text-gray-500 font-semibold"><span data-t="uiBirthYearCELabel">ปีเกิด ค.ศ. 🔑</span></th>
             <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiNationalIDNumber">เลขบัตร ปชช.</span></th>
             <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="rptChartInstShort">สถาบัน</span></th>
             <th class="p-2 text-left text-gray-500 font-semibold"><span data-t="uiScholarshipYearBE">ปีทุน (พ.ศ.)</span></th>
@@ -1253,12 +1262,12 @@
         </div>
         <p id="csvAbortNotice" class="hidden text-xs text-amber-600 mt-1 font-semibold"><span data-t="uiPausingWaitingForTheCurrentItemTo">⏸ หยุดชั่วคราว — รอให้รายการปัจจุบันเสร็จแล้วจะแสดงตัวเลือก...</span></p>
       </div>
-      <div class="flex justify-between items-center gap-2">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <p class="text-xs text-gray-500">
           <span data-t="uiSelected">เลือกแล้ว</span> <span id="csvSelectedCnt" class="font-bold text-blue-700">0</span> <span data-t="uiRows">แถว</span>
           <span id="csvDupWarn" class="hidden text-orange-500 ml-2"><span data-t="uiPossibleDuplicatesReviewBeforeImporting">⚠ มีรายการอาจซ้ำ — ตรวจสอบก่อนนำเข้า</span></span>
         </p>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2 justify-end">
           <button onclick="closeCSVModal()" id="csvCancelBtn" class="btn btn-secondary btn-sm"><span data-t="stCancel">ยกเลิก</span></button>
           <button onclick="csvRetryFailed()" id="csvRetryBtn" class="btn btn-sm hidden" style="background:#dc2626;color:white;border-color:#dc2626">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-t="uiRetryFailedItems">ลองใหม่รายการล้มเหลว</span>
@@ -1300,7 +1309,7 @@
     <!-- Failed rows list -->
     <div id="crm_list" class="flex-1 overflow-y-auto divide-y"></div>
     <!-- Footer -->
-    <div class="px-4 py-3 border-t bg-gray-50 rounded-none flex items-center justify-between gap-2 flex-shrink-0">
+    <div class="px-4 py-3 border-t bg-gray-50 rounded-none flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 flex-shrink-0">
       <p class="text-xs text-gray-400" id="crm_footerNote"><span data-t="uiClickToEditAndReimportEachItem">กด ✏ เพื่อแก้ไขและนำเข้าใหม่แต่ละรายการ</span></p>
       <div class="flex gap-2">
         <button onclick="_crmClose()" class="btn btn-secondary btn-sm"><span data-t="stOff">ปิด</span></button>
@@ -3811,11 +3820,20 @@ function _csvCheckDup(row) {
 
   return { type:'new', msg:'', fields:[] };
 }
+// Admin may import records before birth year is known (students cannot sign in until it is added)
+let _csvSkipBirthYear = false;
+function csvToggleSkipBirthYear(checked) {
+  _csvSkipBirthYear = !!checked;
+  _csvRows.forEach(row => { row._issues = _validateRow(row); });
+  _csvRenderModal();
+}
 function _validateRow(r) {
   const issues = [];
   // BirthYear: required, must be CE 1980–2015
   const by = parseInt(r.BirthYear);
-  if (!r.BirthYear || isNaN(by)) {
+  if (!r.BirthYear && _csvSkipBirthYear) {
+    // Admin chose to import now and add birth year after student data arrives
+  } else if (!r.BirthYear || isNaN(by)) {
     issues.push({ field:'BirthYear', msg:bi('ไม่มีปีเกิด (BirthYear) — ใช้เป็นรหัสผ่านนักเรียน','Missing BirthYear — required for the student password.'), critical:true });
   } else if (by < 1980 || by > 2015) {
     issues.push({ field:'BirthYear', msg:bi(`ปีเกิด ${by} ค.ศ. ผิดปกติ (ควรอยู่ระหว่าง 1980–2015)`, `Birth year ${by} C.E. is outside the expected range (1980–2015).`), critical:true });
@@ -3868,7 +3886,7 @@ function _csvRenderModal() {
     ${invalidCnt?`<span class="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 rounded-full border border-amber-300">
       <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span> ${bi('ข้อมูลไม่ครบ','Incomplete')} <b>${invalidCnt}</b>
     </span>`:''}
-    <span class="ml-auto text-gray-400 text-xs italic">${bi('ฟิลด์ที่ตรวจ: IDCard → ชื่อ-นามสกุล (ไทย) → (อังกฤษ)','Checked fields: ID Card → Thai name → English name')}</span>`;
+    <span class="hidden md:inline ml-auto text-gray-400 text-xs italic">${bi('ฟิลด์ที่ตรวจ: IDCard → ชื่อ-นามสกุล (ไทย) → (อังกฤษ)','Checked fields: ID Card → Thai name → English name')}</span>`;
   // Bilingual column headers
   const _isEN = typeof LANG !== 'undefined' && LANG === 'en';
   const thNo = document.getElementById('csvThNo');
@@ -3963,6 +3981,8 @@ function csvRenderTable() {
     const byIssue = issues.find(x=>x.field==='BirthYear');
     const byDisplay = r.BirthYear
       ? `<span class="inline-flex items-center gap-0.5 font-mono font-bold ${byIssue?'text-red-600':'text-amber-600'}">🔑 ${r.BirthYear}</span>`
+      : _csvSkipBirthYear
+      ? `<span class="text-amber-600 text-xs font-semibold">${bi('⏳ รอข้อมูล','⏳ Pending')}</span>`
       : `<span class="text-red-500 text-xs font-semibold">${bi('🔑 ไม่มี!','🔑 Missing!')}</span>`;
 
     // Issues tooltip row
@@ -3981,17 +4001,17 @@ function csvRenderTable() {
     const stipNoCell = rowStipNo
       ? `<span class="font-mono font-bold text-xs" style="color:#1d4ed8">${rowStipNo}</span>`
       : `<span class="text-xs italic text-gray-400">${isEN ? 'Auto' : 'ระบบกำหนด'}</span>`;
-    const mainRow = `<tr class="${rc}${isEditing?' ring-2 ring-blue-400 ring-inset':''} border-b transition" data-idx="${r._idx}">
-      <td class="p-2 text-center"><input type="checkbox" ${r._selected?'checked':''} onchange="_csvToggle(${r._idx},this.checked)" class="rounded accent-blue-700"></td>
-      <td class="p-2 text-gray-400">${r._idx+1}</td>
-      <td class="p-2 whitespace-nowrap">${stipNoCell}</td>
-      <td class="p-2">${badge}${importBadge}${editBtn}${dupDetail}${importError}${issueRows}</td>
-      <td class="p-2"><div class="font-medium text-gray-800">${nameDisplay}</div>${engName}</td>
-      <td class="p-2 text-center">${byDisplay}</td>
-      <td class="p-2 font-mono text-gray-600 text-xs">${idFmt}</td>
-      <td class="p-2 ${IC[r.Institution]||'text-gray-600'}">${r.Institution||'—'}</td>
-      <td class="p-2 text-gray-600">${yr}</td>
-      <td class="p-2 text-gray-600">${r.Status||'Active'}</td>
+    const mainRow = `<tr class="csv-data-row ${rc}${isEditing?' ring-2 ring-blue-400 ring-inset':''} border-b transition" data-idx="${r._idx}">
+      <td class="csv-c-check p-2 text-center"><input type="checkbox" ${r._selected?'checked':''} onchange="_csvToggle(${r._idx},this.checked)" class="rounded accent-blue-700" aria-label="${bi('เลือกแถว','Select row')} ${r._idx+1}"></td>
+      <td class="csv-c-no p-2 text-gray-400">${r._idx+1}</td>
+      <td class="csv-c-stip p-2" data-label="${bi('หมายเลขทุน','Stip. No.')}">${stipNoCell}</td>
+      <td class="csv-c-status p-2">${badge}${importBadge}${editBtn}${dupDetail}${importError}${issueRows}</td>
+      <td class="csv-c-name p-2"><div class="font-medium text-gray-800"><span class="csv-m-no">#${r._idx+1} </span>${nameDisplay}</div>${engName}</td>
+      <td class="csv-c-by p-2 text-center" data-label="${bi('ปีเกิด ค.ศ.','Birth Year (C.E.)')}">${byDisplay}</td>
+      <td class="csv-c-id p-2 font-mono text-gray-600 text-xs" data-label="${bi('เลขบัตร ปชช.','ID Card')}">${idFmt}</td>
+      <td class="csv-c-inst p-2 ${IC[r.Institution]||'text-gray-600'}" data-label="${bi('สถาบัน','Institution')}">${r.Institution||'—'}</td>
+      <td class="csv-c-year p-2 text-gray-600" data-label="${bi('ปีทุน (พ.ศ.)','Scholarship Year (B.E.)')}">${yr}</td>
+      <td class="csv-c-sstatus p-2 text-gray-600" data-label="${bi('สถานะทุน','Scholarship Status')}">${r.Status||'Active'}</td>
     </tr>`;
     return isEditing ? mainRow + _csvInlineEditHtml(r) : mainRow;
   }).join('');
@@ -4037,6 +4057,9 @@ async function closeCSVModal() {
   _csvRows = [];
   _csvFilter = 'all';
   _csvEditIdx = null;
+  _csvSkipBirthYear = false;
+  const skipBY = document.getElementById('csvSkipBirthYear');
+  if (skipBY) skipBY.checked = false;
   const failBtn = document.getElementById('csvFFail');
   if (failBtn) failBtn.classList.add('hidden');
   const invBtn = document.getElementById('csvFInvalid');
@@ -4103,16 +4126,22 @@ async function csvImportSelected() {
   // Pre-import validation: warn about critical issues (missing BirthYear etc.)
   const criticalRows = sel.filter(r => r._issues && r._issues.some(x=>x.critical));
   if (criticalRows.length) {
-    const byMissing = criticalRows.filter(r => r._issues.some(x=>x.field==='BirthYear'));
-    const nameList = byMissing.slice(0,5).map(r=>`<li>${[r.Title,r.FirstName,r.LastName].filter(Boolean).join(' ')||bi('(ไม่มีชื่อ)','(unnamed)')}</li>`).join('');
-    const more = byMissing.length>5 ? `<li>${bi(`...และอีก ${byMissing.length-5} รายการ`,`...and ${byMissing.length-5} more`)}</li>` : '';
+    const nameList = criticalRows.slice(0,5).map(r => {
+      const nm = [r.Title,r.FirstName||r.EngFirstName,r.LastName||r.EngLastName].filter(Boolean).join(' ')||bi('(ไม่มีชื่อ)','(unnamed)');
+      const why = r._issues.filter(x=>x.critical).map(x=>x.msg).join(' · ');
+      return `<li>${nm}<div class="text-xs text-gray-500">${why}</div></li>`;
+    }).join('');
+    const more = criticalRows.length>5 ? `<li>${bi(`...และอีก ${criticalRows.length-5} รายการ`,`...and ${criticalRows.length-5} more`)}</li>` : '';
+    const onlyMissingBY = criticalRows.every(r => r._issues.filter(x=>x.critical).every(x=>x.field==='BirthYear' && !r.BirthYear));
     const cf = await Swal.fire({
       title:bi(`พบข้อมูลไม่ครบ ${criticalRows.length} รายการ`, `${criticalRows.length} incomplete record(s) found`),
-      html:`<p class="text-sm mb-2">${bi('รายการเหล่านี้ <b>ไม่มีปีเกิด (BirthYear)</b> ซึ่งใช้เป็น <b class="text-amber-600">รหัสผ่านนักเรียน</b>','These records have <b>no BirthYear</b>, which is used as the <b class="text-amber-600">student password</b>.')}</p>`+
-        `<ul class="text-left text-sm text-red-600 list-disc pl-5">${nameList}${more}</ul>`+
-        `<p class="text-xs text-gray-500 mt-2">${bi('ต้องการนำเข้าต่อไปหรือไม่? (นักเรียนจะไม่สามารถเข้าสู่ระบบได้จนกว่าจะกรอกปีเกิด)','Continue importing? Students cannot sign in until their birth year is entered.')}</p>`,
+      html:`<ul class="text-left text-sm text-red-600 list-disc pl-5">${nameList}${more}</ul>`+
+        `<p class="text-xs text-gray-500 mt-2">${onlyMissingBY
+          ? bi('นำเข้าโดยข้ามปีเกิดได้ นักเรียนจะเข้าสู่ระบบได้หลังจากเพิ่มปีเกิดแล้ว','You can import without birth year. Students can sign in after their birth year is added.')
+          : bi('ต้องการนำเข้าต่อไปหรือไม่?','Continue importing?')}</p>`,
       icon:'warning', showCancelButton:true,
-      confirmButtonText:bi('นำเข้าต่อไป','Continue Import'), cancelButtonText:bi('กลับไปแก้ไข','Back to Edit'), confirmButtonColor:'#1e3a8a'
+      confirmButtonText:onlyMissingBY ? bi('ข้ามปีเกิดและนำเข้า','Skip Birth Year and Import') : bi('นำเข้าต่อไป','Continue Import'),
+      cancelButtonText:bi('กลับไปแก้ไข','Back to Edit'), confirmButtonColor:'#1e3a8a'
     });
     if (!cf.isConfirmed) return;
   }
@@ -4376,7 +4405,7 @@ function _crmRender() {
       <!-- Inline edit form (hidden by default) -->
       <div id="crm_edit_${r._idx}" class="hidden bg-amber-50 border-t border-amber-100 px-4 pb-3 pt-2">
         <p class="text-xs font-semibold text-amber-800 mb-2">${bi('แก้ไขข้อมูลและนำเข้าอีกครั้ง','Edit the data and import again')}</p>
-        <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-2">
           <div>
             <label class="block text-gray-500 mb-0.5 font-medium ${isStipDup?'text-red-600':''}">
               StipNo ${isStipDup?bi('⚠ ซ้ำ','⚠ duplicate'):''}
@@ -4446,7 +4475,7 @@ function _crmRender() {
             </select>
           </div>
         </div>
-        <div class="flex gap-2 justify-end mt-1">
+        <div class="flex flex-wrap gap-2 justify-end mt-1">
           <button onclick="_crmToggleEdit(${r._idx})" class="btn btn-secondary btn-sm text-xs">${t('cancel')}</button>
           <button onclick="_crmSaveEdit(${r._idx})" class="btn btn-sm text-xs"
             style="background:#d97706;color:white;border-color:#d97706">
@@ -4685,15 +4714,15 @@ function _csvInlineEditHtml(r) {
   const nextIdx = pos < invalidIdxs.length-1 ? invalidIdxs[pos+1] : null;
   const navHtml = invalidIdxs.length > 1 ? `
     <div class="flex items-center gap-1 ml-auto">
-      <span class="text-xs text-gray-400">${pos+1}/${invalidIdxs.length} ${bi('ปัญหา','issues')}</span>
+      <span class="text-xs text-blue-100">${pos+1}/${invalidIdxs.length} ${bi('ปัญหา','issues')}</span>
       <button onclick="${prevIdx!==null?`_csvOpenEdit(${prevIdx})`:'void(0)'}" ${prevIdx===null?'disabled':''} title="${bi('ก่อนหน้า','Previous')}"
         class="text-xs px-2 py-0.5 rounded border ${prevIdx!==null?'border-amber-400 text-amber-700 hover:bg-amber-50':'border-gray-200 text-gray-300 cursor-not-allowed'} transition">◀</button>
       <button onclick="${nextIdx!==null?`_csvOpenEdit(${nextIdx})`:'void(0)'}" ${nextIdx===null?'disabled':''} title="${bi('ถัดไป','Next')}"
         class="text-xs px-2 py-0.5 rounded border ${nextIdx!==null?'border-amber-400 text-amber-700 hover:bg-amber-50':'border-gray-200 text-gray-300 cursor-not-allowed'} transition">▶</button>
     </div>` : '';
 
-  return `<tr class="bg-blue-50 border-b-2 border-blue-300" id="csvEditRow_${r._idx}">
-    <td colspan="9" class="p-3">
+  return `<tr class="csv-edit-row bg-blue-50 border-b-2 border-blue-300" id="csvEditRow_${r._idx}">
+    <td colspan="10" class="p-2 sm:p-3">
       <div class="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
         <!-- Header -->
         <div class="flex items-center gap-2 flex-wrap px-3 py-2 bg-blue-600 text-white">
@@ -4702,14 +4731,14 @@ function _csvInlineEditHtml(r) {
           ${navHtml}
         </div>
         <!-- Fields grid -->
-        <div class="p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs" style="grid-template-columns:repeat(4,1fr)">
+        <div class="csv-edit-grid p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 text-xs">
           <div>
             <label class="block text-gray-500 mb-0.5 font-medium">${bi('รหัสทุน (StipNo)','Scholarship ID (StipNo)')}</label>
             ${inp('ce_StipNo', r.StipNo, 'MBS_001 / VC_001 / UNI_001', false)}
           </div>
           <div>
             <label class="block mb-0.5 font-medium ${issBad('BirthYear')?'text-red-600':'text-gray-500'}">🔑 ${bi('ปีเกิด (ค.ศ.)','Birth Year (C.E.)')} ${issBad('BirthYear')?'<span class="text-red-500">*</span>':''}</label>
-            ${inp('ce_BirthYear', r.BirthYear, '1995', issBad('BirthYear'))}
+            ${inp('ce_BirthYear', r.BirthYear, _csvSkipBirthYear ? bi('เว้นว่างได้','Optional') : '1995', issBad('BirthYear'))}
           </div>
           <div>
             <label class="block mb-0.5 font-medium ${issBad('IDCard')?'text-red-600':'text-gray-500'}">${bi('เลขบัตรประชาชน','ID Card')} ${issBad('IDCard')?'<span class="text-red-500">*</span>':''}</label>
@@ -4749,7 +4778,7 @@ function _csvInlineEditHtml(r) {
           </div>
         </div>
         <!-- Action buttons -->
-        <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border-t border-gray-100">
+        <div class="flex flex-wrap items-center justify-end gap-2 px-3 py-2 bg-gray-50 border-t border-gray-100">
           <button onclick="_csvCloseEdit()" class="btn btn-secondary btn-sm text-xs">${bi('✕ ปิด','✕ Close')}</button>
           <button onclick="_csvSaveEdit()" class="btn btn-sm text-xs" style="background:#1e3a8a;color:white;border-color:#1e3a8a">${bi('💾 บันทึกและตรวจสอบใหม่','💾 Save and Recheck')}</button>
           <button onclick="_csvSaveAndImport()" class="btn btn-sm text-xs" style="background:#16a34a;color:white;border-color:#16a34a">${bi('⬆ บันทึกและนำเข้าแถวนี้','⬆ Save and Import This Row')}</button>
